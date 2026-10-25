@@ -18,110 +18,72 @@ SpawnJoin 是一个面向多个私有 Python 项目的基础设施组件单仓�
 
 ```text
 spawn-join/
+├── .agents/
+│   └── skills/
+├── .codegraph/                      # 本机源码索引
+├── .specify/                        # Spec Kit 基础设施
+├── docs/
+│   └── architecture/               # 仓库地图和包边界
+├── harness/                        # 阶段计划、上下文、评审和验证证据
 ├── packages/
 │   ├── core/
 │   │   ├── spawn-join-core/
-│   │   │   ├── pyproject.toml
-│   │   │   └── src/
-│   │   │       └── spawn_join_core/
-│   │   │           ├── __init__.py
-│   │   │           ├── config.py
-│   │   │           ├── exceptions.py
-│   │   │           ├── protocols.py
-│   │   │           └── types.py
-│   │   │
 │   │   └── llm-provider/
-│   │       ├── pyproject.toml
-│   │       └── src/
-│   │           └── spawn_join_llm_provider/
-│   │               ├── __init__.py
-│   │               └── abstractions/
-│   │                   └── __init__.py
-│   │
 │   └── infra/
 │       ├── llm-provider-langchain/
-│       │   ├── pyproject.toml
-│       │   └── src/
-│       │       └── spawn_join_llm_provider_langchain/
-│       │           ├── __init__.py
-│       │           └── providers/
-│       │               ├── __init__.py
-│       │               ├── azure_openai/
-│       │               │   └── __init__.py
-│       │               └── deepseek/
-│       │                   └── __init__.py
-│       │
 │       └── spawn-join-observability/
-│           ├── pyproject.toml
-│           └── src/
-│               └── spawn_join_observability/
-│                   └── __init__.py
-│
+├── specs/<feature-id>/              # Feature 路由时创建的 SDD 工件
+├── AGENTS.md
 └── README.md
 ```
 
-`packages/core` 和 `packages/infra` 是仓库内的架构分组，不是额外的 Python Distribution。包目录可以使用清晰的领域名称，例如 `llm-provider`；真正可独立构建和发布的名称由各目录的 `pyproject.toml` 定义，并统一使用 `spawn-join-*` 命名空间。
+完整且易变的仓库地图维护在 [`docs/architecture/repository-map.md`](docs/architecture/repository-map.md)。
+包职责、依赖方向和公共边界维护在
+[`docs/architecture/package-boundaries.md`](docs/architecture/package-boundaries.md)。
+Harness 的阶段记录和证据约定维护在 [`harness/README.md`](harness/README.md)。
+不要在 README、AGENTS 和架构文档中维护多份完整目录树。
 
-这里的包名和 Python 导入名遵循不同的命名规则：
+`packages/core` 和 `packages/infra` 是架构分组，不是额外的 Python Distribution。每个包目录
+可以独立构建和安装，真实的 Distribution 名称和依赖由对应目录的 `pyproject.toml` 定义。
+包名和 Python 导入名遵循不同的命名规则：
 
 - Distribution 名称使用连字符，例如 `spawn-join-llm-provider`。
 - Python 导入模块使用下划线，例如 `spawn_join_llm_provider`。
 
-## Package 职责
-
-| Distribution | Python 模块 | 所在分组 | 职责 |
-|---|---|---|---|
-| `spawn-join-core` | `spawn_join_core` | `core` | 公共配置机制、异常、类型和跨领域基础协议 |
-| `spawn-join-llm-provider` | `spawn_join_llm_provider` | `core` | 与框架无关的 LLM 协议和领域抽象 |
-| `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | `infra` | LangChain 适配层，以及内部 Provider 实现 |
-| `spawn-join-observability` | `spawn_join_observability` | `infra` | 日志、追踪、指标等可观测性能力 |
-
-当前只创建包边界和最小源码骨架，具体领域能力会在真实需求出现后再加入对应包。`abstractions` 表示领域接口或协议，`implementations` / `providers` 表示具体实现。
-
-`packages/core` 是架构分组，不等于 `spawn-join-core`。因此，`packages/core/llm-provider` 虽然位于 `core` 分组，但仍然是独立的 LLM 领域 Distribution；它不应把 LLM 领域接口全部塞进 `spawn-join-core`。
-
-## 依赖方向
-
-```text
-业务应用
-    ├── spawn-join-llm-provider-langchain ────────────┐
-    │       ├── spawn-join-llm-provider ──────────────┤
-    │       └── langchain-core                     │
-    └── spawn-join-observability ─────────────────────┘
-                                                  ▼
-                                            spawn-join-core
-```
-
-约束如下：
-
-1. `spawn-join-core` 不得依赖任何其他 SpawnJoin 领域包。
-2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core`，但不得依赖 LangChain 或具体 Provider SDK。
-3. `spawn-join-llm-provider-langchain` 依赖 `spawn-join-llm-provider` 和 `langchain-core`，并负责 LangChain 相关实现。
-4. 领域包可以依赖 `spawn-join-core`，但不应为了复用某个小工具而引入另一个无关领域包。
-5. LLM 等领域的抽象应留在自己的包中，避免 Core 成为所有接口的集中地。
-6. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
-
-`spawn-join-llm-provider-langchain` 内部的 Azure OpenAI、DeepSeek 等实现暂时共享一个适配包。只有当某个 Provider 需要独立版本、依赖、测试或维护周期时，才考虑拆分为独立 Distribution，例如 `spawn-join-llm-provider-openai`。
+当前只创建包边界和最小源码骨架，具体领域能力会在真实需求出现后再加入对应包。
 
 ## 本地开发
 
-每个包都有自己的 `pyproject.toml`，可以独立构建和安装。使用 [uv](https://docs.astral.sh/uv/) 管理虚拟环境和 Python 包。首次开发时先创建虚拟环境，再安装 Core 和需要的领域包：
+每个 Distribution 都是独立的 uv project，拥有自己的虚拟环境和锁文件。使用
+[uv](https://docs.astral.sh/uv/) 时，应在目标包目录执行 `uv sync`，不要在仓库根目录创建共享
+`.venv`。从仓库根目录分别初始化需要开发的包：
 
 ```bash
-uv venv
-uv pip install --editable packages/core/spawn-join-core
-uv pip install --editable packages/core/llm-provider
-uv pip install --editable packages/infra/llm-provider-langchain
-uv pip install --editable packages/infra/spawn-join-observability
+uv sync --directory packages/core/spawn-join-core
+uv sync --directory packages/core/llm-provider
+uv sync --directory packages/infra/llm-provider-langchain
+uv sync --directory packages/infra/spawn-join-observability
 ```
 
-如果只开发 LLM 协议或 LangChain 适配层，可以按需安装：
+每条命令只管理对应 Distribution 的环境：
+
+- `.venv/` 位于对应 Distribution 目录下，不提交到 Git；
+- `uv.lock` 位于对应 Distribution 目录下，提交到 Git；
+- `uv sync` 会按该包的 `pyproject.toml` 创建或更新环境；
+- 包间开发依赖通过各自 `pyproject.toml` 中的 `[tool.uv.sources]` 指向本仓库的兄弟包。
+
+如果只开发 LLM 协议或 LangChain 适配层，可以按需同步：
 
 ```bash
-uv venv
-uv pip install --editable packages/core/spawn-join-core
-uv pip install --editable packages/core/llm-provider
-uv pip install --editable packages/infra/llm-provider-langchain
+uv sync --directory packages/core/spawn-join-core
+uv sync --directory packages/core/llm-provider
+uv sync --directory packages/infra/llm-provider-langchain
+```
+
+在包目录中运行命令时，使用 `uv run`，例如：
+
+```bash
+uv run --directory packages/core/llm-provider python -c "import spawn_join_llm_provider"
 ```
 
 构建单个 Distribution：
@@ -134,6 +96,62 @@ uv build packages/infra/spawn-join-observability
 ```
 
 将 `packages/core/spawn-join-core` 替换为其他包目录，即可分别构建对应组件。后续增加测试后，测试也应以包为边界单独执行。
+
+## 代码导航与 CodeGraph
+
+本项目已启用 CodeGraph，用于在修改 Python 源码前定位文件、符号、调用路径和受影响测试。CodeGraph 的索引是本机生成的开发辅助数据，不属于 Python Distribution，也不应作为业务代码提交。
+
+首次在新环境使用时，从仓库根目录初始化索引：
+
+```bash
+codegraph init
+```
+
+检查当前索引状态：
+
+```bash
+codegraph status
+```
+
+源码发生变化后，优先执行增量同步；索引损坏、解析器升级或需要完全重建时，再执行全量索引：
+
+```bash
+codegraph sync
+codegraph index
+```
+
+常用导航命令：
+
+```bash
+# 查看索引中的项目文件结构
+codegraph files
+
+# 按符号或代码术语搜索
+codegraph query <symbol-or-term>
+
+# 查看相关源码和调用路径
+codegraph explore "<symbol or code question>"
+
+# 查看单个符号，或读取文件并查看其依赖关系
+codegraph node <symbol-or-file>
+
+# 查看调用方、被调用方和变更影响
+codegraph callers <symbol>
+codegraph callees <symbol>
+codegraph impact <symbol>
+
+# 根据变更文件查找受影响的测试
+codegraph affected "<file>"
+```
+
+推荐的源码变更顺序是：
+
+1. `codegraph status`，确认索引是否为最新。
+2. 使用 `codegraph explore`、`codegraph node`、`codegraph callers` 和 `codegraph callees` 理解目标模块及其调用关系。
+3. 完成小步修改后执行 `codegraph sync`。
+4. 使用 `codegraph impact` 或 `codegraph affected` 检查影响范围，再运行与包边界匹配的测试和构建验证。
+
+`.codegraph/.gitignore` 会忽略本机数据库、日志、daemon 状态和 socket 等临时文件；只保留 `.gitignore` 本身作为项目约定。若索引状态显示过期或缺失，应先同步或初始化，不要把本机生成的数据库文件复制到其他环境。
 
 ## 私有包分发
 

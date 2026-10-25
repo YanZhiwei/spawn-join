@@ -1,0 +1,30 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Per-package virtual environments
+.venv/
+venv/
+
+# Test, coverage, lint, and type-check caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+coverage.xml
+htmlcov/
+
+# Python package build outputs
+# Keep harness/build/ tracked: it contains governance documentation.
+/build/
+dist/
+packages/**/build/
+
+# Setuptools metadata
+*.egg-info/
+pip-wheel-metadata/
+
+# pyproject.toml, uv.lock, .python-version, and uv.toml are project inputs;
+# keep them visible to Git when a Distribution uses them.

@@ -1,0 +1,19 @@
+version = 1
+revision = 2
+requires-python = ">=3.11"
+
+[[package]]
+name = "spawn-join-core"
+version = "0.1.0"
+source = { editable = "../spawn-join-core" }
+
+[[package]]
+name = "spawn-join-llm-provider"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "spawn-join-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "spawn-join-core", editable = "../spawn-join-core" }]

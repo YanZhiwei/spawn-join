@@ -12,5 +12,8 @@ dependencies = [
     "langchain-core>=1.0,<2.0",
 ]
 
+[tool.uv.sources]
+spawn-join-llm-provider = { path = "../../core/llm-provider", editable = true }
+
 [tool.setuptools.packages.find]
 where = ["src"]
