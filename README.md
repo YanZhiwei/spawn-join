@@ -86,16 +86,26 @@ uv sync --directory packages/infra/llm-provider-langchain
 uv run --directory packages/core/llm-provider python -c "import spawn_join_llm_provider"
 ```
 
-构建单个 Distribution：
+构建并隔离验证单个 Distribution（输出位于临时目录）：
 
-```bash
-uv build packages/core/spawn-join-core
-uv build packages/core/llm-provider
-uv build packages/infra/llm-provider-langchain
-uv build packages/infra/spawn-join-observability
+```powershell
+pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core -Check build
 ```
 
-将 `packages/core/spawn-join-core` 替换为其他包目录，即可分别构建对应组件。后续增加测试后，测试也应以包为边界单独执行。
+替换 Distribution 名可检查其他包；测试始终以包为边界独立执行。
+
+## 质量门禁
+
+```powershell
+pwsh -NoProfile -File scripts/quality.ps1
+pwsh -NoProfile -File scripts/test-quality.ps1
+```
+
+需要 PowerShell 7、uv、Python >=3.11、Node 22+。Black/isort 统一格式，Ruff 做 lint，
+Pyright 做严格类型检查，pytest 验证包契约，另外执行文档、构建和隔离安装检查。
+根 `pyproject.toml` 只保存共享工具配置，不是根级 uv project；工具依赖仍在各包 dev group。
+命令、修复格式、CI 矩阵和分支保护说明见
+[`docs/development/quality-gates.md`](docs/development/quality-gates.md)。
 
 ## 代码导航与 CodeGraph
 
@@ -202,4 +212,6 @@ dependencies = [
 - Observability 的最小可扩展骨架；
 - 本 README 中的职责、依赖、安装和分发约定。
 
-当前尚未实现具体的模型或可观测性业务能力，也尚未添加测试、CI 和发布流水线。Provider 的具体 SDK 依赖和调用实现将在协议稳定后加入 `spawn-join-llm-provider-langchain`。
+当前尚未实现具体的模型或可观测性业务能力。已配置包级边界测试和 GitHub Actions 质量检查，
+尚未配置发布流水线或自动化 Harness hook；远端 CI 结果和 required status check 需要实际
+运行/配置后确认。Provider 的具体 SDK 依赖和调用实现将在协议稳定后加入适配包。

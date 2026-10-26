@@ -57,6 +57,10 @@ spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
 四个包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
 属于本机或构建产物，不应提交。
 
+共享质量策略放在根 tool-only `pyproject.toml`，不创建根级 Python project 或共享环境。
+Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运行时依赖。
+检查命令和隔离 wheel 安装说明见 [质量门说明](../development/quality-gates.md)。
+
 ## Source Layout and Public Surface
 
 - 每个 Distribution 必须使用 `src/` layout，并拥有独立的 `pyproject.toml`。

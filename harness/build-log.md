@@ -75,3 +75,100 @@ PowerShell 启动配置在命令开始前输出了若干与仓库无关的 `Impo
 - 当前仓库仍没有统一的 Ruff、Pyright/mypy、pytest、pre-commit 或 CI quality profile；
 - 工作区不是干净基线，不能仅凭本条目声明完整 Feature diff 已独立收口；`.agents/`、
   `.codegraph/`、`.specify/` 和部分文档变化在本 Feature 开始前已经存在。
+
+## 2026-10-26 — Harness Foundation 收口范围重新确认
+
+**Status**: Complete（证据重新锚定与状态修正；无行为变化）
+
+**Route**: Lightweight（文档修正，不创建新 Feature Spec）
+
+**Feature**: `001-harness-foundation`
+
+**Branch**: `main`
+
+**Base revision**: `bd497d72e928f596e79cdbe5b1466eba4c75ec39`
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Purpose
+
+上一条目把 Feature 证据锚定在 `ac959f6` 的工作树状态，且记录了基线不干净的警告。实际
+收口提交 `bd497d7` 产生后，按 `AGENTS.md` 第 8 节"新提交产生后旧 evidence 必须重新确认
+范围"的要求补做范围确认；同时修正 `specs/001-harness-foundation/spec.md` 仍为 `Draft`
+的过期状态。
+
+### Scope Re-confirmation against bd497d7
+
+`bd497d7`（`chore: establish SDD governance and independent uv projects`）共包含 62 个
+文件，按归属分类核对：
+
+- 16 个文件与上一条目声明的 Feature-owned 路径一一对应（`AGENTS.md`、`README.md`、
+  两个架构文档、`harness/` 下 6 个文件、`specs/001-harness-foundation/` 下 6 个工件），
+  无缺失、无多余；
+- 其余 46 个文件在 Feature 声明范围之外：`.agents/skills/`（17）、`.specify/` 初始化
+  工件（20）、`.codegraph/.gitignore`（1）、根 `.gitignore`（1）、`packages/`（7，四个
+  Distribution 的 `pyproject.toml` 增量与 `uv.lock`）。其中 `.agents/`、`.specify/`、
+  `.codegraph/`、README、AGENTS 和 docs 的变化与上一条目 "Pre-existing Worktree State"
+  的记录一致；`packages/` 与根 `.gitignore` 未被上一条目显式枚举，属于提交标题所述
+  "independent uv projects" 部分，此归因限制维持原记录，不做追溯改写。
+
+### Changes in This Entry
+
+- `specs/001-harness-foundation/spec.md`：`Status` 由 `Draft` 更新为 `Implemented`，
+  与 `tasks.md` 19/19 任务完成状态对齐；
+- `harness/build-log.md`：追加本条目。
+
+### Verification
+
+- `git show --name-only --format= bd497d7` 分类统计：实际执行，62 = 16 + 17 + 20 + 1 + 1 + 7，
+  结果如上；
+- `git status --short --branch`（本条目开始前）：工作区干净，`main` @ `bd497d7`；
+- Markdown 本地链接检查（quickstart 脚本，`-NoProfile`）：`PASS`；该清单覆盖 9 个导航
+  文件，本条目修改的两个文件不在清单内，且本次修改未新增或删除链接；
+- `git diff --check`：`PASS`；Git 仅输出两个变更文件（`harness/build-log.md`、
+  `specs/001-harness-foundation/spec.md`）的 LF/CRLF 提示，没有尾随空格或 diff 错误；
+- 本条目未修改 Python 源码、依赖、CI、hook 或任何外部系统状态。
+
+### Limitations
+
+- 本条目与 `spec.md` 状态修正在撰写时尚未提交；提交后需按同一规则再次确认 `HEAD`；
+- `.specify/feature.json` 是本机活动 Feature 指针（已被 `.specify/.gitignore` 排除），
+  由 Spec Kit 工具管理，本条目不修改；
+- 混合提交的逐文件归因（Feature 内/外）无法仅凭提交本身重建，维持上一条目的记录。
+
+## 2026-10-26 — Python Quality Gates
+
+**Status**: Implemented and locally verified；远端 CI / Ruleset 未执行
+
+**Route**: Feature，用户批准的人工 Spec/Plan/Tasks；没有运行 Ralph 或自动收口提交
+
+**Feature**: `002-python-quality-gates`
+
+**Base/head**: `bd497d72e928f596e79cdbe5b1466eba4c75ec39` + 未提交工作树
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Observed implementation
+
+- 新增 tool-only 根配置；四包独立 dev group/lock，未改变运行时依赖或公共 API。
+- 新增 Black/isort、Ruff lint、Pyright strict、pytest、文档、构建和隔离安装检查入口。
+- 新增 20 个现有包契约测试和 9 场景门禁回归；零测试不能通过。
+- 新增 12 组合 GitHub Actions 配置及固定名称 `Quality Gate`；没有配置远端 Ruleset。
+- 同步运行说明、架构/Harness 导航和测试生成规范；只删除 Core 多余末尾空行。
+- 保留本条目前全部历史内容和用户 Foundation spec 状态修正；不提交、不推送、不改分支。
+
+### Observed verification and limitations
+
+- `pwsh -NoProfile -File scripts/quality.ps1`：退出 0，Windows Python 3.13.5，四包完整检查通过。
+- 同一入口在隔离副本中使用 Python 3.11.13：退出 0，四包完整检查通过，真实环境未切换。
+- 使用 CI 固定 uv 0.13.5 重跑完整入口及回归：均退出 0；未升级全局 uv。
+- `pwsh -NoProfile -File scripts/test-quality.ps1`：退出 0；8 种故障被实际拒绝。
+- workflow/config 补充静态检查和汇总脚本 16 种状态组合：退出 0；不是 GitHub 运行结果。
+- CodeGraph sync/affected：退出 0；没有据此跳过全包测试。
+- 全部变更文本空白检查通过；源树 build/dist 未增加，已清理本次生成的已知 setuptools 元数据。
+- 原有 README、hardlink/copy、LF/CRLF 警告仍记录；全局 Python alias 问题未改动。
+- Linux、Python 3.14、远端 CI、Ruleset、Delivery/hook/Ralph、发布和安全扫描均未执行。
+
+详细命令、退出码、环境、失败尝试、37 路径范围及复核说明：
+[Evidence](evidence/phase-01-python-quality-gates.md)；
+[Review](code_review/review-phase-01-python-quality-gates.md)。新提交或实现范围变化后须重新确认。

@@ -9,5 +9,14 @@ description = "Shared contracts and primitives for the SpawnJoin package ecosyst
 requires-python = ">=3.11"
 dependencies = []
 
+[dependency-groups]
+dev = [
+    "black>=26.10.1,<27",
+    "isort>=9.0.2,<10",
+    "pyright>=1.1.414,<2",
+    "pytest>=9.1.1,<10",
+    "ruff>=0.17.2,<0.18",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]

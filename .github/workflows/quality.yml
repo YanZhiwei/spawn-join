@@ -1,0 +1,102 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  packages:
+    name: ${{ matrix.package }} / ${{ matrix.platform.os }} / Python ${{ matrix.platform.python }}
+    runs-on: ${{ matrix.platform.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - spawn-join-core
+          - spawn-join-llm-provider
+          - spawn-join-llm-provider-langchain
+          - spawn-join-observability
+        platform:
+          - {os: ubuntu-latest, python: '3.11'}
+          - {os: ubuntu-latest, python: '3.14'}
+          - {os: windows-latest, python: '3.11'}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.platform.python }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: '0.13.5'
+          enable-cache: true
+          cache-dependency-glob: 'packages/**/uv.lock'
+      - name: Check distribution
+        env:
+          PACKAGE_DIST: ${{ matrix.package }}
+          UV_PYTHON: ${{ matrix.platform.python }}
+          SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}
+        run: ./scripts/quality.ps1 -Package $env:PACKAGE_DIST
+
+  governance:
+    name: Governance and gate regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: '0.13.5'
+          enable-cache: true
+          cache-dependency-glob: 'packages/**/uv.lock'
+      - name: Check documents
+        run: ./scripts/quality.ps1 -Check docs
+      - name: Test gate failure paths
+        env:
+          UV_PYTHON: '3.11'
+          SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}
+        run: ./scripts/test-quality.ps1
+
+  quality-gate:
+    name: Quality Gate
+    if: ${{ always() }}
+    needs: [packages, governance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every prerequisite to succeed
+        env:
+          PACKAGES_RESULT: ${{ needs.packages.result }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
+        run: |
+          if ($env:PACKAGES_RESULT -ne 'success' -or $env:GOVERNANCE_RESULT -ne 'success') {
+              Write-Error "Required checks did not succeed: packages=$env:PACKAGES_RESULT governance=$env:GOVERNANCE_RESULT"
+              exit 1
+          }
+          Write-Host 'All required quality checks succeeded.'

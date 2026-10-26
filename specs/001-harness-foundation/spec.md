@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-26
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "开始增加 Harness"
 

@@ -8,7 +8,11 @@
 
 本仓库已安装项目级技能入口：`.agents/skills/sd/` 和 `.agents/skills/speckit-delivery/`，并已完成基础 Spec Kit 初始化。技能文件和 `.specify/` 的存在只表示当前环境具备路由与基础工件能力，不表示任何具体 Feature 的 Spec、Plan、Tasks、ADR 或 Evidence 已经执行。
 
-当前 `.specify/` 已存在，包含基础模板、PowerShell 脚本、Codex/Speckit 集成清单和 bundled workflow；`.specify/memory/constitution.md` 已初始化并批准为 `v1.0.0`，但仓库仍未配置 `.specify/extensions.yml`、Delivery 专用配置、可执行 hook、质量工具或完整 Feature Spec。因此不能把当前初始化状态误报为完整的 Spec Kit Delivery 运行证据。缺失时明确报告为未配置或 blocked，不得静默退回一套“看起来像通过”的通用流程。
+当前 `.specify/` 已包含模板、PowerShell 脚本、Codex/Speckit 清单和 bundled workflow；
+Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
+质量工具及 GitHub Actions 配置已加入；但 `.specify/extensions.yml`、Delivery 配置和可执行
+hook 仍未配置。不得把 standalone 质量入口、workflow 配置或本机成功误报为完整 Delivery、
+远端 CI 或分支保护已通过；缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
 ### 0.1 变更路由
 
@@ -74,6 +78,8 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 
 - `packages/core` 和 `packages/infra` 是架构分组；每个下层 Distribution 必须拥有自己的 `pyproject.toml`、`src/<import_package>/`、独立 uv `.venv`、`uv.lock` 和独立构建边界。
 - Python 源码只能放在对应 Distribution 的 `src/` 下；不要在仓库根目录创建共享 `src/`，也不要把源码直接堆在 Distribution 根目录。
+- 根 `pyproject.toml` 只允许共享 tool 配置，不定义 project/build-system/dependency-groups
+  或 uv workspace；`scripts/` 的 PowerShell 文件只承担开发检查，不是领域运行时代码。
 - 测试以 Distribution 为边界放在对应包的 `tests/`；跨包契约测试必须明确依赖的包和安装方式。
 - `.agents/skills/` 是项目级 Agent 能力，不是 Python 包；`.codegraph/` 是本机索引，不得提交数据库、日志、daemon 状态或 socket。
 - `.specify/` 已作为项目级 Spec Kit 基础设施保留；`specs/` 仅在 Feature 路由实际需要时创建，不要为 Lightweight 文档改动手工制造半套 Feature 工件。
@@ -92,7 +98,11 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 5. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 6. 当前没有 `spawn-join-database` 和 `spawn-join-agent`；除非出现明确需求并完成边界设计，不要提前创建它们。
 
-最近验证基线（2026-10-26；来自当前 checkout）：四个包均可使用 `uv build` 构建，输出 wheel 和 sdist 共 8 个发行文件；构建会对每个包提示缺少包级 README 的非阻塞 setuptools 警告。四个 Distribution 已配置独立的 uv 本地开发源和各自的 `uv.lock`；当前已有项目级 `.agents/skills/`、`.codegraph/`、`.specify/` 和 `harness/`，Constitution 已批准为 `v1.0.0`，活动 Feature 为 `specs/001-harness-foundation/`，但尚无 `.specify/extensions.yml`、Delivery 专用配置、测试目录、CI 配置、类型检查配置或可执行 Harness hook。因此：
+当前配置基线（2026-10-26）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、GitHub Actions 已加入。
+当前 Feature 为 `specs/002-python-quality-gates/`。构建仍有缺少包级 README 的非阻塞警告；
+Delivery、Spec Kit hook、发布流水线和远端分支保护仍未启用。实际验证结果以当前 Feature
+的 Harness evidence 为准，不用配置存在替代运行证据。因此：
 
 - 不得把“构建成功”表述为“测试、类型检查和发布流程全部通过”。
 - 后续若修复包级 README 警告，应单独记录为构建元数据改动。
@@ -199,7 +209,9 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 - 只捕获能够处理的具体异常；禁止裸 `except` 和静默吞错；重新抛出时使用 `raise NewError(...) from exc` 保留原因链，并在跨包边界定义稳定的异常语义。
 - Python 库代码不得用 `print` 作为运行时日志；使用模块级 `logging`，日志中不得出现密钥、令牌、完整私有 URL 或未经脱敏的用户数据。
 - 公共 API 通过 `__init__.py` 显式导出；内部模块、临时兼容层和测试辅助函数不得因为可导入就自动成为公共契约。
-- 类型检查、格式化和 lint 工具尚未在本仓库配置；在工具加入前，这些是必须遵守的代码规范而不是已经执行的质量门。新增工具时，应明确配置归属、版本、命令和失败终态，再把命令写入质量检查清单。
+- 格式门使用 Black/isort，lint 使用 Ruff（不启用 I 或 formatter），类型使用 Pyright strict。
+  配置、版本归属、命令及失败终态以 `docs/development/quality-gates.md` 为准；不把检查成功
+  当成所有架构/风格原则均被机器验证。
 
 ### 4.4 注释与文档
 
@@ -223,7 +235,13 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 1. 行为改动与测试在同一小步中完成，或先有能描述目标行为的失败测试。
 2. 单元测试不依赖真实密钥、真实私有服务或不稳定网络；需要外部服务时，单独标记为集成验证并记录权限和环境。
 3. 不要只运行“最方便”的测试。验证范围必须覆盖实际 outgoing diff；未运行的测试明确标为未运行。
-4. 当前仓库尚未配置统一测试命令。新增测试框架时，先记录包边界、依赖位置和运行命令，再在本文件或包级规则中补充。
+4. 测试框架为各 Distribution dev group 中的 pytest；统一入口为
+   `pwsh -NoProfile -File scripts/quality.ps1 -Check test`，零测试必须失败。
+   行为变更必须安排针对性测试，不因用户未特别请求而省略。
+
+完整机械门禁入口是 `pwsh -NoProfile -File scripts/quality.ps1`；门禁回归入口是
+`pwsh -NoProfile -File scripts/test-quality.ps1`。具体参数、修复命令与 CI 边界见
+[`质量门说明`](docs/development/quality-gates.md)。Standards Review 仍单独执行。
 
 ### 5.1 CodeGraph 与源码定位
 

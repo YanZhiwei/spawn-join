@@ -8,6 +8,7 @@
 
 ```text
 spawn-join/
+├── .github/workflows/             # GitHub Actions 质量检查；无发布或远端设置
 ├── .agents/
 │   └── skills/                    # 项目级 Agent 技能
 ├── .codegraph/                    # 本机源码索引；只提交 .gitignore
@@ -18,7 +19,8 @@ spawn-join/
 │   ├── templates/                 # Spec、Plan、Tasks 等模板
 │   └── workflows/                 # 已安装的 Spec Kit workflow
 ├── docs/
-│   └── architecture/              # 仓库地图和包边界说明
+│   ├── architecture/              # 仓库地图和包边界说明
+│   └── development/               # 质量工具和运行说明
 ├── harness/                        # 阶段计划、上下文、评审和验证证据
 │   ├── build/
 │   ├── context/
@@ -33,14 +35,17 @@ spawn-join/
 │       ├── llm-provider-langchain/   # 独立 uv project、环境和锁文件
 │       └── spawn-join-observability/ # 独立 uv project、环境和锁文件
 ├── AGENTS.md                      # Agent 工作约定和治理入口
+├── pyproject.toml                 # tool-only 配置，不是根级 Python/uv project
 ├── README.md                      # 面向使用者的项目概览
+├── scripts/                       # PowerShell 质量入口及其故障回归
 ├── specs/
-│   └── 001-harness-foundation/    # 当前 Feature；后续 Feature 按路由创建
+│   ├── 001-harness-foundation/
+│   └── 002-python-quality-gates/  # 当前 Feature
 ```
 
-`specs/` 当前包含 `001-harness-foundation/` Feature；后续 Feature 仍只在实际路由需要时创建。
-`harness/` 现在已经创建，但它只包含 Harness 基础约定和初始日志，不代表已经启用自动化 hook、
-质量门禁或 CI。规划中的目录仍然不是当前状态证据，不应写成已经存在的结构。
+`specs/` 包含 Harness Foundation 和 Python Quality Gates。`harness/` 保存阶段约定及实际
+记录；standalone 质量入口和 CI 配置已加入，但没有自动化 Spec Kit hook、Delivery 或发布。
+远端 CI 和分支保护必须另有运行/配置证据，不把配置路径存在当作通过。
 
 ## 导航入口
 
@@ -53,6 +58,7 @@ spawn-join/
 | Harness 阶段记录和证据 | [`harness/README.md`](../../harness/README.md) |
 | Spec Kit 模板、脚本和 workflow | [`.specify/`](../../.specify/) |
 | Python 包元数据和构建配置 | 各 Distribution 的 `pyproject.toml` |
+| 质量工具和运行命令 | [`quality-gates.md`](../development/quality-gates.md) |
 | Python 源码关系和影响范围 | CodeGraph 索引 |
 
 ## 路径语义
@@ -66,6 +72,8 @@ spawn-join/
 - `.specify/` 维护 Spec Kit 自身的模板、脚本、集成和 workflow，不存放普通业务设计。
 - `.codegraph/` 是本机开发辅助数据，不是 Python 包，也不是业务源码。
 - 每个 Distribution 都是独立的 uv project，拥有自己的 `pyproject.toml`、`.venv` 和 `uv.lock`；仓库根目录不创建共享 uv workspace。
+- 根 `pyproject.toml` 只包含 tool 表；开发依赖仍由四个 Distribution 各自锁定。
+- `scripts/` 只存放开发治理 PowerShell 脚本，不承载 Python 领域源码。
 - Python 构建产物不得进入版本控制，包括根目录或包目录下的 `build/`、`dist/`、`*.egg-info/`、缓存和临时报告；`harness/build/` 是应提交的治理文档目录。
 
 ## 更新规则

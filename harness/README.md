@@ -5,9 +5,9 @@ Harness 是 SpawnJoin 的阶段执行和证据记录层。它把“批准的阶�
 
 ## Scope
 
-Harness 当前只提供文档约定和可追踪的记录位置，不自动执行代码、不创建分支、不提交、不
-推送、不部署，也不写入外部系统。只有在后续 Feature 明确增加验证脚本、质量工具或 Spec
-Kit hook 后，某条规则才能被报告为机器强制执行。
+Harness 是文档约定和可追踪的记录层，不自动创建分支、提交、推送、部署或写外部系统。
+Python Quality Gates 已增加独立验证脚本和 CI 配置；它们显式执行机械检查，不是 Harness
+或 Spec Kit 自动 hook。只有实际运行的检查才能提供通过证据。
 
 ## Source-of-Truth Boundaries
 
@@ -60,10 +60,12 @@ approved phase plan
 - [Harness foundation spec](../specs/001-harness-foundation/spec.md)
 - [Harness foundation plan](../specs/001-harness-foundation/plan.md)
 - [Harness foundation tasks](../specs/001-harness-foundation/tasks.md)
+- [Python quality gates](../docs/development/quality-gates.md)
+- 本地质量门任务：`specs/002-python-quality-gates/tasks.md`（本地交付工件，不保证随仓库分发）
 
 ## Current Limitations
 
-- 当前没有统一的 Ruff、类型检查、pytest 或 CI quality profile。
+- 当前有 Black/isort/Ruff/Pyright/pytest 和 CI 配置；远端运行/分支保护需要另外验证。
 - 当前没有 `.specify/extensions.yml`，因此没有自动化 Harness hook。
 - 当前记录格式由 Markdown 约定表达，尚未由脚本强制校验。
 - 如果 `HEAD` 或 outgoing paths 变化，旧 evidence 必须重新确认，不能直接沿用。

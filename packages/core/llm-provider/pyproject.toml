@@ -9,6 +9,15 @@ description = "Provider-agnostic LLM protocols and abstractions for SpawnJoin."
 requires-python = ">=3.11"
 dependencies = ["spawn-join-core>=0.1.0,<0.2.0"]
 
+[dependency-groups]
+dev = [
+    "black>=26.10.1,<27",
+    "isort>=9.0.2,<10",
+    "pyright>=1.1.414,<2",
+    "pytest>=9.1.1,<10",
+    "ruff>=0.17.2,<0.18",
+]
+
 [tool.uv.sources]
 spawn-join-core = { path = "../spawn-join-core", editable = true }
 
