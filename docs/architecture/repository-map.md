@@ -54,6 +54,7 @@ spawn-join/
 
 | 主题 | 权威入口 |
 |---|---|
+| 首页分类导航与项目概览 | [`README.md`](../../README.md) |
 | 项目原则和治理 | [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md) |
 | Agent 工作约定 | [`AGENTS.md`](../../AGENTS.md) |
 | Package 职责和依赖方向 | [`package-boundaries.md`](package-boundaries.md) |
