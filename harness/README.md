@@ -18,6 +18,7 @@ Python Quality Gates 已增加独立验证脚本和 CI 配置；它们显式执�
 | `specs/<feature-id>/spec.md` | 用户场景、需求、范围和成功标准 | 实际实现结果 |
 | `specs/<feature-id>/plan.md` | Feature 技术布局、设计决策和验证方案 | 阶段执行日志 |
 | `specs/<feature-id>/tasks.md` | Feature 的唯一执行队列 | Harness 证据或评审签字 |
+| `docs/decisions/` | 按领域分类的长期决策理由、关键设计和必要图表 | Spec/Plan/Tasks、正式契约或实际验证证据 |
 | `harness/build/` | 一个阶段的批准范围和实施计划 | Feature 的整体 Plan/Tasks |
 | `harness/context/` | 阶段中的材料性发现、决策和未决事项 | 逐步进度日志和完整命令输出 |
 | `harness/code_review/` | 详细评审发现、修复状态和复核结果 | 自动化测试结果本身 |
@@ -57,11 +58,13 @@ approved phase plan
 - [Agent rules](../AGENTS.md)
 - [Repository map](../docs/architecture/repository-map.md)
 - [Package boundaries](../docs/architecture/package-boundaries.md)
+- [Architecture decisions](../docs/decisions/README.md)
+- [Project technical diagrams](../docs/development/technical-diagrams.md)
 - [Harness foundation spec](../specs/001-harness-foundation/spec.md)
 - [Harness foundation plan](../specs/001-harness-foundation/plan.md)
 - [Harness foundation tasks](../specs/001-harness-foundation/tasks.md)
 - [Python quality gates](../docs/development/quality-gates.md)
-- 本地质量门任务：`specs/002-python-quality-gates/tasks.md`（本地交付工件，不保证随仓库分发）
+- 本地质量门任务：`specs/002-python-quality-gates/tasks.md`（Git 忽略，干净检出不保证存在）
 
 ## Current Limitations
 

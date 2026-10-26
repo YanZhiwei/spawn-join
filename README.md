@@ -41,6 +41,7 @@ spawn-join/
 包职责、依赖方向和公共边界维护在
 [`docs/architecture/package-boundaries.md`](docs/architecture/package-boundaries.md)。
 Harness 的阶段记录和证据约定维护在 [`harness/README.md`](harness/README.md)。
+长期架构决策、领域分类与模板维护在 [`docs/decisions/`](docs/decisions/README.md)。
 不要在 README、AGENTS 和架构文档中维护多份完整目录树。
 
 `packages/core` 和 `packages/infra` 是架构分组，不是额外的 Python Distribution。每个包目录
@@ -106,6 +107,18 @@ Pyright 做严格类型检查，pytest 验证包契约，另外执行文档、�
 根 `pyproject.toml` 只保存共享工具配置，不是根级 uv project；工具依赖仍在各包 dev group。
 命令、修复格式、CI 矩阵和分支保护说明见
 [`docs/development/quality-gates.md`](docs/development/quality-gates.md)。
+
+## ADR 与项目级技术图
+
+Feature 的 Spec / Plan / Tasks 负责本地交付，`/specs/` 已加入 Git 忽略，长期设计理由
+提炼到 ADR；已有文件保留，已跟踪文件不会因忽略规则自动取消跟踪。
+ADR 按领域/子领域分类、全局编号并显式关联，
+具体规则和模板见 [决策入口](docs/decisions/README.md)。
+
+仓库内置 [Fireworks Tech Graph](.agents/skills/fireworks-tech-graph/SKILL.md)，可从描述生成
+SVG 技术图并按需导出 PNG，不需要图像模型 API Key。辅助脚本与四包环境隔离；安装技能
+不代表渲染依赖齐全。使用方式、Windows 命令和验证要求见
+[技术图说明](docs/development/technical-diagrams.md)。
 
 ## 代码导航与 CodeGraph
 

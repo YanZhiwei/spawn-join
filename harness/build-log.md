@@ -172,3 +172,19 @@ PowerShell 启动配置在命令开始前输出了若干与仓库无关的 `Impo
 详细命令、退出码、环境、失败尝试、37 路径范围及复核说明：
 [Evidence](evidence/phase-01-python-quality-gates.md)；
 [Review](code_review/review-phase-01-python-quality-gates.md)。新提交或实现范围变化后须重新确认。
+
+## 2026-10-26 — ADR and project-local diagram skill (Lightweight)
+
+- 按用户授权设置唯一 `docs/decisions/` 根、领域/子领域分类、全局编号和显式 ADR 关联，
+  增加模板与首条工程治理决策；不改变 Feature 的 Spec/Plan/Tasks 执行要求。
+- 安装固定提交的 Fireworks 1.2.0 到 `.agents/skills/fireworks-tech-graph/`，139 个上游
+  文件逐字节校验一致，保留 MIT 许可证、引用和测试，另加本地来源说明。
+- 用户后续要求忽略 Specs：根 `.gitignore` 加 `/specs/`，不删除现有文件、不取消已有
+  跟踪；将长期文档中指向被忽略 002 工件的链接改为明确的本地路径及共享说明入口。
+- 上游针对性测试 35 项：33 通过、2 个 Windows 路径/换行断言失败；未修改上游实现。
+  实际 SVG 验证、生成、结构检查和离线 HTML 导出通过；PNG/GIF 因渲染依赖缺失 blocked。
+- 不新增业务依赖，不创建根级环境，不提交、推送、发布或调用收费 API。此前质量门验证
+  不自动覆盖本次新范围；本次命令、限制和保留性复核单独记录。
+
+详细范围、基准 HEAD、命令、退出码和残余限制：
+[ADR/技能 evidence](evidence/adr-and-project-diagram-skill.md)。

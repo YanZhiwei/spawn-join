@@ -10,7 +10,7 @@
 spawn-join/
 ├── .github/workflows/             # GitHub Actions 质量检查；无发布或远端设置
 ├── .agents/
-│   └── skills/                    # 项目级 Agent 技能
+│   └── skills/                    # Spec Kit 与固定版本 Fireworks 技能
 ├── .codegraph/                    # 本机源码索引；只提交 .gitignore
 ├── .specify/                      # Spec Kit 基础设施
 │   ├── integrations/              # Codex、Speckit 等集成清单
@@ -20,7 +20,8 @@ spawn-join/
 │   └── workflows/                 # 已安装的 Spec Kit workflow
 ├── docs/
 │   ├── architecture/              # 仓库地图和包边界说明
-│   └── development/               # 质量工具和运行说明
+│   ├── decisions/                 # 按领域分类的长期 ADR、模板和索引
+│   └── development/               # 质量工具、技术图和运行说明
 ├── harness/                        # 阶段计划、上下文、评审和验证证据
 │   ├── build/
 │   ├── context/
@@ -38,12 +39,14 @@ spawn-join/
 ├── pyproject.toml                 # tool-only 配置，不是根级 Python/uv project
 ├── README.md                      # 面向使用者的项目概览
 ├── scripts/                       # PowerShell 质量入口及其故障回归
-├── specs/
+├── specs/                         # 本地交付工件；Git 忽略不取消已有跟踪
 │   ├── 001-harness-foundation/
 │   └── 002-python-quality-gates/  # 当前 Feature
 ```
 
-`specs/` 包含 Harness Foundation 和 Python Quality Gates。`harness/` 保存阶段约定及实际
+本地 `specs/` 包含 Harness Foundation 和 Python Quality Gates；`/specs/` 已加入 Git 忽略，
+已有已跟踪文件继续跟踪，未跟踪工件仅保留在本地，不代表任务已经完成。
+`harness/` 保存阶段约定及实际
 记录；standalone 质量入口和 CI 配置已加入，但没有自动化 Spec Kit hook、Delivery 或发布。
 远端 CI 和分支保护必须另有运行/配置证据，不把配置路径存在当作通过。
 
@@ -54,6 +57,8 @@ spawn-join/
 | 项目原则和治理 | [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md) |
 | Agent 工作约定 | [`AGENTS.md`](../../AGENTS.md) |
 | Package 职责和依赖方向 | [`package-boundaries.md`](package-boundaries.md) |
+| 长期架构决策、分类和模板 | [`docs/decisions/README.md`](../decisions/README.md) |
+| 项目级技术图技能和环境隔离 | [`technical-diagrams.md`](../development/technical-diagrams.md) |
 | Feature 规范和任务 | `specs/<feature-id>/`（按需创建） |
 | Harness 阶段记录和证据 | [`harness/README.md`](../../harness/README.md) |
 | Spec Kit 模板、脚本和 workflow | [`.specify/`](../../.specify/) |
@@ -68,6 +73,8 @@ spawn-join/
 - Distribution 名称使用连字符，例如 `spawn-join-core`；Python import package 使用下划线，
   例如 `spawn_join_core`。
 - `docs/architecture/` 只维护架构和导航说明，不记录 Feature 的临时任务状态。
+- `docs/decisions/` 是唯一 ADR 根，按职责分类，保存长期理由与必要设计图，不替代 Feature 或实际证据。
+- `.agents/skills/fireworks-tech-graph/` 保留固定提交的第三方技能及原始辅助脚本，不是领域源码或 Python Distribution。
 - `harness/` 只维护阶段计划、材料性上下文、评审、证据和实际执行日志，不替代 Spec/Plan/Tasks。
 - `.specify/` 维护 Spec Kit 自身的模板、脚本、集成和 workflow，不存放普通业务设计。
 - `.codegraph/` 是本机开发辅助数据，不是 Python 包，也不是业务源码。

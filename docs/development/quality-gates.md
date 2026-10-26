@@ -105,6 +105,6 @@ required status check（通常需首次 workflow 实际运行后选择）。仅�
 - Standalone 质量入口/CI 不是 Spec Kit hook；Delivery/Ralph 仍未配置。
 - 增加依赖、接口或目录后，必须同步测试、脚本中的本地构建依赖映射、文档和实际证据。
 
-本地 Feature 为 `specs/002-python-quality-gates/`（本地交付工件，不保证随仓库分发）。
+本地 Feature 为 `specs/002-python-quality-gates/`（Git 忽略，不保证存在于干净检出）。
 可共享的实施与验证记录见
 [Harness evidence](../../harness/evidence/phase-01-python-quality-gates.md)。

@@ -16,7 +16,7 @@
   是本机性能警告，不等于检查失败。
 - CI 配置及其静态检查不等于 GitHub 实际执行。远端 Ruleset 和 Delivery/hook 仍需后续授权。
 
-本地原始研究：`specs/002-python-quality-gates/research.md`（本地交付工件，不保证随仓库分发）。
+本地原始研究：`specs/002-python-quality-gates/research.md`（Git 忽略，不保证随仓库分发）。
 共享记录：
 [Evidence](../evidence/phase-01-python-quality-gates.md)、
 [Review](../code_review/review-phase-01-python-quality-gates.md)。

@@ -26,5 +26,8 @@ packages/**/build/
 *.egg-info/
 pip-wheel-metadata/
 
+# Local Feature delivery artifacts; existing tracked files remain tracked.
+/specs/
+
 # pyproject.toml, uv.lock, .python-version, and uv.toml are project inputs;
 # keep them visible to Git when a Distribution uses them.

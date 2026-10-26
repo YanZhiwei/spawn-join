@@ -33,10 +33,17 @@ hook 仍未配置。不得把 standalone 质量入口、workflow 配置或本机
 - `specs/<feature-id>/plan.md`：技术上下文、设计、依赖、目录布局和验证方案。
 - `specs/<feature-id>/tasks.md`：唯一执行队列；任务必须有 ID、依赖、目标文件和可验证的完成条件。
 - `research.md`、`data-model.md`、`contracts/`、`quickstart.md`：仅在当前 Feature 确实需要时创建，并由 Plan 引用。
-- ADR：只记录会约束多个实现点或未来演进的长期决策，路径以项目配置的 ADR 根目录为准，不自行创建第二套 ADR 目录。
+- ADR：只记录会约束多个实现点或未来演进的长期决策；本项目唯一根目录为 `docs/decisions/`，分类、编号、状态和模板以该目录的 README 为准，不自行创建第二套 ADR 目录。未来启用 Delivery 时配置到同一路径；当前不宣称已启用 ADR 自动化。
 - `.specify/delivery/<feature-id>/evidence.md`：在项目启用 Delivery evidence 配置后，记录实际 outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
 
 Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保留范围、变更路径和针对性验证证据。Feature 的实现不能绕过 `tasks.md` 直接凭自然语言清单执行。
+
+收口前将稳定的设计理由和必要图表提炼到 ADR 或当前架构说明，不将 ADR 变成第二套
+任务队列或运行日志。Agent 按主要职责复用领域/子领域分类，并说明理由；归属不明确时
+询问维护者。`/specs/` 按用户要求加入 Git 忽略，仍保留本地 Feature 执行职责；
+已有文件不得擅自删除，已跟踪 Specs 不自动取消跟踪，长期契约与证据不得只留在忽略目录。
+绘制 ADR 技术图时读取项目内 `.agents/skills/fireworks-tech-graph/SKILL.md`，用法见
+[`技术图说明`](docs/development/technical-diagrams.md)；不以全局同名版本替代项目固定副本。
 
 ### 0.3 Ralph 与收口规则
 
@@ -82,6 +89,7 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
   或 uv workspace；`scripts/` 的 PowerShell 文件只承担开发检查，不是领域运行时代码。
 - 测试以 Distribution 为边界放在对应包的 `tests/`；跨包契约测试必须明确依赖的包和安装方式。
 - `.agents/skills/` 是项目级 Agent 能力，不是 Python 包；`.codegraph/` 是本机索引，不得提交数据库、日志、daemon 状态或 socket。
+- `.agents/skills/fireworks-tech-graph/` 是固定上游提交的第三方工具副本；其自带脚本是开发工具例外，不是领域源码或新增 Distribution。保留原始许可证及来源，不引入包级/根级运行时依赖，也不对其执行本项目的全量格式重写。
 - `.specify/` 已作为项目级 Spec Kit 基础设施保留；`specs/` 仅在 Feature 路由实际需要时创建，不要为 Lightweight 文档改动手工制造半套 Feature 工件。
 - `harness/` 只维护阶段计划、材料性上下文、评审、验证证据和实际执行日志，不替代 Spec、Plan 或 Tasks，也不是业务源码。
 - Python 构建产物不得进入版本控制，包括根目录或包目录下的 `build/`、`dist/`、`*.egg-info/`、缓存和临时报告；`harness/build/` 是应提交的治理文档目录，不属于 Python 构建产物。

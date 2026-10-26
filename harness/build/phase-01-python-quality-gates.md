@@ -1,6 +1,6 @@
 # Phase 01 — Python Quality Gates
 
-**Feature**: `specs/002-python-quality-gates/spec.md`（本地交付工件，不保证随仓库分发）
+**Feature**: `specs/002-python-quality-gates/spec.md`（本地工件，现按用户要求 Git 忽略）
 
 **Status**: Implemented and locally verified; remote CI / Ruleset not executed
 
