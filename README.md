@@ -231,3 +231,4 @@ dependencies = [
 实际命令、环境和验证限制以 [Harness evidence](harness/evidence/README.md) 中对应记录为准；
 不以配置存在或某次本机成功代替当前 revision 的验证。Fireworks 已知兼容性与渲染依赖限制见
 [技能验证记录](harness/evidence/adr-and-project-diagram-skill.md)。
+temporary trailing whitespace   
