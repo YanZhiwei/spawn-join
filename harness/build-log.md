@@ -482,6 +482,47 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 [Evidence](evidence/phase-01-delivery-enablement.md)；
 [Review](code_review/review-phase-01-delivery-enablement.md)。
 
+## 2026-10-27 — 首次 Delivery 试点：Lightweight 证据再锚定
+
+**Status**: Complete
+
+**Route**: Lightweight（首次通过新启用的 Delivery 路由执行）
+
+**Base revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 squash）
+
+**Head revision**: `8d9c59c` 加未提交工作树
+
+### Lane announcement
+
+- lane: Lightweight；artifact policy: ephemeral；integration: OpenCode；
+- 验证入口：`scripts/quality.ps1`、`-Check governance/docs/static`；
+- 不创建 Spec/Plan/Tasks，不运行 Ralph 循环。
+
+### Changes in this entry
+
+- 四份 phase evidence 的 head 再锚定到 `8d9c59c`；补 PR #6 与 main 运行确认；
+- 新增 `.specify/delivery/lightweight-evidence-reanchor/evidence.md`（Delivery 证据格式）；
+- 本条目。
+
+### Verification
+
+- `check-governance.ps1`：0 error / 0 warning；
+- `quality.ps1`：四包 + 文档 + 治理 + 静态分析 exit 0；
+- `-Check docs`：52 文件 / 124 目标；`-Check static`：0 finding。
+
+### Finding
+
+两份 evidence 曾使用截断 SHA（`83628ac...`），现有检查器只校验 40 位，freshness 被静默
+跳过。本次已改为完整 SHA；把“截断 SHA 应失败”作为后续 Bugfix，不在 Lightweight 中扩大范围。
+
+### Limitations
+
+- 未实际运行 Ralph 分支/receipt/task gate；
+- Delivery 仍为手动路由，不自动 push/merge。
+
+详细证据：
+[Delivery evidence](../.specify/delivery/lightweight-evidence-reanchor/evidence.md)。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认

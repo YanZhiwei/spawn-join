@@ -6,7 +6,7 @@
 - **phase_id**: `phase-01-python-quality-gates`
 - **task_id**: T001–T009 (manual local acceptance; no Ralph receipts)
 - **base_revision**: `bd497d72e928f596e79cdbe5b1466eba4c75ec39`
-- **head_revision**: `83628acb287a0c3cf74e92530d...`（PR #2 squash 合并提交）
+- **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并后再次锚定；PR #2 的 squash 为 `83628ac`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-26T04:19:52Z (final documentation reconfirmed after this entry)
@@ -162,9 +162,10 @@ their implementation, revision or scope without renewed confirmation.
 After PR #1 merged, the original Feature gates were re-run at `475ab4c` to confirm later
 governance/CI changes did not invalidate the recorded outcome. PR #2 is squash-merged as
 `83628ac`; its branch commits are not main ancestors, so this record is anchored to the
-squash commit.
+squash commit. PR #6 later merged as `8d9c59c`; this record was re-anchored again without
+any implementation change.
 
-- **HEAD**: `83628acb287a0c3cf74e92530d...`（PR #2 squash 合并提交）
+- **HEAD**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`
 - **Working directory**: `D:\Repos\Github\spawn-join`
 - `pwsh -NoProfile -File scripts/quality.ps1`: exit 0; four packages (format/lint/type/test/build)
   plus docs and governance.
