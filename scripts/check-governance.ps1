@@ -154,8 +154,16 @@ function Test-Evidence {
             & git -C $rootPath merge-base --is-ancestor $head HEAD 2>$null
             if ($LASTEXITCODE -eq 0) {
                 $behind = (& git -C $rootPath rev-list --count "$head..HEAD").Trim()
-                if ([int]$behind -gt 0) {
-                    Add-CheckWarning $relative "head_revision is $behind commit(s) behind HEAD"
+                $changed = @(& git -C $rootPath diff --name-only "$head..HEAD")
+                $material = @($changed | Where-Object {
+                        $_ -and
+                        $_ -notmatch '^(docs/|harness/|specs/)' -and
+                        $_ -notmatch '^(README|AGENTS)\.md$' -and
+                        $_ -notmatch '\.(md|svg|png|gif)$'
+                    })
+                if ([int]$behind -gt 0 -and $material.Count -gt 0) {
+                    Add-CheckWarning $relative ("head_revision is $behind commit(s) behind HEAD; " +
+                        "material paths changed since then (for example $($material[0]))")
                 }
             } elseif ($head -ne $script:headCommit) {
                 if ($script:isShallow) {

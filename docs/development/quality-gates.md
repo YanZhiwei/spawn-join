@@ -108,7 +108,7 @@ required status check（通常需首次 workflow 实际运行后选择）。仅�
 - 现有 20 个 pytest 用例只覆盖当前骨架的导入、身份和运行时依赖边界，不是业务覆盖率。
 - 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
 - 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
-  仍需人工评审（落后只产生 warning）。
+  仍需人工评审（落后且期间有非文档路径变更时产生 warning；纯文档追加不告警）。
 - 本期不安装 pre-commit、coverage 百分比门槛、漏洞扫描、workflow 专用 linter 或发布流水线。
 - Standalone 质量入口/CI 不是 Spec Kit hook；Delivery/Ralph 仍未配置。
 - 增加依赖、接口或目录后，必须同步测试、脚本中的本地构建依赖映射、文档和实际证据。

@@ -32,12 +32,14 @@ function Write-FixtureFile {
 }
 
 function Assert-GovernanceResult {
-    param([string]$Label, [bool]$Success, [string]$Diagnostic)
+    param([string]$Label, [bool]$Success, [string]$Diagnostic,
+        [string]$AbsentDiagnostic)
     $output = & pwsh -NoProfile -File $check -Root $fixture 2>&1
     $code = $LASTEXITCODE
     $text = $output -join [Environment]::NewLine
     if (($Success -and $code -ne 0) -or (-not $Success -and $code -ne 1) -or
-        ($Diagnostic -and $text -notmatch [regex]::Escape($Diagnostic))) {
+        ($Diagnostic -and $text -notmatch [regex]::Escape($Diagnostic)) -or
+        ($AbsentDiagnostic -and $text -match [regex]::Escape($AbsentDiagnostic))) {
         Write-Host $text
         throw "Unexpected governance result for ${Label}: exit=$code"
     }
@@ -90,8 +92,31 @@ None.
     & git -C $fixture config core.autocrlf false
     & git -C $fixture add -A
     if ($LASTEXITCODE -ne 0) { throw 'Could not stage fixture files.' }
+    & git -C $fixture -c user.name=fixture -c user.email=fixture@example.invalid `
+        commit -m 'fixture baseline' --quiet
+    if ($LASTEXITCODE -ne 0) { throw 'Could not commit fixture baseline.' }
 
     Assert-GovernanceResult 'valid structure' $true ''
+
+    $baseCommit = (& git -C $fixture rev-parse HEAD).Trim()
+    $originalEvidence = Get-Content -LiteralPath $evidence -Raw
+    Set-Content -LiteralPath $evidence -Value ($originalEvidence -replace
+        'head_revision: working-tree', "head_revision: $baseCommit")
+    Add-Content -LiteralPath $readme -Value 'docs-only follow-up'
+    & git -C $fixture add README.md
+    & git -C $fixture -c user.name=fixture -c user.email=fixture@example.invalid `
+        commit -m 'docs-only follow-up' --quiet
+    Assert-GovernanceResult 'docs-only follow-up keeps freshness warning quiet' `
+        $true '' -AbsentDiagnostic 'WARN:'
+
+    New-Item -ItemType Directory -Path (Join-Path $fixture 'scripts') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $fixture 'scripts/probe.ps1') -Value '# probe'
+    & git -C $fixture add scripts/probe.ps1
+    & git -C $fixture -c user.name=fixture -c user.email=fixture@example.invalid `
+        commit -m 'material change' --quiet
+    Assert-GovernanceResult 'material change after evidence head warns' `
+        $true 'material paths changed'
+    Set-Content -LiteralPath $evidence -Value $originalEvidence
 
     $original = Get-Content -LiteralPath $evidence -Raw
     Set-Content -LiteralPath $evidence -Value ($original -replace '- result: pass\r?\n', '')
