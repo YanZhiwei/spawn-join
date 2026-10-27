@@ -11,27 +11,24 @@
 
 ## Required Evidence Fields
 
-每条 Evidence 至少包含：
+`scripts/check-governance.ps1` 机器校验以下字段，缺失即失败：
 
 ```text
 feature_id:
 phase_id:
-task_id:
 base_revision:
 head_revision:
-changed_paths:
 working_directory:
-command:
-environment:
-exit_code:
-result:
-limitations:
-blockers:
 recorded_at:
+result:
 ```
 
-`result` 只能使用与实际执行相符的状态，例如 `pass`、`fail`、`blocked`、`skipped` 或
-`not-run`。未执行的命令不得写成 `pass`。
+`result` 必须以下列词开头：`pass`、`fail`、`blocked`、`skipped` 或 `not-run`。
+`recorded_at` 以 `YYYY-MM-DD` 开头。每条 Evidence 还必须包含 `limitations` 字段或
+标题（如 `## Limitations`），并且文件名必须出现在 `harness/build-log.md` 中。
+
+按适用范围补充 `task_id`、`changed_paths`、`command`、`environment`、`exit_code`、
+`blockers` 等字段。多条命令的 evidence 用表格记录各自退出码，不强制单一 `exit_code`。
 
 ## Freshness Rules
 

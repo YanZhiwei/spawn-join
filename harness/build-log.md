@@ -237,6 +237,52 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 上一条目"远端 CI 待推送后确认"的状态由本条目关闭；
 - 本条目为 docs-only 追加，其自身提交的 CI 结果不在此处声称。
 
+## 2026-10-27 — Governance Checks（Feature 003）
+
+**Status**: Implemented and locally verified；远端 CI 待推送后确认
+
+**Route**: Feature（新增治理门禁、CI 步骤和回归）
+
+**Feature**: `003-governance-checks`（本地工件，Git 忽略）
+
+**Base revision**: `c5ad5763dcf00139e629746a9847f9824bb98ebf`
+
+**Head revision**: `c5ad576` 加未提交工作树
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Observed implementation
+
+- 新增 `scripts/check-governance.ps1`：evidence 必填字段/结果词表、build-log 引用、
+  ADR 索引与状态、Spec/Tasks 一致性、被跟踪文档的 local-only 文件链接；
+  freshness 只告警；浅克隆缺少历史时降级为 warning。
+- 新增 `scripts/test-governance.ps1`：1 个合法结构 + 8 个拒绝场景（共 9 个）。
+- `scripts/quality.ps1` 增加 `-Check governance`，无 Package 的 `all` 纳入治理检查；
+  包级矩阵任务不重复执行仓库级检查。
+- CI governance job 增加结构检查与失败回归，checkout 使用 `fetch-depth: 0`。
+- 同步 `docs/development/quality-gates.md`、`harness/README.md`、`harness/evidence/README.md`、
+  `AGENTS.md`、`README.md`。
+- 三条旧 evidence 只补 `base_revision`/`head_revision`/`recorded_at`/`result` 元数据，
+  不改变既有结论。
+
+### Verification
+
+- `scripts/check-governance.ps1`：0 error，1 warning（phase-01 落后 HEAD 6 个提交）；
+- `scripts/test-governance.ps1`：9 场景全部按预期；原 `test-quality.ps1` 9 场景无回归；
+- `scripts/quality.ps1`：四包完整检查 + 文档 + 治理，exit 0；
+- 干净克隆（无 `specs/`）中 docs 与 governance 均 exit 0；
+- 失败尝试（StrictMode Count、目录链接误判、浅克隆历史）已在 evidence 中保留。
+
+### Limitations
+
+- freshness 语义仍由人工判断；`phase-01` 欠账留待优先级 2；
+- 未提交、未推送；远端 CI 与分支保护未确认；
+- 本条目和 evidence 绑定未提交工作树，提交后需重新锚定。
+
+详细命令、失败尝试和残余限制：
+[Evidence](evidence/phase-01-governance-checks.md)；
+[Review](code_review/review-phase-01-governance-checks.md)。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认

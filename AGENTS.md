@@ -58,7 +58,7 @@ Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保�
 
 ### 0.4 质量门与标准审查
 
-- **Quality Gate** 只判断实际配置并实际执行的机械检查：格式、lint、类型、测试、复杂度、构建和包产物；缺少工具、配置或环境时结果是 `blocked`/未执行，不是 `pass`。
+- **Quality Gate** 只判断实际配置并实际执行的机械检查：格式、lint、类型、测试、复杂度、构建、包产物、证据结构、ADR 索引和 Spec/Tasks 一致性；缺少工具、配置或环境时结果是 `blocked`/未执行，不是 `pass`。
 - **Standards Review** 判断 DRY、模块拥有者、目录归属、公共 API、依赖方向、架构边界和可维护性；它不能用一次测试通过替代，也不能把个人偏好伪装成项目标准。
 - **Evidence** 将检查绑定到真实 outgoing diff、工作目录、命令、退出码、base/head 和时间；`HEAD` 或范围变化后，旧证据必须重新确认。
 - 质量简报、静态阅读和文档中“应该通过”的描述只能作为准备信息，不能替代 `QUALITY_VERDICT: pass`、`STANDARDS_VERDICT: pass` 所需的实际证据。
