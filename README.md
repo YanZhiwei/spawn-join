@@ -225,7 +225,7 @@ dependencies = [
 | 领域包 | 四个独立 Distribution、最小源码骨架与包级边界测试；尚无具体模型或可观测性业务实现 |
 | SDD 基础 | 已有 Constitution、Spec Kit 模板/脚本及人工技能入口；Feature 工件按需在本地创建 |
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
-| 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、构建/安装验证和 GitHub Actions |
+| 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、actionlint、PSScriptAnalyzer、构建/安装验证和 GitHub Actions |
 | 长期知识与绘图 | 已有 ADR 分类、模板与项目级 Fireworks；渲染能力取决于本机依赖 |
 | 尚未配置 | 完整 Delivery/Ralph 编排、自动化 Spec Kit/Harness hook 与发布流水线 |
 

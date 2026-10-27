@@ -31,7 +31,7 @@ function Write-FixtureFile {
     Set-Content -LiteralPath $Path -Value $Content
 }
 
-function Assert-GovernanceResult {
+function Test-GovernanceResult {
     param([string]$Label, [bool]$Success, [string]$Diagnostic,
         [string]$AbsentDiagnostic)
     $output = & pwsh -NoProfile -File $check -Root $fixture 2>&1
@@ -96,7 +96,7 @@ None.
         commit -m 'fixture baseline' --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not commit fixture baseline.' }
 
-    Assert-GovernanceResult 'valid structure' $true ''
+    Test-GovernanceResult 'valid structure' $true ''
 
     $baseCommit = (& git -C $fixture rev-parse HEAD).Trim()
     $originalEvidence = Get-Content -LiteralPath $evidence -Raw
@@ -106,7 +106,7 @@ None.
     & git -C $fixture add README.md
     & git -C $fixture -c user.name=fixture -c user.email=fixture@example.invalid `
         commit -m 'docs-only follow-up' --quiet
-    Assert-GovernanceResult 'docs-only follow-up keeps freshness warning quiet' `
+    Test-GovernanceResult 'docs-only follow-up keeps freshness warning quiet' `
         $true '' -AbsentDiagnostic 'WARN:'
 
     New-Item -ItemType Directory -Path (Join-Path $fixture 'scripts') -Force | Out-Null
@@ -114,28 +114,28 @@ None.
     & git -C $fixture add scripts/probe.ps1
     & git -C $fixture -c user.name=fixture -c user.email=fixture@example.invalid `
         commit -m 'material change' --quiet
-    Assert-GovernanceResult 'material change after evidence head warns' `
+    Test-GovernanceResult 'material change after evidence head warns' `
         $true 'material paths changed'
     Set-Content -LiteralPath $evidence -Value $originalEvidence
 
     $original = Get-Content -LiteralPath $evidence -Raw
     Set-Content -LiteralPath $evidence -Value ($original -replace '- result: pass\r?\n', '')
-    Assert-GovernanceResult 'missing result field' $false 'missing field: result'
+    Test-GovernanceResult 'missing result field' $false 'missing field: result'
     Set-Content -LiteralPath $evidence -Value $original
 
     Set-Content -LiteralPath $evidence -Value ($original -replace '- result: pass', '- result: ok')
-    Assert-GovernanceResult 'invalid result vocabulary' $false 'invalid result: ok'
+    Test-GovernanceResult 'invalid result vocabulary' $false 'invalid result: ok'
     Set-Content -LiteralPath $evidence -Value $original
 
     $extraAdr = Join-Path $fixture 'docs/decisions/engineering/0002-fixture.md'
     Write-FixtureFile $extraAdr "# ADR-0002: Extra`n`n- Status: Accepted`n- Superseded by: 无`n"
-    Assert-GovernanceResult 'unindexed ADR' $false 'file exists but is not indexed'
+    Test-GovernanceResult 'unindexed ADR' $false 'file exists but is not indexed'
     Remove-Item -LiteralPath $extraAdr
 
     $originalReadme = Get-Content -LiteralPath $readme -Raw
     Write-FixtureFile (Join-Path $fixture 'specs/hidden.md') "# Hidden`n"
     Set-Content -LiteralPath $readme -Value ($originalReadme + "`n[hidden](specs/hidden.md)`n")
-    Assert-GovernanceResult 'link to local-only spec' $false 'links to local-only path: specs/hidden.md'
+    Test-GovernanceResult 'link to local-only spec' $false 'links to local-only path: specs/hidden.md'
     Set-Content -LiteralPath $readme -Value $originalReadme
     Remove-Item -LiteralPath (Join-Path $fixture 'specs/hidden.md')
 
@@ -155,22 +155,22 @@ None.
 
 None.
 "@
-    Assert-GovernanceResult 'evidence missing from build log' $false 'not referenced from harness/build-log.md'
+    Test-GovernanceResult 'evidence missing from build log' $false 'not referenced from harness/build-log.md'
     Remove-Item -LiteralPath $extraEvidence
 
     $buildLog = Join-Path $fixture 'harness/build-log.md'
     $originalLog = Get-Content -LiteralPath $buildLog -Raw
     Remove-Item -LiteralPath $buildLog
-    Assert-GovernanceResult 'missing evidence build log' $false 'missing or empty evidence build log'
+    Test-GovernanceResult 'missing evidence build log' $false 'missing or empty evidence build log'
     Set-Content -LiteralPath $buildLog -Value $originalLog
 
     $originalSpec = Get-Content -LiteralPath $spec -Raw
     Set-Content -LiteralPath $spec -Value '**Status**: Implemented'
-    Assert-GovernanceResult 'implemented spec with unchecked tasks' $false 'Status is Implemented but tasks.md has unchecked items'
+    Test-GovernanceResult 'implemented spec with unchecked tasks' $false 'Status is Implemented but tasks.md has unchecked items'
     Set-Content -LiteralPath $spec -Value $originalSpec
 
     Set-Content -LiteralPath $tasks -Value "- [ ] T001 First task.`n- [ ] T001 Duplicate.`n"
-    Assert-GovernanceResult 'duplicate task IDs' $false 'duplicate task IDs'
+    Test-GovernanceResult 'duplicate task IDs' $false 'duplicate task IDs'
     Set-Content -LiteralPath $tasks -Value "- [ ] T001 First task.`n- [ ] T002 Second task.`n"
 
     Write-Host "Governance regression checks passed: $assertions scenarios."
