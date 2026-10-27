@@ -164,6 +164,22 @@ None.
     Test-GovernanceResult 'missing evidence build log' $false 'missing or empty evidence build log'
     Set-Content -LiteralPath $buildLog -Value $originalLog
 
+    $deliveryConfig = Join-Path $fixture '.specify/extensions/delivery/delivery-config.yml'
+    Write-FixtureFile $deliveryConfig @"
+version: 1
+artifacts:
+  policy: ephemeral
+ralph:
+  branch_prefix: ralph/
+  parallel_workers: false
+  evidence_root: .specify/delivery/
+  auto_push: true
+  auto_merge: false
+  task_gate: RALPH_TASK_GATE: PASS
+"@
+    Test-GovernanceResult 'unsafe delivery config' $false 'missing or invalid setting: ralph.auto_push=false'
+    Remove-Item -LiteralPath $deliveryConfig
+
     $originalSpec = Get-Content -LiteralPath $spec -Raw
     Set-Content -LiteralPath $spec -Value '**Status**: Implemented'
     Test-GovernanceResult 'implemented spec with unchecked tasks' $false 'Status is Implemented but tasks.md has unchecked items'

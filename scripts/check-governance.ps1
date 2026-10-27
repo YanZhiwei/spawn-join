@@ -176,6 +176,45 @@ function Test-Evidence {
     }
 }
 
+function Test-Delivery {
+    $configPath = Join-Path $rootPath '.specify/extensions/delivery/delivery-config.yml'
+    if (-not (Test-Path -LiteralPath $configPath)) { return }
+
+    $relative = Get-RelativePath $rootPath $configPath
+    $text = Read-Text $configPath
+    $requiredSettings = [ordered]@{
+        'version=1'                         = '(?m)^version:\s*1\s*$'
+        'artifacts.policy=ephemeral'        = '(?m)^\s*policy:\s*ephemeral\s*$'
+        'ralph.branch_prefix=ralph/'        = '(?m)^\s*branch_prefix:\s*ralph/\s*$'
+        'ralph.parallel_workers=false'      = '(?m)^\s*parallel_workers:\s*false\s*$'
+        'ralph.auto_push=false'             = '(?m)^\s*auto_push:\s*false\s*$'
+        'ralph.auto_merge=false'            = '(?m)^\s*auto_merge:\s*false\s*$'
+        'ralph.evidence_root=.specify/delivery/' = '(?m)^\s*evidence_root:\s*\.specify/delivery/\s*$'
+        'ralph.task_gate=RALPH_TASK_GATE: PASS'  = '(?m)^\s*task_gate:\s*RALPH_TASK_GATE:\s*PASS\s*$'
+    }
+    foreach ($name in $requiredSettings.Keys) {
+        if ($text -notmatch $requiredSettings[$name]) {
+            Add-CheckError $relative "missing or invalid setting: $name"
+        }
+    }
+
+    $requiredPaths = @(
+        '.specify/memory/constitution.md'
+        'AGENTS.md'
+        'docs/architecture'
+        'docs/decisions'
+        'scripts/quality.ps1'
+        'scripts/test-quality.ps1'
+        'scripts/test-governance.ps1'
+        'scripts/test-static.ps1'
+    )
+    foreach ($path in $requiredPaths) {
+        if (-not (Test-Path -LiteralPath (Join-Path $rootPath $path))) {
+            Add-CheckError $relative "referenced path is missing: $path"
+        }
+    }
+}
+
 function Test-Decisions {
     $decisionsDir = Join-Path $rootPath 'docs/decisions'
     if (-not (Test-Path -LiteralPath $decisionsDir -PathType Container)) { return }
@@ -343,6 +382,7 @@ try {
     }
 
     Test-Evidence
+    Test-Delivery
     Test-Decisions
     Test-Specs
     Test-TrackedLinks

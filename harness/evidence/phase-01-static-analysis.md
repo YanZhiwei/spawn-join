@@ -6,12 +6,13 @@
 - **phase_id**: `phase-01-static-analysis`
 - **task_id**: T001–T007
 - **base_revision**: `2a895da32f5634f9bdbddb9ad0afe2d4fa81ac91`
-- **head_revision**: `ba8993d1a3d8fe9c6fd760da704ea59a2745677d`
+- **head_revision**: `9fab77dcf4b3d8916f5a5497c1f8c43eb2a2080b`
+- **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；uv 0.7.13；actionlint 1.7.12；
   PSScriptAnalyzer 1.25.0（本地经临时模块路径，CI 由固定版本安装）
-- **result**: pass (本地静态分析、回归和全量门禁；远端 CI not-run until PR)
+- **result**: pass (本地静态分析、回归和全量门禁；远端 CI 由 PR #5 与 main 运行确认)
 
 ## Changed paths
 
@@ -56,5 +57,17 @@
 - 静态分析只覆盖 workflow 语法/表达式和 PowerShell 高信号规则，不验证运行时行为。
 - `.agents/skills/` 第三方脚本不在扫描范围；未启用 shellcheck/pyflakes 集成。
 - PSScriptAnalyzer 需要预先安装；缺失时门禁失败并给出安装命令，不静默跳过。
-- 远端 CI / PR 尚未运行；推送后需重新确认本 evidence。
-- 本 evidence 绑定实现提交 `ba8993d`；后续纯文档提交不触发 freshness warning。
+- 远端 CI：PR 运行 `40532695952` 与 main 运行 `40533177300` 均 14/14 success。
+- 本 evidence 绑定实现提交 `9fab77d`；PR #5 squash 后已重新确认，后续纯文档提交不触发
+  freshness warning。
+
+## Reconfirmation — 2026-10-27
+
+PR #5 以 squash 合并为 `48fb3a7`；其 PR 运行 `40532695952`、main 运行 `40533177300`
+均 14/14 success。Feature 005 修改治理脚本后，在 `9fab77d` 重新执行：
+
+- `scripts/quality.ps1 -Check static`：exit 0，actionlint/PSScriptAnalyzer 0 finding；
+- `scripts/quality.ps1 -Check governance`：0 error / 0 warning；
+- `scripts/quality.ps1 -Check docs`：50 文件 / 120 目标。
+
+原静态分析命令、3 个场景和工具版本保持不变；本次只重新确认实现仍通过。

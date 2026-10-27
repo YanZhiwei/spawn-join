@@ -120,7 +120,8 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 - 静态分析只覆盖 workflow 语法/表达式和 PowerShell 高信号规则，不验证运行时行为；
   `.agents/skills/` 的第三方脚本不在扫描范围。
 - 本期不安装 pre-commit、coverage 百分比门槛、漏洞扫描或发布流水线。
-- Standalone 质量入口/CI 不是 Spec Kit hook；Delivery/Ralph 仍未配置。
+- Standalone 质量入口/CI 不是 Spec Kit hook；Delivery 配置已启用，Ralph 仍按协议人工推进，
+  hook 未安装。
 - 增加依赖、接口或目录后，必须同步测试、脚本中的本地构建依赖映射、文档和实际证据。
 
 本地 Feature 为 `specs/002-python-quality-gates/`（Git 忽略，不保证存在于干净检出）。

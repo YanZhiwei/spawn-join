@@ -56,8 +56,9 @@ Feature 的基本链路是：
 
 `tasks.md` 是 Feature 的唯一执行队列；Harness 阶段计划不能另建一份任务系统。
 项目级人工入口见 [sd](.agents/skills/sd/SKILL.md) 与
-[speckit-delivery](.agents/skills/speckit-delivery/SKILL.md)。入口存在不表示完整 Delivery
-已配置；缺少配置或执行能力时必须报告未配置/blocked，不伪装成自动化流程已完成。
+[speckit-delivery](.agents/skills/speckit-delivery/SKILL.md)。Delivery 配置已在
+`.specify/extensions/delivery/delivery-config.yml` 启用；Ralph 的提交、推送和合并仍需
+用户逐步授权，缺少配置或执行能力时报告 blocked，不伪装成自动化流程已完成。
 详细执行契约以 [AGENTS.md](AGENTS.md) 和
 [Constitution](.specify/memory/constitution.md) 为准。
 
@@ -227,7 +228,7 @@ dependencies = [
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
 | 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、actionlint、PSScriptAnalyzer、构建/安装验证和 GitHub Actions |
 | 长期知识与绘图 | 已有 ADR 分类、模板与项目级 Fireworks；渲染能力取决于本机依赖 |
-| 尚未配置 | 完整 Delivery/Ralph 编排、自动化 Spec Kit/Harness hook 与发布流水线 |
+| 尚未配置 | 自动化 Spec Kit/Harness hook 与发布流水线 |
 
 实际命令、环境和验证限制以 [Harness evidence](harness/evidence/README.md) 中对应记录为准；
 不以配置存在或某次本机成功代替当前 revision 的验证。Fireworks 已知兼容性与渲染依赖限制见

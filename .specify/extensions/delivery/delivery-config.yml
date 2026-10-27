@@ -1,0 +1,54 @@
+# Spec Kit Delivery configuration for SpawnJoin.
+# Read by the installed speckit.delivery.* commands.
+version: 1
+project: spawn-join
+integration: opencode
+
+artifacts:
+  policy: ephemeral
+  local_root: specs/
+  resume: local-only
+  durable_requirements: false
+
+context:
+  constitution: .specify/memory/constitution.md
+  agents: AGENTS.md
+  architecture: docs/architecture/
+  decisions: docs/decisions/
+
+adr:
+  root: docs/decisions/
+  proposed_status: Proposed
+  accepted_requires_reviewed_head: true
+
+verification:
+  all: pwsh -NoProfile -File scripts/quality.ps1
+  governance: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+  static: pwsh -NoProfile -File scripts/quality.ps1 -Check static
+  docs: pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+  gate_regression: pwsh -NoProfile -File scripts/test-quality.ps1
+  governance_regression: pwsh -NoProfile -File scripts/test-governance.ps1
+  static_regression: pwsh -NoProfile -File scripts/test-static.ps1
+
+docs_sync:
+  required: true
+  owners:
+    quality_gates: docs/development/quality-gates.md
+    architecture: docs/architecture/
+    decisions: docs/decisions/
+
+ralph:
+  branch_prefix: ralph/
+  parallel_workers: false
+  evidence_root: .specify/delivery/
+  receipt_pattern: .specify/delivery/<feature-id>/receipts/<task-id>.md
+  max_converge_loops: 2
+  max_review_rounds: 2
+  require_clean_worktree: true
+  auto_commit: task-only
+  auto_push: false
+  auto_merge: false
+  task_gate: RALPH_TASK_GATE: PASS
+  verdicts:
+    quality: QUALITY_VERDICT: pass
+    standards: STANDARDS_VERDICT: pass

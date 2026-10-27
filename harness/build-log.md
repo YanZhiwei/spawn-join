@@ -438,6 +438,50 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 [Evidence](evidence/phase-01-static-analysis.md)；
 [Review](code_review/review-phase-01-static-analysis.md)。
 
+## 2026-10-27 — Delivery Enablement（Feature 005）
+
+**Status**: Implemented and locally verified；远端 CI 待 PR
+
+**Route**: Feature（启用 Delivery 配置与 Ralph 协议边界）
+
+**Feature**: `005-delivery-enablement`（本地工件，Git 忽略）
+
+**Base revision**: `48fb3a73b48b366c1958171217ff0494be907843`
+
+**Head revision**: `9fab77dcf4b3d8916f5a5497c1f8c43eb2a2080b`
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Observed implementation
+
+- 新增 `.specify/extensions/delivery/delivery-config.yml`：ephemeral artifacts、context/ADR、
+  验证入口、docs sync、Ralph `ralph/` 分支、无并行 Worker、不自动 push/merge、
+  `RALPH_TASK_GATE: PASS`；
+- 新增 `.specify/delivery/README.md`：evidence/receipt 路径与模板；
+- 新增 ADR-0003，记录“启用配置与协议、保留人工远端授权”的取舍；
+- `check-governance.ps1` 增加 Delivery 安全设置与引用路径校验；
+- `test-governance.ps1` 增加不安全 `auto_push` 场景（12 场景）；
+- 更新 README、AGENTS、Harness 和质量门中 Delivery/hook 的表述。
+
+### Verification
+
+- `check-governance.ps1`：0 error / 0 warning；配置 8 条引用路径全部存在；
+- `test-governance.ps1`：12 场景通过；
+- `quality.ps1`：四包 + 文档 + 治理 + 静态分析 exit 0；
+- `-Check docs`：52 文件 / 123 目标；
+- AST 解析：0 parse error。
+
+### Limitations
+
+- 未运行完整 Ralph 循环；首次实际交付仍需用户逐步授权；
+- hook 未安装，不自动 push/merge/发布；
+- 配置 schema 由项目维护，检查器只验证安全关键项；
+- 远端 CI 未运行；本条目绑定 `9fab77d`。
+
+详细命令与残余限制：
+[Evidence](evidence/phase-01-delivery-enablement.md)；
+[Review](code_review/review-phase-01-delivery-enablement.md)。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认
