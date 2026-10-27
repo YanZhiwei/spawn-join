@@ -9,8 +9,9 @@
 - **base_revision**: `99f69078b6957e401c5f079890e3bccb2c7ee8d7`
 - **head_revision**: `99f6907` 加未提交工作树
 - **working_directory**: `D:\Repos\Github\spawn-join`
+- **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；git 2.55.0.windows.3；uv 0.7.13
-- **result**: 索引取消跟踪完成、本地文件保留、干净检出文档检查通过；远端 CI not-run
+- **result**: pass
 
 ## Changed paths
 

@@ -14,6 +14,7 @@ Spec、Plan、Tasks 和人工 Standards Review 负责；机械检查不能代替
 | 契约测试 | pytest，各包 `tests/` | 失败、收集错误或零测试（pytest exit 5） |
 | 包产物 | uv build、隔离 wheel 安装、pip check、isolated import | 任一步失败或缺少 wheel/sdist |
 | 文档 | PowerShell 本地目标/尾随空白检查、Git diff 检查 | 文件缺失、本地链接缺失或空白错误 |
+| 治理记录 | `check-governance.ps1`：evidence 元数据、build-log 引用、ADR 索引、Spec/Tasks、本地-only 链接 | 结构不一致、未索引 ADR、状态矛盾或链接到被忽略路径 |
 
 根 [`pyproject.toml`](../../pyproject.toml) **只包含 tool 表**，不是 Python project 或 uv
 workspace，不得向其加入 project/build-system/dependency-groups。Black 与 isort 不和
@@ -42,11 +43,14 @@ pwsh -NoProfile -File scripts/quality.ps1 -Check type
 pwsh -NoProfile -File scripts/quality.ps1 -Check test
 pwsh -NoProfile -File scripts/quality.ps1 -Check build
 pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+pwsh -NoProfile -File scripts/quality.ps1 -Check governance
 pwsh -NoProfile -File scripts/test-quality.ps1
+pwsh -NoProfile -File scripts/test-governance.ps1
 ```
 
-Package 是四个真实 Distribution 名称之一，省略则检查全部。`all` 包含文档和包检查；
-只指定其他 Check 时不宣称其他门禁通过。工具缺失、锁不一致、安装失败都不会被跳过。
+Package 是四个真实 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理和包检查；
+指定 Package 的包级任务不重复执行仓库级治理检查。只指定其他 Check 时不宣称其他门禁通过。
+工具缺失、锁不一致、安装失败都不会被跳过。
 
 每个包先执行 `uv lock --check` 和 `uv sync --locked`，随后使用该包环境中的工具。
 所有工具显式引用根配置；类型检查显式绑定该包解释器。若要验证指定的已安装 Python，
@@ -97,10 +101,14 @@ required status check（通常需首次 workflow 实际运行后选择）。仅�
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
 以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
+`scripts/test-governance.ps1` 用独立 fixture 覆盖 9 个治理场景（合法结构、缺字段、非法
+状态词、未索引 ADR、本地-only 链接、evidence 未进 build-log、缺失 build-log、状态矛盾、重复任务 ID）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
 - 现有 20 个 pytest 用例只覆盖当前骨架的导入、身份和运行时依赖边界，不是业务覆盖率。
 - 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
+- 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
+  仍需人工评审（落后只产生 warning）。
 - 本期不安装 pre-commit、coverage 百分比门槛、漏洞扫描、workflow 专用 linter 或发布流水线。
 - Standalone 质量入口/CI 不是 Spec Kit hook；Delivery/Ralph 仍未配置。
 - 增加依赖、接口或目录后，必须同步测试、脚本中的本地构建依赖映射、文档和实际证据。

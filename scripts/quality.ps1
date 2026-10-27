@@ -9,7 +9,7 @@ param(
         'spawn-join-llm-provider-langchain', 'spawn-join-observability')]
     [string]$Package,
 
-    [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs')]
+    [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs', 'governance')]
     [string]$Check = 'all'
 )
 
@@ -153,8 +153,14 @@ function Test-DistributionBuild {
 
 Push-Location $root
 try {
+    # Governance is repository-level; package-scoped runs (CI matrix) skip it to avoid duplication.
+    $runGovernance = $Check -eq 'governance' -or ($Check -eq 'all' -and -not $Package)
+    if ($runGovernance) {
+        Invoke-Checked 'pwsh' @('-NoProfile', '-File',
+            (Join-Path $root 'scripts/check-governance.ps1'), '-Root', $root)
+    }
     if ($Check -in @('all', 'docs')) { Test-Documentation }
-    if ($Check -ne 'docs') {
+    if ($Check -ne 'docs' -and $Check -ne 'governance') {
         Get-Command uv -ErrorAction Stop | Out-Null
         if ($Check -in @('all', 'type')) {
             Get-Command node -ErrorAction Stop | Out-Null

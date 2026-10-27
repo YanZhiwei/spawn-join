@@ -3,10 +3,14 @@
 ## Scope and baseline
 
 - Route: Lightweight；文档治理与固定版本开发技能的本地安装，不新增领域行为或公共 API。
+- feature_id: 不适用（Lightweight；未创建 Feature）
+- phase_id: adr-and-project-diagram-skill
+- base_revision: bd497d72e928f596e79cdbe5b1466eba4c75ec39
+- head_revision: bd497d7 加未提交工作树
+- working_directory: `D:\Repos\Github\spawn-join`
+- recorded_at: 2026-10-26
+- result: fail (QUALITY_VERDICT 见文末；STANDARDS_VERDICT 为 pass)
 - Feature / task: 不适用；不为本次范围创建空 Spec / Plan / Tasks。
-- Working directory: `D:\Repos\Github\spawn-join`。
-- Base / current HEAD: `bd497d72e928f596e79cdbe5b1466eba4c75ec39`；未提交、未推送。
-- Recorded: 2026-10-26。
 - 起始工作树已有质量门、包测试、锁和文档改动；不将其算成本次新增实现。
 - 修改前保存 94 个已有可见文件的 SHA-256、Git 状态及 HEAD 至批准的临时目录，
   用于确认 Specs、包文件、锁和其他非目标内容保持不变。

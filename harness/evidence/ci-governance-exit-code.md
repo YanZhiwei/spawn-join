@@ -11,7 +11,7 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27T13:51:29Z
 - **environment**: Windows；PowerShell 7.6.9；uv 0.7.13；Node 22.17.0；git 2.55.0.windows.3
-- **result**: 本地修复已验证；远端 CI 在提交推送前为 not-run
+- **result**: pass
 
 ## Defect and red evidence
 

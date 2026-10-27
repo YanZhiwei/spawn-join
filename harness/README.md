@@ -68,5 +68,6 @@ approved phase plan
 
 - 当前有 Black/isort/Ruff/Pyright/pytest 和 CI 配置；远端运行/分支保护需要另外验证。
 - 当前没有 `.specify/extensions.yml`，因此没有自动化 Harness hook。
-- 当前记录格式由 Markdown 约定表达，尚未由脚本强制校验。
+- `scripts/check-governance.ps1` 校验 evidence 元数据、build-log 引用、ADR 索引、Spec/Tasks
+  一致性和被跟踪文档的本地-only 链接；freshness 只告警，语义判断仍需人工评审。
 - 如果 `HEAD` 或 outgoing paths 变化，旧 evidence 必须重新确认，不能直接沿用。
