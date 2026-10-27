@@ -80,6 +80,16 @@ jobs:
         run: ./scripts/quality.ps1 -Check docs
       - name: Check governance records
         run: ./scripts/quality.ps1 -Check governance
+      - name: Install PSScriptAnalyzer
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force -AllowClobber
+      - name: Check workflow and script static analysis
+        run: ./scripts/quality.ps1 -Check static
+      - name: Test static analysis failure paths
+        env:
+          SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}
+        run: ./scripts/test-static.ps1
       - name: Test governance gate failure paths
         env:
           SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}

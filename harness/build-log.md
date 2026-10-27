@@ -395,6 +395,49 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 临时失败 PR 只验证“失败无法合并”，不验证管理员绕过（`bypass_actors` 为空）。
 - `strict_required_status_checks_policy=true` 要求 PR 分支与 main 同步。
 
+## 2026-10-27 — Static Analysis（Feature 004）
+
+**Status**: Implemented and locally verified；远端 CI 待 PR
+
+**Route**: Feature（新增静态分析入口、CI 步骤和回归）
+
+**Feature**: `004-static-analysis`（本地工件，Git 忽略）
+
+**Base revision**: `2a895da32f5634f9bdbddb9ad0afe2d4fa81ac91`
+
+**Head revision**: `ba8993d1a3d8fe9c6fd760da704ea59a2745677d`
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Observed implementation
+
+- 新增 `scripts/check-static.ps1`：actionlint 1.7.12（经 `actionlint-py==1.7.12.25` + `uvx`）
+  与 PSScriptAnalyzer 1.25.0；高信号规则集见 `scripts/PSScriptAnalyzerSettings.psd1`；
+- 新增 `scripts/test-static.ps1`：合法、坏 workflow、`Invoke-Expression` 三个场景；
+- `quality.ps1` 增加 `-Check static`；无 Package 的 `all` 纳入；
+- CI governance job 安装固定 PSScriptAnalyzer 并执行静态检查与回归；
+- `Assert-GovernanceResult` 改名为 `Test-GovernanceResult`，满足 approved verbs；
+- 同步质量门、README 和 AGENTS 的工具/命令/限制说明。
+
+### Verification
+
+- `scripts/check-static.ps1`：actionlint 与 PSScriptAnalyzer 均 0 finding；
+- `scripts/test-static.ps1`：3 场景全部按预期；
+- `quality.ps1`：四包 + 文档 + 治理 + 静态分析 exit 0；
+- 治理检查 0 error / 0 warning，11 场景无回归；
+- 干净克隆（无 `specs/`）中 static 与 governance 均 exit 0；
+- 失败尝试（actionlint flag、fixture 缺 Git、非 approved verb）已记录在 evidence。
+
+### Limitations
+
+- 静态分析不验证运行时行为；第三方技能脚本不扫描；
+- PSScriptAnalyzer 需安装，缺失时明确失败；
+- 远端 CI 未运行；本条目绑定实现提交 `ba8993d`。
+
+详细命令与残余限制：
+[Evidence](evidence/phase-01-static-analysis.md)；
+[Review](code_review/review-phase-01-static-analysis.md)。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认
