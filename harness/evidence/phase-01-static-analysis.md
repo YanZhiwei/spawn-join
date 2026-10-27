@@ -6,7 +6,7 @@
 - **phase_id**: `phase-01-static-analysis`
 - **task_id**: T001–T007
 - **base_revision**: `2a895da32f5634f9bdbddb9ad0afe2d4fa81ac91`
-- **head_revision**: `9fab77dcf4b3d8916f5a5497c1f8c43eb2a2080b`
+- **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并后再次锚定；PR #5 squash 为 `48fb3a7`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
@@ -64,7 +64,8 @@
 ## Reconfirmation — 2026-10-27
 
 PR #5 以 squash 合并为 `48fb3a7`；其 PR 运行 `40532695952`、main 运行 `40533177300`
-均 14/14 success。Feature 005 修改治理脚本后，在 `9fab77d` 重新执行：
+均 14/14 success。Feature 005 修改治理脚本后，在 `9fab77d` 重新执行；PR #6 又以 squash
+合并为 `8d9c59c`，静态分析在合并后的 main 再次确认为 0 finding。
 
 - `scripts/quality.ps1 -Check static`：exit 0，actionlint/PSScriptAnalyzer 0 finding；
 - `scripts/quality.ps1 -Check governance`：0 error / 0 warning；

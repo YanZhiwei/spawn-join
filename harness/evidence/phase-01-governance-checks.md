@@ -6,7 +6,7 @@
 - **phase_id**: `phase-01-governance-checks`
 - **task_id**: T001–T007
 - **base_revision**: `c5ad5763dcf00139e629746a9847f9824bb98ebf`
-- **head_revision**: `83628acb287a0c3cf74e92530d...`（PR #2 squash 合并提交）
+- **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并提交；PR #2 squash 为 `83628ac`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
@@ -61,7 +61,9 @@
 - 合并后修复 freshness 误报：提交 `03dcfc4`；`scripts/test-governance.ps1` 扩为 11 场景，
   当前仓库 `check-governance.ps1` 为 `0 error / 0 warning`；详见 build-log 同日条目；
 - Ruleset `main` 已加入 required `Quality Gate`；临时 PR [#3](https://github.com/YanZhiwei/spawn-join/pull/3)
-  注入 trailing whitespace 后 14/14 失败、`mergeStateStatus=BLOCKED`，验证后已关闭。
+  注入 trailing whitespace 后 14/14 失败、`mergeStateStatus=BLOCKED`，验证后已关闭；
+- PR [#6](https://github.com/YanZhiwei/spawn-join/pull/6) 以 squash 合并为 `8d9c59c`，
+  PR 运行 `40534650197` 与 main 运行 `40535092200` 均 14/14 success。
 
 ## Limitations and blockers
 
