@@ -109,8 +109,9 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 当前配置基线（2026-10-26）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、GitHub Actions 已加入。
 当前 Feature 为 `specs/002-python-quality-gates/`。构建仍有缺少包级 README 的非阻塞警告；
-Delivery、Spec Kit hook、发布流水线和远端分支保护仍未启用。实际验证结果以当前 Feature
-的 Harness evidence 为准，不用配置存在替代运行证据。因此：
+Delivery、Spec Kit hook 和发布流水线仍未启用；Ruleset 已启用 PR、线性历史和
+required `Quality Gate`。实际验证结果以当前 Feature 的 Harness evidence 为准，不用配置
+存在替代运行证据。因此：
 
 - 不得把“构建成功”表述为“测试、类型检查和发布流程全部通过”。
 - 后续若修复包级 README 警告，应单独记录为构建元数据改动。
