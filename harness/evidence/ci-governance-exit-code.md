@@ -75,3 +75,12 @@ pwsh -NoProfile -File C:\Users\YanZh\AppData\Local\Temp\opencode\runner-wrapper-
 - `phase-01-python-quality-gates` 与 ADR 证据仍锚定在 `bd497d7`，本次不追认旧范围；
   该再锚定是独立待办。
 - 现有 build-log 仍未记录 `0e2b10e` 的 README 重写；本次不夹带处理。
+
+## Remote confirmation
+
+- 修复提交：`4c69609667a482e27271ee5a63633c6d0e17fec4`（父提交 `0e2b10e`）。
+- 运行：[Quality #40515982522](https://github.com/YanZhiwei/spawn-join/actions/runs/40515982522)，
+  创建于 2026-10-27T13:52:51Z，结论 `success`。
+- 14/14 job 成功：12 个 packages 矩阵、`Governance and gate regression`、`Quality Gate`。
+- 上文写于推送前，本节补记远端结果；本记录随后以 docs-only 提交发布，该后续提交自身的
+  CI 结果不在本节声称范围内。

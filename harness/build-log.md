@@ -228,3 +228,11 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 本地未运行 Linux pwsh；远端 ubuntu job 需推送后复跑确认。
 - 未提交、未推送、未修改远端 Ruleset；本条目绑定未提交工作树，提交后须重新确认。
 - 旧证据仍锚定 `bd497d7`，`0e2b10e` 仍无独立记录；均不在本次范围内。
+
+## 2026-10-27 — 远端 CI 确认（fix 4c69609）
+
+- 修复提交 `4c69609667a482e27271ee5a63633c6d0e17fec4`（父 `0e2b10e`）已推送 `origin/main`；
+- Quality 运行 `40515982522` 结论 `success`：12 个 packages 矩阵、
+  `Governance and gate regression` 和 `Quality Gate` 共 14/14 job 成功；
+- 上一条目"远端 CI 待推送后确认"的状态由本条目关闭；
+- 本条目为 docs-only 追加，其自身提交的 CI 结果不在此处声称。
