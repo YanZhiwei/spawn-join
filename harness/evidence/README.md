@@ -34,6 +34,8 @@ result:
 
 - `head_revision` 或 `changed_paths` 变化后，原 Evidence 标记为 stale；
 - 旧 Evidence 必须重新执行或明确重新确认，才能支持新的收口结论；
+- 机器检查只在落后期间存在 `packages/`、`scripts/`、`.github/` 等非文档路径变更时告警；
+  纯文档或证据追加不触发 freshness warning；
 - 如果环境、权限、依赖或外部服务不可用，记录原因和替代证据，不得静默跳过；
 - Evidence 不拥有计划范围、任务状态或评审发现。
 

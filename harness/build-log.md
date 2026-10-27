@@ -283,6 +283,80 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 [Evidence](evidence/phase-01-governance-checks.md)；
 [Review](code_review/review-phase-01-governance-checks.md)。
 
+## 2026-10-27 — 修复 freshness 告警误报（Bugfix）
+
+**Status**: Fixed and locally verified
+
+**Route**: Bugfix（纯文档跟进被误报为证据过期）
+
+**Base revision**: `475ab4ceb257c4a66da607ca7834fde0986fdd41`
+
+**Head revision**: `03dcfc4` 加未提交工作树
+
+### Observed defect
+
+把 evidence 的 head 更新到当前提交后，任何后续 docs-only 提交都会产生
+`head_revision is N commit(s) behind HEAD`。这会让刚清理完的证据在随手改文档后
+再次告警，削弱 freshness 信号。新增 fixture 先失败：`docs-only follow-up` 场景
+在 exit 0 的同时输出 WARN，测试按预期拒绝。
+
+### Changes in this entry
+
+- `scripts/check-governance.ps1`：只在落后且期间改动非文档路径
+  （`packages/`、`scripts/`、`.github/`、根配置文件等）时告警；
+- `scripts/test-governance.ps1`：新增“纯文档跟进不告警”和“非文档变更告警”两个场景（9→11）；
+- `docs/development/quality-gates.md`、`harness/evidence/README.md`、`harness/README.md`
+  同步 freshness 语义。
+
+### Verification
+
+- 修复前 fixture：docs-only 场景失败（出现 WARN）；
+- 修复后 `scripts/test-governance.ps1`：11 场景全部通过；
+- `scripts/check-governance.ps1`：0 error / 0 warning；
+- `scripts/quality.ps1`：exit 0。
+
+### Limitations
+
+- 只按路径类别判断，不判断改动语义；人工评审仍然必须。
+- 未提交；本条目绑定未提交工作树，提交后按规则重新确认。
+
+## 2026-10-27 — Evidence 再锚定与追溯记录（Lightweight）
+
+**Status**: Complete
+
+**Route**: Lightweight（只更新治理记录，无运行时行为）
+
+**Base revision**: `475ab4ceb257c4a66da607ca7834fde0986fdd41`
+
+**Head revision**: `03dcfc4` 加未提交工作树
+
+### Changes in this entry
+
+- `harness/evidence/phase-01-python-quality-gates.md`：head 更新到合并提交 `475ab4c`，
+  新增 reconfirmation 段；原始 `bd497d7` 绑定保留在正文，不改原命令与结论；
+- `harness/evidence/phase-01-governance-checks.md`：记录 PR #1、main 运行
+  `40525841365` 的远端确认，以及 freshness 修复后的 11 场景；
+- `0e2b10e` README 重写补记：该提交只改 `README.md` 与 `repository-map.md`；
+  Quality 运行 `40351563312` 的 `Check documents` 步骤成功，governance 失败是
+  `test-quality.ps1` 退出码缺陷（已由 `4c69609` 修复），与文档内容无关；
+- 本次不创建 Feature Spec；`specs/003` 仍为本地工件。
+
+### Verification
+
+- `scripts/quality.ps1`：exit 0（四包 + 文档 + 治理）；
+- `scripts/test-quality.ps1`：9 场景通过；
+- `scripts/test-governance.ps1`：11 场景通过；
+- `scripts/quality.ps1 -Check docs`：41 文件 / 105 目标；
+- `scripts/check-governance.ps1`：0 error / 0 warning；
+- 远端：PR 运行 `40525168443` 与 main 运行 `40525841365` 均 14/14 success。
+
+### Limitations
+
+- `0e2b10e` 没有当时的本机原始日志，只能依据远端步骤结果做追溯记录；
+- Ruleset / 分支保护仍未配置；
+- 本条目提交后已本地重跑 `check-governance.ps1`（0/0）；远端 CI 待 PR 确认；
+- 上一条 Bugfix 的验证已在 `03dcfc4` 重跑并通过，其“未提交”限制由本条关闭。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认

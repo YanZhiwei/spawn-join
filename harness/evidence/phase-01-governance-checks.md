@@ -6,11 +6,12 @@
 - **phase_id**: `phase-01-governance-checks`
 - **task_id**: T001–T007
 - **base_revision**: `c5ad5763dcf00139e629746a9847f9824bb98ebf`
-- **head_revision**: `c5ad576` 加未提交工作树
+- **head_revision**: `03dcfc41362fa617b7aeb5fc780e681a6dbcd0a8`（合并后修复提交；PR 验证提交为 `d601d07`，合并提交为 `475ab4c`）
+- **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；git 2.55.0.windows.3；uv 0.7.13；Node 22.17.0
-- **result**: pass (本地结构门禁、回归和全量质量门；远端 CI not-run until push)
+- **result**: pass (本地结构门禁、回归和全量质量门；远端 CI 已由 PR #1 与 main 运行确认)
 
 ## Changed paths
 
@@ -50,10 +51,18 @@
   该现象也促成 shallow clone 处理：缺失修订在浅克隆中降为 warning，CI governance job
   显式 `fetch-depth: 0`。
 
+## Remote confirmation and follow-up
+
+- PR [#1](https://github.com/YanZhiwei/spawn-join/pull/1) 已合并为 `475ab4c`；
+- PR 运行 `40525168443`：14/14 success，governance `0 error / 1 warning`、9 场景通过；
+- main 推送运行 `40525841365`：14/14 success，governance 实际执行并输出 9 场景通过；
+- 合并后修复 freshness 误报：提交 `03dcfc4`；`scripts/test-governance.ps1` 扩为 11 场景，
+  当前仓库 `check-governance.ps1` 为 `0 error / 0 warning`；详见 build-log 同日条目。
+
 ## Limitations and blockers
 
 - 治理检查只验证结构和索引一致性；evidence 语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审。
 - `phase-01-python-quality-gates` 仍落后 HEAD，只产生 warning；清理属于后续优先级 2。
-- 远端 CI、Ruleset 和分支保护未在本次执行；推送后需要重新确认本 evidence。
+- 远端 CI、Ruleset 和分支保护：CI 已由 PR #1 与 main 运行确认；Ruleset/分支保护仍未配置。
 - 本 evidence 绑定未提交工作树；产生新提交后必须重新锚定。
