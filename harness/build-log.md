@@ -357,6 +357,44 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 本条目提交后已本地重跑 `check-governance.ps1`（0/0）；远端 CI 待 PR 确认；
 - 上一条 Bugfix 的验证已在 `03dcfc4` 重跑并通过，其“未提交”限制由本条关闭。
 
+## 2026-10-27 — Ruleset 强制力验证与证据再锚定（Lightweight）
+
+**Status**: Complete
+
+**Route**: Lightweight（远端设置与记录更新，无代码行为）
+
+**Base revision**: `83628acb287a0c3cf74e92530d...`（PR #2 squash 合并）
+
+**Head revision**: `83628ac` 加未提交工作树
+
+### Changes in this entry
+
+- 通过 `PUT /repos/YanZhiwei/spawn-join/rulesets/25965550` 把 `Quality Gate` 加入
+  `required_status_checks`；`strict_required_status_checks_policy=true`，`bypass_actors` 为空；
+  PR、线性历史、禁止删除和 force push 保持不变；
+- 临时 PR #3 在 `README.md` 注入尾随空白：14/14 检查失败，`mergeStateStatus=BLOCKED`；
+  验证后已关闭并删除分支，不合入；
+- PR #2 以 squash 合并为 `83628ac`；`phase-01-python-quality-gates` 与
+  `phase-01-governance-checks` 的 head 重新锚定到该提交；
+- 更新 `docs/development/quality-gates.md`、`README.md`、`AGENTS.md`、`harness/README.md`
+  中“远端分支保护未配置”的过期表述。
+
+### Verification
+
+- Ruleset API 返回 `required_status_checks=[{context:"Quality Gate"}]`，
+  `current_user_can_bypass=never`；
+- PR #3：`mergeStateStatus=BLOCKED`，14/14 失败，随后关闭；
+- main 运行 `40528549959`：14/14 success；
+- `scripts/check-governance.ps1`：0 error / 0 warning；
+- `scripts/quality.ps1 -Check docs`：41 文件 / 105 目标；
+- 本条目经 PR 更新，远端 CI 待该 PR 验证。
+
+### Limitations
+
+- required check 依赖 `Quality Gate` 这个 job 名称；重命名 job 必须同步 Ruleset。
+- 临时失败 PR 只验证“失败无法合并”，不验证管理员绕过（`bypass_actors` 为空）。
+- `strict_required_status_checks_policy=true` 要求 PR 分支与 main 同步。
+
 ## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
 
 **Status**: Implemented and locally verified；远端 CI 待提交后确认

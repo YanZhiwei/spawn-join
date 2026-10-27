@@ -93,9 +93,10 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 - contents:read、checkout 不持久化凭据、Action 固定 SHA、明确超时、取消过期运行；
 - 不使用 pull_request_target，不发布、不部署、不修改 GitHub 设置。
 
-**需要维护者另外操作**：在目标分支 Ruleset/branch protection 中将 `Quality Gate` 设为
-required status check（通常需首次 workflow 实际运行后选择）。仅提交 workflow 不会自动
-阻止失败 PR 合并。本 Feature 不执行远端配置或推送，远端结果仍需首次 CI 验证。
+**Merge protection**: 仓库 Ruleset `main` 已启用 PR、线性历史、禁止删除和 force push，
+并把 `Quality Gate` 设为 required status check；`strict_required_status_checks_policy=true`，
+合并前分支必须与 main 同步。配置已由 API 核对；临时失败 PR #3 的 `mergeStateStatus`
+为 `BLOCKED`，验证后已关闭。
 
 ## Regression and limitations
 

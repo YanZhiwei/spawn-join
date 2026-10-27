@@ -6,7 +6,7 @@
 - **phase_id**: `phase-01-governance-checks`
 - **task_id**: T001–T007
 - **base_revision**: `c5ad5763dcf00139e629746a9847f9824bb98ebf`
-- **head_revision**: `03dcfc41362fa617b7aeb5fc780e681a6dbcd0a8`（合并后修复提交；PR 验证提交为 `d601d07`，合并提交为 `475ab4c`）
+- **head_revision**: `83628acb287a0c3cf74e92530d...`（PR #2 squash 合并提交）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
@@ -56,13 +56,18 @@
 - PR [#1](https://github.com/YanZhiwei/spawn-join/pull/1) 已合并为 `475ab4c`；
 - PR 运行 `40525168443`：14/14 success，governance `0 error / 1 warning`、9 场景通过；
 - main 推送运行 `40525841365`：14/14 success，governance 实际执行并输出 9 场景通过；
+- PR [#2](https://github.com/YanZhiwei/spawn-join/pull/2) 以 squash 合并为 `83628ac`，
+  main 运行 `40528549959` 为 14/14 success；分支提交不是 main 祖先，本证据按合并提交锚定；
 - 合并后修复 freshness 误报：提交 `03dcfc4`；`scripts/test-governance.ps1` 扩为 11 场景，
-  当前仓库 `check-governance.ps1` 为 `0 error / 0 warning`；详见 build-log 同日条目。
+  当前仓库 `check-governance.ps1` 为 `0 error / 0 warning`；详见 build-log 同日条目；
+- Ruleset `main` 已加入 required `Quality Gate`；临时 PR [#3](https://github.com/YanZhiwei/spawn-join/pull/3)
+  注入 trailing whitespace 后 14/14 失败、`mergeStateStatus=BLOCKED`，验证后已关闭。
 
 ## Limitations and blockers
 
 - 治理检查只验证结构和索引一致性；evidence 语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审。
-- `phase-01-python-quality-gates` 仍落后 HEAD，只产生 warning；清理属于后续优先级 2。
-- 远端 CI、Ruleset 和分支保护：CI 已由 PR #1 与 main 运行确认；Ruleset/分支保护仍未配置。
-- 本 evidence 绑定未提交工作树；产生新提交后必须重新锚定。
+- `phase-01-python-quality-gates` 已按 PR #2 的 squash 提交 `83628ac` 重新锚定。
+- 远端 CI 已由 PR #1、PR #2 和 main 运行确认；Ruleset 已配置 required `Quality Gate`，
+  并用临时失败 PR #3 验证 `BLOCKED`。
+- 本 evidence 随 PR 更新；新提交产生后按 freshness 规则确认。

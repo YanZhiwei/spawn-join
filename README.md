@@ -144,7 +144,8 @@ Pyright 做严格类型检查，pytest 验证包契约，另外执行文档、�
 [`docs/development/quality-gates.md`](docs/development/quality-gates.md)。
 
 GitHub Actions 配置见 [quality.yml](.github/workflows/quality.yml)，覆盖四包和跨平台矩阵，
-并设置 `Quality Gate` 汇总检查。配置存在不代表远端运行成功，也不自动启用分支保护。
+并设置 `Quality Gate` 汇总检查。Ruleset `main` 已启用 PR、线性历史和 required `Quality Gate`；
+失败 PR 的实际拦截已用临时 PR 验证。
 
 ## 工具与技能
 
@@ -226,7 +227,7 @@ dependencies = [
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
 | 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、构建/安装验证和 GitHub Actions |
 | 长期知识与绘图 | 已有 ADR 分类、模板与项目级 Fireworks；渲染能力取决于本机依赖 |
-| 尚未配置 | 完整 Delivery/Ralph 编排、自动化 Spec Kit/Harness hook、发布流水线与远端分支保护 |
+| 尚未配置 | 完整 Delivery/Ralph 编排、自动化 Spec Kit/Harness hook 与发布流水线 |
 
 实际命令、环境和验证限制以 [Harness evidence](harness/evidence/README.md) 中对应记录为准；
 不以配置存在或某次本机成功代替当前 revision 的验证。Fireworks 已知兼容性与渲染依赖限制见
