@@ -10,9 +10,10 @@
 
 当前 `.specify/` 已包含模板、PowerShell 脚本、Codex/Speckit 清单和 bundled workflow；
 Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
-质量工具及 GitHub Actions 配置已加入；但 `.specify/extensions.yml`、Delivery 配置和可执行
-hook 仍未配置。不得把 standalone 质量入口、workflow 配置或本机成功误报为完整 Delivery、
-远端 CI 或分支保护已通过；缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
+质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 与可执行 hook 仍未配置，
+但 Delivery 配置（`.specify/extensions/delivery/delivery-config.yml`）已启用。
+不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
+缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
 ### 0.1 变更路由
 
@@ -34,7 +35,8 @@ hook 仍未配置。不得把 standalone 质量入口、workflow 配置或本机
 - `specs/<feature-id>/tasks.md`：唯一执行队列；任务必须有 ID、依赖、目标文件和可验证的完成条件。
 - `research.md`、`data-model.md`、`contracts/`、`quickstart.md`：仅在当前 Feature 确实需要时创建，并由 Plan 引用。
 - ADR：只记录会约束多个实现点或未来演进的长期决策；本项目唯一根目录为 `docs/decisions/`，分类、编号、状态和模板以该目录的 README 为准，不自行创建第二套 ADR 目录。未来启用 Delivery 时配置到同一路径；当前不宣称已启用 ADR 自动化。
-- `.specify/delivery/<feature-id>/evidence.md`：在项目启用 Delivery evidence 配置后，记录实际 outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
+- `.specify/delivery/<feature-id>/evidence.md`：Delivery evidence 配置已启用，记录实际
+  outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
 
 Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保留范围、变更路径和针对性验证证据。Feature 的实现不能绕过 `tasks.md` 直接凭自然语言清单执行。
 
@@ -110,9 +112,9 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入。
 当前 Feature 为 `specs/002-python-quality-gates/`。构建仍有缺少包级 README 的非阻塞警告；
-Delivery、Spec Kit hook 和发布流水线仍未启用；Ruleset 已启用 PR、线性历史和
-required `Quality Gate`。实际验证结果以当前 Feature 的 Harness evidence 为准，不用配置
-存在替代运行证据。因此：
+Delivery 配置已启用（手动路由 + Ralph 协议，提交/推送/合并仍需授权）；Spec Kit hook 和
+发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
+以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：
 
 - 不得把“构建成功”表述为“测试、类型检查和发布流程全部通过”。
 - 后续若修复包级 README 警告，应单独记录为构建元数据改动。
