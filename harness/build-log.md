@@ -188,3 +188,43 @@ PowerShell 启动配置在命令开始前输出了若干与仓库无关的 `Impo
 
 详细范围、基准 HEAD、命令、退出码和残余限制：
 [ADR/技能 evidence](evidence/adr-and-project-diagram-skill.md)。
+
+## 2026-10-27 — 修复 CI governance 步骤退出码（Bugfix）
+
+**Status**: Fixed and locally verified；远端 CI 待推送后确认
+
+**Route**: Bugfix；GitHub 已有两次可复现失败，未创建 Feature Spec
+
+**Base revision**: `0e2b10ea176ca9411fa8a7bcb5f34a27a28d1e4f`
+
+**Head revision**: `0e2b10e` 加未提交工作树
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Observed defect
+
+push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全部通过，但
+`governance` 的 `Test gate failure paths` 在 9/9 场景 PASS 后仍以 exit 1 结束，且没有
+错误文本。根因是最后一个断言故意运行失败门禁，留下 `$LASTEXITCODE=1`；GitHub 对
+`pwsh` 步骤追加 `exit $LASTEXITCODE`，成功路径没有显式退出码。直接 `-File` 运行不
+追加该检查，因此历史本机结果 0 掩盖了该缺陷。
+
+### Changes in this entry
+
+- `scripts/test-quality.ps1`：`finally` 清理后显式 `exit 0`，并注释失败原因；
+- 新增 `harness/evidence/ci-governance-exit-code.md`；
+- 本条目。未改断言、`quality.ps1`、workflow、Python 源码或依赖。
+
+### Verification
+
+- runner 等价包装（dot-source + `exit $LASTEXITCODE`）复现：修复前 exit 1，
+  9 个场景全部 PASS；修复后同一包装 exit 0；
+- `pwsh -NoProfile -File scripts/test-quality.ps1`：exit 0；
+- `pwsh -NoProfile -File scripts/quality.ps1 -Check docs`：exit 0；
+- 未残留 `spawn join gate fixture *` 临时目录。
+
+### Limitations
+
+- 本地未运行 Linux pwsh；远端 ubuntu job 需推送后复跑确认。
+- 未提交、未推送、未修改远端 Ruleset；本条目绑定未提交工作树，提交后须重新确认。
+- 旧证据仍锚定 `bd497d7`，`0e2b10e` 仍无独立记录；均不在本次范围内。

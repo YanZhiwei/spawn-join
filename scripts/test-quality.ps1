@@ -96,3 +96,6 @@ try {
     # Only remove the exact fixture directory created above, never the supplied parent.
     Remove-Item -LiteralPath $fixture -Recurse -Force
 }
+# The last assertion runs an intentionally failing gate, so $LASTEXITCODE is still 1.
+# GitHub appends `exit $LASTEXITCODE` to pwsh steps, so a successful run must end explicitly.
+exit 0
