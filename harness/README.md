@@ -60,10 +60,8 @@ approved phase plan
 - [Package boundaries](../docs/architecture/package-boundaries.md)
 - [Architecture decisions](../docs/decisions/README.md)
 - [Project technical diagrams](../docs/development/technical-diagrams.md)
-- [Harness foundation spec](../specs/001-harness-foundation/spec.md)
-- [Harness foundation plan](../specs/001-harness-foundation/plan.md)
-- [Harness foundation tasks](../specs/001-harness-foundation/tasks.md)
 - [Python quality gates](../docs/development/quality-gates.md)
+- 本地历史 Feature：`specs/001-harness-foundation/`（ADR-0002 已取消跟踪，仅保留本机，干净检出不保证存在）
 - 本地质量门任务：`specs/002-python-quality-gates/tasks.md`（Git 忽略，干净检出不保证存在）
 
 ## Current Limitations

@@ -236,3 +236,34 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   `Governance and gate regression` 和 `Quality Gate` 共 14/14 job 成功；
 - 上一条目"远端 CI 待推送后确认"的状态由本条目关闭；
 - 本条目为 docs-only 追加，其自身提交的 CI 结果不在此处声称。
+
+## 2026-10-27 — 取消跟踪历史 specs/001（Lightweight）
+
+**Status**: Implemented and locally verified；远端 CI 待提交后确认
+
+**Route**: Lightweight（治理/分发规则，无运行时行为；按 ADR-0002 执行）
+
+**Base revision**: `99f69078b6957e401c5f079890e3bccb2c7ee8d7`
+
+**Head revision**: `99f6907` 加未提交工作树
+
+### Changes in this entry
+
+- `git rm --cached -r specs/001-harness-foundation`：6 个文件移出索引，本地文件保留；
+- 新增 ADR-0002 并更新 `docs/decisions/` 索引与 ADR-0001 的关联/修订记录；
+- 更新 `harness/README.md`、`docs/architecture/repository-map.md`、`README.md`、
+  `AGENTS.md`、`.gitignore` 中“已跟踪文件继续跟踪”的过期表述；
+- 新增 `harness/evidence/untrack-historical-specs.md` 与本条目。未修改 002、Python 源码或远端设置。
+
+### Verification
+
+- `git ls-files specs` 为空；本地 001 仍有 6 个文件；`git check-ignore` 命中 `/specs/`；
+- 本机 `scripts/quality.ps1 -Check docs`：36 文件 / 99 目标，exit 0；
+- 干净检出模拟（230 文件、无 `specs/`）：24 文件 / 87 目标，exit 0；
+- 初次模拟因 `harness/README.md` 残留 001 链接失败，移除后重跑通过；失败尝试保留在此。
+
+### Limitations
+
+- 未提交、未推送；本条目绑定未提交工作树，提交后需重新确认；
+- 001 仅取消跟踪，内容仍在本机与历史提交中；002 仍为本地工件；
+- 远端 CI 与分支保护状态不变，本次不扩展处理。

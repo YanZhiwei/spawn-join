@@ -41,7 +41,7 @@ Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保�
 收口前将稳定的设计理由和必要图表提炼到 ADR 或当前架构说明，不将 ADR 变成第二套
 任务队列或运行日志。Agent 按主要职责复用领域/子领域分类，并说明理由；归属不明确时
 询问维护者。`/specs/` 按用户要求加入 Git 忽略，仍保留本地 Feature 执行职责；
-已有文件不得擅自删除，已跟踪 Specs 不自动取消跟踪，长期契约与证据不得只留在忽略目录。
+历史 Specs 已按 ADR-0002 取消跟踪但保留本地文件，不得擅自删除；长期契约与证据不得只留在忽略目录。
 绘制 ADR 技术图时读取项目内 `.agents/skills/fireworks-tech-graph/SKILL.md`，用法见
 [`技术图说明`](docs/development/technical-diagrams.md)；不以全局同名版本替代项目固定副本。
 

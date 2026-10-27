@@ -26,7 +26,7 @@ packages/**/build/
 *.egg-info/
 pip-wheel-metadata/
 
-# Local Feature delivery artifacts; existing tracked files remain tracked.
+# Local Feature delivery artifacts; historical specs were untracked by ADR-0002 and stay local only.
 /specs/
 
 # pyproject.toml, uv.lock, .python-version, and uv.toml are project inputs;

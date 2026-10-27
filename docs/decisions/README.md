@@ -68,5 +68,6 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ID | 领域 | 决策 | 状态 |
 |---|---|---|---|
 | ADR-0001 | engineering | [分离交付工件与长期设计知识](engineering/0001-delivery-and-durable-design.md) | Accepted |
+| ADR-0002 | engineering | [取消跟踪历史 Feature 工件](engineering/0002-untrack-historical-feature-artifacts.md) | Accepted |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。

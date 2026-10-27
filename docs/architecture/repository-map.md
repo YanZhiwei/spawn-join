@@ -39,14 +39,14 @@ spawn-join/
 ├── pyproject.toml                 # tool-only 配置，不是根级 Python/uv project
 ├── README.md                      # 面向使用者的项目概览
 ├── scripts/                       # PowerShell 质量入口及其故障回归
-├── specs/                         # 本地交付工件；Git 忽略不取消已有跟踪
-│   ├── 001-harness-foundation/
+├── specs/                         # 本地交付工件；Git 忽略，不随仓库分发
+│   ├── 001-harness-foundation/    # 历史工件，ADR-0002 取消跟踪，本地保留
 │   └── 002-python-quality-gates/  # 当前 Feature
 ```
 
 本地 `specs/` 包含 Harness Foundation 和 Python Quality Gates；`/specs/` 已加入 Git 忽略，
-已有已跟踪文件继续跟踪，未跟踪工件仅保留在本地，不代表任务已经完成。
-`harness/` 保存阶段约定及实际
+历史工件已按 [ADR-0002](../decisions/engineering/0002-untrack-historical-feature-artifacts.md)
+取消跟踪但保留本机文件，未跟踪工件仅保留在本地，不代表任务已经完成。`harness/` 保存阶段约定及实际
 记录；standalone 质量入口和 CI 配置已加入，但没有自动化 Spec Kit hook、Delivery 或发布。
 远端 CI 和分支保护必须另有运行/配置证据，不把配置路径存在当作通过。
 

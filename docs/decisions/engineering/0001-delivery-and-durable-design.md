@@ -7,7 +7,7 @@
 - Decision owner: 仓库维护者
 - Accepted by / date: 用户在本次会话要求按建议落地 ADR 与项目级图表技能，2026-10-26
 - Depends on: 无
-- Related: [Constitution](../../../.specify/memory/constitution.md)、[包边界](../../architecture/package-boundaries.md)
+- Related: [Constitution](../../../.specify/memory/constitution.md)、[包边界](../../architecture/package-boundaries.md)、[ADR-0002](0002-untrack-historical-feature-artifacts.md)
 - Supersedes: 无
 - Superseded by: 无
 
@@ -65,3 +65,5 @@ Delivery 自动化。未来启用 Delivery 必须复用同一个 ADR 根，明�
 
 - 2026-10-26：根据用户授权采纳文档分层与项目级技术图技能；保留已有 Specs。
 - 2026-10-26：用户明确要求 Specs 文件夹设置 Git 忽略；仅增加忽略规则，不删除或取消跟踪。
+- 2026-10-27：后续 [ADR-0002](0002-untrack-historical-feature-artifacts.md) 部分取代本决策中
+  “不取消已跟踪文件跟踪”的条款；001 已取消跟踪并保留本地文件，分层记录决策继续有效。

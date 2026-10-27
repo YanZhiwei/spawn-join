@@ -70,7 +70,9 @@ Feature 的基本链路是：
 | 阶段执行与证据 | [harness/](harness/README.md) | 批准范围、材料性上下文、评审、实际命令与结果 |
 | 长期架构知识 | [架构说明](docs/architecture/repository-map.md)、[ADR](docs/decisions/README.md) | 当前系统视图、关键设计理由及长期约束 |
 
-`/specs/` 已加入 Git 忽略，但仍是本地 Feature 执行工件；已跟踪文件不会自动取消跟踪。
+`/specs/` 已加入 Git 忽略，Feature 工件只在本地；历史工件已按
+[ADR-0002](docs/decisions/engineering/0002-untrack-historical-feature-artifacts.md)
+取消跟踪并保留本机文件。
 收口前应将稳定设计提炼到 ADR/架构说明，将有效验证保存到证据层，不能只留在忽略目录。
 
 ### Harness 工程化治理
