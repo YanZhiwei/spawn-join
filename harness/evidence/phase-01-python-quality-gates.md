@@ -6,13 +6,14 @@
 - **phase_id**: `phase-01-python-quality-gates`
 - **task_id**: T001–T009 (manual local acceptance; no Ralph receipts)
 - **base_revision**: `bd497d72e928f596e79cdbe5b1466eba4c75ec39`
-- **head_revision**: `bd497d72e928f596e79cdbe5b1466eba4c75ec39` plus uncommitted working tree
+- **head_revision**: `03dcfc41362fa617b7aeb5fc780e681a6dbcd0a8`（2026-10-27 再确认；原始绑定为 `bd497d7` 加未提交工作树）
+- **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-26T04:19:52Z (final documentation reconfirmed after this entry)
 - **environment**: Windows; PowerShell 7.6.8; uv 0.7.13 and isolated uv 0.13.5;
   Node 22.17.0; original package Python 3.13.5; temporary verification Python 3.11.13
 - **artifact_policy**: tracked Spec/Plan/Tasks and Harness; no configured Delivery/Ralph
-- **result**: pass for the explicitly selected local checks below; remote CI remains not-run
+- **result**: pass for the explicitly selected local checks below; remote CI confirmed at `475ab4c` (see Reconfirmation)
 
 ## Changed paths and attribution
 
@@ -155,3 +156,22 @@ their implementation, revision or scope without renewed confirmation.
 - Delivery config, ADR root, Ralph receipts and full Delivery handoff are not enabled/claimed.
 - Existing README and hardlink/copy warnings remain; global Python alias is unchanged.
 - A new commit, changed paths or implementation change requires renewed evidence confirmation.
+
+## Reconfirmation — 2026-10-27
+
+After PR #1 merged, the original Feature gates were re-run at `475ab4c` to confirm later
+governance/CI changes did not invalidate the recorded outcome.
+
+- **HEAD**: `03dcfc41362fa617b7aeb5fc780e681a6dbcd0a8`
+- **Working directory**: `D:\Repos\Github\spawn-join`
+- `pwsh -NoProfile -File scripts/quality.ps1`: exit 0; four packages (format/lint/type/test/build)
+  plus docs and governance.
+- `pwsh -NoProfile -File scripts/test-quality.ps1`: exit 0; 9 scenarios.
+- `pwsh -NoProfile -File scripts/quality.ps1 -Check docs`: exit 0; 41 Markdown files / 105 targets.
+- `pwsh -NoProfile -File scripts/check-governance.ps1`: 0 errors / 0 warnings.
+
+The original verification was bound to `bd497d7` plus an uncommitted worktree (before the
+quality-gate implementation was committed). This reconfirmation only re-verifies that the
+implementation still passes; it does not rewrite the original commands, failed attempts or
+environment limits. Windows Python 3.13.5 was executed locally; Linux and Python 3.14 remain
+covered by remote CI.
