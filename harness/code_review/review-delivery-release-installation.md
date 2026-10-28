@@ -16,13 +16,13 @@
 | RI-004 | Resolved | Valid quoted gate was rejected and unquoted invalid YAML accepted by the old pattern. Both quote styles now pass and the unquoted form fails; red/green fixtures recorded. |
 | RI-005 | Resolved | Installer-owned README/prompt links retain upstream context. Exclude those vendor surfaces from project-link validation instead of modifying release bytes; fixture covers the boundary. |
 | RI-006 | Deliberate boundary | User-level shared copies are untouched. The project uses dot-separated native commands, confirmed through live OpenCode API discovery, not old global wrappers. |
-| RI-007 | Closure pending | ADR-0004 is Proposed; task checkboxes and commit-dependent closure remain open. No Ralph loop, task receipt, commit, remote CI or publication is claimed. |
+| RI-007 | Resolved | PR #8 merged as `2b8b70d`; main Quality 14/14 passed. ADR-0004 is Accepted and tasks are closed. No Ralph loop or task receipt is claimed. |
 
 ## Standards verdict
 
 ```text
 STANDARDS_VERDICT: pass
-HEAD: fdd0c072186ef3cea7f4b3261acd1d82b358ef56 (declared uncommitted installation scope)
+HEAD: 2b8b70db080096a5d12ee399409e3cd4c40dfa2f (PR #8 merge commit)
 SCOPE: release-installation-working-tree
 PATHS: .opencode/commands/; .specify/ (including bundle-records and catalogs); removed project facades; scripts/check-governance.ps1; scripts/test-governance.ps1; project docs and Harness records
 EXCLUDED_PATHS: vendor implementation/prompt semantics outside this migration; user-level shared files
@@ -58,6 +58,13 @@ for actual commands, source/hash checks, preservation checks, environments and f
 
 RI-001 is resolved by the published v0.1.1 Bundle. The target migration preserved six extension
 configs, the core tasks skill, the shared tasks template and the auto-hook-off setting; Bundle
-ownership covers 12 components. The remaining findings are RI-003 (default PSScriptAnalyzer)
-and RI-007 (Proposed ADR / uncommitted closure). This re-review does not convert Bundle
-installation into Ralph execution or an independent PR approval.
+ownership covers 12 components. RI-003 (default PSScriptAnalyzer) remains an environment
+limitation. This re-review does not convert Bundle installation into Ralph execution or an
+independent PR approval.
+
+## Closure — 2026-10-28
+
+PR #8 was merged as `2b8b70db080096a5d12ee399409e3cd4c40dfa2f`. The main Quality run
+[40699123377](https://github.com/YanZhiwei/spawn-join/actions/runs/40699123377) passed 14/14
+jobs. ADR-0004 is Accepted, tasks T001–T009 are complete, and RI-007 is resolved. No real
+Ralph loop was run.

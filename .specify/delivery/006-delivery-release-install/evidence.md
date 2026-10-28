@@ -3,10 +3,10 @@
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
 - **base_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56`
-- **head_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56` plus uncommitted migration
+- **head_revision**: `2b8b70db080096a5d12ee399409e3cd4c40dfa2f` (PR #8 merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-28
-- **result**: pass for v0.1.1 Bundle installation and the declared verification environment
+- **result**: pass for v0.1.1 Bundle installation; main Quality 14/14 passed
 
 The authoritative command, source, preservation and failure record is
 [Harness installation evidence](../../../harness/evidence/delivery-release-installation.md).

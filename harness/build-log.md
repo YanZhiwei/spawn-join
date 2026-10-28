@@ -636,3 +636,21 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
 范围审查：[Standards Review](code_review/review-delivery-release-installation.md)。
+
+## 2026-10-28 — v0.1.1 Bundle 交付收口
+
+**Status**: Complete；PR #8 已合并，main Quality 14/14
+
+**Route**: Feature 006 收口（文档、ADR 状态和证据再锚定，无运行时行为变化）
+
+**Base/head**: `2b8b70db080096a5d12ee399409e3cd4c40dfa2f` 加本次收口提交
+
+- PR #8 已合并为 `2b8b70db080096a5d12ee399409e3cd4c40dfa2f`；Quality 运行
+  `40699123377` 的 14/14 job 全部成功。
+- ADR-0004 由 Proposed 改为 Accepted，索引同步；Feature 006 状态改为 Implemented，
+  T001–T009 全部完成。
+- Harness evidence 的 head 再锚定到合并提交，评审 RI-007 关闭，并记录收口结果。
+- 未运行真实 Ralph 循环；默认环境仍缺 PSScriptAnalyzer 1.25.0。
+
+验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
+范围审查：[Standards Review](code_review/review-delivery-release-installation.md)。
