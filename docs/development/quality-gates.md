@@ -85,7 +85,8 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 临时目录父路径默认使用系统临时目录；本机可设置 `SPAWN_JOIN_TEMP_DIR` 为已存在路径。
 成功或失败都会在 finally 中删除本次创建的唯一子目录，不清理整个父目录或用户源树。
-包级 README 缺失的 setuptools 警告是现有元数据问题，不在本 Feature 顺便修复。
+四个包现已补齐包级 README、LICENSE 与 `license` 元数据；构建不再产生
+`sdist: standard file not found` 警告。
 
 ## CI and merge protection
 

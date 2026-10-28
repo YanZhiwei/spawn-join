@@ -232,6 +232,11 @@ dependencies = [
 | 长期知识与绘图 | 已有 ADR 分类、模板与项目级 Fireworks；渲染能力取决于本机依赖 |
 | 尚未配置 | 自动化 Spec Kit/Harness hook 与发布流水线 |
 
+## 许可证
+
+本仓库及其四个 Distribution 为专有软件，保留所有权利。未经版权持有人书面许可，不得使用、
+复制、修改、发布、分发、再许可或销售。详见 [LICENSE](LICENSE)。
+
 实际命令、环境和验证限制以 [Harness evidence](harness/evidence/README.md) 中对应记录为准；
 不以配置存在或某次本机成功代替当前 revision 的验证。Fireworks 已知兼容性与渲染依赖限制见
 [技能验证记录](harness/evidence/adr-and-project-diagram-skill.md)。

@@ -674,3 +674,21 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
 安装步骤：[Delivery 安装说明](../docs/development/spec-kit-delivery.md)。
+
+## 2026-10-28 — 包元数据、许可证与 PR 模板
+
+**Status**: 本机验证通过；未提交、未推送
+
+**Route**: Lightweight（元数据与治理，无运行时行为变化）
+
+**Base/head**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1` 加当前工作树
+
+- 根 `LICENSE` 与四个包的 `LICENSE`/`README.md` 补齐；四个 `pyproject.toml` 增加
+  `readme`、`license`、`license-files`、`authors`、`[project.urls]`，构建后端提升到
+  `setuptools>=77`。
+- 构建不再出现 `sdist: standard file not found`；wheel 带 `License-Expression` 和
+  `License-File`，sdist 包含 README 与 LICENSE。
+- 新增中文 PR 模板；治理 Profile 覆盖 `LICENSE` 与根模板，避免这两类路径成为 unprofiled。
+- 四个 `uv lock --check` 与完整 `quality.ps1` 通过；未发布、未创建 Tag。
+
+验证记录：[元数据 evidence](evidence/package-metadata-and-license.md)。

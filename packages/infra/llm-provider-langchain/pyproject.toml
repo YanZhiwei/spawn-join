@@ -1,16 +1,23 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-llm-provider-langchain"
 version = "0.1.0"
 description = "LangChain adapter for SpawnJoin's provider-agnostic LLM protocols."
+readme = "README.md"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
     "spawn-join-llm-provider>=0.1.0,<0.2.0",
     "langchain-core>=1.0,<2.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/YanZhiwei/spawn-join"
 
 [dependency-groups]
 dev = [
