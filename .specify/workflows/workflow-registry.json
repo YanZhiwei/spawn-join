@@ -11,33 +11,33 @@
     },
     "feature-delivery": {
       "name": "Spec Kit Feature Delivery",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Guided feature delivery with decision memory, quality gates, Ralph, convergence, simplification, review, evidence, and handoff.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/feature-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.2/workflows/feature-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.214200+00:00",
-      "updated_at": "2026-10-28T09:50:51.214219+00:00"
+      "updated_at": "2026-10-28T15:08:35.425512+00:00"
     },
     "bugfix-delivery": {
       "name": "Spec Kit Bugfix Delivery",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Guided bug assessment, fix, regression validation, quality, review, evidence, and handoff.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/bugfix-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.2/workflows/bugfix-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.410331+00:00",
-      "updated_at": "2026-10-28T09:50:51.410348+00:00"
+      "updated_at": "2026-10-28T15:08:35.601638+00:00"
     },
     "lightweight-delivery": {
       "name": "Spec Kit Lightweight Delivery",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Proportional delivery for mechanical, documentation-only, or behavior-preserving changes.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/lightweight-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.2/workflows/lightweight-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.606350+00:00",
-      "updated_at": "2026-10-28T09:50:51.606367+00:00"
+      "updated_at": "2026-10-28T15:08:35.772749+00:00"
     }
   }
 }

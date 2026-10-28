@@ -16,15 +16,16 @@
 
 | 组件 | 来源/版本 |
 |---|---|
-| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync | `speckit-delivery` Bundle v0.1.1 |
+| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.1.2 |
 | Bug | Specify CLI 1.2.3 随附的 1.0.1 |
-| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.1.1 |
+| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.1.2 |
 
-当前项目使用 **Bundle v0.1.1**，Bundle 记录拥有 9 个扩展和 3 个 Workflow，共 12 个组件。
-v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 已修复 Workflow Catalog 的 requirements
-不一致，并验证了已发布 Catalog、Release 资产和干净项目 Bundle 安装。
+当前项目使用 **Bundle v0.1.2**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
+v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow Catalog 的 requirements
+不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`，并在 Feature 的 `plan`、
+Bugfix 的 `assess` 之前加入非阻塞的代码上下文步骤。
 
-发布入口：[v0.1.1](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.1.1)。
+发布入口：[v0.1.2](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.1.2)。
 安装取舍见 [ADR-0004](../decisions/engineering/0004-release-managed-delivery-installation.md)。
 实际命令、版本和限制见 [安装 evidence](../../harness/evidence/delivery-release-installation.md)。
 
@@ -38,20 +39,20 @@ specify version
 specify integration install opencode --script ps
 specify integration use opencode
 
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.2/catalogs'
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog add "$base/workflows.json" --name speckit-delivery
 specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
-specify bundle install speckit-delivery --version 0.1.1
+specify bundle install speckit-delivery --version 0.1.2
 ```
 
-Bundle 会安装 `bug` 与八个 Delivery 扩展，以及三条 Workflow。Catalog 的安装信任只授权
-已审阅的固定来源，不授权发布、云服务访问或外传仓库内容。安装器对已有共享文件和定制
-模板的保留提示是预期现象，不用强制重初始化消除。
+Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Workflow。Catalog 的安装信任
+只授权已审阅的固定来源，不授权发布、云服务访问或外传仓库内容。安装器对已有共享文件和
+定制模板的保留提示是预期现象，不用强制重初始化消除。
 
 ### 从 v0.1.0 逐组件安装迁移
 
-先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.1.1 Bundle：
+先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.1.2 Bundle：
 
 ```powershell
 foreach ($extension in @('bug','decision','delivery','docs-sync','evidence','quality','ralph','review','simplify')) {
@@ -64,13 +65,38 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 }
 ```
 
-随后删除旧 Catalog、加入 v0.1.1 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
-`bundle list --json` 为 0.1.1、12 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
+随后删除旧 Catalog、加入 v0.1.2 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
+`bundle list --json` 为 0.1.2、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
 `tasks-template.md` 不被覆盖；`auto_execute_hooks: false` 保持。
+
+### 从 v0.1.1 升级
+
+已由 Bundle 管理的项目不需要逐个移除组件，使用 Bundle 自身的更新路径。先用
+`specify workflow catalog list` 确认旧来源的索引，再更新三类 Catalog：
+
+```powershell
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.2/catalogs'
+specify extension catalog remove speckit-delivery
+specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
+specify workflow catalog remove 0
+specify workflow catalog add "$base/workflows.json" --name speckit-delivery
+specify bundle catalog remove speckit-delivery
+specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
+specify bundle update speckit-delivery
+```
+
+升级后检查：`bundle list --json` 为 0.1.2、13 个组件；`*-config.yml` 哈希不变；
+`auto_execute_hooks: false`；OpenCode 原生命令从 31 个增加到 33 个（新增
+`speckit.diagram.render` 和 `speckit.delivery.context`）。`bundle update` 会重新安装
+三条 Workflow，因此新步骤随 Bundle 生效。
 
 ## 项目配置
 
 - [Delivery](../../.specify/extensions/delivery/delivery-config.yml)：上游字段及项目安全设置。
+  未显式写入 `code_context` 时按 `auto` 处理：Feature 在 `plan` 前、Bugfix 在 `assess` 前
+  可使用本地 `.codegraph/` 生成上下文；没有索引时降级为部分结果，不阻塞交付。
+- [Diagram](../../.specify/extensions/diagram/diagram-config.yml)：默认 `format: mermaid`、
+  `renderer: auto`；未安装渲染器时保持 Mermaid，不自动下载或初始化任何工具。
 - [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、四包、自动化、
   治理文档共七个 Profile。包级 `quality` 命令组合格式、lint、类型、测试和隔离构建；
   根 `pyproject.toml` 单独映射一次全量门禁，不创建根级 uv 环境。
@@ -106,7 +132,7 @@ git diff --check
 另外按 `/speckit.delivery.doctor` 的只读契约核对：配置可解析、Bundle/扩展/Workflow 版本
 一致、所有 Workflow 命令在当前宿主可解析、质量命令实际可运行、语义标准有 owner/mechanism。
 Doctor 是 Agent Prompt，不是 PATH 可执行文件。安装器生成的命令由 OpenCode 自动重载；
-旧技能的当前会话缓存不代表新入口缺失。当前项目应发现 31 个点号原生命令（21 个扩展命令
+旧技能的当前会话缓存不代表新入口缺失。当前项目应发现 33 个点号原生命令（23 个扩展命令
 + 10 个核心命令）。
 
 升级前先在临时项目验证新 Release 和 Bundle，检查组件差异、项目配置与定制保留；经确认

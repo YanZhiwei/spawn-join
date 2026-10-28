@@ -15,15 +15,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:43.883894+00:00"
+      "installed_at": "2026-10-28T15:08:25.008952+00:00"
     },
     "delivery": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:61ed015309afa8827ee4877be0738a953d3f280d806ddf9a06f4228d7788580b",
+      "manifest_hash": "sha256:afc5478a190262aef6213776f1197b49df510f4d435120c51793cc89ad30072c",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -32,19 +32,20 @@
           "speckit.delivery.init",
           "speckit.delivery.handoff",
           "speckit.delivery.lightweight",
-          "speckit.delivery.doctor"
+          "speckit.delivery.doctor",
+          "speckit.delivery.context"
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:44.926157+00:00"
+      "installed_at": "2026-10-28T15:08:25.974399+00:00"
     },
     "decision": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:811532c5266562a22d83996e19f976ffd17e76a6bcf4edaecc4de1b8b343d0df",
+      "manifest_hash": "sha256:2a805c78a3d413a4df19cee6e37ab960989c5a9fef2ae87d3165595a47efaf2d",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -56,15 +57,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:45.780286+00:00"
+      "installed_at": "2026-10-28T15:08:26.794975+00:00"
     },
     "ralph": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:134a17de3a5a1db15e0321bf98ef0f2ccda417700c64a669e66858c553156c1f",
+      "manifest_hash": "sha256:e397d3269704b79ca8309a2c511fa6f0fea67ab636272e0ed0bfe6b142fa6d3b",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -73,15 +74,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:46.624819+00:00"
+      "installed_at": "2026-10-28T15:08:27.572905+00:00"
     },
     "review": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:e8b1953dc1952c576a5d221b750c73165f6c5f05e8b3690b407c3697d77f67d7",
+      "manifest_hash": "sha256:cc10c6f6153220672074910c9fa52e7970dbe61118e2e45d123491defe0bcf38",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -91,15 +92,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:47.470460+00:00"
+      "installed_at": "2026-10-28T15:08:28.394271+00:00"
     },
     "simplify": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:22f5470420df8498b5a4a4683e9c7511f19d19e720ae64c5f9b17efd7f4a390b",
+      "manifest_hash": "sha256:e2aac8d087448f272c41f1a3953db70f9fb0b39942d38f68f1fcdf0b0d7a3e76",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -109,15 +110,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:48.318899+00:00"
+      "installed_at": "2026-10-28T15:08:29.632790+00:00"
     },
     "evidence": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:11a1d2d401745b387ea702fdd738229e151dc4a9c75611141b4b0291cfaf1822",
+      "manifest_hash": "sha256:631f7cd92ae6b5c81c98776a1596db0aff1a595e61646617832404af9612f1ca",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -126,15 +127,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:49.148403+00:00"
+      "installed_at": "2026-10-28T15:08:31.511325+00:00"
     },
     "quality": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:4bdba8fd4793825cc07309c61514ba1707ee3eaf71676d8a77280e1395da99e1",
+      "manifest_hash": "sha256:bc7fd2ce691db4852d63f535fccdfaa1bd2e3608c76040ef3f33cb764119218d",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -144,15 +145,15 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:49.987201+00:00"
+      "installed_at": "2026-10-28T15:08:33.078710+00:00"
     },
     "docs-sync": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": {
         "kind": "catalog",
         "catalog": "speckit-delivery"
       },
-      "manifest_hash": "sha256:b0aac213eb89e3b932f3a5fa75760656f6d36bbf64d7bc15c4f4be357ff3ac42",
+      "manifest_hash": "sha256:29417db8805e81b863b82c6894501d34d576fbb8946180f4abd149d92ac90dc6",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
@@ -161,7 +162,24 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-28T09:50:50.822750+00:00"
+      "installed_at": "2026-10-28T15:08:34.240925+00:00"
+    },
+    "diagram": {
+      "version": "0.1.2",
+      "source": {
+        "kind": "catalog",
+        "catalog": "speckit-delivery"
+      },
+      "manifest_hash": "sha256:2c346047125862800e80fd946103682609b0992fac0151c4ec66f9c4660eba7e",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "opencode": [
+          "speckit.diagram.render"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-10-28T15:08:35.044371+00:00"
     }
   }
 }
