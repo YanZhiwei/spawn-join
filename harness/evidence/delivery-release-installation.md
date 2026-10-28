@@ -5,10 +5,10 @@
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
 - **base_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56`
-- **head_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56` plus the declared uncommitted migration
+- **head_revision**: `2b8b70db080096a5d12ee399409e3cd4c40dfa2f` (PR #8 merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-28
-- **result**: pass for v0.1.1 Bundle installation and the declared verification environment; default-environment Doctor remains blocked
+- **result**: pass for v0.1.1 Bundle installation and the declared verification environment; merged main CI passed; default-environment Doctor remains blocked
 
 Route: Feature, manual installation bootstrap. Local Spec/Plan/Tasks remain Git-ignored.
 No branch switch, staging, commit, push, merge, publication or Ralph iteration is performed.
@@ -157,6 +157,15 @@ The upstream Bundle test uses local HTTP catalogs and locally built release asse
 it does not publish a release. It proves the source fix, not the immutable v0.1.0
 Tag. The published v0.1.0 limitation remains as described below.
 
+## Post-merge closure — 2026-10-28
+
+PR [#8](https://github.com/YanZhiwei/spawn-join/pull/8) was merged as
+`2b8b70db080096a5d12ee399409e3cd4c40dfa2f`. The main Quality run
+[40699123377](https://github.com/YanZhiwei/spawn-join/actions/runs/40699123377)
+completed 14/14 jobs successfully, including all package/platform matrix jobs,
+Governance and gate regression, and the required Quality Gate. ADR-0004 is now
+Accepted; no Ralph loop or task commit receipt is claimed.
+
 ## Readiness and Standards
 
 - Scoped mechanical result: `QUALITY_VERDICT: pass` for the declared verification environment
@@ -206,5 +215,5 @@ Installation/upgrade reproduction is in [the Delivery guide](../../docs/developm
 - Integration status reports preserved customizations; do not force overwrite them to remove warnings.
 - Generated/vendor Markdown keeps upstream context links and is explicitly outside project link validation.
 - No real Feature/Ralph loop, task commit receipt, remote CI, merge protection update or publication is tested here.
-- ADR-0004 remains Proposed and local task checkboxes stay open pending authorized commit-dependent closure.
-- This evidence covers an uncommitted working tree, not an immutable commit receipt. Reconfirm after any scope/HEAD change.
+- ADR-0004 is Accepted after PR #8; local tasks T001–T009 are marked complete for this delivery.
+- This evidence now anchors the merged PR #8 commit and its main CI run; later code changes require renewed confirmation.

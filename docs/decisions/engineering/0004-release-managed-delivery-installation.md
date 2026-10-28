@@ -1,11 +1,11 @@
 # ADR-0004: 以固定 Release 管理 Delivery 安装
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-28
 - Domain: engineering
 - Classification: 约束仓库交付工具的来源、宿主入口和升级方式，属于工程治理。
 - Decision owner: 仓库维护者
-- Accepted by / date: 用户已要求以 Release 替换拷贝式安装；最终 reviewed-HEAD 收口待确认
+- Accepted by / date: 用户在 2026-10-28 合并 PR #8，接受 Bundle v0.1.1 接入与治理方案
 - Depends on: [ADR-0001](0001-delivery-and-durable-design.md)、[ADR-0002](0002-untrack-historical-feature-artifacts.md)、[ADR-0003](0003-enable-delivery-and-ralph.md)
 - Related: [安装说明](../../development/spec-kit-delivery.md)
 - Supersedes: 无；拟更新 ADR-0003 的手动接入实现，不改变其权限和证据边界
@@ -54,9 +54,9 @@
 
 隔离项目已验证 v0.1.1 发布 Catalog 的 Bundle 安装和定制保留；目标仓库已从 v0.1.0
 逐组件安装迁移到 v0.1.1 Bundle，Bundle 记录拥有 12 个组件，配置和核心任务定制哈希
-保持不变。验证结果记录在
-[安装 evidence](../../../harness/evidence/delivery-release-installation.md)。
-本 ADR 保持 Proposed，等待未提交变更的最终 reviewed-HEAD 收口；不声明 Ralph 已运行。
+保持不变。PR #8 已合并为 `2b8b70d`，main 的 Quality 运行 14/14 成功。
+验证结果记录在 [安装 evidence](../../../harness/evidence/delivery-release-installation.md)。
+本 ADR 的 Accepted 只表示决策获批；不声明真实 Ralph 循环已运行。
 
 ## Revision history
 
@@ -65,4 +65,6 @@
   校验和 Bundle 安装回归，并将 Bundle 最低 CLI 设为 1.2.3；v0.1.0 Tag 未改变，仍需新
   Release 后复核，因此本 ADR 保持 Proposed。
 - 2026-10-28：v0.1.1 已发布并验证公开 Catalog/Bundle 安装；SpawnJoin 已迁移到 Bundle
-  0.1.1，配置与核心定制保留。ADR 仍等待本仓库变更的 reviewed-HEAD 收口。
+  0.1.1，配置与核心定制保留。
+- 2026-10-28：PR #8 合并为 `2b8b70d`，main Quality 14/14 成功；ADR 由 Proposed 改为
+  Accepted。
