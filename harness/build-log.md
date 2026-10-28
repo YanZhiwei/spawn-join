@@ -654,3 +654,23 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
 范围审查：[Standards Review](code_review/review-delivery-release-installation.md)。
+
+## 2026-10-28 — 升级到 Delivery Bundle v0.1.2
+
+**Status**: 本机升级与验证通过；未提交、未推送
+
+**Route**: Lightweight 依赖升级（分发组件版本更新，无业务源码变化）
+
+**Base/head**: `06f6303b597ce01a707164762f55369706b13063` 加当前工作树
+
+- 先核对 v0.1.2 Release：10 个资产（9 个扩展 + Bundle），三类 Catalog 均固定到 `v0.1.2`。
+- 在隔离 fixture 验证 0.1.1 → 0.1.2 的 `bundle update`，随后对目标仓库执行同一步骤；
+  新增 Diagram 扩展，三条 Workflow 重新安装。
+- Bundle 记录 13 个组件；六个扩展配置、核心任务技能和任务模板哈希不变；
+  `auto_execute_hooks: false`、空 hooks 保持；`extensions.yml` 仅新增 `diagram`。
+- OpenCode 原生命令由 31 增加到 33；Feature 与 Bugfix 新增非阻塞的
+  `speckit.delivery.context` 步骤，Diagram 提供 `speckit.diagram.render`。
+- 默认环境仍缺 PSScriptAnalyzer 1.25.0；未运行真实 Ralph 循环，未推送或发布。
+
+验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
+安装步骤：[Delivery 安装说明](../docs/development/spec-kit-delivery.md)。

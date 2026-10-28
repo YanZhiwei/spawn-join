@@ -2,7 +2,7 @@ schema_version: "1.0"
 workflow:
   id: "feature-delivery"
   name: "Spec Kit Feature Delivery"
-  version: "0.1.1"
+  version: "0.1.2"
   author: "Yan Zhiwei"
   description: "Guided feature delivery with decision memory, quality gates, Ralph, convergence, simplification, review, evidence, and handoff."
 
@@ -56,6 +56,12 @@ steps:
     command: speckit.decision.context
     integration: "{{ inputs.integration }}"
     input: { args: "mode=resolve {{ inputs.spec }}" }
+
+  - id: code-context
+    command: speckit.delivery.context
+    integration: "{{ inputs.integration }}"
+    continue_on_error: true
+    input: { args: "lane=feature {{ inputs.spec }}" }
 
   - id: plan
     command: speckit.plan

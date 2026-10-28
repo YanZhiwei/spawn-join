@@ -4,11 +4,11 @@
 
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
-- **base_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56`
-- **head_revision**: `2b8b70db080096a5d12ee399409e3cd4c40dfa2f` (PR #8 merge commit)
+- **base_revision**: `06f6303b597ce01a707164762f55369706b13063`
+- **head_revision**: `06f6303b597ce01a707164762f55369706b13063` plus the v0.1.2 Bundle upgrade working tree
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-28
-- **result**: pass for v0.1.1 Bundle installation and the declared verification environment; merged main CI passed; default-environment Doctor remains blocked
+- **result**: pass for v0.1.2 Bundle upgrade and the declared verification environment; default-environment Doctor remains blocked
 
 Route: Feature, manual installation bootstrap. Local Spec/Plan/Tasks remain Git-ignored.
 No branch switch, staging, commit, push, merge, publication or Ralph iteration is performed.
@@ -204,16 +204,46 @@ the full gate log is `quality-v011.log` in the release-run directory.
 This directory is owned by this run, outside the project. No credentials or private content are uploaded.
 Installation/upgrade reproduction is in [the Delivery guide](../../docs/development/spec-kit-delivery.md).
 
+## v0.1.2 Bundle upgrade — 2026-10-28
+
+The published [v0.1.2 Release](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.1.2)
+was inspected before touching the project: 10 assets (9 extensions plus the Bundle), and all
+three catalogs pinned to `v0.1.2`. The upgrade used the Bundle's own update path rather than
+removing components.
+
+| Actual command/check | Exit | Result |
+|---|---:|---|
+| Release and catalog inspection | 0 | `v0.1.2`; 9 extension ZIPs; `provides.extensions` 10; URLs pinned |
+| Isolated fixture upgrade | 0 | 0.1.1 → 0.1.2 via `bundle update`; config hashes preserved |
+| Target catalog update | 0 | extension/workflow/bundle catalogs replaced with the `v0.1.2` tag |
+| `specify bundle update speckit-delivery` | 0 | updated to `0.1.2`; three workflows reinstalled |
+| `specify bundle list --json` | 0 | 13 components: 10 extensions and 3 workflows |
+| `specify extension list` | 0 | eight Delivery extensions, Diagram and Bug; Delivery now has 6 commands |
+| `specify workflow list` | 0 | all three workflows at `0.1.2` |
+| Protected-file comparison | 0 | six extension configs, core tasks skill and tasks template unchanged |
+| `.specify/extensions.yml` | 0 | only `diagram` added; `auto_execute_hooks: false`, empty hooks |
+| OpenCode API command discovery | 0 | 33 native commands (23 extension + 10 core) |
+| Workflow step check | 0 | `speckit.delivery.context` present in feature and bugfix workflows |
+
+Backup: `C:\Users\YanZh\AppData\Local\Temp\opencode\spawn-join-v012-backup-2l4b5rg1`.
+The fixture is `spawn-join-v012-fixture-6yhwmdvf` in the same directory. Both are outside the
+project and are not committed.
+
+`delivery-config.yml` remains project-owned and was not rewritten, so it does not contain the new
+`code_context` key; the command treats an absent key as `auto`. Diagram configuration is the
+scaffolded default (`format: mermaid`, `renderer: auto`), so no renderer is required.
+
 ## Limitations and blockers
 
 - The default local environment still needs PSScriptAnalyzer 1.25.0; passing tests with an explicit
   temporary module path do not make the default Doctor result pass or authorize a global install.
 - The published **v0.1.0** Bundle remains historical and unusable; it predates the Workflow
-  `requires` fix. Current state is v0.1.1 Bundle, verified from the published fixed Tag.
+  `requires` fix. Current state is the v0.1.2 Bundle, verified from the published fixed Tag.
   Do not fall back to the v0.1.0 catalog or component instructions.
 - Global old skills/commands are deliberately not deleted. Use project dot-separated native commands.
 - Integration status reports preserved customizations; do not force overwrite them to remove warnings.
 - Generated/vendor Markdown keeps upstream context links and is explicitly outside project link validation.
 - No real Feature/Ralph loop, task commit receipt, remote CI, merge protection update or publication is tested here.
 - ADR-0004 is Accepted after PR #8; local tasks T001–T009 are marked complete for this delivery.
-- This evidence now anchors the merged PR #8 commit and its main CI run; later code changes require renewed confirmation.
+- This evidence anchors the merged PR #8 run and the v0.1.2 upgrade working tree; later code
+  changes require renewed confirmation.
