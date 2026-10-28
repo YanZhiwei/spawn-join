@@ -12,7 +12,7 @@
 - 只依赖 `spawn-join-core`。
 - 不依赖 LangChain、OpenAI、Azure 或其他 Provider SDK。
 - 框架适配和 Provider 实现属于
-  [`spawn-join-llm-provider-langchain`](../infra/llm-provider-langchain/)。
+  [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/)。
 
 ## 使用与验证
 
