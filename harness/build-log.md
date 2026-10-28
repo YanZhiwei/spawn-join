@@ -674,3 +674,40 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
 安装步骤：[Delivery 安装说明](../docs/development/spec-kit-delivery.md)。
+
+## 2026-10-28 — 包元数据、许可证与 PR 模板
+
+**Status**: 本机验证通过；未提交、未推送
+
+**Route**: Lightweight（元数据与治理，无运行时行为变化）
+
+**Base/head**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1` 加当前工作树
+
+- 根 `LICENSE` 与四个包的 `LICENSE`/`README.md` 补齐；四个 `pyproject.toml` 增加
+  `readme`、`license`、`license-files`、`authors`、`[project.urls]`，构建后端提升到
+  `setuptools>=77`。
+- 构建不再出现 `sdist: standard file not found`；wheel 带 `License-Expression` 和
+  `License-File`，sdist 包含 README 与 LICENSE。
+- 新增中文 PR 模板；治理 Profile 覆盖 `LICENSE` 与根模板，避免这两类路径成为 unprofiled。
+- 四个 `uv lock --check` 与完整 `quality.ps1` 通过；未发布、未创建 Tag。
+
+验证记录：[元数据 evidence](evidence/package-metadata-and-license.md)。
+
+## 2026-10-28 — 治理链接检查覆盖未跟踪文档
+
+**Status**: 本机验证通过；未推送
+
+**Route**: Bugfix（CI 暴露的检查范围缺陷）
+
+**Base/head**: `1eeb1f0` 加当前工作树
+
+- 红证据：PR #11 的 governance job 因新包 README 的坏链接失败
+  （`missing link target: ../infra/llm-provider-langchain/`）。
+- 根因：`check-governance.ps1` 的链接扫描只枚举 `git ls-files`，未暂存的新文档被跳过。
+- 修复：链接扫描同时枚举 `git ls-files --others --exclude-standard`，并在
+  `test-governance.ps1` 增加“未跟踪 Markdown 坏链接”场景。
+- 验证：21 个治理场景、静态检查与静态回归通过；真实仓库的未跟踪坏链接探针 exit 1，
+  删除后 exit 0。
+- 未重跑四包完整 gate（本次仅改脚本与文档）；PR CI 会重新执行全部检查。
+
+验证记录：[元数据 evidence](evidence/package-metadata-and-license.md)。

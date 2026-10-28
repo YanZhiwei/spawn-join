@@ -3,7 +3,7 @@
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
 - **base_revision**: `06f6303b597ce01a707164762f55369706b13063`
-- **head_revision**: `06f6303b597ce01a707164762f55369706b13063` plus the v0.1.2 Bundle upgrade working tree
+- **head_revision**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1` (PR #10 merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-28
 - **result**: pass for v0.1.2 Bundle upgrade; default-environment Doctor remains blocked

@@ -68,7 +68,7 @@ profiles:
       governance_regression: "pwsh -NoProfile -File scripts/test-governance.ps1"
       static_regression: "pwsh -NoProfile -File scripts/test-static.ps1"
   - id: governance-and-documentation
-    match: ["README.md", "AGENTS.md", "docs/**", "harness/**", ".specify/**", ".gitignore"]
+    match: ["README.md", "AGENTS.md", "LICENSE", ".github/pull_request_template.md", "docs/**", "harness/**", ".specify/**", ".gitignore"]
     discovery_files: [scripts/quality.ps1, scripts/check-governance.ps1]
     commands:
       docs: "pwsh -NoProfile -File scripts/quality.ps1 -Check docs"
