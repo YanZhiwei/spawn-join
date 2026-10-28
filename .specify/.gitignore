@@ -12,3 +12,10 @@ extensions/*/local-config.yml
 # Execution consent is stored separately in the user's local trust registry.
 integrations/packages/
 integrations/packages.json
+
+# Installer caches and recovery copies are machine-local, not provenance records.
+extensions/.cache/
+extensions/.backup/
+workflows/.cache/
+.workflow-install.lock
+workflows/.*.installing-*/

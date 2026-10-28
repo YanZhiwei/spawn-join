@@ -6,7 +6,7 @@
 - feature_id: 不适用（Lightweight；未创建 Feature）
 - phase_id: adr-and-project-diagram-skill
 - base_revision: bd497d72e928f596e79cdbe5b1466eba4c75ec39
-- head_revision: bd497d7 加未提交工作树
+- head_revision: working-tree (bd497d7 plus uncommitted worktree)
 - working_directory: `D:\Repos\Github\spawn-join`
 - recorded_at: 2026-10-26
 - result: fail (QUALITY_VERDICT 见文末；STANDARDS_VERDICT 为 pass)

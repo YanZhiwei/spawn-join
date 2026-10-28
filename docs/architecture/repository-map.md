@@ -12,8 +12,10 @@ spawn-join/
 ├── .agents/
 │   └── skills/                    # Spec Kit 与固定版本 Fireworks 技能
 ├── .codegraph/                    # 本机源码索引；只提交 .gitignore
+├── .opencode/commands/             # CLI 生成的项目原生命令，当前默认宿主
 ├── .specify/                      # Spec Kit 基础设施
-│   ├── integrations/              # Codex、Speckit 等集成清单
+│   ├── integrations/              # Codex、OpenCode、Speckit 集成清单
+│   ├── extensions/                # Release 组件、registry 与项目配置
 │   ├── memory/                    # 项目 Constitution
 │   ├── scripts/                   # Spec Kit 辅助脚本
 │   ├── templates/                 # Spec、Plan、Tasks 等模板
@@ -39,15 +41,13 @@ spawn-join/
 ├── pyproject.toml                 # tool-only 配置，不是根级 Python/uv project
 ├── README.md                      # 面向使用者的项目概览
 ├── scripts/                       # PowerShell 质量入口及其故障回归
-├── specs/                         # 本地交付工件；Git 忽略，不随仓库分发
-│   ├── 001-harness-foundation/    # 历史工件，ADR-0002 取消跟踪，本地保留
-│   └── 002-python-quality-gates/  # 当前 Feature
+├── specs/                         # 本地交付工件；活动 Feature 由本机指针选择
 ```
 
-本地 `specs/` 包含 Harness Foundation 和 Python Quality Gates；`/specs/` 已加入 Git 忽略，
+本地 `specs/` 按需保存 Feature；`/specs/` 已加入 Git 忽略，
 历史工件已按 [ADR-0002](../decisions/engineering/0002-untrack-historical-feature-artifacts.md)
 取消跟踪但保留本机文件，未跟踪工件仅保留在本地，不代表任务已经完成。`harness/` 保存阶段约定及实际
-记录；standalone 质量入口和 CI 配置已加入，但没有自动化 Spec Kit hook、Delivery 或发布。
+记录；质量入口、CI 和 Release Delivery 组件已加入，但没有自动化 Spec Kit hook 或发布。
 远端 CI 和分支保护必须另有运行/配置证据，不把配置路径存在当作通过。
 
 ## 导航入口
@@ -65,6 +65,7 @@ spawn-join/
 | Spec Kit 模板、脚本和 workflow | [`.specify/`](../../.specify/) |
 | Python 包元数据和构建配置 | 各 Distribution 的 `pyproject.toml` |
 | 质量工具和运行命令 | [`quality-gates.md`](../development/quality-gates.md) |
+| Delivery 安装、配置和升级 | [`spec-kit-delivery.md`](../development/spec-kit-delivery.md) |
 | Python 源码关系和影响范围 | CodeGraph 索引 |
 
 ## 路径语义

@@ -1,0 +1,11 @@
+catalogs:
+- name: spec-kit-core
+  url: https://raw.githubusercontent.com/github/spec-kit/v1.2.3/extensions/catalog.json
+  priority: 20
+  install_allowed: true
+  description: ''
+- name: speckit-delivery
+  url: https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/catalogs/extensions.json
+  priority: 10
+  install_allowed: true
+  description: ''

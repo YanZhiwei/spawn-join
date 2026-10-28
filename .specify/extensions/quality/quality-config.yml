@@ -1,0 +1,86 @@
+schema_version: "1.0"
+
+# Project-owned profiles. Each Distribution command includes locked environment,
+# formatting, lint, strict types, tests, build and isolated installation checks.
+policy_sources:
+  architecture:
+    - .specify/memory/constitution.md
+    - docs/architecture/package-boundaries.md
+    - docs/decisions/README.md
+  style:
+    - AGENTS.md
+    - docs/development/quality-gates.md
+
+standards:
+  - id: executable-python-quality
+    owner: quality
+    mechanism: "scripts/quality.ps1; root tool policy and per-Distribution locks"
+  - id: dry-ownership-public-api-comment-intent
+    owner: review
+    mechanism: "speckit.review.standards against Constitution, AGENTS.md and package boundaries"
+  - id: duplication-and-unnecessary-surface
+    owner: simplify
+    mechanism: "speckit.simplify.scan on the outgoing diff"
+  - id: durable-architecture-decisions
+    owner: adr
+    mechanism: "speckit.decision.propose, speckit.decision.finalize and speckit.decision.check"
+
+profiles:
+  - id: shared-tool-policy
+    match: ["pyproject.toml"]
+    discovery_files: [pyproject.toml]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1"
+  - id: spawn-join-core
+    match: ["packages/core/spawn-join-core/**"]
+    discovery_files: [pyproject.toml, packages/core/spawn-join-core/pyproject.toml, packages/core/spawn-join-core/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core"
+    rules:
+      complexity_max: 10
+  - id: spawn-join-llm-provider
+    match: ["packages/core/llm-provider/**"]
+    discovery_files: [pyproject.toml, packages/core/llm-provider/pyproject.toml, packages/core/llm-provider/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider"
+    rules:
+      complexity_max: 10
+  - id: spawn-join-llm-provider-langchain
+    match: ["packages/infra/llm-provider-langchain/**"]
+    discovery_files: [pyproject.toml, packages/infra/llm-provider-langchain/pyproject.toml, packages/infra/llm-provider-langchain/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain"
+    rules:
+      complexity_max: 10
+  - id: spawn-join-observability
+    match: ["packages/infra/spawn-join-observability/**"]
+    discovery_files: [pyproject.toml, packages/infra/spawn-join-observability/pyproject.toml, packages/infra/spawn-join-observability/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-observability"
+    rules:
+      complexity_max: 10
+  - id: project-automation
+    match: ["scripts/**", ".github/workflows/**"]
+    discovery_files: [scripts/quality.ps1, scripts/PSScriptAnalyzerSettings.psd1]
+    commands:
+      static: "pwsh -NoProfile -File scripts/quality.ps1 -Check static"
+      quality_regression: "pwsh -NoProfile -File scripts/test-quality.ps1"
+      governance_regression: "pwsh -NoProfile -File scripts/test-governance.ps1"
+      static_regression: "pwsh -NoProfile -File scripts/test-static.ps1"
+  - id: governance-and-documentation
+    match: ["README.md", "AGENTS.md", "docs/**", "harness/**", ".specify/**", ".gitignore"]
+    discovery_files: [scripts/quality.ps1, scripts/check-governance.ps1]
+    commands:
+      docs: "pwsh -NoProfile -File scripts/quality.ps1 -Check docs"
+      governance: "pwsh -NoProfile -File scripts/quality.ps1 -Check governance"
+
+unprofiled_changed_paths: block
+# Installer/vendor inputs are outside product-source checks, never quality passes.
+excluded_paths:
+  - ".agents/skills/**"
+  - ".opencode/commands/**"
+  - ".specify/scripts/**"
+  - ".specify/templates/**"
+  - ".specify/workflows/**"
+  - ".specify/extensions/*/commands/**"
+reuse_passing_hooks: true

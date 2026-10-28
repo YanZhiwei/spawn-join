@@ -4,6 +4,7 @@
 
 - **lane**: Lightweight（首次 Delivery 路由实跑）
 - **feature_id**: `lightweight-evidence-reanchor`
+- **phase_id**: `lightweight-evidence-reanchor`
 - **base_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 squash 合并）
 - **head_revision**: working-tree（本次证据提交）
 - **artifact_policy**: ephemeral；`specs/` 不进入本交付

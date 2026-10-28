@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-10-28T09:50:51Z",
+  "bundles": [
+    {
+      "bundle_id": "speckit-delivery",
+      "version": "0.1.1",
+      "installed_at": "2026-10-28T09:50:51Z",
+      "contributed_components": [
+        {
+          "kind": "extensions",
+          "id": "bug",
+          "version": "1.0.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "decision",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "ralph",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "review",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "simplify",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "evidence",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "quality",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "docs-sync",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "feature-delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "bugfix-delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "lightweight-delivery",
+          "version": "0.1.1"
+        }
+      ],
+      "required_components": [
+        {
+          "kind": "extensions",
+          "id": "bug",
+          "version": "1.0.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "decision",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "ralph",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "review",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "simplify",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "evidence",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "quality",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "extensions",
+          "id": "docs-sync",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "feature-delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "bugfix-delivery",
+          "version": "0.1.1"
+        },
+        {
+          "kind": "workflows",
+          "id": "lightweight-delivery",
+          "version": "0.1.1"
+        }
+      ],
+      "installed_versions": {
+        "extensions:bug": "1.0.1",
+        "extensions:delivery": "0.1.1",
+        "extensions:decision": "0.1.1",
+        "extensions:ralph": "0.1.1",
+        "extensions:review": "0.1.1",
+        "extensions:simplify": "0.1.1",
+        "extensions:evidence": "0.1.1",
+        "extensions:quality": "0.1.1",
+        "extensions:docs-sync": "0.1.1",
+        "workflows:feature-delivery": "0.1.1",
+        "workflows:bugfix-delivery": "0.1.1",
+        "workflows:lightweight-delivery": "0.1.1"
+      }
+    }
+  ]
+}

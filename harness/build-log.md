@@ -553,3 +553,86 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 未提交、未推送；本条目绑定未提交工作树，提交后需重新确认；
 - 001 仅取消跟踪，内容仍在本机与历史提交中；002 仍为本地工件；
 - 远端 CI 与分支保护状态不变，本次不扩展处理。
+
+## 2026-10-28 — Release Delivery 安装迁移
+
+**Status**: Installed；最终质量验证进行中，未创建提交
+
+**Route**: Feature（安装器自举迁移，人工按本地任务队列推进，不运行 Ralph）
+
+**Base/head**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56` + 本次未提交变更
+
+- 按用户要求移除项目 sd/speckit-delivery 拷贝门面，采用固定 Release 组件安装。
+- 隔离验证发现 Bundle 在 CLI 1.2.3/0.16.4 的两条失败路径；不降级全局 CLI、不改发布文件。
+- 原生组件安装已在隔离项目和目标仓库成功：八个 Release v0.1.0 扩展、Bug 1.0.1、三条 Tag 固定 Workflow。
+- 默认 OpenCode，保留 Codex、项目任务定制、Specs 本地化和远端授权边界；Hook 自动执行关闭。
+- 九个 Release 资产哈希及八个扩展的 41 文件逐字节核对通过；全部 Workflow 命令可解析。
+- 先复现后修正 quoted gate 和 Vendor Markdown 链接边界，治理回归扩为 16 场景并通过。
+
+实际命令、退出码、环境与限制见 [安装 evidence](evidence/delivery-release-installation.md)。
+最终质量/Standards/Doctor 结果待后续实际执行后追加，不提前声明完整交付或 Ralph 完成。
+
+## 2026-10-28 — Release 安装验证结果确认
+
+**Status**: Release 组件安装与声明环境下的本地验证通过；默认环境 readiness / 提交收口仍有边界
+
+- 六个 Profile 的十条精确命令全部 exit 0；最终 `pwsh -NoProfile -File scripts/quality.ps1`
+  也已实际执行并 exit 0。四包 20 测试、构建/隔离安装、文档、治理和静态检查通过；
+  门禁/治理/静态回归分别 9/16/3 场景通过。
+- 验证环境通过进程级 `PSModulePath` 提供固定 PSScriptAnalyzer 1.25.0，不做全局安装。
+  默认本机环境仍缺该模块，因此 Doctor 明确为 blocked，不将临时成功误报成无人值守就绪。
+- OpenCode 服务 API 已发现本项目全部 31 个原生命令；三个 Workflow 与固定 Tag 逐字节一致。
+- 无本地 Specs 的 tracked checkout 模拟通过 docs/governance 和 cached diff 检查；
+  source build/dist/egg-info 与根级环境/锁无残留，目标索引未暂存，HEAD 未改变。
+- Standards Review 对本次安装实现给出 pass；ADR-0004 保持 Proposed，Tasks 和任务提交收口未关闭。
+- 未执行 Bundle/Ralph 循环、远端 CI、推送、合并或发布。
+
+结果与失败尝试：[安装 evidence](evidence/delivery-release-installation.md)；
+范围审查：[Standards Review](code_review/review-delivery-release-installation.md)。
+
+## 2026-10-28 — SDD/Harness 再审计与双仓库修复
+
+**Status**: analyzed and locally verified；未提交、未推送
+
+**Route**: Bugfix/治理修复（先复现失败，再收紧检查与分发契约）
+
+**Base/head**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56` + 当前未提交工作树
+
+- SpawnJoin：`check-governance.ps1` 新增 `.specify/delivery` evidence 校验、截断 revision
+  拒绝、`artifact_policy`/ADR 目录安全校验和 `auto_execute_hooks` 拒绝；回归扩为 20 场景。
+- 历史 evidence 的截断 head 改为明确的 `working-tree (...)`，不改变原结论；轻量证据
+  补齐 `phase_id`。
+- Quality Profile 增加共享 `pyproject.toml` Profile，避免根工具配置重复触发四包全量检查；
+  当前共七个 Profile。
+- `speckit-delivery`：对齐三个 Workflow Catalog 的 `requires`，新增分发契约校验、契约回归
+  和真实 Bundle 安装回归；Bundle 最低 CLI 改为 1.2.3，更新发布/验证 Workflow 与文档。
+- 本地 Bundle 回归以 CLI 1.2.3 从本地 release-shaped Catalog 安装 12 个组件成功；
+  v0.1.0 固定 Tag 仍含旧 Catalog，必须新 Release 后复核，不能把源码验证当作已发布修复。
+- 未运行完整 Ralph、远端 CI、推送、合并或发布；默认本机静态工具仍缺 PSScriptAnalyzer。
+
+命令与限制：[安装 evidence](evidence/delivery-release-installation.md)；
+上游结果：`D:\Repos\Github\speckit-delivery` 的
+`scripts/validate_distribution.py`、`scripts/test_validate_distribution.py`、
+`scripts/test_bundle_install.py`。新提交产生后需重新确认本条目和旧 evidence。
+
+## 2026-10-28 — 迁移到 v0.1.1 Bundle
+
+**Status**: Bundle 安装与本地验证通过；未提交、未推送
+
+**Route**: Feature 006 后续迁移（发布后从逐组件安装切换到 Bundle）
+
+**Base/head**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56` + 当前未提交工作树
+
+- 先验证已发布 v0.1.1：Tag 指向 `27b2e73`，9 个资产 SHA-256 匹配，公开 Catalog
+  均为 0.1.1；干净项目 Bundle 安装 12 个组件成功。
+- 备份项目配置后，以 `--keep-config` 移除 v0.1.0 组件和三条 Workflow，更新 Catalog 到
+  v0.1.1，安装 Bundle `0.1.1`；`bundle list` 显示 12 个贡献组件。
+- 六个扩展配置、核心任务技能和 `tasks-template.md` 哈希保持不变；
+  `auto_execute_hooks: false`、空 hooks 和授权边界保持不变。
+- OpenCode 发现 31 个原生命令；“Bug” 保持 CLI 随附 1.0.1。
+- 完整 `quality.ps1`、9 个门禁场景、20 个治理场景和 3 个静态场景全部通过；
+  默认环境仍缺 PSScriptAnalyzer 1.25.0，Doctor 保持 blocked。
+- 未运行完整 Ralph 循环，未提交、推送、合并或发布 SpawnJoin 变更。
+
+验证记录：[安装 evidence](evidence/delivery-release-installation.md)；
+范围审查：[Standards Review](code_review/review-delivery-release-installation.md)。

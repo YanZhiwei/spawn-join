@@ -1,0 +1,10 @@
+commands:
+  build: "pwsh -NoProfile -File scripts/quality.ps1 -Check build"
+  lint: "pwsh -NoProfile -File scripts/quality.ps1 -Check lint"
+  typecheck: "pwsh -NoProfile -File scripts/quality.ps1 -Check type"
+  unit: "pwsh -NoProfile -File scripts/quality.ps1 -Check test"
+  integration: null
+  docs: "pwsh -NoProfile -File scripts/quality.ps1 -Check docs"
+  security: null
+ci_owns_exhaustive_matrix: true
+reuse_passing_hooks: true

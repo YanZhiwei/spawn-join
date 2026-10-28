@@ -1,8 +1,23 @@
 # Spec Kit Delivery configuration for SpawnJoin.
 # Read by the installed speckit.delivery.* commands.
 version: 1
+schema_version: "1.0"
 project: spawn-join
 integration: opencode
+
+# Upstream command fields; nested settings below retain the project safety contract.
+artifact_policy: ephemeral
+issue_tracker: github
+context_files:
+  - .specify/memory/constitution.md
+  - AGENTS.md
+  - docs/architecture/package-boundaries.md
+  - docs/development/quality-gates.md
+adr_directories: [docs/decisions]
+max_convergence_rounds: 2
+max_review_fix_rounds: 2
+docs_sync: auto
+pull_request_template: null
 
 artifacts:
   policy: ephemeral
@@ -30,7 +45,7 @@ verification:
   governance_regression: pwsh -NoProfile -File scripts/test-governance.ps1
   static_regression: pwsh -NoProfile -File scripts/test-static.ps1
 
-docs_sync:
+docs_sync_policy:
   required: true
   owners:
     quality_gates: docs/development/quality-gates.md
@@ -48,7 +63,7 @@ ralph:
   auto_commit: task-only
   auto_push: false
   auto_merge: false
-  task_gate: RALPH_TASK_GATE: PASS
+  task_gate: "RALPH_TASK_GATE: PASS"
   verdicts:
-    quality: QUALITY_VERDICT: pass
-    standards: STANDARDS_VERDICT: pass
+    quality: "QUALITY_VERDICT: pass"
+    standards: "STANDARDS_VERDICT: pass"

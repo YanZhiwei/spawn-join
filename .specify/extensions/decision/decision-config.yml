@@ -1,0 +1,9 @@
+adr_directories:
+  - docs/decisions
+context_files:
+  - AGENTS.md
+  - .specify/memory/constitution.md
+  - docs/architecture/package-boundaries.md
+accepted_statuses: [Accepted]
+proposed_statuses: [Proposed]
+final_records_may_reference_ephemeral_specs: false

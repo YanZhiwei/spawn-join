@@ -1,0 +1,13 @@
+installed:
+- bug
+- decision
+- delivery
+- docs-sync
+- evidence
+- quality
+- ralph
+- review
+- simplify
+settings:
+  auto_execute_hooks: false
+hooks: {}

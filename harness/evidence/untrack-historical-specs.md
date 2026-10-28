@@ -7,7 +7,7 @@
 - **phase_id**: `untrack-historical-specs`
 - **task_id**: 不适用（无 Ralph receipt）
 - **base_revision**: `99f69078b6957e401c5f079890e3bccb2c7ee8d7`
-- **head_revision**: `99f6907` 加未提交工作树
+- **head_revision**: `working-tree (99f6907 plus uncommitted worktree)`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；git 2.55.0.windows.3；uv 0.7.13

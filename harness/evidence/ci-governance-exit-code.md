@@ -7,7 +7,7 @@
 - **phase_id**: `bugfix-ci-governance-exit-code`
 - **task_id**: 不适用（无 Ralph receipt）
 - **base_revision**: `0e2b10ea176ca9411fa8a7bcb5f34a27a28d1e4f`
-- **head_revision**: `0e2b10e` 加未提交工作树（`scripts/test-quality.ps1`、本 evidence、`harness/build-log.md`）
+- **head_revision**: `working-tree (0e2b10e plus uncommitted worktree; scripts/test-quality.ps1, this evidence, harness/build-log.md)`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27T13:51:29Z
 - **environment**: Windows；PowerShell 7.6.9；uv 0.7.13；Node 22.17.0；git 2.55.0.windows.3

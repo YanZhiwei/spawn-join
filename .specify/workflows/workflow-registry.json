@@ -8,6 +8,36 @@
       "source": "bundled",
       "installed_at": "2026-10-25T15:47:59.408652+00:00",
       "updated_at": "2026-10-25T15:47:59.408667+00:00"
+    },
+    "feature-delivery": {
+      "name": "Spec Kit Feature Delivery",
+      "version": "0.1.1",
+      "description": "Guided feature delivery with decision memory, quality gates, Ralph, convergence, simplification, review, evidence, and handoff.",
+      "source": "catalog",
+      "catalog_name": "speckit-delivery",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/feature-delivery/workflow.yml",
+      "installed_at": "2026-10-28T09:50:51.214200+00:00",
+      "updated_at": "2026-10-28T09:50:51.214219+00:00"
+    },
+    "bugfix-delivery": {
+      "name": "Spec Kit Bugfix Delivery",
+      "version": "0.1.1",
+      "description": "Guided bug assessment, fix, regression validation, quality, review, evidence, and handoff.",
+      "source": "catalog",
+      "catalog_name": "speckit-delivery",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/bugfix-delivery/workflow.yml",
+      "installed_at": "2026-10-28T09:50:51.410331+00:00",
+      "updated_at": "2026-10-28T09:50:51.410348+00:00"
+    },
+    "lightweight-delivery": {
+      "name": "Spec Kit Lightweight Delivery",
+      "version": "0.1.1",
+      "description": "Proportional delivery for mechanical, documentation-only, or behavior-preserving changes.",
+      "source": "catalog",
+      "catalog_name": "speckit-delivery",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.1/workflows/lightweight-delivery/workflow.yml",
+      "installed_at": "2026-10-28T09:50:51.606350+00:00",
+      "updated_at": "2026-10-28T09:50:51.606367+00:00"
     }
   }
 }
