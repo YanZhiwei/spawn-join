@@ -1,0 +1,7 @@
+enabled: true
+source_roots: [docs]
+generated_roots: []
+manifest: null
+sync_command: null
+verify_command: "pwsh -NoProfile -File scripts/quality.ps1 -Check docs"
+source_is_authoritative: true

@@ -68,8 +68,9 @@ approved phase plan
 
 - 当前有 Black/isort/Ruff/Pyright/pytest 和 CI 配置；远端 CI 已运行，Ruleset 已配置
   required `Quality Gate`，并用临时失败 PR 验证为 `BLOCKED`。
-- 当前没有 `.specify/extensions.yml`，因此没有自动化 Harness hook；Delivery 配置已启用，
-  但仍按手动路由和 Ralph 协议执行。
-- `scripts/check-governance.ps1` 校验 evidence 元数据、build-log 引用、ADR 索引、Spec/Tasks
-  一致性和被跟踪文档的本地-only 链接；freshness 在非文档路径变化时告警，语义判断仍需人工评审。
+- `.specify/extensions.yml` 已登记 Bundle v0.1.1 组件，但自动 Hook 关闭且无已注册 Hook；
+  [Delivery 安装](../docs/development/spec-kit-delivery.md)不代表 Ralph 或完整交付循环已执行。
+- `scripts/check-governance.ps1` 校验 Harness/Delivery evidence 元数据、截断 revision、
+  build-log 引用、ADR 索引、Spec/Tasks 一致性、Delivery 安全设置和自动 hook 开关；freshness
+  在非文档路径变化时告警，语义判断仍需人工评审。
 - 如果 `HEAD` 或 outgoing paths 变化，旧 evidence 必须重新确认，不能直接沿用。

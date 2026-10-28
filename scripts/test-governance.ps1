@@ -84,6 +84,21 @@ None.
 - Status: Accepted
 - Superseded by: 无
 "@
+    Write-FixtureFile (Join-Path $fixture '.specify/delivery/fixture/evidence.md') @"
+# Delivery Evidence
+
+- feature_id: fixture
+- phase_id: fixture-phase
+- base_revision: working-tree
+- head_revision: working-tree
+- working_directory: fixture
+- recorded_at: 2026-10-28
+- result: pass
+
+## Limitations
+
+None.
+"@
     Write-FixtureFile $spec "**Status**: In Progress`n"
     Write-FixtureFile $tasks "- [ ] T001 First task.`n- [ ] T002 Second task.`n"
 
@@ -97,6 +112,17 @@ None.
     if ($LASTEXITCODE -ne 0) { throw 'Could not commit fixture baseline.' }
 
     Test-GovernanceResult 'valid structure' $true ''
+
+    $deliveryEvidence = Join-Path $fixture '.specify/delivery/fixture/evidence.md'
+    $originalDeliveryEvidence = Get-Content -LiteralPath $deliveryEvidence -Raw
+    Set-Content -LiteralPath $deliveryEvidence -Value ($originalDeliveryEvidence -replace
+        '- phase_id: fixture-phase\r?\n', '')
+    Test-GovernanceResult 'delivery evidence missing phase' $false 'missing field: phase_id'
+    Set-Content -LiteralPath $deliveryEvidence -Value ($originalDeliveryEvidence -replace
+        'head_revision: working-tree', 'head_revision: bd497d7')
+    Test-GovernanceResult 'truncated delivery revision' $false `
+        'head_revision must use a full 40-character SHA or working-tree'
+    Set-Content -LiteralPath $deliveryEvidence -Value $originalDeliveryEvidence
 
     $baseCommit = (& git -C $fixture rev-parse HEAD).Trim()
     $originalEvidence = Get-Content -LiteralPath $evidence -Raw
@@ -139,6 +165,18 @@ None.
     Set-Content -LiteralPath $readme -Value $originalReadme
     Remove-Item -LiteralPath (Join-Path $fixture 'specs/hidden.md')
 
+    $vendorDocuments = @('.opencode/commands/vendor.md',
+        '.specify/extensions/vendor/README.md')
+    foreach ($path in $vendorDocuments) {
+        Write-FixtureFile (Join-Path $fixture $path) '[upstream context](../../missing-upstream.md)'
+        & git -C $fixture add -- $path
+        if ($LASTEXITCODE -ne 0) { throw "Could not stage fixture document: $path" }
+    }
+    Test-GovernanceResult 'installer-owned Markdown stays outside project links' $true ''
+    foreach ($path in $vendorDocuments) {
+        Remove-Item -LiteralPath (Join-Path $fixture $path)
+    }
+
     $extraEvidence = Join-Path $fixture 'harness/evidence/phase-02-fixture.md'
     Write-FixtureFile $extraEvidence @"
 # Evidence
@@ -165,20 +203,54 @@ None.
     Set-Content -LiteralPath $buildLog -Value $originalLog
 
     $deliveryConfig = Join-Path $fixture '.specify/extensions/delivery/delivery-config.yml'
+    foreach ($path in @('.specify/memory/constitution.md', 'AGENTS.md',
+            'scripts/quality.ps1', 'scripts/test-quality.ps1',
+            'scripts/test-governance.ps1', 'scripts/test-static.ps1')) {
+        Write-FixtureFile (Join-Path $fixture $path) '# Fixture dependency'
+    }
+    New-Item -ItemType Directory -Path (Join-Path $fixture 'docs/architecture') -Force | Out-Null
     Write-FixtureFile $deliveryConfig @"
 version: 1
+artifact_policy: ephemeral
+adr_directories: [docs/decisions]
 artifacts:
   policy: ephemeral
 ralph:
   branch_prefix: ralph/
   parallel_workers: false
   evidence_root: .specify/delivery/
-  auto_push: true
+  auto_push: false
   auto_merge: false
-  task_gate: RALPH_TASK_GATE: PASS
+  task_gate: "RALPH_TASK_GATE: PASS"
 "@
+    $validDeliveryConfig = Get-Content -LiteralPath $deliveryConfig -Raw
+    Test-GovernanceResult 'valid double-quoted delivery gate' $true ''
+    Set-Content -LiteralPath $deliveryConfig -Value ($validDeliveryConfig -replace
+        '"RALPH_TASK_GATE: PASS"', "'RALPH_TASK_GATE: PASS'")
+    Test-GovernanceResult 'valid single-quoted delivery gate' $true ''
+    Set-Content -LiteralPath $deliveryConfig -Value ($validDeliveryConfig -replace
+        '"RALPH_TASK_GATE: PASS"', 'RALPH_TASK_GATE: PASS')
+    Test-GovernanceResult 'unquoted delivery gate is rejected' $false `
+        'missing or invalid setting: ralph.task_gate=RALPH_TASK_GATE: PASS'
+    Set-Content -LiteralPath $deliveryConfig -Value ($validDeliveryConfig -replace
+        'artifact_policy: ephemeral', 'artifact_policy: tracked')
+    Test-GovernanceResult 'unsafe artifact policy' $false `
+        'missing or invalid setting: artifact_policy=ephemeral'
+    Set-Content -LiteralPath $deliveryConfig -Value ($validDeliveryConfig -replace
+        'auto_push: false', 'auto_push: true')
     Test-GovernanceResult 'unsafe delivery config' $false 'missing or invalid setting: ralph.auto_push=false'
     Remove-Item -LiteralPath $deliveryConfig
+
+    $extensionsConfig = Join-Path $fixture '.specify/extensions.yml'
+    Write-FixtureFile $extensionsConfig @"
+installed: []
+settings:
+  auto_execute_hooks: true
+hooks: {}
+"@
+    Test-GovernanceResult 'automatic hooks are rejected' $false `
+        'auto_execute_hooks must be false'
+    Remove-Item -LiteralPath $extensionsConfig
 
     $originalSpec = Get-Content -LiteralPath $spec -Raw
     Set-Content -LiteralPath $spec -Value '**Status**: Implemented'

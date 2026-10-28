@@ -107,9 +107,11 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
 以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
-`scripts/test-governance.ps1` 用独立 fixture 覆盖 11 个治理场景（合法结构、缺字段、非法
+`scripts/test-governance.ps1` 用独立 fixture 覆盖 20 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、evidence 未进 build-log、缺失 build-log、状态矛盾、
-重复任务 ID、纯文档跟进不告警、非文档变更告警）。
+重复任务 ID、纯文档跟进不告警、非文档变更告警、不安全 Delivery 配置、单双引号 gate、
+拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
+不安全 artifact policy 和自动 hook）。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
@@ -118,12 +120,13 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 - 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审（落后且期间有非文档路径变更时产生 warning；纯文档追加不告警）。
 - 静态分析只覆盖 workflow 语法/表达式和 PowerShell 高信号规则，不验证运行时行为；
-  `.agents/skills/` 的第三方脚本不在扫描范围。
+  `.agents/skills/` 的第三方脚本不在扫描范围。治理链接检查也不重写或校验安装器管理的
+  `.opencode/commands/`、`.specify/extensions/` Vendor Prompt/README 的上游相对链接。
 - 本期不安装 pre-commit、coverage 百分比门槛、漏洞扫描或发布流水线。
-- Standalone 质量入口/CI 不是 Spec Kit hook；Delivery 配置已启用，Ralph 仍按协议人工推进，
-  hook 未安装。
+- Standalone 质量入口/CI 不是 Spec Kit hook；[Release Delivery](spec-kit-delivery.md) 已接入
+  项目原生命令和质量 Profile，Hook 关闭，安装不等于 Ralph 执行通过。
 - 增加依赖、接口或目录后，必须同步测试、脚本中的本地构建依赖映射、文档和实际证据。
 
-本地 Feature 为 `specs/002-python-quality-gates/`（Git 忽略，不保证存在于干净检出）。
-可共享的实施与验证记录见
+活动 Feature 以本机 `.specify/feature.json` 为准；`specs/` 为 Git 忽略，不保证存在于
+干净检出。可共享的实施与验证记录见
 [Harness evidence](../../harness/evidence/phase-01-python-quality-gates.md)。

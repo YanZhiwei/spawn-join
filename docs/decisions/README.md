@@ -1,7 +1,8 @@
 # Architecture Decision Records
 
-本目录是 SpawnJoin 长期架构决策（ADR）的唯一根目录。当前通过文档约定治理；Delivery 配置
-已启用，但 ADR 自动化 hook 尚未配置。未来启用时必须指向本目录，不另建第二套决策库。
+本目录是 SpawnJoin 长期架构决策（ADR）的唯一根目录。当前通过文档约定和治理检查维护；
+Delivery 的 ADR/context 配置已指向本目录，但自动 hook 尚未启用；未来启用时必须继续
+指向这里，不另建第二套决策库。
 
 ## 什么值得记录
 
@@ -70,5 +71,6 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0001 | engineering | [分离交付工件与长期设计知识](engineering/0001-delivery-and-durable-design.md) | Accepted |
 | ADR-0002 | engineering | [取消跟踪历史 Feature 工件](engineering/0002-untrack-historical-feature-artifacts.md) | Accepted |
 | ADR-0003 | engineering | [启用 Spec Kit Delivery 与 Ralph 协议](engineering/0003-enable-delivery-and-ralph.md) | Accepted |
+| ADR-0004 | engineering | [以固定 Release 管理 Delivery 安装](engineering/0004-release-managed-delivery-installation.md) | Proposed |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。

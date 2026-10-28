@@ -80,7 +80,10 @@ function Get-EvidenceFields {
 
 function Test-Revision {
     param([string]$Path, [string]$Field, [string]$Value)
-    if ($Value -match '([0-9a-f]{40})') {
+    $text = $Value.Trim()
+    if ($text -match '^(?i)working-tree\b') { return }
+
+    if ($text -match '([0-9a-f]{40})') {
         $revision = $Matches[1]
         & git -C $rootPath cat-file -e "$revision^{commit}" 2>$null
         if ($LASTEXITCODE -ne 0) {
@@ -90,7 +93,14 @@ function Test-Revision {
                 Add-CheckError $Path "$Field is not a commit in this repository: $revision"
             }
         }
+        return
     }
+
+    if ($text -match '(?i)(?<![0-9a-f])[0-9a-f]{7,39}(?![0-9a-f])') {
+        Add-CheckError $Path "$Field must use a full 40-character SHA or working-tree; got: $text"
+        return
+    }
+    Add-CheckError $Path "$Field must be a full 40-character SHA or working-tree; got: $text"
 }
 
 function Test-Evidence {
@@ -176,6 +186,50 @@ function Test-Evidence {
     }
 }
 
+function Test-DeliveryEvidence {
+    $deliveryDir = Join-Path $rootPath '.specify/delivery'
+    if (-not (Test-Path -LiteralPath $deliveryDir -PathType Container)) { return }
+
+    $required = @('feature_id', 'phase_id', 'base_revision', 'head_revision',
+        'working_directory', 'recorded_at', 'result')
+    $files = @(Get-ChildItem -LiteralPath $deliveryDir -Recurse -File -Filter 'evidence.md')
+
+    foreach ($file in $files) {
+        $relative = Get-RelativePath $rootPath $file.FullName
+        $text = Read-Text $file.FullName
+        $fields = Get-EvidenceFields $text
+
+        foreach ($field in $required) {
+            if (-not $fields.ContainsKey($field) -or -not $fields[$field]) {
+                Add-CheckError $relative "missing field: $field"
+            }
+        }
+
+        if ($fields.ContainsKey('result')) {
+            $word = ($fields['result'] -split '\s+', 2)[0].ToLowerInvariant()
+            if ($word -notin $resultWords) {
+                Add-CheckError $relative "invalid result: $($fields['result'])"
+            }
+        }
+
+        if ($fields.ContainsKey('recorded_at') -and
+            $fields['recorded_at'] -notmatch '^\d{4}-\d{2}-\d{2}') {
+            Add-CheckError $relative 'recorded_at must start with YYYY-MM-DD'
+        }
+
+        if ($text -notmatch '(?im)^#{2,4}\s+.*limitation' -and
+            -not $fields.ContainsKey('limitations')) {
+            Add-CheckError $relative 'missing limitations field or section'
+        }
+
+        foreach ($field in @('base_revision', 'head_revision')) {
+            if ($fields.ContainsKey($field)) {
+                Test-Revision $relative $field $fields[$field]
+            }
+        }
+    }
+}
+
 function Test-Delivery {
     $configPath = Join-Path $rootPath '.specify/extensions/delivery/delivery-config.yml'
     if (-not (Test-Path -LiteralPath $configPath)) { return }
@@ -184,13 +238,15 @@ function Test-Delivery {
     $text = Read-Text $configPath
     $requiredSettings = [ordered]@{
         'version=1'                         = '(?m)^version:\s*1\s*$'
+        'artifact_policy=ephemeral'         = '(?m)^artifact_policy:\s*ephemeral\s*$'
+        'adr_directories includes docs/decisions' = '(?m)^adr_directories:\s*.*docs/decisions'
         'artifacts.policy=ephemeral'        = '(?m)^\s*policy:\s*ephemeral\s*$'
         'ralph.branch_prefix=ralph/'        = '(?m)^\s*branch_prefix:\s*ralph/\s*$'
         'ralph.parallel_workers=false'      = '(?m)^\s*parallel_workers:\s*false\s*$'
         'ralph.auto_push=false'             = '(?m)^\s*auto_push:\s*false\s*$'
         'ralph.auto_merge=false'            = '(?m)^\s*auto_merge:\s*false\s*$'
         'ralph.evidence_root=.specify/delivery/' = '(?m)^\s*evidence_root:\s*\.specify/delivery/\s*$'
-        'ralph.task_gate=RALPH_TASK_GATE: PASS'  = '(?m)^\s*task_gate:\s*RALPH_TASK_GATE:\s*PASS\s*$'
+        'ralph.task_gate=RALPH_TASK_GATE: PASS'  = '(?m)^\s*task_gate:\s*(?:"RALPH_TASK_GATE:\s*PASS"|''RALPH_TASK_GATE:\s*PASS'')\s*$'
     }
     foreach ($name in $requiredSettings.Keys) {
         if ($text -notmatch $requiredSettings[$name]) {
@@ -212,6 +268,17 @@ function Test-Delivery {
         if (-not (Test-Path -LiteralPath (Join-Path $rootPath $path))) {
             Add-CheckError $relative "referenced path is missing: $path"
         }
+    }
+
+}
+
+function Test-ExtensionSettings {
+    $extensionsPath = Join-Path $rootPath '.specify/extensions.yml'
+    if (-not (Test-Path -LiteralPath $extensionsPath)) { return }
+    $extensionsText = Read-Text $extensionsPath
+    if ($extensionsText -match '(?m)^\s*auto_execute_hooks:\s*true\s*$') {
+        Add-CheckError (Get-RelativePath $rootPath $extensionsPath) `
+            'auto_execute_hooks must be false; Delivery requires explicit hook authorization'
     }
 }
 
@@ -340,8 +407,10 @@ function Test-TrackedLinks {
 
     foreach ($relativeFile in $tracked) {
         if ($relativeFile -notmatch '\.md$') { continue }
-        # Third-party skill copies own their links and are not part of this governance boundary.
-        if ($relativeFile -like '.agents/skills/*') { continue }
+        # Vendor prompts/docs retain upstream links; project policy/evidence stays checked.
+        if ($relativeFile -like '.agents/skills/*' -or
+            $relativeFile -like '.opencode/commands/*' -or
+            $relativeFile -like '.specify/extensions/*') { continue }
         $fullPath = Join-Path $rootPath $relativeFile
         if (-not (Test-Path -LiteralPath $fullPath)) { continue }
         $text = Read-Text $fullPath
@@ -382,7 +451,9 @@ try {
     }
 
     Test-Evidence
+    Test-DeliveryEvidence
     Test-Delivery
+    Test-ExtensionSettings
     Test-Decisions
     Test-Specs
     Test-TrackedLinks

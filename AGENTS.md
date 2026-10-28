@@ -6,12 +6,18 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-本仓库已安装项目级技能入口：`.agents/skills/sd/` 和 `.agents/skills/speckit-delivery/`，并已完成基础 Spec Kit 初始化。技能文件和 `.specify/` 的存在只表示当前环境具备路由与基础工件能力，不表示任何具体 Feature 的 Spec、Plan、Tasks、ADR 或 Evidence 已经执行。
+本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.1.1。当前默认
+OpenCode，入口为 `.opencode/commands/speckit.delivery.route.md`（`/speckit.delivery.route`），
+保留 Codex 核心技能。旧项目 sd/speckit-delivery 拷贝门面已移除；不转发到用户级旧技能。
+安装与升级以 [`Delivery 安装说明`](docs/development/spec-kit-delivery.md) 为准。
+安装文件存在不表示任何 Feature 的 Spec、Plan、Tasks、ADR 或 Evidence 已执行。
 
 当前 `.specify/` 已包含模板、PowerShell 脚本、Codex/Speckit 清单和 bundled workflow；
 Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
-质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 与可执行 hook 仍未配置，
-但 Delivery 配置（`.specify/extensions/delivery/delivery-config.yml`）已启用。
+质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 已登记扩展，但
+`auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
+v0.1.1 Bundle 已安装并拥有 12 个组件，项目配置和核心任务定制保留。Bundle 安装不等于
+Ralph 已执行，也不授权自动 push/merge/发布。
 不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
 缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
@@ -34,7 +40,7 @@ Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Qualit
 - `specs/<feature-id>/plan.md`：技术上下文、设计、依赖、目录布局和验证方案。
 - `specs/<feature-id>/tasks.md`：唯一执行队列；任务必须有 ID、依赖、目标文件和可验证的完成条件。
 - `research.md`、`data-model.md`、`contracts/`、`quickstart.md`：仅在当前 Feature 确实需要时创建，并由 Plan 引用。
-- ADR：只记录会约束多个实现点或未来演进的长期决策；本项目唯一根目录为 `docs/decisions/`，分类、编号、状态和模板以该目录的 README 为准，不自行创建第二套 ADR 目录。未来启用 Delivery 时配置到同一路径；当前不宣称已启用 ADR 自动化。
+- ADR：只记录会约束多个实现点或未来演进的长期决策；本项目唯一根目录为 `docs/decisions/`，分类、编号、状态和模板以该目录的 README 为准，不自行创建第二套 ADR 目录。Delivery 的 ADR/context 配置已指向同一路径，但自动 hook 未启用，不宣称 ADR 自动化已闭环。
 - `.specify/delivery/<feature-id>/evidence.md`：Delivery evidence 配置已启用，记录实际
   outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
 
@@ -108,11 +114,12 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 5. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 6. 当前没有 `spawn-join-database` 和 `spawn-join-agent`；除非出现明确需求并完成边界设计，不要提前创建它们。
 
-当前配置基线（2026-10-26）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+当前配置基线（2026-10-28）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入。
-当前 Feature 为 `specs/002-python-quality-gates/`。构建仍有缺少包级 README 的非阻塞警告；
-Delivery 配置已启用（手动路由 + Ralph 协议，提交/推送/合并仍需授权）；Spec Kit hook 和
+活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
+构建仍有缺少包级 README 的非阻塞警告；Release Delivery 组件与质量 Profile 已接入，
+不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
 发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
 以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：
 
