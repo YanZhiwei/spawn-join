@@ -177,6 +177,12 @@ None.
         Remove-Item -LiteralPath (Join-Path $fixture $path)
     }
 
+    $untrackedDoc = Join-Path $fixture 'docs/untracked-broken.md'
+    Write-FixtureFile $untrackedDoc "[missing](missing-target.md)`n"
+    Test-GovernanceResult 'untracked Markdown links are checked' $false `
+        'missing link target: missing-target.md'
+    Remove-Item -LiteralPath $untrackedDoc
+
     $extraEvidence = Join-Path $fixture 'harness/evidence/phase-02-fixture.md'
     Write-FixtureFile $extraEvidence @"
 # Evidence

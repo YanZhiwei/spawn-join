@@ -5,7 +5,8 @@ Validate tracked governance records without modifying the repository.
 
 .DESCRIPTION
 Checks evidence metadata, build-log linkage, ADR index consistency, local Spec/Tasks
-state, and tracked Markdown links that point at Git-ignored paths. Freshness issues
+state, and repository Markdown links (tracked and untracked) that point at missing or
+Git-ignored paths. Freshness issues
 are warnings because whether an old record still applies needs human judgement.
 
 .PARAMETER Root
@@ -398,14 +399,21 @@ function Test-Specs {
     }
 }
 
-function Test-TrackedLinks {
+function Test-RepositoryLinks {
     $tracked = @(& git -C $rootPath ls-files)
     if ($LASTEXITCODE -ne 0) {
         Add-CheckError 'git' 'unable to list tracked files'
         return
     }
+    # New documents must be validated before staging; otherwise a link error in an
+    # untracked README only appears after commit, in CI.
+    $untracked = @(& git -C $rootPath ls-files --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0) {
+        Add-CheckError 'git' 'unable to list untracked files'
+        return
+    }
 
-    foreach ($relativeFile in $tracked) {
+    foreach ($relativeFile in @($tracked + $untracked | Sort-Object -Unique)) {
         if ($relativeFile -notmatch '\.md$') { continue }
         # Vendor prompts/docs retain upstream links; project policy/evidence stays checked.
         if ($relativeFile -like '.agents/skills/*' -or
@@ -456,7 +464,7 @@ try {
     Test-ExtensionSettings
     Test-Decisions
     Test-Specs
-    Test-TrackedLinks
+    Test-RepositoryLinks
 } catch {
     Add-CheckError 'governance' $_.Exception.Message
 } finally {

@@ -108,16 +108,18 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
 以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
-`scripts/test-governance.ps1` 用独立 fixture 覆盖 20 个治理场景（合法结构、缺字段、非法
-状态词、未索引 ADR、本地-only 链接、evidence 未进 build-log、缺失 build-log、状态矛盾、
-重复任务 ID、纯文档跟进不告警、非文档变更告警、不安全 Delivery 配置、单双引号 gate、
-拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
-不安全 artifact policy 和自动 hook）。
+`scripts/test-governance.ps1` 用独立 fixture 覆盖 21 个治理场景（合法结构、缺字段、非法
+状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
+缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、不安全 Delivery
+配置、单双引号 gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence
+字段/截断 SHA、不安全 artifact policy 和自动 hook）。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
 - 现有 20 个 pytest 用例只覆盖当前骨架的导入、身份和运行时依赖边界，不是业务覆盖率。
 - 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
+- 治理检查的链接扫描同时覆盖已跟踪与未跟踪（未被 Git 忽略）的 Markdown；新建 README
+  在提交前就能发现坏链接，不必等 CI。
 - 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审（落后且期间有非文档路径变更时产生 warning；纯文档追加不告警）。
 - 静态分析只覆盖 workflow 语法/表达式和 PowerShell 高信号规则，不验证运行时行为；

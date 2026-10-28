@@ -36,6 +36,26 @@
 | `pwsh -NoProfile -File scripts/quality.ps1` | 0 | 四包构建、隔离安装、测试、文档、治理与静态检查通过 |
 | `git diff --check` | 0 | 无空白错误 |
 
+## Follow-up: pre-staging link validation
+
+PR #11 的第一次 CI 运行失败：
+
+```text
+ERROR: packages/core/llm-provider/README.md: missing link target: ../infra/llm-provider-langchain/
+```
+
+根因是 `check-governance.ps1` 的链接扫描只枚举 `git ls-files`；新建 README 在未暂存时不会
+被检查，因此本地通过、提交后 CI 失败。链接扫描现在同时枚举
+`git ls-files --others --exclude-standard`，并在 `test-governance.ps1` 增加回归场景。
+
+| Actual command/check | Exit | Result |
+|---|---:|---|
+| 未跟踪坏链接探针 `docs/__untracked_probe.md` | 1 | `missing link target: does-not-exist.md` |
+| 删除探针后的 `-Check governance` | 0 | 0 error / 5 warning |
+| `scripts/test-governance.ps1` | 0 | 21 scenarios |
+| `scripts/quality.ps1 -Check static` | 0 | 0 failing check |
+| `scripts/test-static.ps1` | 0 | 3 scenarios |
+
 ## Limitations
 
 - 没有发布到私有 Registry，也没有创建 Tag；本次只验证可构建和元数据可读。
