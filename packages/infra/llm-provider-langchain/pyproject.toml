@@ -35,3 +35,6 @@ spawn-join-llm-provider = { path = "../../core/llm-provider", editable = true }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+spawn_join_llm_provider_langchain = ["py.typed"]
