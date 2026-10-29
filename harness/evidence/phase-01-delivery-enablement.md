@@ -8,6 +8,7 @@
 - **base_revision**: `48fb3a73b48b366c1958171217ff0494be907843`
 - **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 squash 合并提交）
 - **working_directory**: `D:\Repos\Github\spawn-join`
+- **superseded_by**: `harness/evidence/delivery-release-installation.md`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；uv 0.7.13；PSScriptAnalyzer 1.25.0（临时模块路径）
 - **result**: pass (配置、检查器、回归与全量门禁；远端 CI not-run until PR)

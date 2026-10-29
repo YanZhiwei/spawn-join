@@ -108,11 +108,12 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
 以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
-`scripts/test-governance.ps1` 用独立 fixture 覆盖 21 个治理场景（合法结构、缺字段、非法
+`scripts/test-governance.ps1` 用独立 fixture 覆盖 23 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
-缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、不安全 Delivery
-配置、单双引号 gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence
-字段/截断 SHA、不安全 artifact policy 和自动 hook）。
+缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
+evidence 抑制 freshness warning、缺失 superseded_by 目标、不安全 Delivery 配置、单双引号
+gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
+不安全 artifact policy 和自动 hook）。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
@@ -122,6 +123,8 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
   在提交前就能发现坏链接，不必等 CI。
 - 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审（落后且期间有非文档路径变更时产生 warning；纯文档追加不告警）。
+- 历史 evidence 可用 `- superseded_by: <仓库内证据路径>` 指向更新、覆盖同一关注点的记录；
+  目标必须存在，否则检查失败。该字段只抑制 freshness warning，不删除旧记录或改写结论。
 - 静态分析只覆盖 workflow 语法/表达式和 PowerShell 高信号规则，不验证运行时行为；
   `.agents/skills/` 的第三方脚本不在扫描范围。治理链接检查也不重写或校验安装器管理的
   `.opencode/commands/`、`.specify/extensions/` Vendor Prompt/README 的上游相对链接。

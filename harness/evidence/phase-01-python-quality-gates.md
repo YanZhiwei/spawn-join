@@ -9,6 +9,7 @@
 - **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并后再次锚定；PR #2 的 squash 为 `83628ac`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
+- **superseded_by**: `harness/evidence/package-metadata-and-license.md`
 - **recorded_at**: 2026-10-26T04:19:52Z (final documentation reconfirmed after this entry)
 - **environment**: Windows; PowerShell 7.6.8; uv 0.7.13 and isolated uv 0.13.5;
   Node 22.17.0; original package Python 3.13.5; temporary verification Python 3.11.13

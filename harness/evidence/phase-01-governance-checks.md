@@ -9,6 +9,7 @@
 - **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并提交；PR #2 squash 为 `83628ac`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
+- **superseded_by**: `harness/evidence/package-metadata-and-license.md`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；git 2.55.0.windows.3；uv 0.7.13；Node 22.17.0
 - **result**: pass (本地结构门禁、回归和全量质量门；远端 CI 已由 PR #1 与 main 运行确认)
