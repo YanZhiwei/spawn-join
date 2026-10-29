@@ -72,5 +72,6 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0002 | engineering | [取消跟踪历史 Feature 工件](engineering/0002-untrack-historical-feature-artifacts.md) | Accepted |
 | ADR-0003 | engineering | [启用 Spec Kit Delivery 与 Ralph 协议](engineering/0003-enable-delivery-and-ralph.md) | Accepted |
 | ADR-0004 | engineering | [以固定 Release 管理 Delivery 安装](engineering/0004-release-managed-delivery-installation.md) | Accepted |
+| ADR-0005 | llm-provider | [采用协议原生 LLM 契约与独立渠道边界](llm-provider/0005-protocol-native-llm-contracts.md) | Proposed |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。
