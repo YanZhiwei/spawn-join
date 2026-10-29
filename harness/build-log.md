@@ -746,3 +746,40 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 本次只改 evidence 与 build-log；合并后 freshness warning 应为 0。
 
 验证记录：[安装 evidence](evidence/delivery-release-installation.md)。
+
+## 2026-10-29 — Delivery Bundle v0.1.3 升级
+
+**Status**: 已安装；安装一致性、文档与治理检查通过，Doctor blocked；未提交、未推送
+
+**Route**: Lightweight（固定 Release 开发工具升级，不新增 Python 行为或 Feature 工件）
+
+**Base/head**: `881dcfeb4885c044d39071660606775509d64165` 加当前工作树
+
+- 校验 10 个 Release ZIP 的 SHA-256，先在本地临时副本升级，再更新当前仓库三类固定
+  Catalog 并执行 `specify bundle update speckit-delivery`；13 个组件版本一致。
+- 14 个受保护配置/定制文件未变；自动 Hook 关闭；未运行 Workflow、Ralph 或远端写入。
+- 53 个非项目配置的扩展文件与发布 ZIP 字节一致；活跃 OpenCode 识别 35 条原生命令。
+- 23 个治理回归场景通过。默认静态检查实际失败：缺 PSScriptAnalyzer 1.25.0；
+  发布版 Doctor 的 Reviewer 路径也有上游缺陷，保留原样并报告，不虚报就绪。
+- 文档检查 65 文件 / 175 目标通过；治理 0 错误 / 0 告警；`git diff --check` 通过。
+- 同步当前版本、Workflow 新输入和三门快照证据要求，历史安装记录保留。
+
+验证记录：[v0.1.3 升级 evidence](evidence/delivery-v013-upgrade.md)。
+
+## 2026-10-29 — Delivery Bundle v0.1.4 升级
+
+**Status**: 已安装；安装一致性通过；Doctor 环境阻塞仍在；未提交、未推送
+
+**Route**: Lightweight（上游补丁版本升级，不新增 Python 行为或 Feature 工件）
+
+**Base/head**: `881dcfeb4885c044d39071660606775509d64165` 加当前工作树
+
+- v0.1.4 修复 v0.1.3 的 Doctor Reviewer 模板路径缺陷；命令面、配置、六维评审、
+  快照和修复预算均未变。
+- 校验 10 个 Release ZIP 的 SHA-256；在含 v0.1.3 未提交状态的工作树副本中先升级，
+  再对目标执行 `bundle update`；13 个组件一致，原生命令仍为 35 条。
+- 14 个受保护配置/定制文件未变；53 个非配置扩展文件与发布 ZIP 字节一致；三条 Workflow
+  与 v0.1.4 Tag 字节一致；生成的 Doctor 已指向 Review 模板。
+- 默认环境仍缺 PSScriptAnalyzer 1.25.0，静态检查保持 blocked，不因补丁升级放宽。
+
+验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
