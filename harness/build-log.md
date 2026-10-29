@@ -801,3 +801,33 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 远端 CI 通过不等于 Doctor 就绪：默认环境仍缺 PSScriptAnalyzer 1.25.0。
 
 验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
+
+## 2026-10-29 — LLM Protocol Abstraction implementation
+
+**Status**: Implementation complete for code review; review pending
+
+**Feature**: `007-llm-protocol-abstraction`
+
+**Branch**: `ralph/007-llm-protocol-abstraction`
+
+**Base revision**: `3fe0cf0fe2e70b19ef65e73570b0d20e3e5311db`
+
+**Head revision**: `aa7292f3c6f0b8f4b0c5733a75d5f1b0309dd1d8`
+
+**Working directory**: `D:\Repos\Github\spawn-join`
+
+### Scope
+
+- 新增框架无关的 LLM 公共契约、三种协议原生选项、能力声明、渠道契约和错误语义；
+- 新增 Chat Completions、Responses、Anthropic Messages 三个 LangChain Provider、工厂、配置、
+  参数校验、映射和日志；
+- 新增离线 fake-model 测试、README、包边界说明和 ADR-0005 实现状态；
+- 未实现真实渠道 HTTP、Azure 专用认证/deployment，未执行真实模型请求。
+
+### Verification
+
+- 两个包的质量入口均为 exit 0；核心 61 tests，适配包 56 tests，Pyright strict 0 errors；
+- docs/governance/static 检查结果见 Delivery evidence；
+- 分支作为 code review PR 提交，未合并、未发布。
+
+证据：[LLM protocol abstraction evidence](../.specify/delivery/007-llm-protocol-abstraction/evidence.md)

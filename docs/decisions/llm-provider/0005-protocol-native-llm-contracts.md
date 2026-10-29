@@ -127,19 +127,35 @@ LangChain 或具体 Provider SDK；LangChain 适配和具体实现属于
 
 ## Verification and implementation status
 
-本 ADR 目前只有决策，没有实现。相关 Spec、Plan、Tasks 仍是本地交付工件，不作为长期
-契约来源。
+实现已落地在 `spawn-join-llm-provider` 和 `spawn-join-llm-provider-langchain`，但 ADR 仍为
+`Proposed`，等待维护者 code review 和 reviewed HEAD 确认。
 
-已执行：
+已实际执行：
 
 ```text
+pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
+  结果：exit 0；61 tests passed；Pyright strict 0 errors；build/isolated install passed
+
+pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain
+  结果：exit 0；56 tests passed；Pyright strict 0 errors；build/isolated install passed
+
 pwsh -NoProfile -File scripts/quality.ps1 -Check static
-结果：Static analysis: 0 failing check(s); exit_code=0
+  结果：0 failing check(s)
+
+pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+  结果：exit 0
+
+pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+  结果：0 error / 0 warning
 ```
 
-未执行：三个 Provider 的实现、真实服务调用、集成测试、构建、类型检查和完整质量门。
-ADR 由 `Proposed` 改为 `Accepted` 前，必须完成 reviewed HEAD 对应的实现、评审和证据。
+未执行：真实模型/渠道请求、真实凭据集成测试、Python 3.11/3.14 本机矩阵。默认测试使用
+LangChain fake 模型，不访问网络。
+
+已知限制：部分大型映射/校验函数使用 `# noqa: C901` 保留线性协议分支，后续可拆分；渠道
+真实 HTTP 和 Azure 专用认证尚未实现。
 
 ## Revision history
 
 - 2026-10-29：提出协议原生选项、渠道/Provider 分离与推理块回传的候选决策。
+- 2026-10-29：实现三个协议 Provider、公共契约和离线测试；ADR 保持 Proposed，等待代码评审。

@@ -81,6 +81,17 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
   适配包。只有当某个 Provider 需要独立版本、依赖、测试或维护周期时，才考虑拆分为
   独立 Distribution。
 
+## LLM Provider Protocol Surface
+
+- `spawn-join-llm-provider` 拥有框架无关的消息、请求、响应、流式事件、三种协议的原生选项、
+  模型能力、渠道契约和稳定错误；不依赖 LangChain、Provider SDK 或 HTTP 客户端。
+- `spawn-join-llm-provider-langchain` 拥有三个协议 Provider、LangChain 参数/响应映射、工厂、
+  凭据引用解析和调用日志；不把 LangChain 类型泄漏回协议包。
+- 协议由配置类型显式选择，不根据模型名称推断，也不在失败后自动切换。
+- 渠道真实 `ping()`/`list_models()` HTTP 实现尚未加入；渠道契约与推理 Provider 保持分离。
+- Azure OpenAI 专用认证、`api_version` 和 deployment 语义尚未实现；首个切片只覆盖
+  OpenAI-compatible endpoint。
+
 ## Change Review
 
 当新增、移动或拆分包时，Plan 或 Review 必须说明：
