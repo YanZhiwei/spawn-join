@@ -30,3 +30,6 @@ spawn-join-core = { path = "../spawn-join-core", editable = true }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+spawn_join_llm_provider = ["py.typed"]
