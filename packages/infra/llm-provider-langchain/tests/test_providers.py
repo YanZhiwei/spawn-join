@@ -1,4 +1,4 @@
-"""Tests for protocol provider parameter mapping and factory selection."""
+﻿"""Tests for protocol provider parameter mapping and factory selection."""
 
 from typing import Any, cast
 
@@ -50,7 +50,7 @@ def test_chat_completions_maps_native_options() -> None:
         ChatCompletionsConfig(model="m", credential_ref="KEY"),
     )
     request = _request(
-        max_output_tokens=100,
+        max_output_tokens=4096,
         temperature=0.2,
         top_p=0.9,
         tools=(ToolDefinition(name="lookup", description="lookup"),),
@@ -62,7 +62,7 @@ def test_chat_completions_maps_native_options() -> None:
 
     kwargs = _kwargs(provider, request)
 
-    assert kwargs["max_tokens"] == 100
+    assert kwargs["max_tokens"] == 4096
     assert kwargs["stop"] == ["END"]
     assert kwargs["reasoning_effort"] == "low"
     tools = cast(list[dict[str, object]], kwargs["tools"])
@@ -118,19 +118,19 @@ def test_anthropic_maps_budget_thinking_and_tools() -> None:
         AnthropicMessagesConfig(model="m", credential_ref="KEY"),
     )
     request = _request(
-        max_output_tokens=100,
+        max_output_tokens=4096,
         temperature=1.0,
         tools=(ToolDefinition(name="lookup", description="lookup"),),
         options=AnthropicMessagesOptions(
-            thinking=AnthropicThinkingBudget(budget_tokens=10),
+            thinking=AnthropicThinkingBudget(budget_tokens=2048),
             stop_sequences=("END",),
         ),
     )
 
     kwargs = _kwargs(provider, request)
 
-    assert kwargs["max_tokens"] == 100
-    assert kwargs["thinking"] == {"type": "enabled", "budget_tokens": 10}
+    assert kwargs["max_tokens"] == 4096
+    assert kwargs["thinking"] == {"type": "enabled", "budget_tokens": 2048}
     assert kwargs["stop"] == ["END"]
     tools = cast(list[dict[str, object]], kwargs["tools"])
     assert tools[0]["input_schema"] == {}

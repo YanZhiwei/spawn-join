@@ -62,6 +62,25 @@ def test_domain_messages_to_langchain() -> None:
     assert assistant.content_blocks[0]["type"] == "reasoning"
 
 
+def test_tool_call_only_assistant_message_roundtrips() -> None:
+    domain = Message(
+        role=Role.ASSISTANT,
+        content=(
+            ToolCallBlock(
+                id="call-1",
+                name="lookup",
+                arguments={"query": "x"},
+            ),
+        ),
+    )
+
+    converted = to_langchain_messages((domain,))
+
+    assert isinstance(converted[0], AIMessage)
+    assert converted[0].content == []
+    assert converted[0].tool_calls[0]["name"] == "lookup"
+
+
 def test_langchain_message_to_domain() -> None:
     message = AIMessage(
         content=[

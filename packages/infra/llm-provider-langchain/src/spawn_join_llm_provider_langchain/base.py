@@ -82,14 +82,19 @@ class BaseLangChainProvider(ABC):
         try:
             self._validate(request)
             message = await self._model.ainvoke(
-                to_langchain_messages(request.messages),
+                to_langchain_messages(
+                    request.messages,
+                    protocol=self.protocol,
+                ),
                 **_as_kwargs(self._request_kwargs(request)),
             )
             provider_finish_reason = provider_finish_reason_from_message(message)
             response = from_langchain_response(
                 message,
+                protocol=self.protocol,
                 provider_finish_reason=provider_finish_reason,
                 finish_reason=finish_reason_from_value(provider_finish_reason),
+                response_id=response_id_from_message(message),
             )
             self._log_end(
                 request_id,
@@ -140,7 +145,10 @@ class BaseLangChainProvider(ABC):
             last_provider_finish: str | None = None
             last_response_id: str | None = None
             async for chunk in self._model.astream(
-                to_langchain_messages(request.messages),
+                to_langchain_messages(
+                    request.messages,
+                    protocol=self.protocol,
+                ),
                 **_as_kwargs(self._request_kwargs(request)),
             ):
                 usage = from_langchain_usage(chunk.usage_metadata)

@@ -188,8 +188,8 @@ def _validate_anthropic_options(  # noqa: C901 - protocol constraint matrix
             model=model,
         )
     if isinstance(thinking, AnthropicThinkingBudget):
-        if thinking.budget_tokens <= 0:
-            raise InvalidRequestError("thinking budget must be positive")
+        if thinking.budget_tokens < 1024:
+            raise InvalidRequestError("thinking budget must be at least 1024 tokens")
         if request.max_output_tokens is None:
             raise InvalidRequestError("thinking budget requires max_output_tokens")
         if request.max_output_tokens <= thinking.budget_tokens:
@@ -199,6 +199,12 @@ def _validate_anthropic_options(  # noqa: C901 - protocol constraint matrix
         if request.temperature is not None and request.temperature != 1.0:
             raise InvalidRequestError(
                 "temperature must be 1.0 when thinking budget is enabled"
+            )
+        if request.tool_choice == "required" or isinstance(
+            request.tool_choice, NamedToolChoice
+        ):
+            raise InvalidRequestError(
+                "forced tool choice is incompatible with thinking"
             )
         return
     if thinking.display not in {None, "summarized", "omitted"}:

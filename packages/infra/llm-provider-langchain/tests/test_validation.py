@@ -1,4 +1,4 @@
-"""Tests for preflight request, option, and capability validation."""
+﻿"""Tests for preflight request, option, and capability validation."""
 
 from typing import Any, cast
 
@@ -133,7 +133,7 @@ def test_anthropic_budget_requires_larger_max_output() -> None:
     with pytest.raises(InvalidRequestError):
         _validate(
             _request(
-                max_output_tokens=100,
+                max_output_tokens=4096,
                 options=AnthropicMessagesOptions(
                     thinking=AnthropicThinkingBudget(budget_tokens=100)
                 ),
@@ -147,7 +147,7 @@ def test_anthropic_budget_requires_max_output() -> None:
         _validate(
             _request(
                 options=AnthropicMessagesOptions(
-                    thinking=AnthropicThinkingBudget(budget_tokens=10)
+                    thinking=AnthropicThinkingBudget(budget_tokens=2048)
                 )
             ),
             protocol=ProtocolKind.ANTHROPIC_MESSAGES,
@@ -158,10 +158,10 @@ def test_anthropic_budget_rejects_non_unit_temperature() -> None:
     with pytest.raises(InvalidRequestError):
         _validate(
             _request(
-                max_output_tokens=100,
+                max_output_tokens=4096,
                 temperature=0.5,
                 options=AnthropicMessagesOptions(
-                    thinking=AnthropicThinkingBudget(budget_tokens=10)
+                    thinking=AnthropicThinkingBudget(budget_tokens=2048)
                 ),
             ),
             protocol=ProtocolKind.ANTHROPIC_MESSAGES,
@@ -172,9 +172,9 @@ def test_anthropic_thinking_rejects_top_k() -> None:
     with pytest.raises(UnsupportedParameterError):
         _validate(
             _request(
-                max_output_tokens=100,
+                max_output_tokens=4096,
                 options=AnthropicMessagesOptions(
-                    thinking=AnthropicThinkingBudget(budget_tokens=10),
+                    thinking=AnthropicThinkingBudget(budget_tokens=2048),
                     top_k=5,
                 ),
             ),

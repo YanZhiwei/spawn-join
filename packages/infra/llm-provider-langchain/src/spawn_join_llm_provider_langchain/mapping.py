@@ -26,6 +26,7 @@ from spawn_join_llm_provider import (
     ModelCapabilities,
     NamedToolChoice,
     OpaqueBlock,
+    ProtocolKind,
     ReasoningBlock,
     ReasoningDelta,
     Role,
@@ -111,14 +112,18 @@ def responses_tool_choice(choice: ToolChoice) -> object:
 
 def to_langchain_messages(
     messages: tuple[Message, ...],
+    *,
+    protocol: ProtocolKind = ProtocolKind.CHAT_COMPLETIONS,
 ) -> list[BaseMessage]:
-    """Convert domain messages to LangChain messages."""
+    """Convert domain messages to LangChain messages for a protocol."""
 
-    return [_to_langchain_message(message) for message in messages]
+    return [_to_langchain_message(message, protocol=protocol) for message in messages]
 
 
 def from_langchain_message(  # noqa: C901 - protocol block dispatch
     message: AIMessage,
+    *,
+    protocol: ProtocolKind = ProtocolKind.CHAT_COMPLETIONS,
 ) -> Message:
     """Convert a LangChain assistant message to a domain message."""
 
@@ -130,15 +135,7 @@ def from_langchain_message(  # noqa: C901 - protocol block dispatch
             text = _as_str(block.get("text")) or ""
             blocks.append(TextBlock(text))
         elif block_type == "reasoning":
-            blocks.append(
-                ReasoningBlock(
-                    text=_as_str(block.get("reasoning")),
-                    opaque_state=_json_mapping(
-                        block.get("extras"),
-                        "reasoning extras",
-                    ),
-                )
-            )
+            blocks.append(_reasoning_block(block, protocol=protocol))
         elif block_type == "tool_call":
             blocks.append(_tool_call_from_mapping(block))
         elif block_type == "non_standard":
@@ -164,6 +161,8 @@ def from_langchain_message(  # noqa: C901 - protocol block dispatch
             blocks.append(
                 _tool_call_from_mapping(cast(Mapping[str, object], tool_call))
             )
+    if not blocks and message.invalid_tool_calls:
+        raise MalformedResponseError("Provider returned only invalid tool calls")
 
     return Message(role=Role.ASSISTANT, content=tuple(blocks))
 
@@ -193,17 +192,19 @@ def from_langchain_usage(usage: UsageMetadata | None) -> Usage | None:
 def from_langchain_response(
     message: AIMessage,
     *,
+    protocol: ProtocolKind = ProtocolKind.CHAT_COMPLETIONS,
     provider_finish_reason: str | None,
     finish_reason: FinishReason,
+    response_id: str | None,
 ) -> ChatResponse:
     """Build a complete response from a LangChain assistant message."""
 
     return ChatResponse(
-        message=from_langchain_message(message),
+        message=from_langchain_message(message, protocol=protocol),
         usage=from_langchain_usage(message.usage_metadata),
         finish_reason=finish_reason,
         provider_finish_reason=provider_finish_reason,
-        response_id=response_id_from_message(message),
+        response_id=response_id,
     )
 
 
@@ -213,9 +214,9 @@ def finish_reason_from_value(value: str | None) -> FinishReason:
     if value is None:
         return FinishReason.UNKNOWN
     normalized = value.lower()
-    if normalized in {"stop", "end_turn", "stop_sequence"}:
+    if normalized in {"stop", "end_turn", "stop_sequence", "completed"}:
         return FinishReason.STOP
-    if normalized in {"length", "max_tokens"}:
+    if normalized in {"length", "max_tokens", "max_output_tokens"}:
         return FinishReason.LENGTH
     if normalized in {"tool_calls", "tool_use"}:
         return FinishReason.TOOL_CALLS
@@ -231,7 +232,13 @@ def provider_finish_reason_from_message(
 ) -> str | None:
     """Read the provider-native finish reason without interpreting it."""
 
-    for key in ("finish_reason", "stop_reason"):
+    incomplete = message.response_metadata.get("incomplete_details")
+    if isinstance(incomplete, Mapping):
+        incomplete_map = cast(Mapping[str, object], incomplete)
+        reason = _as_str(incomplete_map.get("reason"))
+        if reason is not None:
+            return reason
+    for key in ("finish_reason", "stop_reason", "status"):
         value = message.response_metadata.get(key)
         if isinstance(value, str) and value:
             return value
@@ -243,14 +250,18 @@ def finish_reason_from_message(
 ) -> FinishReason:
     """Map the provider-native finish reason to the domain enum."""
 
-    return finish_reason_from_value(provider_finish_reason_from_message(message))
+    reason = finish_reason_from_value(provider_finish_reason_from_message(message))
+    if reason is FinishReason.STOP and message.tool_calls:
+        return FinishReason.TOOL_CALLS
+    return reason
 
 
 def response_id_from_message(message: AIMessage | AIMessageChunk) -> str | None:
     """Return a response/message identifier when the provider exposes one."""
 
     if isinstance(message.id, str) and message.id:
-        return message.id
+        if not message.id.startswith(("lc_run-", "run-")):
+            return message.id
     value = message.response_metadata.get("id")
     if isinstance(value, str) and value:
         return value
@@ -271,7 +282,15 @@ def stream_events_from_chunk(chunk: AIMessageChunk) -> list[StreamEvent]:
         elif block_type == "reasoning":
             reasoning = _as_str(block.get("reasoning"))
             if reasoning:
-                events.append(ReasoningDelta(reasoning))
+                events.append(
+                    ReasoningDelta(
+                        reasoning,
+                        opaque_state=_json_mapping(
+                            block.get("extras"),
+                            "reasoning extras",
+                        ),
+                    )
+                )
 
     for tool_call in chunk.tool_call_chunks:
         raw_index = tool_call.get("index")
@@ -319,14 +338,18 @@ def capabilities_from_profile(
 
 def _to_langchain_message(  # noqa: C901 - protocol block dispatch
     message: Message,
+    *,
+    protocol: ProtocolKind,
 ) -> BaseMessage:
     if message.role == Role.TOOL:
-        tool_result = next(
-            (block for block in message.content if isinstance(block, ToolResultBlock)),
-            None,
-        )
-        if tool_result is None:
-            raise InvalidRequestError("TOOL messages require a ToolResultBlock")
+        tool_results = [
+            block for block in message.content if isinstance(block, ToolResultBlock)
+        ]
+        if len(tool_results) != 1:
+            raise InvalidRequestError(
+                "TOOL messages require exactly one ToolResultBlock"
+            )
+        tool_result = tool_results[0]
         return ToolMessage(
             content=tool_result.content,
             tool_call_id=tool_result.tool_call_id,
@@ -341,8 +364,14 @@ def _to_langchain_message(  # noqa: C901 - protocol block dispatch
             reasoning: dict[str, object] = {"type": "reasoning"}
             if block.text is not None:
                 reasoning["reasoning"] = block.text
-            if block.opaque_state:
+            if protocol == ProtocolKind.ANTHROPIC_MESSAGES:
+                if "signature" not in block.opaque_state and block.text:
+                    raise MalformedResponseError(
+                        "Anthropic thinking block is missing a signature"
+                    )
                 reasoning["extras"] = dict(block.opaque_state)
+            else:
+                reasoning.update(block.opaque_state)
             content.append(reasoning)
         elif isinstance(block, ToolCallBlock):
             tool_calls.append(
@@ -357,26 +386,60 @@ def _to_langchain_message(  # noqa: C901 - protocol block dispatch
             content.append(
                 {
                     "type": "non_standard",
-                    "value": {
-                        "provider_type": block.provider_type,
-                        "payload": block.payload,
-                    },
+                    "value": block.payload,
                 }
             )
         else:
             raise InvalidRequestError("ToolResultBlock is only valid in TOOL messages")
 
-    content_value = cast(list[str | dict[str, Any]] | None, content or None)
+    content_value = cast(list[str | dict[str, Any]], content)
     if message.role == Role.ASSISTANT:
+        response_metadata: dict[str, object] = {}
+        if protocol == ProtocolKind.ANTHROPIC_MESSAGES:
+            response_metadata = {
+                "output_version": "v1",
+                "model_provider": "anthropic",
+            }
         return AIMessage(
             content=content_value,
             tool_calls=cast(list[ToolCall], tool_calls),
+            response_metadata=response_metadata,
         )
     if message.role == Role.SYSTEM:
-        return SystemMessage(content=cast(list[str | dict[str, Any]], content))
+        return SystemMessage(content=content_value)
     if message.role == Role.USER:
-        return HumanMessage(content=cast(list[str | dict[str, Any]], content))
+        return HumanMessage(content=content_value)
     raise InvalidRequestError(f"Unsupported message role {message.role!r}")
+
+
+def _reasoning_block(
+    block: Mapping[str, object],
+    *,
+    protocol: ProtocolKind,
+) -> ReasoningBlock:
+    text = _as_str(block.get("reasoning"))
+    if text is None:
+        summary = block.get("summary")
+        if isinstance(summary, list):
+            summary_items = cast(list[object], summary)
+            parts = [
+                _as_str(cast(Mapping[str, object], item).get("text"))
+                for item in summary_items
+                if isinstance(item, Mapping)
+            ]
+            text = "".join(part for part in parts if part) or None
+    opaque = dict(_json_mapping(block.get("extras"), "reasoning extras"))
+    if protocol != ProtocolKind.ANTHROPIC_MESSAGES:
+        for key in ("id", "summary", "encrypted_content"):
+            if key in block:
+                opaque[key] = _json_value(block[key])
+    if (
+        protocol == ProtocolKind.ANTHROPIC_MESSAGES
+        and text
+        and "signature" not in opaque
+    ):
+        raise MalformedResponseError("Anthropic thinking block is missing a signature")
+    return ReasoningBlock(text=text, opaque_state=opaque)
 
 
 def _tool_call_from_mapping(block: Mapping[str, object]) -> ToolCallBlock:

@@ -156,9 +156,10 @@ class TextDelta:
 
 @dataclass(frozen=True, slots=True)
 class ReasoningDelta:
-    """An incremental reasoning fragment."""
+    """An incremental reasoning fragment with provider-native state."""
 
     text: str
+    opaque_state: Mapping[str, JsonValue] = field(default_factory=_empty_json_object)
 
 
 @dataclass(frozen=True, slots=True)

@@ -49,15 +49,11 @@ class AnthropicMessagesProvider(BaseLangChainProvider):
         choice = request.tool_choice
         if isinstance(choice, NamedToolChoice):
             return {"type": "tool", "name": choice.name}
-        if choice == "none":
-            raise UnsupportedParameterError(
-                "tool_choice",
-                protocol=self.protocol,
-                model=self.model,
-            )
         if choice == "required":
-            return "any"
-        return choice
+            return {"type": "any"}
+        if choice == "none":
+            return {"type": "none"}
+        return {"type": "auto"}
 
     def _thinking(self, options: AnthropicMessagesOptions) -> object:
         thinking = options.thinking
