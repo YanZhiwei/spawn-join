@@ -784,18 +784,20 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
 
-## 2026-10-29 — v0.1.4 升级 evidence 再锚定
+## 2026-10-29 — v0.1.4 升级合并与证据再锚定
 
-**Status**: 已验证；未合并
+**Status**: 已验证；合并后证据已锚定到 main
 
-**Route**: Lightweight（证据再锚定与历史记录归档，无行为变化）
+**Route**: Lightweight（证据再锚定，无行为或工具变化）
 
-**Base/head**: `7bbd072aa60173c05384f55e10b4ee546474f523` 加本记录提交
+**Base/head**: `881dcfeb4885c044d39071660606775509d64165` → `bae306c1573a205a582778a57eaf607d871d1a39`
 
-- 升级提交 `7bbd072` 覆盖 v0.1.3 与 v0.1.4 安装、文档、证据和 ADR 更新；
-  v0.1.4 evidence 的 `head_revision` 由工作树改为该提交。
-- v0.1.3 与历史 v0.1.2 安装记录标记 `superseded_by`，指向当前 v0.1.4 记录；
-  旧记录保留，不删除、不改写结论。
-- 本次只改 `harness/` 文档；重新执行文档与治理检查后应保持 0 错误、0 告警。
+- PR #14 以 Squash 合并为 `bae306c`，main 历史只保留一个升级提交。
+- main 的 Quality 运行 `40849963307` 完成 14/14：治理与门禁回归、12 个包/平台矩阵
+  和 required `Quality Gate` 均成功。
+- v0.1.4 evidence 的 `head_revision` 由分支提交改为合并提交；分支 SHA 不再是祖先，
+  不能作为当前证据。
+- 本次只改 `harness/` 文档；重新执行文档与治理检查后保持 0 错误、0 告警。
+- 远端 CI 通过不等于 Doctor 就绪：默认环境仍缺 PSScriptAnalyzer 1.25.0。
 
 验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
