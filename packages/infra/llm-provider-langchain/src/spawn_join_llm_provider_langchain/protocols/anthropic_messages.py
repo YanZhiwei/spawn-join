@@ -1,10 +1,15 @@
 """Anthropic Messages protocol provider."""
 
+from typing import Any
+
+from langchain_core.messages import AIMessage
+
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
     ChatRequest,
+    FinishReason,
     NamedToolChoice,
     UnsupportedParameterError,
 )
@@ -44,6 +49,42 @@ class AnthropicMessagesProvider(BaseLangChainProvider):
         if options.thinking is not None:
             kwargs["thinking"] = self._thinking(options)
         return kwargs
+
+    def _provider_finish_reason(
+        self,
+        message: AIMessage,
+        generation_info: dict[str, Any],
+        llm_output: dict[str, Any],
+    ) -> str | None:
+        for source in (llm_output, generation_info):
+            value = source.get("stop_reason")
+            if isinstance(value, str) and value:
+                return value
+        return super()._provider_finish_reason(
+            message,
+            generation_info,
+            llm_output,
+        )
+
+    def _response_id(
+        self,
+        message: AIMessage,
+        generation_info: dict[str, Any],
+        llm_output: dict[str, Any],
+    ) -> str | None:
+        for source in (llm_output, generation_info):
+            for key in ("id", "message_id"):
+                value = source.get(key)
+                if isinstance(value, str) and value:
+                    return value
+        return super()._response_id(message, generation_info, llm_output)
+
+    def _finish_reason(
+        self,
+        message: AIMessage,
+        provider_finish_reason: str | None,
+    ) -> FinishReason:
+        return super()._finish_reason(message, provider_finish_reason)
 
     def _tool_choice(self, request: ChatRequest) -> object:
         choice = request.tool_choice

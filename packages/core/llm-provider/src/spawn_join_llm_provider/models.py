@@ -180,6 +180,7 @@ class StreamCompleted:
     provider_finish_reason: str | None = None
     usage: Usage | None = None
     response_id: str | None = None
+    message: Message | None = None
 
 
 StreamEvent: TypeAlias = TextDelta | ReasoningDelta | ToolCallDelta | StreamCompleted

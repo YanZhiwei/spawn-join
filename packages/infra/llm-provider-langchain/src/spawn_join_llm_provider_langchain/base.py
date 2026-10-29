@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -12,6 +13,9 @@ from uuid import uuid4
 
 from langchain_core import exceptions as lc_exceptions
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration
+from langchain_core.prompt_values import ChatPromptValue
 
 from spawn_join_llm_provider import (
     AuthenticationError,
@@ -20,8 +24,10 @@ from spawn_join_llm_provider import (
     ContextOverflowError,
     FinishReason,
     InvalidRequestError,
+    JsonValue,
     LLMError,
     MalformedResponseError,
+    Message,
     ModelCapabilities,
     ModelNotFoundError,
     PermissionDeniedError,
@@ -30,8 +36,15 @@ from spawn_join_llm_provider import (
     ProviderConnectionError,
     ProviderTimeoutError,
     RateLimitError,
+    ReasoningBlock,
+    ReasoningDelta,
+    Role,
     StreamCompleted,
     StreamEvent,
+    TextBlock,
+    TextDelta,
+    ToolCallBlock,
+    ToolCallDelta,
     Usage,
 )
 
@@ -81,20 +94,47 @@ class BaseLangChainProvider(ABC):
         self._log_start(request_id, "complete")
         try:
             self._validate(request)
-            message = await self._model.ainvoke(
-                to_langchain_messages(
-                    request.messages,
-                    protocol=self.protocol,
-                ),
+            result = await self._model.agenerate_prompt(
+                [
+                    ChatPromptValue(
+                        messages=to_langchain_messages(
+                            request.messages,
+                            protocol=self.protocol,
+                        )
+                    )
+                ],
                 **_as_kwargs(self._request_kwargs(request)),
             )
-            provider_finish_reason = provider_finish_reason_from_message(message)
+            if not result.generations or not result.generations[0]:
+                raise MalformedResponseError("Provider returned no generations")
+            generation = result.generations[0][0]
+            if not isinstance(generation, ChatGeneration):
+                raise MalformedResponseError("Provider returned a non-chat generation")
+            message = generation.message
+            if not isinstance(message, AIMessage):
+                raise MalformedResponseError(
+                    "Provider did not return an assistant message"
+                )
+            generation_info = generation.generation_info or {}
+            llm_output = result.llm_output or {}
+            provider_finish_reason = self._provider_finish_reason(
+                message,
+                generation_info,
+                llm_output,
+            )
             response = from_langchain_response(
                 message,
                 protocol=self.protocol,
                 provider_finish_reason=provider_finish_reason,
-                finish_reason=finish_reason_from_value(provider_finish_reason),
-                response_id=response_id_from_message(message),
+                finish_reason=self._finish_reason(
+                    message,
+                    provider_finish_reason,
+                ),
+                response_id=self._response_id(
+                    message,
+                    generation_info,
+                    llm_output,
+                ),
             )
             self._log_end(
                 request_id,
@@ -117,7 +157,15 @@ class BaseLangChainProvider(ABC):
             )
             self._log_error(request_id, "complete", started, mapped)
             raise mapped from exc
-        except (TypeError, ValueError) as exc:
+        except TypeError as exc:
+            mapped = MalformedResponseError(
+                "Provider returned an invalid response",
+                protocol=self.protocol,
+                model=self.model,
+            )
+            self._log_error(request_id, "complete", started, mapped)
+            raise mapped from exc
+        except ValueError as exc:
             mapped = InvalidRequestError(
                 "Provider rejected the request",
                 protocol=self.protocol,
@@ -144,6 +192,9 @@ class BaseLangChainProvider(ABC):
             last_finish = FinishReason.UNKNOWN
             last_provider_finish: str | None = None
             last_response_id: str | None = None
+            text_parts: list[str] = []
+            reasoning_blocks: list[ReasoningBlock] = []
+            tool_parts: dict[int, dict[str, str | None]] = {}
             async for chunk in self._model.astream(
                 to_langchain_messages(
                     request.messages,
@@ -164,7 +215,36 @@ class BaseLangChainProvider(ABC):
                 if chunk_response_id is not None:
                     last_response_id = chunk_response_id
                 for event in stream_events_from_chunk(chunk):
+                    if isinstance(event, TextDelta):
+                        text_parts.append(event.text)
+                    elif isinstance(event, ReasoningDelta):
+                        reasoning_blocks.append(
+                            ReasoningBlock(
+                                text=event.text,
+                                opaque_state=event.opaque_state,
+                            )
+                        )
+                    elif isinstance(event, ToolCallDelta):
+                        key = (
+                            event.index if event.index is not None else len(tool_parts)
+                        )
+                        part = tool_parts.setdefault(
+                            key,
+                            {"id": None, "name": None, "arguments": ""},
+                        )
+                        if event.id is not None:
+                            part["id"] = event.id
+                        if event.name is not None:
+                            part["name"] = event.name
+                        part["arguments"] = (
+                            part["arguments"] or ""
+                        ) + event.arguments_delta
                     yield event
+            message = _assemble_stream_message(
+                text_parts,
+                reasoning_blocks,
+                tool_parts,
+            )
             self._log_end(
                 request_id,
                 "stream",
@@ -176,6 +256,7 @@ class BaseLangChainProvider(ABC):
                 provider_finish_reason=last_provider_finish,
                 usage=last_usage,
                 response_id=last_response_id,
+                message=message,
             )
         except asyncio.CancelledError:
             self._log_cancel(request_id, "stream", started)
@@ -191,7 +272,15 @@ class BaseLangChainProvider(ABC):
             )
             self._log_error(request_id, "stream", started, mapped)
             raise mapped from exc
-        except (TypeError, ValueError) as exc:
+        except TypeError as exc:
+            mapped = MalformedResponseError(
+                "Provider returned an invalid stream response",
+                protocol=self.protocol,
+                model=self.model,
+            )
+            self._log_error(request_id, "stream", started, mapped)
+            raise mapped from exc
+        except ValueError as exc:
             mapped = InvalidRequestError(
                 "Provider rejected the request",
                 protocol=self.protocol,
@@ -214,6 +303,32 @@ class BaseLangChainProvider(ABC):
     @abstractmethod
     def _request_kwargs(self, request: ChatRequest) -> dict[str, object]:
         """Return protocol-specific invocation kwargs."""
+
+    def _provider_finish_reason(
+        self,
+        message: AIMessage,
+        generation_info: dict[str, Any],
+        llm_output: dict[str, Any],
+    ) -> str | None:
+        del generation_info, llm_output
+        return provider_finish_reason_from_message(message)
+
+    def _finish_reason(
+        self,
+        message: AIMessage,
+        provider_finish_reason: str | None,
+    ) -> FinishReason:
+        del message
+        return finish_reason_from_value(provider_finish_reason)
+
+    def _response_id(
+        self,
+        message: AIMessage,
+        generation_info: dict[str, Any],
+        llm_output: dict[str, Any],
+    ) -> str | None:
+        del generation_info, llm_output
+        return response_id_from_message(message)
 
     def _log_start(self, request_id: str, operation: str) -> None:
         logger.info(
@@ -305,6 +420,39 @@ class BaseLangChainProvider(ABC):
                 "llm_error_type": type(error).__name__,
             },
         )
+
+
+def _assemble_stream_message(
+    text_parts: list[str],
+    reasoning_blocks: list[ReasoningBlock],
+    tool_parts: dict[int, dict[str, str | None]],
+) -> Message:
+    blocks: list[TextBlock | ReasoningBlock | ToolCallBlock] = []
+    if text_parts:
+        blocks.append(TextBlock("".join(text_parts)))
+    blocks.extend(reasoning_blocks)
+    for part in tool_parts.values():
+        tool_id = part.get("id")
+        name = part.get("name")
+        if not isinstance(tool_id, str) or not isinstance(name, str):
+            continue
+        raw_arguments = part.get("arguments") or ""
+        arguments: dict[str, JsonValue] = {}
+        if raw_arguments:
+            try:
+                parsed = json.loads(raw_arguments)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, dict):
+                arguments = cast(dict[str, JsonValue], parsed)
+        blocks.append(
+            ToolCallBlock(
+                id=tool_id,
+                name=name,
+                arguments=arguments,
+            )
+        )
+    return Message(role=Role.ASSISTANT, content=tuple(blocks))
 
 
 def _as_kwargs(kwargs: dict[str, object]) -> dict[str, Any]:

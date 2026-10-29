@@ -4,9 +4,10 @@ from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
-from spawn_join_llm_provider import LLMProvider
+from spawn_join_llm_provider import ConfigurationError, LLMProvider
 
 from .config import (
+    AnthropicMessagesConfig,
     ChatCompletionsConfig,
     ProviderConfigType,
     ResponsesConfig,
@@ -45,6 +46,11 @@ def create_provider(config: ProviderConfigType) -> LLMProvider:
             use_responses_api=True,
         )
         return ResponsesProvider(model, config)
+
+    if not isinstance(
+        config, AnthropicMessagesConfig
+    ):  # pyright: ignore[reportUnnecessaryIsInstance]
+        raise ConfigurationError("Unsupported provider configuration")
 
     model = ChatAnthropic(
         model_name=config.model,

@@ -138,7 +138,7 @@ def test_cancellation_propagates(
         del args, kwargs
         raise asyncio.CancelledError
 
-    monkeypatch.setattr(RecordingChatModel, "ainvoke", raise_cancel)
+    monkeypatch.setattr(RecordingChatModel, "agenerate_prompt", raise_cancel)
 
     with pytest.raises(asyncio.CancelledError):
         asyncio.run(provider.complete(_request()))

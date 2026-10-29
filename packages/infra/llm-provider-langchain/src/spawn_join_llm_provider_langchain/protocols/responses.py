@@ -1,7 +1,10 @@
 """Responses protocol provider."""
 
+from langchain_core.messages import AIMessage
+
 from spawn_join_llm_provider import (
     ChatRequest,
+    FinishReason,
     ResponsesOptions,
     UnsupportedParameterError,
 )
@@ -12,6 +15,16 @@ from ..mapping import openai_common_kwargs, responses_tool_choice
 
 class ResponsesProvider(BaseLangChainProvider):
     """Provider for OpenAI-compatible Responses endpoints."""
+
+    def _finish_reason(
+        self,
+        message: AIMessage,
+        provider_finish_reason: str | None,
+    ) -> FinishReason:
+        reason = super()._finish_reason(message, provider_finish_reason)
+        if reason is FinishReason.STOP and message.tool_calls:
+            return FinishReason.TOOL_CALLS
+        return reason
 
     def _request_kwargs(self, request: ChatRequest) -> dict[str, object]:
         kwargs = openai_common_kwargs(request)
