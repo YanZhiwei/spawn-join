@@ -5,10 +5,10 @@
 - **feature_id**: `delivery-v014-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v014-upgrade`
 - **base_revision**: `881dcfeb4885c044d39071660606775509d64165`
-- **head_revision**: `7bbd072aa60173c05384f55e10b4ee546474f523` (upgrade commit; this record is re-anchored one bookkeeping commit later)
+- **head_revision**: `bae306c1573a205a582778a57eaf607d871d1a39` (PR #14 squash-merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
-- **result**: pass for scoped installation consistency and generated-command checks; Doctor blocked by environment
+- **result**: pass for scoped installation consistency and generated-command checks; main Quality run 40849963307 succeeded 14/14; Doctor remains blocked by environment
 
 Route: **Lightweight**. This is an upstream patch-release upgrade of development tooling.
 It does not change Python behavior, dependencies, public APIs, architecture or durable data,
@@ -125,6 +125,18 @@ configs; no duplicate template was created; dependency direction and Python publ
 unchanged; existing gates are reused; automatic hooks and remote writes stay disabled. This
 is not an independent Review, a Ralph receipt, or an end-to-end semantic workflow pass.
 
+## Post-merge closure — 2026-10-29
+
+PR [#14](https://github.com/YanZhiwei/spawn-join/pull/14) was squash-merged as
+`bae306c1573a205a582778a57eaf607d871d1a39`, replacing the two branch commits with one
+commit on `main`. The main Quality run
+[40849963307](https://github.com/YanZhiwei/spawn-join/actions/runs/40849963307) completed
+all 14 jobs successfully (Governance and gate regression, 12 package/platform matrix jobs,
+and the required `Quality Gate`). This record is re-anchored to the merge commit; the
+earlier branch SHA is no longer an ancestor of `main` and must not be used as current
+evidence. CI success is remote mechanical evidence for that commit, not a reviewed
+Doctor pass: the default-environment Doctor blocker is unchanged.
+
 ## Compatibility and limitations
 
 - v0.1.4 changes no command surface, configuration format, Review dimension, snapshot
@@ -133,9 +145,9 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
 - Task closure still requires current content/requirements-bound Quality, Standards and
   independent Review; no earlier receipt is promoted to the new contract.
 - Scoped installation checks are not full Quality readiness. Four-package tests, builds and
-  types, full quality, quality/static regression suites, direct Workflow execution,
-  independent Review, real Feature/Bugfix/Ralph delivery and remote CI were not run for this
-  tooling-only patch. No full-suite pass is claimed.
+  types, quality/static regression suites, direct Workflow execution, independent Review
+  and real Feature/Bugfix/Ralph delivery were not run locally for this tooling-only patch;
+  the four-package matrix and gate regressions ran in the remote Quality workflow above.
 - LF/CRLF warnings are existing platform behavior; no global Git setting is changed.
-- Evidence covers this uncommitted working tree, not a future commit/merge or another host.
-  Reconfirm source identities, scope and readiness if HEAD or relevant contents change.
+- Evidence covers `bae306c` as merged; later changes to material paths require renewed
+  confirmation rather than reuse of this record.
