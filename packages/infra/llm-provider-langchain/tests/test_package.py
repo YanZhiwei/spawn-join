@@ -32,4 +32,9 @@ def test_framework_dependency_belongs_to_adapter() -> None:
         re.split(r"[<>=!~;\[\s]", requirement, maxsplit=1)[0]
         for requirement in requirements
     }
-    assert dependency_names == {"spawn-join-llm-provider", "langchain-core"}
+    assert dependency_names == {
+        "spawn-join-llm-provider",
+        "langchain-core",
+        "langchain-anthropic",
+        "langchain-openai",
+    }
