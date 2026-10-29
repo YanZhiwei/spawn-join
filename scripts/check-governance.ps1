@@ -125,6 +125,16 @@ function Test-Evidence {
         $relative = Get-RelativePath $rootPath $file.FullName
         $text = Read-Text $file.FullName
         $fields = Get-EvidenceFields $text
+        $superseded = $false
+
+        if ($fields.ContainsKey('superseded_by')) {
+            $supersededBy = $fields['superseded_by']
+            if (-not (Test-Path -LiteralPath (Join-Path $rootPath $supersededBy))) {
+                Add-CheckError $relative "superseded_by target does not exist: $supersededBy"
+            } else {
+                $superseded = $true
+            }
+        }
 
         foreach ($field in $required) {
             if (-not $fields.ContainsKey($field) -or -not $fields[$field]) {
@@ -159,7 +169,8 @@ function Test-Evidence {
             }
         }
 
-        if ($fields.ContainsKey('head_revision') -and
+        if (-not $superseded -and
+            $fields.ContainsKey('head_revision') -and
             $fields['head_revision'] -match '([0-9a-f]{40})' -and $script:headCommit) {
             $head = $Matches[1]
             & git -C $rootPath merge-base --is-ancestor $head HEAD 2>$null

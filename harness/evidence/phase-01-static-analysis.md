@@ -9,6 +9,7 @@
 - **head_revision**: `8d9c59c7b3fd961d0b319c1a9628b4a87312fcac`（PR #6 合并后再次锚定；PR #5 squash 为 `48fb3a7`）
 - **reconfirmed_at**: 2026-10-27
 - **working_directory**: `D:\Repos\Github\spawn-join`
+- **superseded_by**: `harness/evidence/package-metadata-and-license.md`
 - **recorded_at**: 2026-10-27
 - **environment**: Windows；PowerShell 7.6.9；uv 0.7.13；actionlint 1.7.12；
   PSScriptAnalyzer 1.25.0（本地经临时模块路径，CI 由固定版本安装）

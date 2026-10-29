@@ -142,6 +142,14 @@ None.
         commit -m 'material change' --quiet
     Test-GovernanceResult 'material change after evidence head warns' `
         $true 'material paths changed'
+    Set-Content -LiteralPath $evidence -Value ($originalEvidence -replace
+        '- result: pass', "- result: pass`n- superseded_by: README.md")
+    Test-GovernanceResult 'superseded evidence keeps freshness warning quiet' `
+        $true '' -AbsentDiagnostic 'material paths changed'
+    Set-Content -LiteralPath $evidence -Value ($originalEvidence -replace
+        '- result: pass', "- result: pass`n- superseded_by: missing-record.md")
+    Test-GovernanceResult 'superseded_by target must exist' $false `
+        'superseded_by target does not exist'
     Set-Content -LiteralPath $evidence -Value $originalEvidence
 
     $original = Get-Content -LiteralPath $evidence -Raw

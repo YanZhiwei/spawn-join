@@ -711,3 +711,22 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 未重跑四包完整 gate（本次仅改脚本与文档）；PR CI 会重新执行全部检查。
 
 验证记录：[元数据 evidence](evidence/package-metadata-and-license.md)。
+
+## 2026-10-29 — 治理噪音清理
+
+**Status**: 本机验证通过；未提交、未推送
+
+**Route**: Lightweight（治理检查与历史 evidence 元数据，无运行时行为变化）
+
+**Base/head**: `dab15fe2b7d3f3c1108ad32a3a671e65d80e0642` 加当前工作树
+
+- `check-governance.ps1` 新增 `superseded_by`：历史 evidence 可指向更新记录，目标必须存在；
+  该字段只抑制 freshness warning，不删除旧记录或改写结论。
+- 四份 `phase-01-*` evidence 标记为 superseded，指向覆盖同一关注点的较新记录；
+  `test-governance.ps1` 增加两个对应场景（21 → 23）。
+- governance warning 由 5 条降到 1 条：剩余一条是当前交付记录落后于 HEAD，应在合并后
+  重新锚定，而不是标记 superseded。
+- 删除机器本地的 `.specify/feature.json` 陈旧指针（Git 忽略，不提交）。
+- 验证：23 个治理场景、静态检查、静态回归、文档检查与 `git diff --check` 通过。
+
+验证记录：[治理清理 evidence](evidence/governance-noise-cleanup.md)。
