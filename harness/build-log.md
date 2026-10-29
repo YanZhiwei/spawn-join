@@ -730,3 +730,19 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 验证：23 个治理场景、静态检查、静态回归、文档检查与 `git diff --check` 通过。
 
 验证记录：[治理清理 evidence](evidence/governance-noise-cleanup.md)。
+
+## 2026-10-29 — v0.1.2 安装 evidence 再锚定
+
+**Status**: 已验证；未提交、未推送
+
+**Route**: Lightweight（证据再锚定，无行为变化）
+
+**Base/head**: `00d9c402bb2325c3b8f007ece5564312397ac77e` 加当前工作树
+
+- 在 `00d9c40` 重新核对安装状态：Bundle `0.1.2`、13 个组件、33 个原生命令。
+- 5 个扩展配置、核心任务技能和任务模板保持不变；`quality-config.yml` 与
+  `extensions.yml` 的变化分别是 PR #11 的治理 Profile 扩展和 PR #10 的 `diagram` 登记。
+- 完整 `quality.ps1` 通过；main Quality 运行 `40802098059` 为 14/14。
+- 本次只改 evidence 与 build-log；合并后 freshness warning 应为 0。
+
+验证记录：[安装 evidence](evidence/delivery-release-installation.md)。

@@ -4,11 +4,11 @@
 
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
-- **base_revision**: `06f6303b597ce01a707164762f55369706b13063`
-- **head_revision**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1` (PR #10 merge commit)
+- **base_revision**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1`
+- **head_revision**: `00d9c402bb2325c3b8f007ece5564312397ac77e` (PR #12 merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
-- **recorded_at**: 2026-10-28
-- **result**: pass for v0.1.2 Bundle upgrade and the declared verification environment; default-environment Doctor remains blocked
+- **recorded_at**: 2026-10-29
+- **result**: pass for v0.1.2 Bundle installation re-anchored at 00d9c40; main Quality run 40802098059 succeeded; default-environment Doctor remains blocked
 
 Route: Feature, manual installation bootstrap. Local Spec/Plan/Tasks remain Git-ignored.
 No branch switch, staging, commit, push, merge, publication or Ralph iteration is performed.
@@ -233,6 +233,24 @@ project and are not committed.
 `code_context` key; the command treats an absent key as `auto`. Diagram configuration is the
 scaffolded default (`format: mermaid`, `renderer: auto`), so no renderer is required.
 
+## Re-anchor at 00d9c40 — 2026-10-29
+
+PR #11 and PR #12 merged after the v0.1.2 upgrade. This entry re-verifies the installed state at
+the current `main` instead of claiming the earlier working-tree run covers later commits.
+
+| Actual command/check | Exit | Result |
+|---|---:|---|
+| `specify bundle list --json` | 0 | `speckit-delivery` 0.1.2, 13 components |
+| `specify extension list` | 0 | nine Delivery extensions at 0.1.2, Diagram 0.1.2, Bug 1.0.1; Delivery has 6 commands |
+| `specify workflow list` | 0 | feature, bugfix, lightweight at 0.1.2 |
+| Protected-file comparison | 0 | core tasks skill, tasks template, delivery/decision/ralph/evidence/docs-sync configs unchanged |
+| Deliberate config changes | 0 | `quality-config.yml` gained `LICENSE` and PR-template profile coverage (PR #11); `extensions.yml` gained only `diagram` |
+| Workflow step check | 0 | `speckit.delivery.context` present in feature and bugfix workflows |
+| OpenCode API command discovery | 0 | 33 native commands (23 extension + 10 core) |
+| `pwsh -NoProfile -File scripts/quality.ps1` | 0 | four-package build, isolated install, tests, docs, governance and static checks |
+| `quality.ps1 -Check governance` | 0 | 0 errors, 0 warnings after this re-anchor |
+| Main Quality run 40802098059 | 0 | 14/14 jobs succeeded for `00d9c40` |
+
 ## Limitations and blockers
 
 - The default local environment still needs PSScriptAnalyzer 1.25.0; passing tests with an explicit
@@ -245,5 +263,5 @@ scaffolded default (`format: mermaid`, `renderer: auto`), so no renderer is requ
 - Generated/vendor Markdown keeps upstream context links and is explicitly outside project link validation.
 - No real Feature/Ralph loop, task commit receipt, remote CI, merge protection update or publication is tested here.
 - ADR-0004 is Accepted after PR #8; local tasks T001–T009 are marked complete for this delivery.
-- This evidence anchors the merged PR #8 run and the v0.1.2 upgrade working tree; later code
-  changes require renewed confirmation.
+- This evidence anchors the merged PR #8 run, the v0.1.2 upgrade, and the 00d9c40 re-anchor;
+  later code changes require renewed confirmation.
