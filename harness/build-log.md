@@ -783,3 +783,19 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 默认环境仍缺 PSScriptAnalyzer 1.25.0，静态检查保持 blocked，不因补丁升级放宽。
 
 验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
+
+## 2026-10-29 — v0.1.4 升级 evidence 再锚定
+
+**Status**: 已验证；未合并
+
+**Route**: Lightweight（证据再锚定与历史记录归档，无行为变化）
+
+**Base/head**: `7bbd072aa60173c05384f55e10b4ee546474f523` 加本记录提交
+
+- 升级提交 `7bbd072` 覆盖 v0.1.3 与 v0.1.4 安装、文档、证据和 ADR 更新；
+  v0.1.4 evidence 的 `head_revision` 由工作树改为该提交。
+- v0.1.3 与历史 v0.1.2 安装记录标记 `superseded_by`，指向当前 v0.1.4 记录；
+  旧记录保留，不删除、不改写结论。
+- 本次只改 `harness/` 文档；重新执行文档与治理检查后应保持 0 错误、0 告警。
+
+验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。

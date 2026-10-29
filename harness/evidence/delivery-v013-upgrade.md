@@ -9,6 +9,7 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for scoped installation consistency, docs and governance checks; Doctor blocked
+- **superseded_by**: `harness/evidence/delivery-v014-upgrade.md`
 
 Route: **Lightweight**. The maintainer requested the pinned release upgrade. This refreshes
 existing third-party development resources, not Python behavior, APIs, dependencies or

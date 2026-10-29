@@ -5,7 +5,7 @@
 - **feature_id**: `delivery-v014-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v014-upgrade`
 - **base_revision**: `881dcfeb4885c044d39071660606775509d64165`
-- **head_revision**: working-tree (base `881dcfeb4885c044d39071660606775509d64165`; no commit)
+- **head_revision**: `7bbd072aa60173c05384f55e10b4ee546474f523` (upgrade commit; this record is re-anchored one bookkeeping commit later)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for scoped installation consistency and generated-command checks; Doctor blocked by environment

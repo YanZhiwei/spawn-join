@@ -9,6 +9,7 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for v0.1.2 Bundle installation re-anchored at 00d9c40; main Quality run 40802098059 succeeded; default-environment Doctor remains blocked
+- **superseded_by**: `harness/evidence/delivery-v014-upgrade.md`
 
 Route: Feature, manual installation bootstrap. Local Spec/Plan/Tasks remain Git-ignored.
 No branch switch, staging, commit, push, merge, publication or Ralph iteration is performed.
