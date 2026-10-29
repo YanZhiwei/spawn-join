@@ -2,11 +2,11 @@
 
 - **feature_id**: `006-delivery-release-install`
 - **phase_id**: `delivery-release-installation`
-- **base_revision**: `06f6303b597ce01a707164762f55369706b13063`
-- **head_revision**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1` (PR #10 merge commit)
+- **base_revision**: `0f67f44eb5fb7bd76f85ac9ce2b701dd15e3cbf1`
+- **head_revision**: `00d9c402bb2325c3b8f007ece5564312397ac77e` (PR #12 merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
-- **recorded_at**: 2026-10-28
-- **result**: pass for v0.1.2 Bundle upgrade; default-environment Doctor remains blocked
+- **recorded_at**: 2026-10-29
+- **result**: pass for v0.1.2 Bundle installation re-anchored at 00d9c40; main Quality 14/14 passed; default-environment Doctor remains blocked
 
 The authoritative command, source, preservation and failure record is
 [Harness installation evidence](../../../harness/evidence/delivery-release-installation.md).
