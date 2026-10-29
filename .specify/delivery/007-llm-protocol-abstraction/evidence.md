@@ -1,11 +1,11 @@
-# Evidence — LLM protocol abstraction implementation
+# Evidence 鈥?LLM protocol abstraction implementation
 
 ## Identity and scope
 
 - **feature_id**: `007-llm-protocol-abstraction`
 - **phase_id**: `llm-protocol-abstraction`
 - **base_revision**: `3fe0cf0fe2e70b19ef65e73570b0d20e3e5311db`
-- **head_revision**: `aa7292f3c6f0b8f4b0c5733a75d5f1b0309dd1d8`
+- **head_revision**: `f901292b6c035a377ff0449d9f0371207db707b2`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for scoped package quality and repository documentation/governance/static checks; user code review and real-service validation remain pending
@@ -32,7 +32,7 @@ Commands ran from the working directory above.
 | Command/check | Exit | Observed result |
 |---|---:|---|
 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` | 0 | 61 tests; Pyright strict 0 errors; build/isolated install passed |
-| `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` | 0 | 56 tests; Pyright strict 0 errors; build/isolated install passed |
+| `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` | 0 | 64 tests; Pyright strict 0 errors; build/isolated install passed |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check static` | 0 | 0 failing checks |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | 0 | 75 files / 192 local targets (before final docs commit) |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors / 0 warnings (before final evidence commit) |
