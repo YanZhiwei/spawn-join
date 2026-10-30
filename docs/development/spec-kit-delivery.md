@@ -16,38 +16,42 @@
 
 | 组件 | 来源/版本 |
 |---|---|
-| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.1.4 |
+| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.2.1 |
 | Bug | Specify CLI 1.2.3 随附的 1.0.1 |
-| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.1.4 |
+| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.2.1 |
 
-当前项目使用 **Bundle v0.1.4**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
+当前项目使用 **Bundle v0.2.1**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
 v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow Catalog 的 requirements
-不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`，并在 Feature 的 `plan`、
-Bugfix 的 `assess` 之前加入非阻塞的代码上下文步骤。v0.1.3 新增范围取证与有界修复复审，
-要求内容/需求快照绑定的独立 Review，并同步更新三条 Workflow；这些仍是引导式契约，
-不是新增机器强制执行的语义状态引擎。v0.1.4 是补丁发布：只修正 Doctor 对共享 Reviewer
-模板的路径引用，命令面、配置格式、Review 维度、快照和修复预算均不变。
+不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`；v0.1.3 增加范围取证与有界
+修复复审；v0.1.4 修正 Doctor 对共享 Reviewer 模板的路径引用。v0.2.0 增加
+`speckit.delivery.slice`、`templates/slices.md`、Feature 的 `slice`/`slice-gate`，以及
+`pr_slicing`、Slice 预算、`stack_provider` 和 `merge_policy`。v0.2.1 让
+`speckit.delivery.handoff` 把正文写入 `.specify/delivery/<run>/pull-request.md` 或
+`pull-request-<slice>.md`，输出 `PR_BODY_PATH` 和 `gh pr create --body-file` 提示；安装
+静态 PR 模板仍是显式 opt-in，不会覆盖项目已有模板。这些仍是引导式契约，不是新增机器强制
+执行的语义状态引擎。
 
-发布入口：[v0.1.4](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.1.4)。
+发布入口：[v0.2.1](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.2.1)。
 安装取舍见 [ADR-0004](../decisions/engineering/0004-release-managed-delivery-installation.md)。
-本次升级命令与限制见 [v0.1.4 evidence](../../harness/evidence/delivery-v014-upgrade.md)；
+本次升级命令与限制见 [v0.2.1 evidence](../../harness/evidence/delivery-v021-upgrade.md)；
 早期安装见 [历史 evidence](../../harness/evidence/delivery-release-installation.md)。
 
 ## 首次接入已有项目
 
 从仓库根目录执行。先备份现有配置与定制内容；这些命令用于**尚未安装交付组件**的项目，
-已经安装时先检查清单和差异，不机械重跑或添加 `--force`。不要对现有项目执行 `specify init --force`。
+已经安装时先检查清单和差异，不机械重跑或添加 `--force`。不要对现有项目执行
+`specify init --force`。
 
 ```powershell
 specify version
 specify integration install opencode --script ps
 specify integration use opencode
 
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.4/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.2.1/catalogs'
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog add "$base/workflows.json" --name speckit-delivery
 specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
-specify bundle install speckit-delivery --version 0.1.4
+specify bundle install speckit-delivery --version 0.2.1
 ```
 
 Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Workflow。Catalog 的安装信任
@@ -56,7 +60,7 @@ Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Wor
 
 ### 从 v0.1.0 逐组件安装迁移
 
-先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.1.4 Bundle：
+先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.2.1 Bundle：
 
 ```powershell
 foreach ($extension in @('bug','decision','delivery','docs-sync','evidence','quality','ralph','review','simplify')) {
@@ -69,17 +73,17 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 }
 ```
 
-随后删除旧 Catalog、加入 v0.1.4 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
-`bundle list --json` 为 0.1.4、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
+随后删除旧 Catalog、加入 v0.2.1 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
+`bundle list --json` 为 0.2.1、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
 `tasks-template.md` 不被覆盖；`auto_execute_hooks: false` 保持。
 
-### 从 v0.1.1 / v0.1.2 Bundle 升级
+### 从 v0.1.x Bundle 升级
 
 已由 Bundle 管理的项目不需要逐个移除组件，使用 Bundle 自身的更新路径。先用
 `specify workflow catalog list` 确认旧来源的索引，再更新三类 Catalog：
 
 ```powershell
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.1.4/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.2.1/catalogs'
 specify extension catalog remove speckit-delivery
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog remove 0
@@ -89,10 +93,18 @@ specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy i
 specify bundle update speckit-delivery
 ```
 
-升级后检查：`bundle list --json` 为 0.1.4、13 个组件；`*-config.yml` 哈希不变；
-`auto_execute_hooks: false`；OpenCode 原生命令为 35 个（相对 v0.1.2 新增
-`speckit.delivery.explore` 和 `speckit.delivery.review-fix`）。`bundle update` 会重新安装
-三条 Workflow，因此新步骤随 Bundle 生效。不能只更新薄门面或单条命令。
+升级后检查：`bundle list --json` 为 0.2.1、13 个组件；`*-config.yml` 哈希不变；
+`auto_execute_hooks: false`；OpenCode 原生命令为 36 个（相对 v0.1.4 新增
+`speckit.delivery.slice`，Delivery 扩展命令由 8 个增加到 9 个）。`bundle update` 会重新
+安装三条 Workflow，因此 Feature 的新 `slice`/`slice-gate` 随 Bundle 生效。不能只更新
+薄门面或单条命令。
+
+v0.1.4 → v0.2.1 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
+`pr_slicing`、`slice_warn_files`、`slice_warn_lines`、`slice_requires_approval`、
+`stack_provider` 和 `merge_policy`；v0.2.1 新增 `install_pull_request_template`。本项目
+保持单 PR 路径，设置 `pr_slicing: "off"`、`stack_provider: manual`、`use_queue: false`，
+并因仓库 Ruleset 要求线性历史而把 `final` 设为 `squash`。这是对现有策略的显式记录，
+不是安装器覆盖项目配置。
 
 直接 Workflow 现要求唯一、安全的单段 `delivery_run`；Bugfix 另需规范化的 `bug_slug`。
 恢复时沿用相同标识和 `.specify/delivery/<delivery_run>/` 本地记录，不通过换 ID 重置修复预算：
@@ -105,12 +117,20 @@ specify workflow run lightweight-delivery --input delivery_run=docs-fix-01 --inp
 
 这些是用法示例，本次升级未运行 Workflow。项目 `max_review_fix_rounds: 2` 保持不变，
 低于上游三槽上限；任务关闭需要当前快照的 Quality、Standards 与独立 Review 三门证据。
+Feature 在 `tasks.md` 之后增加 Slice 计划与 Slice Gate；`tasks.md` 仍是唯一执行队列，
+`slices.md` 只记录可独立评审/合并的边界，不得增删或重排任务。
 
 ## 项目配置
 
 - [Delivery](../../.specify/extensions/delivery/delivery-config.yml)：上游字段及项目安全设置。
-  未显式写入 `code_context` 时按 `auto` 处理：Feature 在 `plan` 前、Bugfix 在 `assess` 前
-  可使用本地 `.codegraph/` 生成上下文；没有索引时降级为部分结果，不阻塞交付。
+  `pr_slicing: "off"` 保持单 PR；`slice_requires_approval: true` 保留 Slice Gate 的快速
+  确认；`stack_provider: manual`、`use_queue: false` 不声称本仓库具备原生 Stacked PR
+  或 Merge Queue。`merge_policy.final: squash` 与仓库 required linear history 一致；
+  启用 integration 交付前必须重新评审该策略。现有 `.github/pull_request_template.md`
+  保留，`install_pull_request_template: false`，Handoff 仍通过 `PR_BODY_PATH` 和
+  `--body-file` 提交每次变更的正文。未显式写入 `code_context` 时按 `auto` 处理；本项目
+  显式设为 `auto`，Feature 在 `plan` 前、Bugfix 在 `assess` 前可使用本地 `.codegraph/`
+  生成上下文；没有索引时降级为部分结果，不阻塞交付。
 - [Diagram](../../.specify/extensions/diagram/diagram-config.yml)：默认 `format: mermaid`、
   `renderer: auto`；未安装渲染器时保持 Mermaid，不自动下载或初始化任何工具。
 - [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、四包、自动化、
@@ -128,11 +148,11 @@ Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push�
 ## 验证与升级
 
 运行环境要求见 [质量门前置条件](quality-gates.md#prerequisites)。历史 v0.1.2 完整验证曾
-显式提供临时 PSScriptAnalyzer 1.25.0 模块路径；本次升级未沿用该环境或旧结果。默认本机
-环境仍缺该模块，`quality.ps1 -Check static` 实际失败，因此 Doctor 为 blocked，
-而非安装失败或已具备无人值守执行条件。
-可在当前会话提供经验证的模块路径，或经维护者确认按质量门说明安装；不将临时路径写成
-项目配置或永久修改用户环境。
+显式提供临时 PSScriptAnalyzer 1.25.0 模块路径；本次升级未沿用该环境或旧结果。本次会话
+中 PSScriptAnalyzer 可用，`quality.ps1 -Check static`、完整四包 `quality.ps1` 矩阵和
+`test-quality.ps1` 门禁回归均实际通过。Doctor 仍是 Agent Prompt，本次未独立运行；安装
+一致性、配置、命令闭包和 Handoff 契约通过直接检查确认，不把安装验证表述为完整交付循环
+通过。
 
 ```powershell
 specify integration status
@@ -147,22 +167,25 @@ git diff --check
 ```
 
 另外按 `/speckit.delivery.doctor` 的只读契约核对：配置可解析、Bundle/扩展/Workflow 版本
-一致、所有 Workflow 命令在当前宿主可解析、质量命令实际可运行、语义标准有 owner/mechanism。
-Doctor 是 Agent Prompt，不是 PATH 可执行文件。安装器生成的命令由 OpenCode 自动重载；
-旧技能的当前会话缓存不代表新入口缺失。当前项目已发现 35 个点号原生命令（25 个扩展命令
-+ 10 个核心命令）。
+一致、Feature 包含 Slice 命令/模板/Gate 且 Ralph、Review、Handoff 消费 `slices.md`、所有
+Workflow 命令在当前宿主可解析、质量命令实际可运行、语义标准有 owner/mechanism。Doctor
+还检查 `pr_slicing`/Slice 预算/`merge_policy`、PR 模板配置，以及 Handoff 是否写出真实
+`PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示。Doctor 是 Agent Prompt，不是 PATH
+可执行文件。安装器生成的命令由 OpenCode 自动重载；旧技能的当前会话缓存不代表新入口缺失。
+当前项目已发现 36 个点号原生命令（26 个扩展命令 + 10 个核心命令）。
 
 升级后应确认生成的 Doctor 指向
 [Review 扩展模板](../../.specify/extensions/review/templates/reviewer.md)，而不是
 `.specify/extensions/delivery/templates/reviewer.md`。v0.1.3 曾把该共享模板误指向
-Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，安装包仍保持发布原样，
-不创建重复模板或手工篡改生成命令。若仍看到旧路径，说明安装未真正刷新到 v0.1.4。
+Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，v0.2.1 保持该路径。安装包仍
+保持发布原样，不创建重复模板或手工篡改生成命令。若仍看到旧路径，说明安装未真正刷新到
+当前版本。
 
 升级前先在临时项目验证新 Release 和 Bundle，检查组件差异、项目配置与定制保留；经确认
 后才更新固定 Catalog/Tag，并使用 Bundle 升级或 `--keep-config` 迁移方式。不要编辑生成命令、
 安装器 manifest 或 Bundle record 来掩盖漂移。
-`.specify/extensions/.cache/`、`.backup/` 与锁文件不提交；安装 registry、manifest、配置和
-生成命令保留以便项目级追溯。Vendor Prompt/README 的上游相对链接不属于项目文档链接门，
-保留原样，不伪称其经过本项目文档验证。
+`.specify/extensions/.cache/`、`.specify/workflows/.cache/`、`.backup/` 与锁文件不提交；
+安装 registry、manifest、配置和生成命令保留以便项目级追溯。Vendor Prompt/README 的上游
+相对链接不属于项目文档链接门，保留原样，不伪称其经过本项目文档验证。
 
-本次实际验证及限制见 [v0.1.4 evidence](../../harness/evidence/delivery-v014-upgrade.md)。
+本次实际验证及限制见 [v0.2.1 evidence](../../harness/evidence/delivery-v021-upgrade.md)。

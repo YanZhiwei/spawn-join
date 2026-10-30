@@ -6,7 +6,7 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.1.4。当前默认
+本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.2.1。当前默认
 OpenCode，入口为 `.opencode/commands/speckit.delivery.route.md`（`/speckit.delivery.route`），
 保留 Codex 核心技能。旧项目 sd/speckit-delivery 拷贝门面已移除；不转发到用户级旧技能。
 安装与升级以 [`Delivery 安装说明`](docs/development/spec-kit-delivery.md) 为准。
@@ -16,8 +16,9 @@ OpenCode，入口为 `.opencode/commands/speckit.delivery.route.md`（`/speckit.
 Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
 质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 已登记扩展，但
 `auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
-v0.1.4 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Bundle 安装不等于
-Ralph 已执行，也不授权自动 push/merge/发布。
+v0.2.1 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
+计划/门禁和 Handoff 正文路径已接入，但项目保持 `pr_slicing: "off"` 的单 PR 路径，
+`tasks.md` 仍是唯一执行队列。Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
 不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
 缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
@@ -44,7 +45,7 @@ Ralph 已执行，也不授权自动 push/merge/发布。
 - `.specify/delivery/<feature-id>/evidence.md`：Delivery evidence 配置已启用，记录实际
   outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
 
-Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保留范围、变更路径和针对性验证证据。Feature 的实现不能绕过 `tasks.md` 直接凭自然语言清单执行。
+Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保留范围、变更路径和针对性验证证据。Feature 的实现不能绕过 `tasks.md` 直接凭自然语言清单执行；`slices.md` 只提供可独立评审/合并的边界，不得增删或重排任务。
 
 收口前将稳定的设计理由和必要图表提炼到 ADR 或当前架构说明，不将 ADR 变成第二套
 任务队列或运行日志。Agent 按主要职责复用领域/子领域分类，并说明理由；归属不明确时
@@ -58,10 +59,12 @@ Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保�
 在项目启用 Ralph/完整 Delivery 流程后：
 
 - 每次只执行一个依赖已满足的任务；任务重叠、共享公共契约、迁移或未决设计会形成阻塞边。
+- Feature 在 `tasks.md` 之后执行 Slice 计划与 Slice Gate；Ralph 在每个 Slice 边界验证声明的 trunk-safe、flag 或 integration checkpoint，失败则回到 Slice 规划，不以继续执行掩盖失败。
 - Worker 返回变更路径、命令、结果、残余风险和阻塞，不自行勾选任务或创建收口提交。
 - Orchestrator 在任务关闭前验证验收证据、允许路径、当前内容/需求快照、声明的检查、
   `QUALITY_VERDICT`、`STANDARDS_VERDICT` 和独立 `REVIEW_VERDICT`；仅 `HEAD`/路径相同不足以复用旧证据。
 - 只有 `RALPH_TASK_GATE: PASS` 才能更新任务状态并创建该任务的提交；所有任务都有当前有效 receipt、工作区干净且收口证据完整后，才能声明全量完成。
+- Handoff 必须写出真实 `PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示；仅聊天正文不算可持久化交付。项目保持单 PR 路径，未经策略评审不启用 Stacked/Integration 交付。
 
 没有对应的 `.specify` 配置、质量命令或运行时证据时，只报告缺口；不要用技能文件存在、命令文本存在或一次静态阅读替代实际执行证据。
 

@@ -68,7 +68,7 @@ approved phase plan
 
 - 当前有 Black/isort/Ruff/Pyright/pytest 和 CI 配置；远端 CI 已运行，Ruleset 已配置
   required `Quality Gate`，并用临时失败 PR 验证为 `BLOCKED`。
-- `.specify/extensions.yml` 已登记 Bundle v0.1.4 组件，但自动 Hook 关闭且无已注册 Hook；
+- `.specify/extensions.yml` 已登记 Bundle v0.2.1 组件，但自动 Hook 关闭且无已注册 Hook；
   [Delivery 安装](../docs/development/spec-kit-delivery.md)不代表 Ralph 或完整交付循环已执行。
 - `scripts/check-governance.ps1` 校验 Harness/Delivery evidence 元数据、截断 revision、
   build-log 引用、ADR 索引、Spec/Tasks 一致性、Delivery 安全设置和自动 hook 开关；freshness

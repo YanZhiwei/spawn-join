@@ -801,3 +801,28 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 远端 CI 通过不等于 Doctor 就绪：默认环境仍缺 PSScriptAnalyzer 1.25.0。
 
 验证记录：[v0.1.4 升级 evidence](evidence/delivery-v014-upgrade.md)。
+
+## 2026-10-30 — Delivery Bundle v0.2.1 升级
+
+**Status**: 已安装；安装一致性与针对性检查通过；未提交、未推送
+
+**Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
+
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` 加当前工作树
+
+- v0.2.0 增加 Slice 计划/Slice Gate、`slices.md` 和合并策略；v0.2.1 让 Handoff 把正文
+  写入本地 `PR_BODY_PATH`，并保持静态 PR 模板安装为显式 opt-in。
+- 校验 10 个 Release ZIP 的 SHA-256；先在隔离副本升级，再对目标执行 `bundle update`；
+  13 个组件一致，原生命令由 35 增加到 36，三条 Workflow 与 v0.2.1 Tag 字节一致。
+- 安装器保留 14 个受保护配置/定制文件；项目随后显式更新 `delivery-config.yml`：
+  `pr_slicing: "off"`、`stack_provider: manual`、`use_queue: false`、`final: squash`，
+  以匹配现有单 PR 和 required linear history；既有 `.github/pull_request_template.md`
+  保留，`install_pull_request_template: false`。
+- 55 个非配置扩展文件与发布 ZIP 字节一致；Doctor 继续指向 Review 模板；Handoff 包含
+  `PR_BODY_PATH`、`PR_CREATE_HINT: gh pr create` 和 `--body-file`。
+- 文档、治理和静态检查通过；完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、
+  静态回归 3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
+- 未创建提交、推送、合并或发布；`specify integration status` 仍提示 32 个项目自有
+  核心技能/模板修改，未使用 `--force` 消除。
+
+验证记录：[v0.2.1 升级 evidence](evidence/delivery-v021-upgrade.md)。
