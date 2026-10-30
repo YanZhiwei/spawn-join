@@ -30,6 +30,8 @@ made; publishing the branch is a separate review step.
   for `pr_slicing`, slice budgets, `stack_provider`, `merge_policy`, `code_context` and
   `install_pull_request_template`; installer itself preserved all 14 protected files before
   this edit.
+- `.github/pull_request_template.md`: replaced with the v0.2.1 packaged SD template at
+  explicit user request; the prior project template remains in Git history.
 - `README.md`, `AGENTS.md`, `harness/README.md`,
   `docs/development/spec-kit-delivery.md`,
   `docs/decisions/engineering/0004-release-managed-delivery-installation.md`: current version,
@@ -102,6 +104,7 @@ Records: `release-audit.log`, `fixture-upgrade.log`, `target-upgrade.log`,
 | Generated Doctor assertion | 0 | references `.specify/extensions/review/templates/reviewer.md`; stale Delivery path absent; includes PR-template and Handoff checks |
 | Generated Handoff assertion | 0 | contains `PR_BODY_PATH`, `PR_CREATE_HINT: gh pr create`, and `--body-file`; body path contract present |
 | Slice/workflow assertion | 0 | `speckit.delivery.slice`, `templates/slices.md`, Feature `slice`/`slice-gate` before analyze; `slices.md` consumed downstream |
+| PR template default | 0 | `pull_request_template` points to `.specify/extensions/delivery/templates/pull-request.md`; `.github/pull_request_template.md` SHA-256 matches it; `install_pull_request_template: true` |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | 0 | 40 files / 156 local targets, including this untracked evidence |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors / 0 warnings |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check static` | 0 | 0 failing checks; PSScriptAnalyzer available in current environment |
@@ -141,9 +144,11 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
   PR-template opt-in. This project keeps the single-PR path with `pr_slicing: "off"`,
   `stack_provider: manual`, `use_queue: false`, and `final: squash` because `main` requires
   linear history. Stacked and integration delivery are not validated or enabled.
-- Existing `.github/pull_request_template.md` is preserved; `install_pull_request_template`
-  is false, so GitHub UI behavior is unchanged. Handoff still writes per-change bodies and
-  requires `--body-file` when creating a PR.
+- At explicit user request, `.github/pull_request_template.md` now mirrors the packaged SD
+  template; the previous Chinese project template is recoverable from Git history. The
+  `.github` copy is a static snapshot: Init does not overwrite an existing template, so a
+  future packaged-template change needs a deliberate refresh. Handoff still writes per-change
+  bodies and requires `--body-file` when creating a PR.
 - Task closure still requires current content/requirements-bound Quality, Standards and
   independent Review; no earlier receipt is promoted to the new contract.
 - Scoped installation checks are not full Quality readiness. The full local

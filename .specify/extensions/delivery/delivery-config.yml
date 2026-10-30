@@ -33,8 +33,11 @@ merge_policy:
   delete_branch: true
   freeze_before_final: true
 code_context: auto
-pull_request_template: null
-install_pull_request_template: false
+# Default to the installed SD template for both Handoff and the GitHub UI.
+# The .github copy is a static snapshot; Init never overwrites an existing
+# template, so refresh it deliberately when the packaged template changes.
+pull_request_template: .specify/extensions/delivery/templates/pull-request.md
+install_pull_request_template: true
 
 artifacts:
   policy: ephemeral
