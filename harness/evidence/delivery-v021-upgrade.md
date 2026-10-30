@@ -5,7 +5,7 @@
 - **feature_id**: `delivery-v021-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v021-upgrade`
 - **base_revision**: `9cdb10a334acf9100ae822f7220cb67fa7a25650`
-- **head_revision**: working-tree
+- **head_revision**: `2976eb3bc8ea721b941376765d5610a772abc547`
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
 - **result**: pass for scoped installation consistency and generated-command checks; Workflows and independent Doctor prompt not run
@@ -14,9 +14,10 @@ Route: **Lightweight**. This is an upstream minor-release upgrade of development
 It does not change Python behavior, package dependencies, public APIs, architecture or durable
 data, so no Spec/Plan/Tasks, delivery Workflow run or Ralph queue is required.
 
-The starting worktree was clean at detached `HEAD` `9cdb10a`; this upgrade is applied as an
-uncommitted working-tree change. No content was staged; no commit, push, merge or release
-action was made.
+The starting worktree was clean at detached `HEAD` `9cdb10a`; the installation changes were
+committed as `2976eb3bc8ea721b941376765d5610a772abc547` on `chore/delivery-v021-upgrade`.
+This evidence is re-anchored in a docs-only follow-up commit. No merge or release action was
+made; publishing the branch is a separate review step.
 
 ## Changed paths and ownership
 
@@ -93,7 +94,7 @@ Records: `release-audit.log`, `fixture-upgrade.log`, `target-upgrade.log`,
 | Temporary driver `audit` | 0 | all 10 SHA-256 digests match Release API; catalogs pinned to v0.2.1 and parse; Bundle declares 10 extensions + 3 workflows |
 | `specify workflow catalog list` before removal | 0 | one Delivery catalog at index 0, confirmed rather than assumed |
 | Temporary driver `upgrade <fixture> fixture` | 0 | 0.1.4 → 0.2.1 on a copy of the live worktree; 14 protected files unchanged |
-| Temporary driver `upgrade D:\...\stellar-engine target` | 0 | target at 0.2.1; 13 components; 14 protected files unchanged by installer |
+| Temporary driver `upgrade <worktree> target` | 0 | target at 0.2.1; 13 components; 14 protected files unchanged by installer |
 | Fixture/target verification | 0 each | 36 native commands; 26 extension commands; Feature 25 / Bugfix 16 / Lightweight 9 unique commands resolve; 55 non-config extension files and 3 workflows byte-identical to Release |
 | `specify bundle list --json` | 0 | Bundle 0.2.1; delivery/decision/ralph/review/simplify/evidence/quality/docs-sync/diagram + three workflows at 0.2.1; Bug 1.0.1 |
 | `specify integration status --json` | 0 | OpenCode default, Codex retained; 0 missing managed files; 0 invalid manifest paths; warning: 32 project-modified managed files (expected core skill/template customizations) |
@@ -152,5 +153,6 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
 - LF/CRLF warnings are existing platform behavior; no global Git setting is changed.
   Installer-refreshed files may appear in `git status` as line-ending-only entries even when
   their content hash matches the index; `git diff --name-only` remains the content diff.
-- Evidence covers the uncommitted working tree at `9cdb10a`; later material changes require
+- Evidence covers material change commit `2976eb3bc8ea721b941376765d5610a772abc547`; the
+  evidence re-anchor commit changes only `harness/` records. Later material changes require
   renewed confirmation rather than reuse of this record.

@@ -808,7 +808,7 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 **Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
 
-**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` 加当前工作树
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `2976eb3bc8ea721b941376765d5610a772abc547`
 
 - v0.2.0 增加 Slice 计划/Slice Gate、`slices.md` 和合并策略；v0.2.1 让 Handoff 把正文
   写入本地 `PR_BODY_PATH`，并保持静态 PR 模板安装为显式 opt-in。
