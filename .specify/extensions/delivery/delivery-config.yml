@@ -33,11 +33,11 @@ merge_policy:
   delete_branch: true
   freeze_before_final: true
 code_context: auto
-# Default to the installed SD template for both Handoff and the GitHub UI.
-# The .github copy is a static snapshot; Init never overwrites an existing
-# template, so refresh it deliberately when the packaged template changes.
-pull_request_template: .specify/extensions/delivery/templates/pull-request.md
-install_pull_request_template: true
+# Use the project-owned Chinese copy of the SD repository PR template for both
+# Handoff and the GitHub UI. The extension's packaged fallback stays English;
+# this file is intentionally not the installer-owned fallback.
+pull_request_template: .github/pull_request_template.md
+install_pull_request_template: false
 
 artifacts:
   policy: ephemeral

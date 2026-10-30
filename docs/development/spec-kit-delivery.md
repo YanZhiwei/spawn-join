@@ -126,13 +126,14 @@ Feature 在 `tasks.md` 之后增加 Slice 计划与 Slice Gate；`tasks.md` 仍�
   `pr_slicing: "off"` 保持单 PR；`slice_requires_approval: true` 保留 Slice Gate 的快速
   确认；`stack_provider: manual`、`use_queue: false` 不声称本仓库具备原生 Stacked PR
   或 Merge Queue。`merge_policy.final: squash` 与仓库 required linear history 一致；
-  启用 integration 交付前必须重新评审该策略。PR 模板默认使用 SD 包内
-  `templates/pull-request.md`：`pull_request_template` 指向该安装文件，
-  `install_pull_request_template: true` 记录已显式批准；`.github/pull_request_template.md`
-  是该模板的项目副本，供 GitHub UI 使用，后续升级若模板变化需显式刷新。Handoff 仍通过
-  `PR_BODY_PATH` 和 `--body-file` 提交每次变更的正文。未显式写入 `code_context` 时按
-  `auto` 处理；本项目显式设为 `auto`，Feature 在 `plan` 前、Bugfix 在 `assess` 前可使用
-  本地 `.codegraph/` 生成上下文；没有索引时降级为部分结果，不阻塞交付。
+  启用 integration 交付前必须重新评审该策略。PR 模板默认使用 SD v0.2.1 仓库自带的
+  中文 `.github/pull_request_template.md`，项目以同名副本保存；`pull_request_template`
+  指向 `.github/pull_request_template.md`，`install_pull_request_template: false`（未使用
+  扩展包的英文 fallback）。该副本由项目维护，Bundle 升级不会自动覆盖；需要时显式同步
+  上游中文模板。Handoff 仍通过 `PR_BODY_PATH` 和 `--body-file` 提交每次变更的正文。
+  未显式写入 `code_context` 时按 `auto` 处理；本项目显式设为 `auto`，Feature 在 `plan`
+  前、Bugfix 在 `assess` 前可使用本地 `.codegraph/` 生成上下文；没有索引时降级为部分
+  结果，不阻塞交付。
 - [Diagram](../../.specify/extensions/diagram/diagram-config.yml)：默认 `format: mermaid`、
   `renderer: auto`；未安装渲染器时保持 Mermaid，不自动下载或初始化任何工具。
 - [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、四包、自动化、

@@ -17,9 +17,9 @@ Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Qualit
 质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 已登记扩展，但
 `auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
 v0.2.1 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
-计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用 SD 包内 `templates/pull-request.md`；
-但项目保持 `pr_slicing: "off"` 的单 PR 路径，`tasks.md` 仍是唯一执行队列。Bundle 安装
-不等于 Ralph 已执行，也不授权自动 push/merge/发布。
+计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用 SD 仓库中文模板的项目副本
+`.github/pull_request_template.md`；但项目保持 `pr_slicing: "off"` 的单 PR 路径，
+`tasks.md` 仍是唯一执行队列。Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
 不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
 缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
