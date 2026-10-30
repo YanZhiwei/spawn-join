@@ -1,6 +1,6 @@
 schema_version: '1.0'
 catalogs:
 - id: speckit-delivery
-  url: https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.2.1/catalogs/bundles.json
+  url: https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.2.2/catalogs/bundles.json
   priority: 10
   install_policy: install-allowed

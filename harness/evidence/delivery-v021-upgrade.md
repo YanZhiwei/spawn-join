@@ -9,6 +9,7 @@
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
 - **result**: pass for scoped installation consistency and generated-command checks; Workflows and independent Doctor prompt not run
+- **superseded_by**: `harness/evidence/delivery-v022-upgrade.md`
 
 Route: **Lightweight**. This is an upstream minor-release upgrade of development tooling.
 It does not change Python behavior, package dependencies, public APIs, architecture or durable

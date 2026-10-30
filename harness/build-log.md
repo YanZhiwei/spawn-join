@@ -829,3 +829,25 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   核心技能/模板修改，未使用 `--force` 消除。
 
 验证记录：[v0.2.1 升级 evidence](evidence/delivery-v021-upgrade.md)。
+
+## 2026-10-30 — Delivery Bundle v0.2.2 升级
+
+**Status**: 已安装；安装一致性与针对性检查通过；未提交、未推送
+
+**Route**: Lightweight（上游补丁版本升级，只改 PR 模板兜底）
+
+**Base/head**: `035979d6f345899119adc5ad830217f193af7fe8` → working-tree
+
+- v0.2.2 只把 Delivery 随包 `templates/pull-request.md` 兜底模板改为中文；命令面、
+  Workflow 输入、六维 Review、快照和修复预算均与 v0.2.1 一致。
+- 校验 10 个 Release ZIP 的 SHA-256；先在隔离副本升级，再对目标执行 `bundle update`；
+  13 个组件一致，原生命令仍为 36 条，55 个非配置扩展文件和三条 Workflow 与 Tag 字节一致。
+- 安装器保留 14 个受保护配置/定制文件；项目配置改为指向随包中文模板，并把同一字节写入
+  `.github/pull_request_template.md`，`install_pull_request_template: true`。
+- 文档、治理、静态、完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、静态回归
+  3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
+- v0.2.1 evidence 标记为 superseded；旧项目模板保留在 Git 历史中。
+- 未创建提交、推送、合并或发布；`specify integration status` 仍提示 32 个项目自有
+  核心技能/模板修改，未使用 `--force` 消除。
+
+验证记录：[v0.2.2 升级 evidence](evidence/delivery-v022-upgrade.md)。

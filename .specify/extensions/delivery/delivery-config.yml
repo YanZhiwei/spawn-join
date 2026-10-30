@@ -33,11 +33,11 @@ merge_policy:
   delete_branch: true
   freeze_before_final: true
 code_context: auto
-# Use the project-owned Chinese copy of the SD repository PR template for both
-# Handoff and the GitHub UI. The extension's packaged fallback stays English;
-# this file is intentionally not the installer-owned fallback.
-pull_request_template: .github/pull_request_template.md
-install_pull_request_template: false
+# Use the v0.2.2 packaged Chinese fallback for Handoff and install the same
+# bytes as the project's static GitHub template. Existing project templates are
+# never overwritten automatically; refresh this copy deliberately on upgrade.
+pull_request_template: .specify/extensions/delivery/templates/pull-request.md
+install_pull_request_template: true
 
 artifacts:
   policy: ephemeral

@@ -1,28 +1,46 @@
 <!--
-中文 PR 模板（仓库默认）。
-保持 `Closes #` 为英文，GitHub 依赖该关键字自动关闭 Issue。
+Delivery 扩展的中文兜底 PR 模板。目标项目可通过 delivery-config.yml 的
+pull_request_template 或自己的 .github/pull_request_template.md 覆盖本模板。
+保持 `Part of #` / `Closes #` 为英文，GitHub 依赖这些关键字关联和关闭 Issue。
 -->
 
 ## 摘要
 
-<!-- 用一段话说明合并到 HEAD 后的最终行为或契约。 -->
-
 ## 动机
 
-Closes #
+Part of #<issue> for a lower slice; Closes #<issue> only on the release slice or final rollup.
+
+## Slice / Stack
+
+<!-- 适用于切片交付；单 PR 可删除本节。低层使用 "Part of #"，
+     只有 release slice 或 rollup 使用 "Closes #"。 -->
+- Slice 与目标：
+- Base 分支：
+- 依赖：
+- 合并顺序 / 方式：
+- 不包含在本层：
+- 回滚：
+
+## Rollup
+
+<!-- 适用于 integration -> target 的最终汇总；单 Slice 可删除。 -->
+| Slice | PR | Review |
+| --- | --- | --- |
+|  |  |  |
+
+- 聚合 CI / Review 证据：
+- 最终合并方式：merge commit
+- 整体功能回滚：
 
 ## 变更类型
 
-- [ ] 新功能或新组件
-- [ ] Bugfix 或契约修正
+- [ ] 新功能
+- [ ] Bugfix
 - [ ] 重构或简化
 - [ ] 文档或治理
 - [ ] 发布准备
 
 ## 当前设计（变更前）
-
-<!-- 说明受影响区域当前如何工作：入口、归属、数据流、约束。
-     能链接现有文档或 ADR 时不要重复复述。 -->
 
 - 入口或组件：
 - 归属与依赖方向：
@@ -30,15 +48,11 @@ Closes #
 
 ## 变更内容
 
-<!-- 每个模块或契约一行，不要粘贴完整 diff。 -->
-
 | 位置 | 变更 | 原因 |
 | --- | --- | --- |
 |  |  |  |
 
 ## 影响
-
-<!-- 每行都要给出证据；没有影响时写“无”并说明原因。 -->
 
 | 维度 | 影响 | 证据 |
 | --- | --- | --- |
@@ -52,7 +66,7 @@ Closes #
 ## 设计
 
 <!-- 可选。优先使用 Mermaid；也可以链接已提交的 SVG，不要粘贴 HTML。
-     没有持久结构变化时写“N/A”并说明原因。 -->
+     没有持久结构变化时写 "N/A" 并说明原因。 -->
 
 ```mermaid
 flowchart LR
@@ -73,10 +87,10 @@ flowchart LR
 
 | 检查 | 结果 | 证据 |
 | --- | --- | --- |
-| 构建与打包 |  |  |
+| 构建 |  |  |
 | 测试 |  |  |
 | 规范与 Spec 审查 |  |  |
-| 分发或安装检查 |  |  |
+| ADR 一致性 |  |  |
 | 变更范围的简化检查 |  |  |
 
 ## 文档
@@ -87,18 +101,12 @@ flowchart LR
 
 ## 回滚
 
-<!-- 安全的回滚方式；如果不需要，说明原因。 -->
-
 ## AI 辅助
-
-<!-- 说明使用的工具和范围；人工核实的事实要与生成文本分开。 -->
 
 - [ ] 未使用 AI 辅助。
 - [ ] 使用了 AI 辅助，且每一行变更都已审阅和验证。
 
 ## 评审说明
-
-<!-- 指引 reviewer 关注风险和关键不变量，不要写 agent 或评审的时间线。 -->
 
 ## 检查清单
 
