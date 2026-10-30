@@ -17,7 +17,7 @@ adr_directories: [docs/decisions]
 max_convergence_rounds: 2
 max_review_fix_rounds: 2
 docs_sync: auto
-pull_request_template: null
+pull_request_template: .specify/extensions/delivery/templates/pull-request.md
 
 artifacts:
   policy: ephemeral
