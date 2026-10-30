@@ -9,6 +9,7 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for scoped installation consistency and generated-command checks; main Quality run 40849963307 succeeded 14/14; Doctor remains blocked by environment
+- **superseded_by**: `harness/evidence/delivery-v021-upgrade.md`
 
 Route: **Lightweight**. This is an upstream patch-release upgrade of development tooling.
 It does not change Python behavior, dependencies, public APIs, architecture or durable data,

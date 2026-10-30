@@ -17,7 +17,27 @@ adr_directories: [docs/decisions]
 max_convergence_rounds: 2
 max_review_fix_rounds: 2
 docs_sync: auto
-pull_request_template: null
+# Delivery slicing: this repository requires linear history and one reviewed PR
+# per change. The final merge-commit rollup is incompatible with that ruleset,
+# so sliced integration delivery stays disabled until this policy is revisited.
+pr_slicing: "off"
+slice_warn_files: 20
+slice_warn_lines: 400
+slice_requires_approval: true
+stack_provider: manual
+merge_policy:
+  slice: squash
+  final: squash
+  sync: merge
+  use_queue: false
+  delete_branch: true
+  freeze_before_final: true
+code_context: auto
+# Use the v0.2.2 packaged Chinese fallback for Handoff and install the same
+# bytes as the project's static GitHub template. Existing project templates are
+# never overwritten automatically; refresh this copy deliberately on upgrade.
+pull_request_template: .specify/extensions/delivery/templates/pull-request.md
+install_pull_request_template: true
 
 artifacts:
   policy: ephemeral
