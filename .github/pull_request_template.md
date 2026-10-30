@@ -1,40 +1,60 @@
-## 概要
+<!--
+Delivery 扩展的中文兜底 PR 模板。目标项目可通过 delivery-config.yml 的
+pull_request_template 或自己的 .github/pull_request_template.md 覆盖本模板。
+保持 `Part of #` / `Closes #` 为英文，GitHub 依赖这些关键字关联和关闭 Issue。
+-->
 
-<!-- 用一段话描述 HEAD 上的最终行为或契约变化。 -->
+## 摘要
 
 ## 动机
 
-Closes #
+Part of #<issue> for a lower slice; Closes #<issue> only on the release slice or final rollup.
 
-## 变更类型
+## Slice / Stack
 
-- [ ] Feature 或新组件
-- [ ] Bugfix 或契约修正
-- [ ] 重构或简化
-- [ ] 文档或治理
-- [ ] 依赖升级
+<!-- 适用于切片交付；单 PR 可删除本节。低层使用 "Part of #"，
+     只有 release slice 或 rollup 使用 "Closes #"。 -->
+- Slice 与目标：
+- Base 分支：
+- 依赖：
+- 合并顺序 / 方式：
+- 不包含在本层：
+- 回滚：
 
-## 当前设计（改前）
+## Rollup
 
-<!-- 改之前怎么工作：入口、所有者、数据流、不变量。链接现有文档或 ADR，不要复述全文。 -->
-
-- 入口或组件：
-- 所有者与依赖方向：
-- 当前约束与不变量：
-
-## 本次改动
-
-<!-- 每个模块或契约一行，不要贴完整 diff。 -->
-
-| 位置 | 改动 | 原因 |
+<!-- 适用于 integration -> target 的最终汇总；单 Slice 可删除。 -->
+| Slice | PR | Review |
 | --- | --- | --- |
 |  |  |  |
 
-## 影响范围
+- 聚合 CI / Review 证据：
+- 最终合并方式：merge commit
+- 整体功能回滚：
 
-<!-- 每行写出证据，或写“无”并说明原因。 -->
+## 变更类型
 
-| 维度 | 影响 | 依据 |
+- [ ] 新功能
+- [ ] Bugfix
+- [ ] 重构或简化
+- [ ] 文档或治理
+- [ ] 发布准备
+
+## 当前设计（变更前）
+
+- 入口或组件：
+- 归属与依赖方向：
+- 当前约束与不变量：
+
+## 变更内容
+
+| 位置 | 变更 | 原因 |
+| --- | --- | --- |
+|  |  |  |
+
+## 影响
+
+| 维度 | 影响 | 证据 |
 | --- | --- | --- |
 | 公共 API、命令、配置 |  |  |
 | 持久化或迁移 |  |  |
@@ -45,8 +65,8 @@ Closes #
 
 ## 设计
 
-<!-- 可选。需要时放 Mermaid；复杂图提交 SVG 并链接，不要把 HTML 贴进正文。
-     没有持久结构变化时写 N/A 并说明原因。 -->
+<!-- 可选。优先使用 Mermaid；也可以链接已提交的 SVG，不要粘贴 HTML。
+     没有持久结构变化时写 "N/A" 并说明原因。 -->
 
 ```mermaid
 flowchart LR
@@ -54,8 +74,8 @@ flowchart LR
 
 ## 架构决策
 
-- [ ] 相关 ADR 已链接，且与 HEAD 的实现一致。
-- [ ] 本次没有改变架构决策。
+- [ ] 已链接相关 ADR，并与 HEAD 的实现一致。
+- [ ] 没有架构决策变化。
 
 ## 行为与验收
 
@@ -67,42 +87,31 @@ flowchart LR
 
 | 检查 | 结果 | 证据 |
 | --- | --- | --- |
-| Quality Gate |  |  |
-| 针对性测试 |  |  |
-| 治理与文档 |  |  |
-| 构建与隔离安装 |  |  |
-| `git diff --check` |  |  |
-
-```text
-pwsh -NoProfile -File scripts/quality.ps1
-pwsh -NoProfile -File scripts/quality.ps1 -Check governance
-pwsh -NoProfile -File scripts/quality.ps1 -Check docs
-git diff --check
-```
+| 构建 |  |  |
+| 测试 |  |  |
+| 规范与 Spec 审查 |  |  |
+| ADR 一致性 |  |  |
+| 变更范围的简化检查 |  |  |
 
 ## 文档
 
 - [ ] 源文档已更新。
-- [ ] 生成投影已同步。
-- [ ] 无需文档改动。
+- [ ] 生成文档已同步。
+- [ ] 不需要文档变更。
 
 ## 回滚
 
-<!-- 安全回滚路径，或说明为什么不需要。 -->
-
-## AI 使用披露
+## AI 辅助
 
 - [ ] 未使用 AI 辅助。
-- [ ] 使用了 AI 辅助，且每一行改动都经过人工审阅和验证。
+- [ ] 使用了 AI 辅助，且每一行变更都已审阅和验证。
 
-## 评审重点
+## 评审说明
 
-<!-- 指向风险和不变量，不要写 agent 或评审轮次。 -->
-
-## Checklist
+## 检查清单
 
 - [ ] 验收条件已覆盖。
-- [ ] 阻塞性评审发现已处理。
-- [ ] ADR 与 HEAD 一致。
-- [ ] 验证证据已附。
-- [ ] outgoing diff 与评审范围一致。
+- [ ] 阻断性评审问题已解决。
+- [ ] ADR 与 HEAD 的实现一致。
+- [ ] 已附相关验证证据。
+- [ ] 外发 diff 与已审阅范围一致。

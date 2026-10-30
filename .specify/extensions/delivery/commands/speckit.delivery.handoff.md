@@ -28,11 +28,47 @@ Use the first applicable source, and never mix sections from two:
 A configured path that does not exist is a reported gap, not a reason to
 invent a template.
 
+The selected template is a formatting contract for the body rendered here. It
+does not install a GitHub pull-request template: GitHub UI and `gh pr create`
+without `--body-file` read the target repository's `.github` template. Only
+`speckit.delivery.init`, with explicit user approval, may install a static
+project template; this command always renders the current change.
+
+## Slice and rollup modes
+
+Read the approved `.specify/delivery/<run>/slices.md` when present and select the
+mode from the actual request, not from a default:
+
+- `slice=<id>`: render one layer's PR body. State its goal, base branch,
+  dependencies, reviewed task range, "not in this layer" deferrals, flag or
+  migration behavior, merge method, and rollback. Include the stack map when
+  available. This body must stand alone for a reviewer who has not read lower
+  layers.
+- `mode=rollup`: render the integration-to-target PR body. List every slice and
+  its reviewed PR, aggregate CI/review evidence, green checkpoints, sync state,
+  final merge method, and whole-feature rollback. State plainly that slice-level
+  reviews are in the linked PRs and this body is an integration review, not a
+  request to re-review unchanged lines.
+- `mode=auto`: use the last release slice (or the final slice when none is marked
+  release) for `merge_mode: stacked`, and the rollup for
+  `merge_mode: integration`. A single-slice or `single` plan uses the ordinary
+  PR body.
+- If the merge mode, slice approval, or exact `slices.md` path is missing or
+  stale, stop. Do not infer a stack from branch names or a rollup from the
+  outgoing diff.
+
+The PR body must include a **Slice / stack** table for a layer and a **Rollup**
+table for the final integration PR. Lower layers use `Part of #<issue>`; only the
+release or rollup uses `Closes #<issue>`. Never cite internal task IDs as the
+requirement source.
+
 ## Required sections
 
 Write a self-contained body that covers:
 
 - **Summary** and **Motivation**, including the linked Issue.
+- **Slice / stack** for one layer, or **Rollup** for the final integration PR,
+  when the delivery is sliced.
 - **Change type**: feature, bugfix, refactor, documentation, or release.
 - **Current design (before)**: the entry point or component, its owner and
   dependency direction, and the invariant that constrained the change. Link the
@@ -58,6 +94,53 @@ For bugfixes add root cause, reproduction, and regression coverage. For
 lightweight changes omit irrelevant sections without removing Summary, Scope,
 Impact, Verification, and Checklist.
 
+## Merge plan
+
+For a sliced delivery, include a merge plan derived from `slices.md` and the
+project's `merge_policy`:
+
+- order and base branch of every slice;
+- slice merge method (default `squash`) and final merge method (default
+  `merge-commit` for integration, never `squash`);
+- target-to-integration sync method (default `merge`, never rebase a shared
+  branch);
+- merge queue/freeze/delete-branch behavior;
+- per-slice and whole-feature rollback;
+- issue-closing rule (`Part of` versus `Closes`).
+
+Emit suggested commands only when they are applicable to the verified provider.
+A native stack command, a manual bottom-up rebase sequence, and an integration
+rollup command are alternatives, not a script to run blindly. Do not execute
+`git push`, `gh pr create`, `gh pr merge`, or a queue mutation; publishing and
+merging require separate user authorization. If the repository requires linear
+history, do not recommend a final merge commit; report the policy conflict
+instead of silently choosing a squash that destroys slice boundaries.
+
+## Output
+
+Write the complete body to a real local file under the actual run or feature
+directory, honoring `artifact_policy`:
+
+- single, final, or rollup: `.specify/delivery/<run>/pull-request.md`
+- one slice: `.specify/delivery/<run>/pull-request-<slice>.md`
+
+Use the resolved feature/run directory when no `delivery_run` was supplied; never
+invent a path. Overwrite only the same mode/slice's prior body, and never clobber
+unrelated delivery records. A chat-only body is not a durable handoff when a run
+directory exists.
+
+Print:
+
+```text
+PR_BODY_PATH: <actual path>
+PR_CREATE_HINT: gh pr create --base <target> --head <branch> --title "<title>" --body-file <actual path>
+```
+
+Use the verified provider, target branch, head branch, and title. If any field
+cannot be verified, print the body path and the unresolved fields instead of a
+fabricated command. The hint is not executed; pushing, creating, and merging a PR
+still require separate user authorization.
+
 ## Boundaries
 
 Before final handoff, require the Review template's complete current
@@ -73,6 +156,7 @@ Do not cite ignored Spec/Plan files, task identifiers, review rounds, agent
 identities, conversation history, or obsolete command output. Link durable
 Issues and ADRs instead.
 
-Generate the body locally. Publishing or creating the PR requires separate user
-authorization. The command is complete when every statement reflects the actual
-reviewed contents and all evidence links or commands are resolvable.
+Write the body locally and report `PR_BODY_PATH`. Publishing or creating the PR
+requires separate user authorization. The command is complete when every
+statement reflects the actual reviewed contents, all evidence links or commands
+are resolvable, and the reported body file contains the same rendered content.

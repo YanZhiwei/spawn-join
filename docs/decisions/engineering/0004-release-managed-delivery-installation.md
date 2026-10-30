@@ -29,8 +29,8 @@
 
 ## Decision
 
-- 保留 Specify CLI 1.2.3，使用 v0.1.4 发布 Catalog；Bug 使用该 CLI 随附的 1.0.1。
-- 当前交付组件由 v0.1.4 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
+- 保留 Specify CLI 1.2.3，使用 v0.2.2 发布 Catalog；Bug 使用该 CLI 随附的 1.0.1。
+- 当前交付组件由 v0.2.2 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
 - OpenCode 作为当前默认集成，保留已安装 Codex 与项目任务模板/技能定制。
 - 删除本项目手工拷贝的 sd、speckit-delivery 门面；不删除用户级共享文件或 Fireworks。
 - 配置由项目拥有，组件与原生命令由安装器/Bundle 管理；升级须重查来源、差异和定制保留情况。
@@ -48,9 +48,11 @@
 安装可追溯且不依赖相邻源码，但需要跟踪 Bundle/组件版本与项目配置差异。v0.1.0 的
 分发问题已由 v0.1.1 修复；v0.1.2 增加 Diagram 扩展和代码上下文步骤，不改变授权、
 证据或禁止自动远端写入的边界。v0.1.3 增加范围取证、有界修复复审及快照绑定的独立 Review，
-仍不授权自动执行。不得用修改发布文件或降级全局 CLI 掩盖未来漂移。升级
-Release 或改变宿主时重新执行隔离验证。用户级旧入口保留供其他项目使用，本项目使用
-Bundle 管理的项目级命令。
+仍不授权自动执行。v0.2.0/0.2.1/0.2.2 增加 Slice 边界、合并策略、Handoff 正文落盘和
+中文兜底 PR 模板，但 Publish/Merge 仍需单独授权；项目选择单 PR 路径时不启用
+Stacked/Integration。不得用修改发布文件或降级全局 CLI 掩盖未来漂移。升级 Release 或
+改变宿主时重新执行隔离验证。用户级旧入口保留供其他项目使用，本项目使用 Bundle 管理的
+项目级命令。
 
 ## Verification and implementation status
 
@@ -66,6 +68,12 @@ v0.1.3 经隔离副本验证后通过 `bundle update` 安装，仍为 13 个组�
 v0.1.4 为 Doctor Reviewer 路径补丁，经隔离副本验证后安装在 v0.1.3 之上；组件数、命令面
 和配置契约不变，环境阻塞仍单独保留。记录见
 [v0.1.4 evidence](../../../harness/evidence/delivery-v014-upgrade.md)。
+v0.2.0 增加 Slice 计划、Slice Gate 和合并策略；v0.2.1 增加 Handoff 正文落盘与
+`PR_BODY_PATH` 契约，并让静态 PR 模板安装保持显式 opt-in；v0.2.2 把随包兜底 PR 模板改为
+中文。项目保持 `pr_slicing: "off"` 的单 PR 路径，`stack_provider: manual`、
+`use_queue: false`、`final: squash`，以匹配仓库 required linear history；PR 模板使用
+v0.2.2 中文兜底及其 `.github` 静态副本。记录见
+[v0.2.2 evidence](../../../harness/evidence/delivery-v022-upgrade.md)。
 本 ADR 的 Accepted 只表示决策获批；不声明真实 Ralph 循环已运行。
 
 ## Revision history
@@ -83,3 +91,7 @@ v0.1.4 为 Doctor Reviewer 路径补丁，经隔离副本验证后安装在 v0.1
 - 2026-10-29：按维护者要求升级固定 Release 至 v0.1.3；隔离验证、配置保留与来源边界不变，
   保留 Doctor 阻塞，不以安装完成替代交付就绪。
 - 2026-10-29：升级至 v0.1.4，修复 Doctor 的 Reviewer 模板引用；来源、授权和证据边界不变。
+- 2026-10-30：升级至 v0.2.1，接入 Slice 计划/Gate 与 Handoff 正文路径；项目显式保持
+  单 PR 线性历史策略，既有 PR 模板和核心定制保留。
+- 2026-10-30：升级至 v0.2.2，使用随包中文 PR 模板及其 `.github` 静态副本；组件数、
+  命令面和权限边界不变。

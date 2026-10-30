@@ -812,7 +812,7 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 **Base revision**: `3fe0cf0fe2e70b19ef65e73570b0d20e3e5311db`
 
-**Head revision**: `aa7292f3c6f0b8f4b0c5733a75d5f1b0309dd1d8`
+**Head revision**: `f901292b6c035a377ff0449d9f0371207db707b2`
 
 **Working directory**: `D:\Repos\Github\spawn-join`
 
@@ -826,8 +826,57 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 ### Verification
 
-- 两个包的质量入口均为 exit 0；核心 61 tests，适配包 56 tests，Pyright strict 0 errors；
+- 两个包的质量入口均为 exit 0；核心 61 tests，适配包 64 tests，Pyright strict 0 errors；
 - docs/governance/static 检查结果见 Delivery evidence；
 - 分支作为 code review PR 提交，未合并、未发布。
 
 证据：[LLM protocol abstraction evidence](../.specify/delivery/007-llm-protocol-abstraction/evidence.md)
+## 2026-10-30 — Delivery Bundle v0.2.1 升级
+
+**Status**: 已安装；安装一致性与针对性检查通过；未提交、未推送
+
+**Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
+
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`
+
+- v0.2.0 增加 Slice 计划/Slice Gate、`slices.md` 和合并策略；v0.2.1 让 Handoff 把正文
+  写入本地 `PR_BODY_PATH`，并保持静态 PR 模板安装为显式 opt-in。
+- 校验 10 个 Release ZIP 的 SHA-256；先在隔离副本升级，再对目标执行 `bundle update`；
+  13 个组件一致，原生命令由 35 增加到 36，三条 Workflow 与 v0.2.1 Tag 字节一致。
+- 安装器保留 14 个受保护配置/定制文件；项目随后显式更新 `delivery-config.yml`：
+  `pr_slicing: "off"`、`stack_provider: manual`、`use_queue: false`、`final: squash`，
+  以匹配现有单 PR 和 required linear history；既有 `.github/pull_request_template.md`
+  保留，`install_pull_request_template: false`。
+- 55 个非配置扩展文件与发布 ZIP 字节一致；Doctor 继续指向 Review 模板；Handoff 包含
+  `PR_BODY_PATH`、`PR_CREATE_HINT: gh pr create` 和 `--body-file`。
+- 文档、治理和静态检查通过；完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、
+  静态回归 3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
+- PR 模板改为默认使用 SD v0.2.1 仓库自带的中文 `.github/pull_request_template.md`：
+  项目保存同名副本并由 `pull_request_template` 指向它；扩展包的英文 fallback 未使用，
+  `install_pull_request_template: false`，旧项目模板保留在 Git 历史中。
+- 未创建提交、推送、合并或发布；`specify integration status` 仍提示 32 个项目自有
+  核心技能/模板修改，未使用 `--force` 消除。
+
+验证记录：[v0.2.1 升级 evidence](evidence/delivery-v021-upgrade.md)。
+
+## 2026-10-30 — Delivery Bundle v0.2.2 升级
+
+**Status**: 已安装；安装一致性与针对性检查通过；已提交到 PR 分支，未合并
+
+**Route**: Lightweight（上游补丁版本升级，只改 PR 模板兜底）
+
+**Base/head**: `035979d6f345899119adc5ad830217f193af7fe8` → `079ccc2e4991b26e8bdd7113a46df00e1a1803ce`
+
+- v0.2.2 只把 Delivery 随包 `templates/pull-request.md` 兜底模板改为中文；命令面、
+  Workflow 输入、六维 Review、快照和修复预算均与 v0.2.1 一致。
+- 校验 10 个 Release ZIP 的 SHA-256；先在隔离副本升级，再对目标执行 `bundle update`；
+  13 个组件一致，原生命令仍为 36 条，55 个非配置扩展文件和三条 Workflow 与 Tag 字节一致。
+- 安装器保留 14 个受保护配置/定制文件；项目配置改为指向随包中文模板，并把同一字节写入
+  `.github/pull_request_template.md`，`install_pull_request_template: true`。
+- 文档、治理、静态、完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、静态回归
+  3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
+- v0.2.1 evidence 标记为 superseded；旧项目模板保留在 Git 历史中。
+- 已创建提交并推送到 PR 分支；未合并或发布；`specify integration status` 仍提示 32 个项目
+  自有核心技能/模板修改，未使用 `--force` 消除。
+
+验证记录：[v0.2.2 升级 evidence](evidence/delivery-v022-upgrade.md)。
