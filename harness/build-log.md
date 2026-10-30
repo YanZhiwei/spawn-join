@@ -808,7 +808,7 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 **Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
 
-**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `2976eb3bc8ea721b941376765d5610a772abc547`
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `cb38b8ec4c403f19c592378b763bf9175e4ce2bc`
 
 - v0.2.0 增加 Slice 计划/Slice Gate、`slices.md` 和合并策略；v0.2.1 让 Handoff 把正文
   写入本地 `PR_BODY_PATH`，并保持静态 PR 模板安装为显式 opt-in。
@@ -822,6 +822,8 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   `PR_BODY_PATH`、`PR_CREATE_HINT: gh pr create` 和 `--body-file`。
 - 文档、治理和静态检查通过；完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、
   静态回归 3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
+- PR 模板改为默认使用 SD 包内 `templates/pull-request.md`：配置指向安装文件，静态副本
+  写入 `.github/pull_request_template.md`，旧项目模板保留在 Git 历史中。
 - 未创建提交、推送、合并或发布；`specify integration status` 仍提示 32 个项目自有
   核心技能/模板修改，未使用 `--force` 消除。
 

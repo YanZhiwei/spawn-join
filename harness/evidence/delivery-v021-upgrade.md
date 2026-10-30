@@ -5,7 +5,7 @@
 - **feature_id**: `delivery-v021-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v021-upgrade`
 - **base_revision**: `9cdb10a334acf9100ae822f7220cb67fa7a25650`
-- **head_revision**: `2976eb3bc8ea721b941376765d5610a772abc547`
+- **head_revision**: `cb38b8ec4c403f19c592378b763bf9175e4ce2bc`
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
 - **result**: pass for scoped installation consistency and generated-command checks; Workflows and independent Doctor prompt not run
@@ -15,9 +15,10 @@ It does not change Python behavior, package dependencies, public APIs, architect
 data, so no Spec/Plan/Tasks, delivery Workflow run or Ralph queue is required.
 
 The starting worktree was clean at detached `HEAD` `9cdb10a`; the installation changes were
-committed as `2976eb3bc8ea721b941376765d5610a772abc547` on `chore/delivery-v021-upgrade`.
-This evidence is re-anchored in a docs-only follow-up commit. No merge or release action was
-made; publishing the branch is a separate review step.
+committed as `2976eb3bc8ea721b941376765d5610a772abc547`, with the PR-template follow-up as
+`cb38b8ec4c403f19c592378b763bf9175e4ce2bc`, on `chore/delivery-v021-upgrade`. This evidence
+is re-anchored in a docs-only follow-up commit. No merge or release action was made; publishing
+the branch is a separate review step.
 
 ## Changed paths and ownership
 
@@ -158,6 +159,7 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
 - LF/CRLF warnings are existing platform behavior; no global Git setting is changed.
   Installer-refreshed files may appear in `git status` as line-ending-only entries even when
   their content hash matches the index; `git diff --name-only` remains the content diff.
-- Evidence covers material change commit `2976eb3bc8ea721b941376765d5610a772abc547`; the
-  evidence re-anchor commit changes only `harness/` records. Later material changes require
-  renewed confirmation rather than reuse of this record.
+- Evidence covers material change commits `2976eb3bc8ea721b941376765d5610a772abc547` and
+  `cb38b8ec4c403f19c592378b763bf9175e4ce2bc`; the evidence re-anchor commit changes only
+  `harness/` records. Later material changes require renewed confirmation rather than reuse
+  of this record.
