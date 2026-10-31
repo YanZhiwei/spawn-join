@@ -1,12 +1,12 @@
 # Delivery evidence: LangChain-first LLM Runtime
 
 - **feature_id**: `008-langchain-first-llm-runtime`
-- **phase_id**: `s0-default-slice-delivery`
-- **base_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c`
-- **head_revision**: `working-tree` (update to the S0 commit SHA after commit)
+- **phase_id**: `s1-core-contract`
+- **base_revision**: `a524aaf9450dc2ca5862055bfff38f4d5de2841d`
+- **head_revision**: `working-tree`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
-- **result**: pass for S0 policy/docs/governance checks; runtime slices are not executed and no remote action was taken
+- **result**: pass for S1 core contract and package checks; S2 adapter factory and real HTTP are not executed
 
 **Feature**: `008-langchain-first-llm-runtime`
 
@@ -19,6 +19,9 @@
 **Working directory**: `D:\Repos\Github\spawn-join`
 
 ## S0 — Default Slice delivery policy (T001–T002)
+
+**S0 base HEAD**: `353af49cf9db6014b7af0437a3f9dc0dd651437c`
+**S0 commit**: `a524aaf9450dc2ca5862055bfff38f4d5de2841d`
 
 ### Scope
 
@@ -78,7 +81,63 @@
 - `STANDARDS_VERDICT`: see `task-verdicts.yml`
 - `REVIEW_VERDICT`: see `task-verdicts.yml`
 
-## S1–S3
+## S1 — Core contract (T003–T010)
 
-Not executed yet. Evidence will be appended at each slice boundary. Do not read this section as a
-pass for S1–S3.
+**S1 base HEAD**: `a524aaf9450dc2ca5862055bfff38f4d5de2841d`
+**Working tree**: S1 implementation and tests; final gate below
+
+### T003 pre-implementation baseline
+
+- `git status --short --branch`: `## ralph/008-langchain-first-llm-runtime...origin/main [ahead 1]`
+- `git rev-parse HEAD`: `a524aaf9450dc2ca5862055bfff38f4d5de2841d`
+- `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` at the baseline:
+  exit 0 (skeleton package; pre-S1 test set)
+- `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` at the
+  baseline: exit 0 (skeleton package; adapter unchanged)
+- Baseline tree identity: core `9ad42cbe5ea124fc3af9b3c09cb5a5c6e896378d`, adapter
+  `21f75bf84b71be2833363b8b0df22e742dc35f1c`
+
+### S1 final gate
+
+### Scope
+
+- `packages/core/llm-provider/pyproject.toml`
+- `packages/core/llm-provider/README.md`
+- `packages/core/llm-provider/src/spawn_join_llm_provider/{__init__,errors,options,channels}.py`
+- `packages/core/llm-provider/src/spawn_join_llm_provider/py.typed`
+- `packages/core/llm-provider/tests/{test_package,test_errors,test_options,test_channels,test_public_api}.py`
+- removed `packages/core/llm-provider/src/spawn_join_llm_provider/abstractions/`
+- `specs/008-langchain-first-llm-runtime/data-model.md`
+- `specs/008-langchain-first-llm-runtime/contracts/llm-provider-public-api.md`
+
+### Command receipts
+
+| # | Command | Exit | Result |
+|---|---|---|---|
+| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` (S1 final) | 0 | Black/isort/Ruff/Pyright strict; 117 pytest tests; wheel/sdist build; isolated install/pip check/import |
+| 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` (baseline, skeleton unchanged) | 0 | Adapter package passes before its S2 changes |
+| 3 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors, 1 pre-existing warning |
+| 4 | `git diff --check` | 0 | No whitespace errors |
+
+### Limitations
+
+- The adapter factory is not implemented in S1; `spawn-join-llm-provider-langchain` remains a skeleton.
+- No real channel HTTP, provider request, pool or routing was implemented or executed.
+- The docs/package quality run temporarily moved local ignored `specs/007-llm-protocol-abstraction`
+  because it links ADR-0005 from unmerged PR #16; it was restored unchanged.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+
+### Fingerprints
+
+- `S1_CONTENT_FINGERPRINT`: `1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1`
+  (SHA-256 over the S1 source/test/contract paths; updated after the final S1 fixes)
+
+### Verdicts
+
+- `QUALITY_VERDICT`: see `task-verdicts.yml`
+- `STANDARDS_VERDICT`: see `task-verdicts.yml`
+- `REVIEW_VERDICT`: see `task-verdicts.yml`
+
+## S2–S3
+
+Not executed yet. Do not read this section as a pass for S2–S3.

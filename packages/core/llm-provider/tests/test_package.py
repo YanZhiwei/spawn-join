@@ -1,17 +1,13 @@
-"""Check framework-independent LLM package imports and dependencies."""
+"""Check framework-independent package imports and dependencies."""
 
 import re
 from importlib import import_module, metadata
+from importlib.resources import files
 
-import pytest
 
-
-@pytest.mark.parametrize(
-    "module_name",
-    ["spawn_join_llm_provider", "spawn_join_llm_provider.abstractions"],
-)
-def test_existing_modules_are_importable(module_name: str) -> None:
-    assert import_module(module_name).__file__ is not None
+def test_package_is_importable() -> None:
+    module = import_module("spawn_join_llm_provider")
+    assert module.__file__ is not None
 
 
 def test_distribution_identity() -> None:
@@ -19,6 +15,10 @@ def test_distribution_identity() -> None:
         metadata.metadata("spawn-join-llm-provider")["Name"]
         == "spawn-join-llm-provider"
     )
+
+
+def test_py_typed_marker_is_packaged() -> None:
+    assert (files("spawn_join_llm_provider") / "py.typed").is_file()
 
 
 def test_protocol_only_depends_on_core() -> None:

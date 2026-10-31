@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "spawn-join-llm-provider"
 version = "0.1.0"
-description = "Provider-agnostic LLM protocols and abstractions for SpawnJoin."
+description = "Framework-independent LLM channel contracts, protocol options and errors for SpawnJoin."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]

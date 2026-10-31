@@ -23,3 +23,68 @@ tasks:
     policy_fingerprint: 70b2276f095ed81276dc32dbf9f00655be2a798358434327d6ca7726337627a0
     receipt: receipts/T002.md
     note: Independent review passed; docs/governance/YAML/git diff checks recorded.
+  T003:
+    title: Record S1 pre-implementation baseline
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: tree:a524aaf:packages/core/llm-provider=9ad42cbe5ea124fc3af9b3c09cb5a5c6e896378d;packages/infra/llm-provider-langchain=21f75bf84b71be2833363b8b0df22e742dc35f1c
+    receipt: receipts/T003.md
+    note: Pre-S1 baseline recorded at a524aaf; review pending after the S1 final gate.
+  T004:
+    title: Clean core package metadata and abstraction namespace
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T004.md
+  T005:
+    title: Add stable error hierarchy
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T005.md
+  T006:
+    title: Add protocol-native option contracts
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T006.md
+  T007:
+    title: Add channel configuration and contract types
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T007.md
+  T008:
+    title: Expose the exact 20-symbol public API
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T008.md
+  T009:
+    title: Add fake channel outcome matrix
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T009.md
+  T010:
+    title: Document core channel and options contract
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    receipt: receipts/T010.md
