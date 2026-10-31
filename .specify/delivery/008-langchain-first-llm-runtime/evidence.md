@@ -104,7 +104,7 @@
 
 - `packages/core/llm-provider/pyproject.toml`
 - `packages/core/llm-provider/README.md`
-- `packages/core/llm-provider/src/spawn_join_llm_provider/{__init__,errors,options,channels}.py`
+- `packages/core/llm-provider/src/spawn_join_llm_provider/{__init__,errors,options,endpoints,channels}.py`
 - `packages/core/llm-provider/src/spawn_join_llm_provider/py.typed`
 - `packages/core/llm-provider/tests/{test_package,test_errors,test_options,test_channels,test_public_api}.py`
 - removed `packages/core/llm-provider/src/spawn_join_llm_provider/abstractions/`
@@ -115,7 +115,7 @@
 
 | # | Command | Exit | Result |
 |---|---|---|---|
-| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` (S1 final) | 0 | Black/isort/Ruff/Pyright strict; 127 pytest tests; wheel/sdist build; isolated install/pip check/import |
+| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` (S1 final) | 0 | Black/isort/Ruff/Pyright strict; 129 pytest tests; wheel/sdist build; isolated install/pip check/import |
 | 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` (baseline, skeleton unchanged) | 0 | Adapter package passes before its S2 changes |
 | 3 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors, 1 pre-existing warning |
 | 4 | `git diff --check` | 0 | No whitespace errors |
@@ -131,7 +131,7 @@
 
 ### Fingerprints
 
-- `S1_CONTENT_FINGERPRINT`: `c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1`
+- `S1_CONTENT_FINGERPRINT`: `0f1d9210cc7534b36bb82a991dbf629ff15ffef5ab2c66fd959492e70ae81482`
   (SHA-256 over the S1 source/test/contract paths; updated after final review hardening)
 
 ### Verdicts
@@ -165,7 +165,7 @@
 | # | Command | Exit | Result |
 |---|---|---|---|
 | 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` | 0 | Black/isort/Ruff/Pyright strict; 38 pytest tests; wheel/sdist build; isolated install/pip check/import |
-| 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` | 0 | S2 prefix re-verified core package; 117 pytest tests; build/install |
+| 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` | 0 | S2 prefix re-verified core package; 117 tests at the S2 boundary; final core 129 after B+A decoupling |
 | 3 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | 0 | 79 files, 206 local links; specs/007 moved and restored |
 | 4 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors, 1 pre-existing warning |
 | 5 | `git diff --check` | 0 | No whitespace errors |
@@ -181,7 +181,7 @@
 
 ### Fingerprints
 
-- `S2_CONTENT_FINGERPRINT`: `0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f`
+- `S2_CONTENT_FINGERPRINT`: `82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940`
   (SHA-256 over the S2 source/test/docs/contract paths, updated after final review hardening)
 
 ### Verdicts
@@ -213,7 +213,7 @@
 | 2 | `pwsh -NoProfile -File scripts/test-governance.ps1` | 0 | 23 governance regression scenarios passed |
 | 3 | `pwsh -NoProfile -File scripts/test-static.ps1` | 0 | 3 static regression scenarios passed |
 | 4 | `pwsh -NoProfile -File scripts/test-quality.ps1` | 0 | 9 gate regression scenarios passed; no root project artifacts |
-| 5 | quickstart public-export commands | 0 | core `__all__` has 20 symbols; adapter `__all__` is `['ChatModelConfig', 'create_chat_model']` |
+| 5 | quickstart public-export commands | 0 | core `__all__` has 21 symbols; adapter `__all__` is `['ChatModelConfig', 'create_chat_model']` |
 | 6 | quickstart three-model construction | 0 | `ChatOpenAI False`, `ChatOpenAI True`, `ChatAnthropic`; all `BaseChatModel` checks true; sentinel key masked |
 | 7 | `git diff --check` / `git status --short --branch --untracked-files=all` | 0 | No whitespace errors; final S3 evidence/ADR bookkeeping commit contains only delivery records and ADR status |
 | 8 | build artifact scan | 0 | No `build/` or `dist/`; four ignored `src/*.egg-info` editable metadata directories were present and are cleaned before handoff |
@@ -239,20 +239,23 @@
 - R1: `stop`/`stop_sequences` now reject non-tuple and non-string elements; `thinking` rejects
   mappings and arbitrary objects in `AnthropicMessagesOptions`; factory `_thinking_payload()` raises
   on unknown values. Regression tests added.
-- R2: ADR-0006 and evidence now record core 127 tests and adapter 38 tests.
+- R2: ADR-0006 and evidence now record core 129 tests and adapter 38 tests.
 - R3: root `README.md` and `docs/development/quality-gates.md` no longer claim skeleton-only state
   or a fixed 20-test suite.
 - R4: `ChannelConfig.protocol` is validated as `ProtocolKind` at construction; tests cover string,
   int and None.
+- B+A decoupling: `ChannelConfig` and `ChatModelConfig` now inherit shared flat
+  `EndpointConfig`; `ChatModelConfig` no longer depends on `ChannelConfig`, while
+  protocol/endpoint/timeout validation remains single-sourced.
 - R6: slice counts/status and T003 review note reconciled.
 - R8: ADR-0007 no longer claims a standalone slice CLI receipt that was not captured.
-- Verification after fixes: core 127 tests, adapter 38 tests; both package gates, full
+- Verification after fixes: core 129 tests, adapter 38 tests; both package gates, full
   `scripts/quality.ps1`, governance/static/quality regressions, quickstart construction, and
   `git diff --check` pass.
 
 ### Fingerprints
 
-- `FINAL_CODE_CONTENT_FINGERPRINT`: `3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92`
+- `FINAL_CODE_CONTENT_FINGERPRINT`: `1c77537a0b8bd3315f025f257f09d629a3d95ec1ca3f082464c6d515b3674ed0`
   (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
 
 ### Verdicts

@@ -4,24 +4,24 @@ from dataclasses import dataclass
 
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
-    ChannelConfig,
     ChatCompletionsOptions,
     ConfigurationError,
+    EndpointConfig,
     ProtocolKind,
     ProtocolOptions,
     ResponsesOptions,
 )
 
 
-@dataclass(frozen=True, slots=True)
-class ChatModelConfig:
-    """A model name and retry policy attached to a channel configuration."""
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChatModelConfig(EndpointConfig):
+    """Endpoint settings plus the model name and retry policy."""
 
-    channel: ChannelConfig
     model: str
     max_retries: int = 0
 
     def __post_init__(self) -> None:
+        EndpointConfig.__post_init__(self)
         if not self.model or self.model != self.model.strip():
             raise ConfigurationError(
                 "Chat model must be non-empty without surrounding whitespace"
@@ -78,4 +78,4 @@ def validate_request(
 ) -> None:
     """Validate a model request before any LangChain object is constructed."""
     validate_api_key(api_key)
-    validate_options(config.channel.protocol, options)
+    validate_options(config.protocol, options)

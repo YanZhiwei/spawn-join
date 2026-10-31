@@ -17,6 +17,7 @@ EXPECTED_EXPORTS = [
     "ChannelUnavailableError",
     "ChatCompletionsOptions",
     "ConfigurationError",
+    "EndpointConfig",
     "LLMProviderError",
     "ModelInfo",
     "ModelPage",

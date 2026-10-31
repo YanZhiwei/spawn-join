@@ -10,7 +10,6 @@ from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
-    ChannelConfig,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -22,14 +21,10 @@ from spawn_join_llm_provider_langchain.factory import create_chat_model
 
 def _config(protocol: ProtocolKind) -> ChatModelConfig:
     return ChatModelConfig(
-        channel=ChannelConfig(
-            name="test-channel",
-            protocol=protocol,
-            endpoint="https://api.example.com/v1",
-            credential_ref="test-credential",
-            timeout_seconds=42.0,
-        ),
+        protocol=protocol,
+        endpoint="https://api.example.com/v1",
         model="example-model",
+        timeout_seconds=42.0,
     )
 
 
@@ -186,7 +181,8 @@ def test_factory_rejects_empty_api_key() -> None:
 def test_factory_rejects_negative_retries() -> None:
     with pytest.raises(ConfigurationError):
         ChatModelConfig(
-            channel=_config(ProtocolKind.CHAT_COMPLETIONS).channel,
+            protocol=ProtocolKind.CHAT_COMPLETIONS,
+            endpoint="https://api.example.com/v1",
             model="example-model",
             max_retries=-1,
         )

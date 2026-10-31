@@ -30,8 +30,8 @@ def _chat_completions_model(
     return ChatOpenAI(
         model=config.model,
         api_key=api_key,
-        base_url=config.channel.endpoint,
-        timeout=config.channel.timeout_seconds,
+        base_url=config.endpoint,
+        timeout=config.timeout_seconds,
         max_retries=config.max_retries,
         use_responses_api=False,
         temperature=options.temperature if options is not None else None,
@@ -54,8 +54,8 @@ def _responses_model(
     return ChatOpenAI(
         model=config.model,
         api_key=api_key,
-        base_url=config.channel.endpoint,
-        timeout=config.channel.timeout_seconds,
+        base_url=config.endpoint,
+        timeout=config.timeout_seconds,
         max_retries=config.max_retries,
         use_responses_api=True,
         temperature=options.temperature if options is not None else None,
@@ -93,8 +93,8 @@ def _anthropic_model(
     return ChatAnthropic(
         model_name=config.model,
         api_key=api_key,
-        base_url=config.channel.endpoint,
-        timeout=config.channel.timeout_seconds,
+        base_url=config.endpoint,
+        timeout=config.timeout_seconds,
         max_retries=config.max_retries,
         temperature=options.temperature if options is not None else None,
         max_tokens_to_sample=(
@@ -121,7 +121,7 @@ def create_chat_model(
     validate_request(config, api_key=api_key, options=options)
     secret = SecretStr(api_key)
 
-    match config.channel.protocol:
+    match config.protocol:
         case ProtocolKind.CHAT_COMPLETIONS:
             return _chat_completions_model(
                 config,
@@ -141,4 +141,4 @@ def create_chat_model(
                 cast(AnthropicMessagesOptions | None, options),
             )
         case _:
-            raise ConfigurationError(f"Unsupported protocol: {config.channel.protocol}")
+            raise ConfigurationError(f"Unsupported protocol: {config.protocol}")

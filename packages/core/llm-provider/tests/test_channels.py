@@ -13,6 +13,7 @@ from spawn_join_llm_provider import (
     ChannelStatus,
     ChannelUnavailableError,
     ConfigurationError,
+    EndpointConfig,
     ModelInfo,
     ModelPage,
     PingResult,
@@ -79,6 +80,25 @@ class FakeChannel:
             raise self._list_error
         assert self._page is not None
         return self._page
+
+
+def test_endpoint_config_accepts_valid_values() -> None:
+    endpoint = EndpointConfig(
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        timeout_seconds=42.0,
+    )
+    assert endpoint.protocol is ProtocolKind.CHAT_COMPLETIONS
+    assert endpoint.endpoint == "https://api.example.com/v1"
+    assert endpoint.timeout_seconds == 42.0
+
+
+def test_channel_config_inherits_endpoint_fields() -> None:
+    config = _config()
+    assert isinstance(config, EndpointConfig)
+    assert config.protocol is ProtocolKind.CHAT_COMPLETIONS
+    assert config.endpoint == "https://api.example.com/v1"
+    assert config.timeout_seconds == 30.0
 
 
 def test_channel_config_reads_all_fields() -> None:

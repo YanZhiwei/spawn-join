@@ -6,7 +6,6 @@ import pytest
 
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
-    ChannelConfig,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -21,20 +20,23 @@ from spawn_join_llm_provider_langchain.config import (
 )
 
 
-def _channel(
+def _model_config(
     protocol: ProtocolKind = ProtocolKind.CHAT_COMPLETIONS,
-) -> ChannelConfig:
-    return ChannelConfig(
-        name="test-channel",
+    *,
+    model: str = "example-model",
+    max_retries: int = 0,
+) -> ChatModelConfig:
+    return ChatModelConfig(
         protocol=protocol,
         endpoint="https://api.example.com/v1",
-        credential_ref="test-credential",
+        model=model,
         timeout_seconds=30.0,
+        max_retries=max_retries,
     )
 
 
 def test_chat_model_config_accepts_valid_values() -> None:
-    config = ChatModelConfig(channel=_channel(), model="example-model")
+    config = _model_config()
     assert config.model == "example-model"
     assert config.max_retries == 0
 
@@ -42,16 +44,12 @@ def test_chat_model_config_accepts_valid_values() -> None:
 @pytest.mark.parametrize("model", ["", " model", "model ", "model\n"])
 def test_chat_model_config_rejects_invalid_model_names(model: str) -> None:
     with pytest.raises(ConfigurationError):
-        ChatModelConfig(channel=_channel(), model=model)
+        _model_config(model=model)
 
 
 def test_chat_model_config_rejects_negative_retries() -> None:
     with pytest.raises(ConfigurationError):
-        ChatModelConfig(
-            channel=_channel(),
-            model="example-model",
-            max_retries=-1,
-        )
+        _model_config(max_retries=-1)
 
 
 @pytest.mark.parametrize("api_key", ["", " key", "key ", "key\n"])
@@ -112,17 +110,16 @@ def test_validate_options_handles_plain_string_protocol() -> None:
 
 def test_validate_request_accepts_a_valid_request() -> None:
     validate_request(
-        ChatModelConfig(channel=_channel(), model="example-model"),
+        _model_config(),
         api_key="sk-test-secret",
         options=ChatCompletionsOptions(temperature=0.2),
     )
 
 
-def test_invalid_channel_config_propagates() -> None:
+def test_invalid_endpoint_config_propagates() -> None:
     with pytest.raises(ConfigurationError):
-        ChannelConfig(
-            name="test-channel",
+        ChatModelConfig(
             protocol=ProtocolKind.CHAT_COMPLETIONS,
             endpoint="not-a-url",
-            credential_ref="test-credential",
+            model="example-model",
         )

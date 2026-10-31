@@ -8,6 +8,7 @@ from .channels import (
     ModelPage,
     PingResult,
 )
+from .endpoints import EndpointConfig
 from .errors import (
     ChannelError,
     ChannelResponseError,
@@ -40,6 +41,7 @@ __all__ = [
     "ChannelUnavailableError",
     "ChatCompletionsOptions",
     "ConfigurationError",
+    "EndpointConfig",
     "LLMProviderError",
     "ModelInfo",
     "ModelPage",

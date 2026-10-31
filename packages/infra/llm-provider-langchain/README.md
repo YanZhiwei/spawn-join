@@ -14,22 +14,14 @@
 
 ```python
 from langchain_core.messages import HumanMessage
-from spawn_join_llm_provider import (
-    ChannelConfig,
-    ChatCompletionsOptions,
-    ProtocolKind,
-)
+from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
 from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
 
 config = ChatModelConfig(
-    channel=ChannelConfig(
-        name="openai-primary",
-        protocol=ProtocolKind.CHAT_COMPLETIONS,
-        endpoint="https://api.example.com/v1",
-        credential_ref="openai-default",
-        timeout_seconds=60.0,
-    ),
+    protocol=ProtocolKind.CHAT_COMPLETIONS,
+    endpoint="https://api.example.com/v1",
     model="example-chat-model",
+    timeout_seconds=60.0,
 )
 
 model = create_chat_model(
@@ -39,6 +31,9 @@ model = create_chat_model(
 )
 response = await model.ainvoke([HumanMessage(content="Hello")])
 ```
+
+`ChatModelConfig` 继承共享的 `EndpointConfig`，只增加 `model` 和 `max_retries`；它不依赖
+`ChannelConfig`，不需要渠道名称或凭据引用就能创建模型。
 
 `api_key` 只在调用时传入，并立即包装为 `SecretStr`；配置、repr 和日志中不保存明文密钥。
 

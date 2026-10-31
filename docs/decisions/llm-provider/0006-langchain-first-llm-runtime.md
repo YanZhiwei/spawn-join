@@ -107,8 +107,9 @@ spawn-join-core
 关键约束：
 
 1. `spawn-join-llm-provider` 不依赖 LangChain、具体 Provider SDK 或 HTTP 客户端。
-2. `ChatModelConfig` 组合 `ChannelConfig`，渠道名称、协议、endpoint 和 timeout 只有一个
-   权威来源。
+2. `ChannelConfig` 和适配层 `ChatModelConfig` 继承共享 `EndpointConfig`
+   （protocol/endpoint/timeout）；`ChatModelConfig` 不依赖 `ChannelConfig`，模型配置不需要
+   渠道名称或凭据引用。
 3. `ChannelConfig.name` 是非敏感、人类可读的渠道标识，用于日志和错误定位；跨配置唯一性
    由调用方或未来注册表负责。
 4. `create_chat_model` 显式设置 `use_responses_api`（OpenAI 分支）和 `max_retries`，不根据
@@ -127,6 +128,7 @@ spawn-join-core
 - 应用直接使用 LangChain 生态，工具调用、流式输出、结构化输出和回调不需要项目转换。
 - 协议包公共面显著缩小，框架升级不会直接改变 channel/options 契约。
 - channel 契约保留 LangChain 不提供的连接和目录能力，为后续真实实现留出稳定边界。
+- 模型配置不依赖 channel 专属字段；只想调用模型时不需要构造 `ChannelConfig`。
 
 成本与限制：
 
@@ -158,7 +160,7 @@ spawn-join-core
 - 文档、治理和静态检查；
 - `git diff --check` 和工作区构建副作用。
 
-S1/S2 已在 `ralph/008-langchain-first-llm-runtime` 分支实现：core 包 127 个测试、
+S1/S2 已在 `ralph/008-langchain-first-llm-runtime` 分支实现：core 包 129 个测试、
 adapter 包 38 个测试，两个包的质量门和隔离构建通过；docs/governance 检查通过。真实
 channel HTTP、Provider 请求、pool 和路由仍未实现或执行。
 

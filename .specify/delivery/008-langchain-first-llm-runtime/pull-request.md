@@ -2,7 +2,8 @@
 
 采用 LangChain-first 的 LLM runtime：应用直接使用 LangChain 消息和 `BaseChatModel`，
 `spawn-join-llm-provider` 只保留 channel/协议选项/错误契约，
-`spawn-join-llm-provider-langchain` 只提供模型工厂、选项映射和配置校验。删除自定义消息、
+`spawn-join-llm-provider-langchain` 只提供模型工厂、选项映射和配置校验。
+`ChannelConfig` 与 `ChatModelConfig` 继承共享 `EndpointConfig`，模型配置不依赖 channel。删除自定义消息、
 内容块、工具、请求/响应、流式事件和 `LLMProvider` 设计；不实现 pool、路由、真实 HTTP
 或 HTTP 连接池。
 
@@ -42,9 +43,9 @@ LangChain 作为消息和模型运行时；继续维护两套契约会增加映�
 
 | 位置 | 变更 | 原因 |
 | --- | --- | --- |
-| `packages/core/llm-provider/src/spawn_join_llm_provider/` | 新增 `options.py`、`channels.py`、`errors.py`，重写 `__init__.py` | 保留 LangChain 不提供的协议选项、channel 和稳定错误 |
+| `packages/core/llm-provider/src/spawn_join_llm_provider/` | 新增 `options.py`、`endpoints.py`、`channels.py`、`errors.py`，重写 `__init__.py` | 保留 LangChain 不提供的协议选项、共享 endpoint、channel 和稳定错误 |
 | `packages/core/llm-provider/tests/` | 新增选项、channel、错误、公共 API 测试 | 覆盖边界、异常和精确公共面 |
-| `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/` | 新增 `config.py`、`factory.py`，重写 `__init__.py`，删除空 `providers/` | 显式协议配置到 `BaseChatModel` 的工厂；不保留 Provider 包装 |
+| `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/` | 新增 `config.py`、`factory.py`，重写 `__init__.py`，删除空 `providers/` | `ChatModelConfig` 继承 `EndpointConfig`，直接创建 `BaseChatModel`；不依赖 channel、不保留 Provider 包装 |
 | `packages/infra/llm-provider-langchain/tests/` | 新增工厂、校验、公共 API 测试 | 覆盖三协议、选项映射、密钥掩码和失败路径 |
 | `docs/architecture/package-boundaries.md`、`AGENTS.md` | 更新两包职责和依赖方向 | 让文档匹配实现 |
 | `docs/decisions/llm-provider/0006-*`、`docs/decisions/engineering/0007-*`、索引 | 新增/接受 ADR | 记录 LangChain-first 和默认 Slice 决策 |
@@ -55,7 +56,7 @@ LangChain 作为消息和模型运行时；继续维护两套契约会增加映�
 
 | 维度 | 影响 | 证据 |
 | --- | --- | --- |
-| 公共 API、命令、配置 | core 精确导出 20 个符号；adapter 精确导出 `ChatModelConfig`、`create_chat_model`；协议包不依赖 LangChain | `test_public_api.py`、`test_package.py` |
+| 公共 API、命令、配置 | core 精确导出 21 个符号；adapter 精确导出 `ChatModelConfig`、`create_chat_model`；`ChatModelConfig` 不依赖 `ChannelConfig`；协议包不依赖 LangChain | `test_public_api.py`、`test_package.py` |
 | 持久化或迁移 | N/A；没有持久化数据或 schema | — |
 | 兼容性与升级路径 | 两个包仍为 `0.1.0`；旧实现未合并，没有已发布调用方需要迁移 | `spec.md`、ADR-0006 |
 | 安全与权限 | `credential_ref` 只保存引用；API key 只以 `SecretStr` 进入 LangChain；endpoint 拒绝内嵌凭据；channel name 拒绝控制字符 | `test_factory.py`、`test_channels.py` |
@@ -85,9 +86,9 @@ flowchart LR
 
 | 需求 | 结果 | 证据 |
 | --- | --- | --- |
-| US1：三协议模型工厂 | Chat Completions/Responses 返回 `ChatOpenAI`，Anthropic 返回 `ChatAnthropic`；`use_responses_api`、`max_retries` 和 endpoint/timeout 显式设置 | `test_factory.py`、quickstart 构造结果 |
-| US2：channel 契约 | name/protocol/endpoint/credential_ref/timeout 校验；ping 和 list_models 的全部结果可区分 | `test_channels.py` |
-| US3：精简公共 API | core 20 个导出、adapter 2 个导出；无 Message/Provider/map_options/bind_options | `test_public_api.py`、`test_package.py` |
+| US1：三协议模型工厂 | Chat Completions/Responses 返回 `ChatOpenAI`，Anthropic 返回 `ChatAnthropic`；`ChatModelConfig` 直接携带 protocol/endpoint/timeout，`use_responses_api`、`max_retries` 显式设置 | `test_factory.py`、quickstart 构造结果 |
+| US2：channel 契约 | `ChannelConfig` 继承 `EndpointConfig`，增加 name/credential_ref；ping 和 list_models 的全部结果可区分 | `test_channels.py` |
+| US3：精简公共 API | core 21 个导出、adapter 2 个导出；无 Message/Provider/map_options/bind_options | `test_public_api.py`、`test_package.py` |
 | FR-001–FR-019 / SC-001–SC-008 | 已实现或明确排除；无 pool/HTTP/路由/包重命名 | `tasks.md`、evidence、final review |
 
 ## 验证
@@ -95,7 +96,7 @@ flowchart LR
 | 检查 | 结果 | 证据 |
 | --- | --- | --- |
 | 构建 | pass | `scripts/quality.ps1` 全量四包隔离构建与安装 |
-| 测试 | pass | core 127 tests；adapter 38 tests |
+| 测试 | pass | core 129 tests；adapter 38 tests |
 | 规范与 Spec 审查 | pass | final independent review at `d6cdc37`；convergence 无缺口 |
 | ADR 一致性 | pass | ADR-0006/0007 Accepted；索引与实现一致 |
 | 变更范围的简化检查 | pass | 删除重复消息/Provider 层；无新增 pool/路由 |

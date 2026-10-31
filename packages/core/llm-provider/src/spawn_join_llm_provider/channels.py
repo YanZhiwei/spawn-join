@@ -5,14 +5,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from math import isfinite
 from typing import Protocol
-from urllib.parse import urlsplit
 
+from .endpoints import EndpointConfig
 from .errors import ConfigurationError
-from .options import ProtocolKind
-
-
-def _is_protocol_kind(value: object) -> bool:
-    return isinstance(value, ProtocolKind)
 
 
 def _validate_name(name: str) -> None:
@@ -24,78 +19,22 @@ def _validate_name(name: str) -> None:
         raise ConfigurationError("Channel name must not contain control characters")
 
 
-def _validate_hostname(hostname: str) -> None:
-    if hostname.endswith(".."):
-        raise ConfigurationError("Channel endpoint must contain a valid hostname")
-    normalized = hostname[:-1] if hostname.endswith(".") else hostname
-    if not normalized or len(normalized) > 253:
-        raise ConfigurationError("Channel endpoint must contain a valid hostname")
-    for label in normalized.split("."):
-        if not label or len(label) > 63:
-            raise ConfigurationError("Channel endpoint must contain a valid hostname")
-        if label.startswith("-") or label.endswith("-"):
-            raise ConfigurationError("Channel endpoint must contain a valid hostname")
-
-
-def _validate_endpoint(endpoint: str) -> None:
-    if endpoint != endpoint.strip():
-        raise ConfigurationError(
-            "Channel endpoint must not have surrounding whitespace"
-        )
-    if any(
-        character.isspace() or unicodedata.category(character).startswith("C")
-        for character in endpoint
-    ):
-        raise ConfigurationError(
-            "Channel endpoint must not contain whitespace or control characters"
-        )
-
-    try:
-        parsed = urlsplit(endpoint)
-        port = parsed.port
-    except ValueError as exc:
-        raise ConfigurationError("Channel endpoint is not a valid URL") from exc
-
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ConfigurationError("Channel endpoint must be an absolute http(s) URL")
-    if parsed.username is not None or parsed.password is not None:
-        raise ConfigurationError("Channel endpoint must not contain credentials")
-
-    hostname = parsed.hostname
-    if hostname is None:
-        raise ConfigurationError("Channel endpoint must contain a valid hostname")
-    _validate_hostname(hostname)
-    if port is not None and not 1 <= port <= 65535:
-        raise ConfigurationError("Channel endpoint must use a valid network port")
-
-
 def _validate_credential_ref(credential_ref: str) -> None:
     if not credential_ref.strip():
         raise ConfigurationError("Channel credential_ref must not be empty")
 
 
-def _validate_timeout(timeout_seconds: float) -> None:
-    if not isfinite(timeout_seconds) or timeout_seconds <= 0:
-        raise ConfigurationError("Channel timeout_seconds must be finite and positive")
-
-
-@dataclass(frozen=True, slots=True)
-class ChannelConfig:
-    """A configured connection without a plaintext credential."""
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChannelConfig(EndpointConfig):
+    """A named connection configuration without a plaintext credential."""
 
     name: str
-    protocol: ProtocolKind
-    endpoint: str
     credential_ref: str
-    timeout_seconds: float = 30.0
 
     def __post_init__(self) -> None:
-        if not _is_protocol_kind(self.protocol):
-            raise ConfigurationError("Channel protocol must be a ProtocolKind")
+        EndpointConfig.__post_init__(self)
         _validate_name(self.name)
-        _validate_endpoint(self.endpoint)
         _validate_credential_ref(self.credential_ref)
-        _validate_timeout(self.timeout_seconds)
 
 
 class ChannelStatus(StrEnum):

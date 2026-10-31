@@ -28,6 +28,23 @@ responses_options = ResponsesOptions(store=False, reasoning_effort="medium")
 三种协议选项分别对应 `chat_completions`、`responses` 和 `anthropic_messages`。
 选项在构造时校验；非法值抛出 `ConfigurationError`，不会被静默丢弃。
 
+## Endpoint 配置
+
+`EndpointConfig` 是共享的扁平 endpoint 契约：
+
+```python
+from spawn_join_llm_provider import EndpointConfig, ProtocolKind
+
+endpoint = EndpointConfig(
+    protocol=ProtocolKind.CHAT_COMPLETIONS,
+    endpoint="https://api.example.com/v1",
+    timeout_seconds=30.0,
+)
+```
+
+`ChannelConfig` 和适配层的 `ChatModelConfig` 都继承它，因此协议、endpoint 和 timeout
+只有一份校验。模型配置不需要 channel 专属字段。
+
 ## 渠道契约
 
 ```python
@@ -42,8 +59,9 @@ config = ChannelConfig(
 )
 ```
 
-`name` 是非敏感、人类可读的渠道标识，用于日志和错误定位；唯一性由调用方或未来的渠道
-注册表负责。`credential_ref` 只是密钥引用，不是明文密钥。
+`ChannelConfig` 继承 `protocol`、`endpoint` 和 `timeout_seconds`，只增加 `name` 和
+`credential_ref`。`name` 是非敏感、人类可读的渠道标识，用于日志和错误定位；唯一性由
+调用方或未来的渠道注册表负责。`credential_ref` 只是密钥引用，不是明文密钥。
 
 `Channel` 提供：
 
