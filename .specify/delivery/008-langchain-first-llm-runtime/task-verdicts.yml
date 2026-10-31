@@ -1,0 +1,25 @@
+feature: 008-langchain-first-llm-runtime
+updated_at: 2026-10-31
+base_revision: 353af49cf9db6014b7af0437a3f9dc0dd651437c
+head_revision: working-tree
+tasks:
+  T001:
+    title: Enable default Slice delivery, ADR-0007 and planning baseline
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 7d8339f5f4e3ab40203f331ee0ea20c218763d0cd0f6acd65505483175ebd818
+    policy_fingerprint: 70b2276f095ed81276dc32dbf9f00655be2a798358434327d6ca7726337627a0
+    receipt: receipts/T001.md
+    note: Independent review passed; docs/governance/YAML/git diff checks recorded.
+  T002:
+    title: Record default Slice policy in AGENTS and Delivery docs
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 7d8339f5f4e3ab40203f331ee0ea20c218763d0cd0f6acd65505483175ebd818
+    policy_fingerprint: 70b2276f095ed81276dc32dbf9f00655be2a798358434327d6ca7726337627a0
+    receipt: receipts/T002.md
+    note: Independent review passed; docs/governance/YAML/git diff checks recorded.

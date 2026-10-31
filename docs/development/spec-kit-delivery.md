@@ -103,10 +103,12 @@ specify bundle update speckit-delivery
 v0.1.4 → v0.2.2 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
 `pr_slicing`、`slice_warn_files`、`slice_warn_lines`、`slice_requires_approval`、
 `stack_provider` 和 `merge_policy`；v0.2.1 新增 `install_pull_request_template`；v0.2.2
-把随包 PR 模板改为中文。本项目保持单 PR 路径，设置 `pr_slicing: "off"`、
-`stack_provider: manual`、`use_queue: false`，并因仓库 Ruleset 要求线性历史而把 `final`
-设为 `squash`；PR 模板使用 v0.2.2 的中文安装文件，并把同一字节写入 `.github` 静态副本。
-这些是对现有策略的显式记录，不是安装器覆盖项目配置。
+把随包 PR 模板改为中文。项目默认启用 Slice 路径，设置 `pr_slicing: "auto"`：
+所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`；`stack_provider: manual`、
+`use_queue: false`，并因仓库 Ruleset 要求线性历史而把 `final` 设为 `squash`；integration
+交付仍需单独策略评审。PR 模板使用 v0.2.2 的中文安装文件，并把同一字节写入 `.github`
+静态副本。这些是对现有策略的显式记录，不是安装器覆盖项目配置。决策见
+[ADR-0007](../decisions/engineering/0007-default-slice-delivery.md)。
 
 直接 Workflow 现要求唯一、安全的单段 `delivery_run`；Bugfix 另需规范化的 `bug_slug`。
 恢复时沿用相同标识和 `.specify/delivery/<delivery_run>/` 本地记录，不通过换 ID 重置修复预算：
@@ -125,10 +127,11 @@ Feature 在 `tasks.md` 之后增加 Slice 计划与 Slice Gate；`tasks.md` 仍�
 ## 项目配置
 
 - [Delivery](../../.specify/extensions/delivery/delivery-config.yml)：上游字段及项目安全设置。
-  `pr_slicing: "off"` 保持单 PR；`slice_requires_approval: true` 保留 Slice Gate 的快速
-  确认；`stack_provider: manual`、`use_queue: false` 不声称本仓库具备原生 Stacked PR
-  或 Merge Queue。`merge_policy.final: squash` 与仓库 required linear history 一致；
-  启用 integration 交付前必须重新评审该策略。PR 模板默认使用 v0.2.2 随包中文
+  `pr_slicing: "auto"` 默认启用 Slice 计划；所有切片为 standalone 或 flagged 时按
+  stacked 顺序 squash 到 `main`。`slice_requires_approval: true` 保留 Slice Gate 的快速确认；
+  `stack_provider: manual`、`use_queue: false` 不声称本仓库具备原生 Stacked PR
+  或 Merge Queue。stacked 使用逐片 squash；`merge_policy.final: squash` 仅用于
+  integration rollup，当前未启用。启用 integration 交付前必须重新评审该策略。PR 模板默认使用 v0.2.2 随包中文
   `templates/pull-request.md`：`pull_request_template` 指向
   `.specify/extensions/delivery/templates/pull-request.md`，
   `install_pull_request_template: true` 记录已显式批准；`.github/pull_request_template.md`

@@ -18,8 +18,9 @@ Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Qualit
 `auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
 v0.2.2 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
 计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用 v0.2.2 随包中文模板及其
-`.github/pull_request_template.md` 静态副本；但项目保持 `pr_slicing: "off"` 的单 PR 路径，
-`tasks.md` 仍是唯一执行队列。Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
+`.github/pull_request_template.md` 静态副本；项目默认启用 `pr_slicing: "auto"` 的 Slice
+路径，所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`，`tasks.md` 仍是唯一执行队列。
+Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
 不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
 缺失时明确报告，不静默退回一套“看起来像通过”的通用流程。
 
@@ -65,7 +66,7 @@ Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保�
 - Orchestrator 在任务关闭前验证验收证据、允许路径、当前内容/需求快照、声明的检查、
   `QUALITY_VERDICT`、`STANDARDS_VERDICT` 和独立 `REVIEW_VERDICT`；仅 `HEAD`/路径相同不足以复用旧证据。
 - 只有 `RALPH_TASK_GATE: PASS` 才能更新任务状态并创建该任务的提交；所有任务都有当前有效 receipt、工作区干净且收口证据完整后，才能声明全量完成。
-- Handoff 必须写出真实 `PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示；仅聊天正文不算可持久化交付。项目保持单 PR 路径，未经策略评审不启用 Stacked/Integration 交付。
+- Handoff 必须写出真实 `PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示；仅聊天正文不算可持久化交付。项目默认启用 Slice 计划；stacked 使用手动顺序 PR，integration 仍需单独策略评审并受仓库线性历史约束。
 
 没有对应的 `.specify` 配置、质量命令或运行时证据时，只报告缺口；不要用技能文件存在、命令文本存在或一次静态阅读替代实际执行证据。
 
@@ -119,9 +120,10 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 5. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 6. 当前没有 `spawn-join-database` 和 `spawn-join-agent`；除非出现明确需求并完成边界设计，不要提前创建它们。
 
-当前配置基线（2026-10-28）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+当前配置基线（2026-10-31）：四包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
-静态分析和 GitHub Actions 已加入。
+静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
+flagged 切片按 stacked 顺序 squash 到 `main`。
 活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
 构建仍有缺少包级 README 的非阻塞警告；Release Delivery 组件与质量 Profile 已接入，
 不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
