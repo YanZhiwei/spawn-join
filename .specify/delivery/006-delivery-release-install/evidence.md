@@ -7,6 +7,10 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-29
 - **result**: pass for v0.1.2 Bundle installation re-anchored at 00d9c40; main Quality 14/14 passed; default-environment Doctor remains blocked
+- **status**: superseded
+- **superseded_by**: `harness/evidence/delivery-release-installation.md`
+- **reason**: the run only mirrors the durable installation record; v0.3.0 keeps operational one-off records in the project evidence root
+- **outcome_recorded_at**: 2026-11-01
 
 The authoritative command, source, preservation and failure record is
 [Harness installation evidence](../../../harness/evidence/delivery-release-installation.md).

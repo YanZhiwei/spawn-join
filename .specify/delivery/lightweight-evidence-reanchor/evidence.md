@@ -13,6 +13,10 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-27
 - **result**: pass
+- **status**: delivered
+- **pull_request**: 7
+- **outcome_recorded_at**: 2026-10-27
+- **merged_revision**: `fdd0c072186ef3cea7f4b3261acd1d82b358ef56`
 
 ## Why Lightweight
 
