@@ -1,3 +1,6 @@
+> 历史记录：本文件是 PR #18 合并前使用的正文。合并收口（squash 提交、CI、分支删除）见
+> [`evidence.md`](evidence.md) 的 “Post-merge closure”。
+
 ## 摘要
 
 采用 LangChain-first 的 LLM runtime：应用直接使用 LangChain 消息和 `BaseChatModel`，

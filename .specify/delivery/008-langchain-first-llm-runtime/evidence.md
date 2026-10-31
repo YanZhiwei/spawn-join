@@ -2,11 +2,11 @@
 
 - **feature_id**: `008-langchain-first-llm-runtime`
 - **phase_id**: `s3-final-verification`
-- **base_revision**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
-- **head_revision**: `3088ce83cd8a5404a088fc10287709ca7dcb3a5b`
+- **base_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c` (feature base HEAD, `origin/main` at kickoff)
+- **head_revision**: `468ee7f49de87921fd04b0f7256d306018d12490` (PR #18 squash-merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
-- **result**: pass for the full repository quality gate, gate regressions, quickstart construction, and final independent review; no remote CI, push or merge was executed
+- **result**: pass for the full repository quality gate, gate regressions, quickstart construction, and final independent review; PR #18 squash-merged as `468ee7f` after all remote checks passed
 
 **Feature**: `008-langchain-first-llm-runtime`
 
@@ -253,13 +253,24 @@
   `scripts/quality.ps1`, governance/static/quality regressions, quickstart construction, and
   `git diff --check` pass.
 
-### Fingerprints
-
-- `FINAL_CODE_CONTENT_FINGERPRINT`: `769a3b858dca10c0fb470a7856909b125f2fa154974df3f85bf662f47acd1f0e`
-  (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
-
 ### Verdicts
 
 - `QUALITY_VERDICT`: see `task-verdicts.yml`
 - `STANDARDS_VERDICT`: see `task-verdicts.yml`
 - `REVIEW_VERDICT`: see `task-verdicts.yml`
+
+## Post-merge closure
+
+- PR #18 was squash-merged as `468ee7f49de87921fd04b0f7256d306018d12490` on 2026-10-31 after
+  every configured remote check passed. `main` advanced linearly from `353af49` to `468ee7f`.
+- The merged tree equals the final branch head `e451315c029469ff088c27231500698d4b4b6aef`
+  (tree `89801db358068c2ffb4ab786021e1aa2ff2f84d6`), so the squash did not drop or rewrite
+  content. The reviewed implementation head was `3088ce8`; later commits changed only delivery
+  records, contract prose and the two package READMEs.
+- `pull-request.md` remains the pre-merge PR body used for handoff; this section is the
+  post-merge source of truth.
+- The feature branch `ralph/008-langchain-first-llm-runtime` was deleted locally and on
+  `origin` after merge, consistent with `merge_policy.delete_branch: true`.
+- Re-anchoring: `base_revision` used to point at the S2 commit `4598eb5`, which became
+  unreachable from any ref after the merged branch was deleted. The field now points at the
+  feature base `353af49`; S3 scope and results are unchanged.
