@@ -853,3 +853,27 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   自有核心技能/模板修改，未使用 `--force` 消除。
 
 验证记录：[v0.2.2 升级 evidence](evidence/delivery-v022-upgrade.md)。
+
+## 2026-10-31 — Delivery Bundle v0.3.0 升级
+
+**Status**: 已安装；隔离副本与目标 Bundle 更新通过；资产 SHA-256 10/10；待提交
+
+**Route**: Lightweight（上游 minor 工具链升级，新增 close 与证据生命周期）
+
+**Base/head**: `8d804f64511491757418abcb33b9452b49f4f1fd` → 工作区
+
+- 先在文件级隔离副本执行三类 Catalog 更新与 `bundle update`，再对目标执行同一路径；
+  Bundle 记录 13 个组件（10 个扩展 + Bug 1.0.1，三条 Workflow）均为 0.3.0。
+- 10 个 Release ZIP 的 SHA-256 与 Release 元数据一致；Catalog 固定到 v0.3.0 Tag。
+- 八个 `*-config.yml`、`extensions.yml` 与 `tasks-template.md` 哈希不变；目标与隔离副本
+  `.specify`/`.opencode` 仅安装 registry 的时间/路径差异。
+- 新增 `speckit.delivery.close`；OpenCode 点号原生命令 37 个；`auto_execute_hooks: false`、
+  `hooks: {}` 保持。
+- 008 已合并运行按 close 契约补记 `delivered`、PR #18、`merged_revision 468ee7f`；合并运行
+  保留工作区。
+- 文档、AGENTS、README、harness README 同步版本与 close 语义；Workflow、独立 Doctor 与
+  完整交付循环未运行。
+- 安装器未 push/merge/发布；`specify integration status` 仅报告 18 个项目自定义文件警告，
+  未使用 `--force` 消除。
+
+验证记录：[v0.3.0 升级 evidence](evidence/delivery-v030-upgrade.md)。

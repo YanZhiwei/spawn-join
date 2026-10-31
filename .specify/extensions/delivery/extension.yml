@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: delivery
   name: Spec Kit Delivery Core
-  version: "0.2.2"
+  version: "0.3.0"
   description: "Explore and scope delivery work, slice large changes into reviewable increments, initialize local policy, and render a durable pull-request handoff from final evidence."
   category: process
   effect: read-write
@@ -35,6 +35,9 @@ provides:
     - name: speckit.delivery.handoff
       file: commands/speckit.delivery.handoff.md
       description: "Render a stable PR body from durable requirements, decisions, review, and evidence."
+    - name: speckit.delivery.close
+      file: commands/speckit.delivery.close.md
+      description: "Record the actual PR outcome, retire abandoned working artifacts, and keep one durable delivery record."
     - name: speckit.delivery.lightweight
       file: commands/speckit.delivery.lightweight.md
       description: "Implement a verified small change without creating full feature artifacts."

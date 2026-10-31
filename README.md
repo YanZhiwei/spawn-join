@@ -59,8 +59,8 @@ Feature 的基本链路是：
 重排任务。Harness 阶段计划不能另建一份任务系统。
 当前入口是 CLI 管理的 OpenCode 原生命令
 [`/speckit.delivery.route`](.opencode/commands/speckit.delivery.route.md)。已通过固定 Release
-安装 Delivery Bundle v0.2.2（10 个扩展和三条 Workflow），保留 Codex 核心技能；不再使用
-拷贝式 sd 门面。安装方式、迁移步骤和配置见
+安装 Delivery Bundle v0.3.0（10 个扩展和三条 Workflow），保留 Codex 核心技能；不再使用
+拷贝式 sd 门面。v0.3.0 新增 `speckit.delivery.close`，把 PR 结果写回持久证据。安装方式、迁移步骤和配置见
 [Delivery 安装说明](docs/development/spec-kit-delivery.md)。
 安装不等于 Ralph 已运行；提交、推送和合并仍需用户授权，缺少能力时报告 blocked。
 详细执行契约以 [AGENTS.md](AGENTS.md) 和
@@ -229,7 +229,7 @@ dependencies = [
 | 类别 | 当前边界 |
 |---|---|
 | 领域包 | 四个独立 Distribution；LLM 包已实现 channel/options 契约与 LangChain 模型工厂，observability 仍为骨架 |
-| SDD 基础 | 已有 Constitution、Spec Kit 模板/脚本和 Bundle v0.2.2 管理的 Delivery 原生命令；Feature 工件本地化 |
+| SDD 基础 | 已有 Constitution、Spec Kit 模板/脚本和 Bundle v0.3.0 管理的 Delivery 原生命令（含 close/evidence 收口）；Feature 工件本地化 |
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
 | 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、actionlint、PSScriptAnalyzer、构建/安装验证和 GitHub Actions |
 | 长期知识与绘图 | 已有 ADR 分类、模板与项目级 Fireworks；渲染能力取决于本机依赖 |

@@ -7,6 +7,10 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
 - **result**: pass for the full repository quality gate, gate regressions, quickstart construction, and final independent review; PR #18 squash-merged as `468ee7f` after all remote checks passed
+- **status**: delivered
+- **pull_request**: 18
+- **outcome_recorded_at**: 2026-10-31
+- **merged_revision**: `468ee7f49de87921fd04b0f7256d306018d12490`
 
 **Feature**: `008-langchain-first-llm-runtime`
 
