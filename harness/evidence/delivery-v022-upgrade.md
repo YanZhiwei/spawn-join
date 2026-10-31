@@ -18,8 +18,9 @@ delivery Workflow run or Ralph queue is required.
 The work started from `035979d` (the unmerged v0.2.1 branch head) on top of `main`
 `9cdb10a`; this upgrade was committed as `079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on
 `chore/delivery-v021-upgrade` and squash-merged through PR #17 as
-`353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is anchored to that merge commit; the
-merge preserved the recorded tree. No release action is made by the installation.
+`353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is anchored to that merge commit.
+Compared with `079ccc2`, the merged tree differs only in `harness/build-log.md` and this
+record; no installer-owned file changed. No release action is made by the installation.
 
 ## Changed paths and ownership
 
@@ -51,8 +52,9 @@ MIT-licensed tooling. Specify CLI remains 1.2.3 / Python 3.13.5; Bug remains the
 No new runtime dependency, global CLI install, configuration format break or remote write.
 
 Public GitHub downloads are read-only. Only the local project and owned temporary directories
-were written; no private content was uploaded. No staging, commit, push, merge, publication,
-hooks or autonomous workflow execution.
+were written; no private content was uploaded. The installer performed no staging, commit,
+push, merge, publication, hooks or autonomous workflow execution; the upgrade commit
+`079ccc2` and its PR #17 merge `353af49` were separate authorized actions.
 
 Owned temporary root (assets, catalogs, fixture, driver, backups and verification records):
 `C:\Users\YanZh\AppData\Local\Temp\opencode\spawn-join-v022-f99d97ffc6fc4d0ba97e6b84c0356bea`.
@@ -145,6 +147,8 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
   `git status` as line-ending-only entries even when their content hash matches the index.
   `git diff --name-only` remains the content diff.
 - Evidence covers material change commit `079ccc2e4991b26e8bdd7113a46df00e1a1803ce` and its
-  PR #17 squash-merge commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`; later merges only
-  added unrelated feature work. Later material changes require renewed confirmation rather
-  than reuse of this record.
+  PR #17 squash-merge commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`; later merges changed
+  unrelated feature, configuration and delivery-record paths. Later material changes require
+  renewed confirmation rather than reuse of this record.
+- Branch-only SHAs in this record (`035979d`, `079ccc2`) are historical references; they are
+  not resolvable in a fresh clone after the merged branch was deleted.

@@ -166,6 +166,12 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
   their content hash matches the index; `git diff --name-only` remains the content diff.
 - Evidence covers material change commits `2976eb3bc8ea721b941376765d5610a772abc547`,
   `cb38b8ec4c403f19c592378b763bf9175e4ce2bc` and
-  `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`, which became reachable in `main` through the
-  PR #17 squash-merge commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`. Later material changes
-  require renewed confirmation rather than reuse of this record.
+  `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`, whose content landed in `main` in PR #17's
+  squash commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`; the source commits themselves are
+  not reachable from `main`. Later material changes require renewed confirmation rather than
+  reuse of this record.
+- This superseded record and `delivery-v022-upgrade.md` share the range
+  `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `353af49cf9db6014b7af0437a3f9dc0dd651437c`
+  because v0.2.1 content landed together with v0.2.2; the v0.2.2 record supersedes this one.
+- Branch-only SHAs in this record (`2976eb3`, `cb38b8e`, `306bc1b`) are historical references;
+  they are not resolvable in a fresh clone after the merged branch was deleted.

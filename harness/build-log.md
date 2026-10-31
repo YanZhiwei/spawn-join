@@ -832,11 +832,11 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 ## 2026-10-30 — Delivery Bundle v0.2.2 升级
 
-**Status**: 已安装；安装一致性与针对性检查通过；已提交到 PR 分支，未合并
+**Status**: 已安装；安装一致性与针对性检查通过；已通过 PR #17 squash 合并（`353af49`）
 
 **Route**: Lightweight（上游补丁版本升级，只改 PR 模板兜底）
 
-**Base/head**: `035979d6f345899119adc5ad830217f193af7fe8` → `079ccc2e4991b26e8bdd7113a46df00e1a1803ce`
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `353af49cf9db6014b7af0437a3f9dc0dd651437c`
 
 - v0.2.2 只把 Delivery 随包 `templates/pull-request.md` 兜底模板改为中文；命令面、
   Workflow 输入、六维 Review、快照和修复预算均与 v0.2.1 一致。
