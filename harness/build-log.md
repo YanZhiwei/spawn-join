@@ -877,3 +877,27 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   未使用 `--force` 消除。
 
 验证记录：[v0.3.0 升级 evidence](evidence/delivery-v030-upgrade.md)。
+
+## 2026-11-01 — Delivery Bundle v0.3.1 升级
+
+**Status**: 已安装；隔离副本与目标 Bundle 更新通过；资产 SHA-256 10/10；已提交并推送，PR 结果以 PR 为准
+
+**Route**: Lightweight（上游 patch 工具链升级，新增包 README 节点）
+
+**Base/head**: `8f445086599152b00d2e01fd36c134d97ad6942c` → 工作区
+
+- 先在文件级隔离副本执行三类 Catalog 更新与 `bundle update`，再对目标执行同一路径；
+  Bundle 记录 13 个组件（10 个扩展 + Bug 1.0.1，三条 Workflow）均为 0.3.1。
+- 10 个 Release ZIP 的 SHA-256 与 Release 元数据一致；Catalog 固定到 v0.3.1 Tag。
+- 除 Docs Sync 外，七个 `*-config.yml`、`extensions.yml` 与 `tasks-template.md` 哈希不变；
+  Docs Sync 显式增加 `package_readme: auto` 与 `package_roots: []`。
+- 新增 `speckit.docs-sync.package-readme` 及 `templates/package-readme.md`；OpenCode 点号
+  原生命令 38 个；三条 Lane workflow 在 Review 前运行该节点；`auto_execute_hooks: false`、
+  `hooks: {}` 保持。
+- 四个 Distribution 均已有 README；`auto` 模式只在下次包变更时刷新或报告缺口，本次未重写。
+- 文档、AGENTS、README、harness README 同步版本与包 README 策略；Workflow、独立 Doctor 与
+  完整交付循环未运行。
+- 安装器未 push/merge/发布；`specify integration status` 仅报告既有项目自定义文件警告，
+  未使用 `--force` 消除。
+
+验证记录：[v0.3.1 升级 evidence](evidence/delivery-v031-upgrade.md)。
