@@ -5,7 +5,7 @@
 - **feature_id**: `delivery-v022-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v022-upgrade`
 - **base_revision**: `035979d6f345899119adc5ad830217f193af7fe8`
-- **head_revision**: `079ccc2e4991b26e8bdd7113a46df00e1a1803ce`
+- **head_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c` (PR #17 squash-merge commit)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
 - **result**: pass for scoped installation consistency and generated-command checks; Workflows and independent Doctor prompt not run
@@ -16,9 +16,10 @@ package dependencies, public APIs, architecture or durable data, so no Spec/Plan
 delivery Workflow run or Ralph queue is required.
 
 The starting worktree was clean at branch head `035979d`; this upgrade was committed as
-`079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on `chore/delivery-v021-upgrade`. This evidence
-is re-anchored in a docs-only follow-up commit. No merge or release action is made by the
-installation.
+`079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on `chore/delivery-v021-upgrade` and
+squash-merged through PR #17 as `353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is
+anchored to that merge commit; the merge preserved the recorded tree. No release action is
+made by the installation.
 
 ## Changed paths and ownership
 
@@ -143,6 +144,7 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
 - LF/CRLF warnings are existing platform behavior; installer-refreshed files may appear in
   `git status` as line-ending-only entries even when their content hash matches the index.
   `git diff --name-only` remains the content diff.
-- Evidence covers material change commit `079ccc2e4991b26e8bdd7113a46df00e1a1803ce`; the
-  evidence re-anchor commit changes only `harness/` records. Later material changes require
-  renewed confirmation rather than reuse of this record.
+- Evidence covers material change commit `079ccc2e4991b26e8bdd7113a46df00e1a1803ce` and its
+  PR #17 squash-merge commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`; later merges only
+  added unrelated feature work. Later material changes require renewed confirmation rather
+  than reuse of this record.
