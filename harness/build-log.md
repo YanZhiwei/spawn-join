@@ -804,7 +804,7 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 ## 2026-10-30 — Delivery Bundle v0.2.1 升级
 
-**Status**: 已安装；安装一致性与针对性检查通过；内容随后随 PR #17 squash 合并（`353af49`）
+**Status**: 已安装；安装一致性与针对性检查通过；内容随后通过 PR #17 squash 合并（`353af49`）
 
 **Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
 
