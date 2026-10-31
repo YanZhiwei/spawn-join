@@ -65,6 +65,7 @@ SpawnJoin 需要决定 LLM 消息和模型调用的长期运行时边界。此�
 - `spawn-join-llm-provider` 只保留：
   - `ProtocolKind` 与 `ChatCompletionsOptions`、`ResponsesOptions`、
     `AnthropicMessagesOptions`；
+  - 共享 `EndpointConfig`（`ChannelConfig` 和 `ChatModelConfig` 都继承它）；
   - `Channel`、`ChannelConfig`、`ChannelStatus`、`PingResult`、`ModelInfo`、`ModelPage`；
   - `LLMProviderError`、`ConfigurationError`、`ChannelError`、
     `ChannelUnavailableError`、`UnsupportedChannelOperationError`、
@@ -91,7 +92,8 @@ SpawnJoin 需要决定 LLM 消息和模型调用的长期运行时边界。此�
 spawn-join-llm-provider
   ├── ProtocolKind
   ├── 三种协议选项
-  ├── Channel / ChannelConfig / PingResult / ModelPage
+  ├── EndpointConfig / ChannelConfig
+  ├── Channel / PingResult / ModelPage
   └── 配置与渠道错误
 ```
 

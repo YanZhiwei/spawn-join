@@ -3,7 +3,7 @@
 - **feature_id**: `008-langchain-first-llm-runtime`
 - **phase_id**: `s3-final-verification`
 - **base_revision**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
-- **head_revision**: `d6cdc3739895fcbb3b1bbbda7a0720db37513428`
+- **head_revision**: `3088ce83cd8a5404a088fc10287709ca7dcb3a5b`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
 - **result**: pass for the full repository quality gate, gate regressions, quickstart construction, and final independent review; no remote CI, push or merge was executed
@@ -181,7 +181,7 @@
 
 ### Fingerprints
 
-- `S2_CONTENT_FINGERPRINT`: `82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940`
+- `S2_CONTENT_FINGERPRINT`: `dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce`
   (SHA-256 over the S2 source/test/docs/contract paths, updated after final review hardening)
 
 ### Verdicts
@@ -193,7 +193,7 @@
 ## S3 — Final verification and evidence (T018–T020)
 
 **S3 base HEAD**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
-**Review-fix HEAD**: `d6cdc3739895fcbb3b1bbbda7a0720db37513428`
+**Review-fix HEAD**: `3088ce83cd8a5404a088fc10287709ca7dcb3a5b`
 **Working tree**: final evidence/ADR bookkeeping only
 
 ### Scope
@@ -226,13 +226,13 @@
 - No remote CI, push, PR, merge or release action was performed.
 - No real channel HTTP, provider request or streaming call was executed.
 - `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was accepted at the final
-  reviewed HEAD `d6cdc37`; implementation and quality gates passed.
+  reviewed HEAD `3088ce8`; implementation and quality gates passed.
 - The quickstart `ainvoke`/`astream` examples are intentionally commented because this verification
   is offline; message and streaming behavior remains LangChain-native and was not re-tested here.
 - The four `src/*.egg-info` directories are ignored editable-install metadata, not tracked build
   outputs; they are removed before handoff but may be recreated by a later `uv sync`.
-- Final independent review passed at `d6cdc37` with no blockers; the bookkeeping commit that
-  follows changes only delivery records and ADR status.
+- Final independent review passed at `3088ce8` with no blockers; the bookkeeping commit that
+  follows changes only delivery records, ADR wording and contract prose.
 
 ### Final review fixes
 
@@ -255,7 +255,7 @@
 
 ### Fingerprints
 
-- `FINAL_CODE_CONTENT_FINGERPRINT`: `1c77537a0b8bd3315f025f257f09d629a3d95ec1ca3f082464c6d515b3674ed0`
+- `FINAL_CODE_CONTENT_FINGERPRINT`: `f52259199108a0e48fd9737f4a029d5d74ddbd77946918024049e9be9db22417`
   (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
 
 ### Verdicts

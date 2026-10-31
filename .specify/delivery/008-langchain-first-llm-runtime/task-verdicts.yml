@@ -1,7 +1,7 @@
 feature: 008-langchain-first-llm-runtime
 updated_at: 2026-10-31
 base_revision: 353af49cf9db6014b7af0437a3f9dc0dd651437c
-head_revision: working-tree
+head_revision: 3088ce83cd8a5404a088fc10287709ca7dcb3a5b
 tasks:
   T001:
     title: Enable default Slice delivery, ADR-0007 and planning baseline
@@ -94,7 +94,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T011.md
   T012:
     title: Add adapter configuration and validation
@@ -102,7 +102,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T012.md
   T013:
     title: Add three-protocol LangChain factory
@@ -110,7 +110,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T013.md
   T014:
     title: Expose adapter public API
@@ -118,7 +118,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T014.md
   T015:
     title: Document adapter usage
@@ -126,7 +126,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T015.md
   T016:
     title: Update architecture boundaries and AGENTS
@@ -134,7 +134,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T016.md
   T017:
     title: Record ADR-0006 implementation status
@@ -142,7 +142,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 82c0270ce510032591d5e75f370b5741e83ebc9c457a1459d2c571d5ea694940
+    content_fingerprint: dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce
     receipt: receipts/T017.md
   T018:
     title: Run full quality gates and regressions
@@ -150,7 +150,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1c77537a0b8bd3315f025f257f09d629a3d95ec1ca3f082464c6d515b3674ed0
+    content_fingerprint: f52259199108a0e48fd9737f4a029d5d74ddbd77946918024049e9be9db22417
     receipt: receipts/T018.md
   T019:
     title: Validate quickstart scenarios
@@ -158,7 +158,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1c77537a0b8bd3315f025f257f09d629a3d95ec1ca3f082464c6d515b3674ed0
+    content_fingerprint: f52259199108a0e48fd9737f4a029d5d74ddbd77946918024049e9be9db22417
     receipt: receipts/T019.md
   T020:
     title: Verify worktree hygiene and final paths
@@ -166,5 +166,5 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1c77537a0b8bd3315f025f257f09d629a3d95ec1ca3f082464c6d515b3674ed0
+    content_fingerprint: f52259199108a0e48fd9737f4a029d5d74ddbd77946918024049e9be9db22417
     receipt: receipts/T020.md
