@@ -5,3 +5,9 @@ manifest: null
 sync_command: null
 verify_command: "pwsh -NoProfile -File scripts/quality.ps1 -Check docs"
 source_is_authoritative: true
+# Package README contract from Bundle v0.3.1: auto | required | off.
+# auto creates/refreshes a package README when a package is new or its public
+# surface changes, and reports gaps without blocking. All four packages already
+# have READMEs; the node runs on the next package change.
+package_readme: auto
+package_roots: []

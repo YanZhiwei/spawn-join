@@ -16,11 +16,11 @@
 
 | 组件 | 来源/版本 |
 |---|---|
-| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.3.0 |
+| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.3.1 |
 | Bug | Specify CLI 1.2.3 随附的 1.0.1 |
-| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.3.0 |
+| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.3.1 |
 
-当前项目使用 **Bundle v0.3.0**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
+当前项目使用 **Bundle v0.3.1**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
 v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow Catalog 的 requirements
 不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`；v0.1.3 增加范围取证与有界
 修复复审；v0.1.4 修正 Doctor 对共享 Reviewer 模板的路径引用。v0.2.0 增加
@@ -33,11 +33,14 @@ v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow C
 `speckit.delivery.close`：在 PR 结果确定后记录 `delivered`/`abandoned`/`superseded`；
 `evidence.md` 始终是持久记录并绑定 PR 实际发布的已审阅 HEAD，运行工作区（`exploration.md`、
 `slices.md`、receipts、verdicts、reviews、渲染后的 PR 正文）与持久证据分离；Doctor 会报告
-缺失或矛盾的交付结果。这些仍是引导式契约，不是新增机器强制执行的语义状态引擎。
+缺失或矛盾的交付结果。v0.3.1 新增 `speckit.docs-sync.package-readme`：按包的真实清单、公开
+导出、CLI、配置、依赖和测试命令创建或刷新包 README，并在三条 Lane workflow 的最后一步代码
+变更之后、Review 之前运行；Docs Sync 配置新增 `package_readme`（`auto`/`required`/`off`）
+与 `package_roots`。这些仍是引导式契约，不是新增机器强制执行的语义状态引擎。
 
-发布入口：[v0.3.0](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.3.0)。
+发布入口：[v0.3.1](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.3.1)。
 安装取舍见 [ADR-0004](../decisions/engineering/0004-release-managed-delivery-installation.md)。
-本次升级命令与限制见 [v0.3.0 evidence](../../harness/evidence/delivery-v030-upgrade.md)；
+本次升级命令与限制见 [v0.3.1 evidence](../../harness/evidence/delivery-v031-upgrade.md)；
 早期安装见 [历史 evidence](../../harness/evidence/delivery-release-installation.md)。
 
 ## 首次接入已有项目
@@ -51,11 +54,11 @@ specify version
 specify integration install opencode --script ps
 specify integration use opencode
 
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.3.0/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.3.1/catalogs'
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog add "$base/workflows.json" --name speckit-delivery
 specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
-specify bundle install speckit-delivery --version 0.3.0
+specify bundle install speckit-delivery --version 0.3.1
 ```
 
 Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Workflow。Catalog 的安装信任
@@ -64,7 +67,7 @@ Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Wor
 
 ### 从 v0.1.0 逐组件安装迁移
 
-先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.3.0 Bundle：
+先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.3.1 Bundle：
 
 ```powershell
 foreach ($extension in @('bug','decision','delivery','docs-sync','evidence','quality','ralph','review','simplify')) {
@@ -77,8 +80,8 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 }
 ```
 
-随后删除旧 Catalog、加入 v0.3.0 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
-`bundle list --json` 为 0.3.0、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
+随后删除旧 Catalog、加入 v0.3.1 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
+`bundle list --json` 为 0.3.1、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
 `tasks-template.md` 不被覆盖；`auto_execute_hooks: false` 保持。
 
 ### 从 v0.1.x Bundle 升级
@@ -87,7 +90,7 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 `specify workflow catalog list` 确认旧来源的索引，再更新三类 Catalog：
 
 ```powershell
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.3.0/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.3.1/catalogs'
 specify extension catalog remove speckit-delivery
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog remove 0
@@ -97,18 +100,19 @@ specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy i
 specify bundle update speckit-delivery
 ```
 
-升级后检查：`bundle list --json` 为 0.3.0、13 个组件；`*-config.yml` 哈希不变；
-`auto_execute_hooks: false`；OpenCode 原生命令为 37 个（相对 v0.2.2 新增
-`speckit.delivery.close`）。`bundle update` 会重新安装三条 Workflow，因此新的
-`close`/证据语义随 Bundle 生效。不能只更新薄门面或单条命令。
+升级后检查：`bundle list --json` 为 0.3.1、13 个组件；`*-config.yml` 哈希不变；
+`auto_execute_hooks: false`；OpenCode 原生命令为 38 个（相对 v0.3.0 新增
+`speckit.docs-sync.package-readme`）。`bundle update` 会重新安装三条 Workflow，因此新的
+package README 节点随 Bundle 生效。不能只更新薄门面或单条命令。
 
-v0.1.4 → v0.3.0 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
+v0.1.4 → v0.3.1 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
 `pr_slicing`、`slice_warn_files`、`slice_warn_lines`、`slice_requires_approval`、
 `stack_provider` 和 `merge_policy`；v0.2.1 新增 `install_pull_request_template`；v0.2.2
 把随包 PR 模板改为中文；v0.3.0 不新增必填配置字段，但明确 `artifact_policy` 只决定运行
 工作区（`exploration.md`、`slices.md`、receipts、verdicts、reviews、渲染后的 PR 正文）的
 保留方式，`evidence.md` 始终是持久记录，并由 `speckit.delivery.close` 记录
-`delivered`/`abandoned`/`superseded`。项目默认启用 Slice 路径，设置 `pr_slicing: "auto"`：
+`delivered`/`abandoned`/`superseded`；v0.3.1 在 Docs Sync 配置新增 `package_readme`
+（`auto`/`required`/`off`）与 `package_roots`，本项目显式选择 `auto`。项目默认启用 Slice 路径，设置 `pr_slicing: "auto"`：
 所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`；`stack_provider: manual`、
 `use_queue: false`，并因仓库 Ruleset 要求线性历史而把 `final` 设为 `squash`；integration
 交付仍需单独策略评审。PR 模板使用随包中文安装文件，并把同一字节写入 `.github`
@@ -135,6 +139,11 @@ v0.3.0 起，交付在 PR 结果确定后执行 `/speckit.delivery.close`：合�
 合并 PR。`artifact_policy: ephemeral` 只约束运行工作区；`evidence.md` 始终持久。
 已合并的 008 运行已按该契约补记 `delivered` 与 `merged_revision`。
 
+v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之前运行
+`/speckit.docs-sync.package-readme`。已有包 README 不会被自动重写；节点在下次包变更时
+按变更面输出 `updated`、`unchanged-with-reason` 或 `gap`。本项目选择 `auto`，因此缺口只
+报告、不阻断。
+
 ## 项目配置
 
 - [Delivery](../../.specify/extensions/delivery/delivery-config.yml)：上游字段及项目安全设置。
@@ -159,7 +168,9 @@ v0.3.0 起，交付在 PR 结果确定后执行 `/speckit.delivery.close`：合�
 - [Decision](../../.specify/extensions/decision/decision-config.yml)：唯一 ADR 根 `docs/decisions/`。
 - [Ralph](../../.specify/extensions/ralph/ralph-config.yml)：Specs 为 ephemeral、单任务串行。
 - [Docs Sync](../../.specify/extensions/docs-sync/docs-sync-config.yml)：手工维护权威文档并执行链接检查；
-  当前没有生成投影，因此不虚构 generator 或 publication manifest。
+  当前没有生成投影，因此不虚构 generator 或 publication manifest。v0.3.1 显式设置
+  `package_readme: auto`：包 README 在下次包变更时刷新，缺口报告但不阻断；`package_roots`
+  留空，由 manifest 检测。
 - [扩展设置](../../.specify/extensions.yml)：`auto_execute_hooks: false`，`hooks: {}`。
 
 Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push、merge 或发布。原生 Ralph
@@ -191,15 +202,16 @@ git diff --check
 Workflow 命令在当前宿主可解析、质量命令实际可运行、语义标准有 owner/mechanism。Doctor
 还检查 `pr_slicing`/Slice 预算/`merge_policy`、PR 模板配置，以及 Handoff 是否写出真实
 `PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示；v0.3.0 起还检查交付运行是否有
-`status`/PR 结果、`superseded_by` 是否可解析，以及安装/升级记录是否误放在交付根目录。
+`status`/PR 结果、`superseded_by` 是否可解析，以及安装/升级记录是否误放在交付根目录；
+v0.3.1 起还要求 Docs Sync 可用，并校验 `package-readme` 命令、模板和 Review 前的位置。
 Doctor 是 Agent Prompt，不是 PATH 可执行文件。安装器生成的命令由 OpenCode 自动重载；
 旧技能的当前会话缓存不代表新入口缺失。
-当前项目已发现 37 个点号原生命令（27 个扩展命令 + 10 个核心命令）。
+当前项目已发现 38 个点号原生命令（28 个扩展命令 + 10 个核心命令）。
 
 升级后应确认生成的 Doctor 指向
 [Review 扩展模板](../../.specify/extensions/review/templates/reviewer.md)，而不是
 `.specify/extensions/delivery/templates/reviewer.md`。v0.1.3 曾把该共享模板误指向
-Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，v0.2.1、v0.2.2 与 v0.3.0 保持该路径。安装包仍
+Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，v0.2.1、v0.2.2、v0.3.0 与 v0.3.1 保持该路径。安装包仍
 保持发布原样，不创建重复模板或手工篡改生成命令。若仍看到旧路径，说明安装未真正刷新到
 当前版本。
 
@@ -210,4 +222,4 @@ Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，v0.2
 安装 registry、manifest、配置和生成命令保留以便项目级追溯。Vendor Prompt/README 的上游
 相对链接不属于项目文档链接门，保留原样，不伪称其经过本项目文档验证。
 
-本次实际验证及限制见 [v0.3.0 evidence](../../harness/evidence/delivery-v030-upgrade.md)。
+本次实际验证及限制见 [v0.3.1 evidence](../../harness/evidence/delivery-v031-upgrade.md)。
