@@ -1,11 +1,11 @@
 # ADR-0006: 以 LangChain 作为 LLM 运行时，保留渠道与协议选项
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-31
 - Domain: llm-provider
 - Classification: 本决策约束 LLM 消息/模型运行时、协议包公共契约和依赖方向，属于 `llm-provider` 领域。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 用户 2026-10-31 批准 LangChain-first 设计与实现；final review `d6cdc37`
 - Depends on: [ADR-0001](../engineering/0001-delivery-and-durable-design.md)、[ADR-0002](../engineering/0002-untrack-historical-feature-artifacts.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、[Constitution](../../../.specify/memory/constitution.md)
 - Supersedes: 无（未合并 PR #16 中的旧候选设计不是 `main` 上的有效 ADR）
@@ -145,9 +145,10 @@ spawn-join-core
 
 ## Verification and implementation status
 
-本 ADR 目前是 Proposed，只表示设计候选，不表示实现或质量门已通过。
+本 ADR 的 Accepted 只表示设计决策已获维护者批准；实现和质量门结果由 Delivery evidence
+单独记录。最终独立评审在 `d6cdc37` 通过。
 
-实现后必须验证：
+实现验证包括：
 
 - `spawn-join-llm-provider` 的公共导出和依赖边界；
 - 三个协议的选项校验和 fake channel 行为；
@@ -159,11 +160,12 @@ spawn-join-core
 
 S1/S2 已在 `ralph/008-langchain-first-llm-runtime` 分支实现：core 包 127 个测试、
 adapter 包 38 个测试，两个包的质量门和隔离构建通过；docs/governance 检查通过。真实
-channel HTTP、Provider 请求、pool 和路由仍未实现或执行。本 ADR 保持 `Proposed`，等待
-最终 reviewed HEAD 后再确认是否改为 `Accepted`。
+channel HTTP、Provider 请求、pool 和路由仍未实现或执行。
 
 实际命令、退出码和残余风险记录在 Delivery evidence 中；本 ADR 不复制这些运行结果。
 
 ## Revision history
 
 - 2026-10-31：提出 LangChain-first、channel-only 的候选决策。
+- 2026-10-31：用户批准设计与实现；最终独立评审在 `d6cdc37` 通过，ADR 由 Proposed 改为
+  Accepted。

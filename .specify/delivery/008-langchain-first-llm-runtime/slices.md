@@ -90,7 +90,7 @@ S0 is verified by the current gate's docs/governance/YAML receipts.
   (modify); `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` (new baseline)
 - Trunk-safe: standalone (verified)
 - Evidence: the adapter remains a skeleton and does not import the new core symbols; both package
-  quality gates can pass on this prefix. The declared verification must run before claiming
+  quality gates passed at the S1 boundary; the declared verification ran before claiming
   standalone.
 - Target verification:
   - `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider`
@@ -121,8 +121,7 @@ S0 is verified by the current gate's docs/governance/YAML receipts.
   `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` (modify verification status)
 - Trunk-safe: standalone (verified)
 - Evidence: S1 provides the core contract; S2 only adds the adapter consumer. The adapter and core
-  quality gates are expected to pass on this prefix; verify at the S2 boundary before claiming
-  standalone.
+  quality gates passed at the S2 boundary; the prefix is verified standalone.
 - Target verification:
   - `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain`
   - `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider`
@@ -146,8 +145,8 @@ S0 is verified by the current gate's docs/governance/YAML receipts.
 - Expected paths: `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` (modify);
   `specs/008-langchain-first-llm-runtime/quickstart.md` (modify only if stale)
 - Trunk-safe: standalone (verified)
-- Evidence: no source changes; only verification and evidence. The declared commands must run at
-  the current HEAD.
+- Evidence: includes the review-fix commit and final verification/evidence. The declared commands
+  ran at the final reviewed HEAD `d6cdc37`.
 - Target verification: all T018 commands plus `git diff --check` and
   `git status --short --branch`.
 - Flag: N/A

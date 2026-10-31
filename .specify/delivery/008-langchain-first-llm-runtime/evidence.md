@@ -3,10 +3,10 @@
 - **feature_id**: `008-langchain-first-llm-runtime`
 - **phase_id**: `s3-final-verification`
 - **base_revision**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
-- **head_revision**: `working-tree`
+- **head_revision**: `d6cdc3739895fcbb3b1bbbda7a0720db37513428`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
-- **result**: pass for the full repository quality gate, gate regressions and quickstart construction checks; no remote CI, push or merge was executed
+- **result**: pass for the full repository quality gate, gate regressions, quickstart construction, and final independent review; no remote CI, push or merge was executed
 
 **Feature**: `008-langchain-first-llm-runtime`
 
@@ -61,7 +61,8 @@
 - The governance warning `harness/evidence/delivery-v022-upgrade.md: head_revision is not an
   ancestor of HEAD` is pre-existing and unrelated to S0.
 - No remote CI, PR, push, merge, or stacked PR was executed. S0 is a local change set.
-- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was `Proposed` at this
+  boundary; accepted at final HEAD `d6cdc37`.
 - `docs/decisions/engineering/0007-default-slice-delivery.md` is `Accepted` based on the user's
   2026-10-31 instruction and slice approval; its commands are the receipts above.
 
@@ -125,7 +126,8 @@
 - No real channel HTTP, provider request, pool or routing was implemented or executed.
 - The docs/package quality run temporarily moved local ignored `specs/007-llm-protocol-abstraction`
   because it links ADR-0005 from unmerged PR #16; it was restored unchanged.
-- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was `Proposed` at this
+  boundary; accepted at final HEAD `d6cdc37`.
 
 ### Fingerprints
 
@@ -171,7 +173,8 @@
 ### Limitations
 
 - No real channel HTTP, provider request, streaming call or tool execution was performed.
-- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was `Proposed` at this
+  boundary; accepted at final HEAD `d6cdc37`.
 - The docs check temporarily moved local ignored `specs/007-llm-protocol-abstraction`; it was
   restored unchanged.
 - Stacked PR creation, push and merge are not executed.
@@ -190,7 +193,8 @@
 ## S3 — Final verification and evidence (T018–T020)
 
 **S3 base HEAD**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
-**Working tree**: final verification; no source changes expected
+**Review-fix HEAD**: `d6cdc3739895fcbb3b1bbbda7a0720db37513428`
+**Working tree**: final evidence/ADR bookkeeping only
 
 ### Scope
 
@@ -211,7 +215,7 @@
 | 4 | `pwsh -NoProfile -File scripts/test-quality.ps1` | 0 | 9 gate regression scenarios passed; no root project artifacts |
 | 5 | quickstart public-export commands | 0 | core `__all__` has 20 symbols; adapter `__all__` is `['ChatModelConfig', 'create_chat_model']` |
 | 6 | quickstart three-model construction | 0 | `ChatOpenAI False`, `ChatOpenAI True`, `ChatAnthropic`; all `BaseChatModel` checks true; sentinel key masked |
-| 7 | `git diff --check` / `git status --short --branch --untracked-files=all` | 0 | No whitespace errors; only the S3 evidence bookkeeping change is uncommitted |
+| 7 | `git diff --check` / `git status --short --branch --untracked-files=all` | 0 | No whitespace errors; final S3 evidence/ADR bookkeeping commit contains only delivery records and ADR status |
 | 8 | build artifact scan | 0 | No `build/` or `dist/`; four ignored `src/*.egg-info` editable metadata directories were present and are cleaned before handoff |
 
 ### Limitations
@@ -221,11 +225,14 @@
   restored unchanged.
 - No remote CI, push, PR, merge or release action was performed.
 - No real channel HTTP, provider request or streaming call was executed.
-- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was accepted at the final
+  reviewed HEAD `d6cdc37`; implementation and quality gates passed.
 - The quickstart `ainvoke`/`astream` examples are intentionally commented because this verification
   is offline; message and streaming behavior remains LangChain-native and was not re-tested here.
 - The four `src/*.egg-info` directories are ignored editable-install metadata, not tracked build
   outputs; they are removed before handoff but may be recreated by a later `uv sync`.
+- Final independent review passed at `d6cdc37` with no blockers; the bookkeeping commit that
+  follows changes only delivery records and ADR status.
 
 ### Final review fixes
 

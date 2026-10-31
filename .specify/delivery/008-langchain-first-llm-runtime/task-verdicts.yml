@@ -149,7 +149,7 @@ tasks:
     status: complete
     quality_verdict: pass
     standards_verdict: pass
-    review_verdict: pending
+    review_verdict: pass
     content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
     receipt: receipts/T018.md
   T019:
@@ -157,7 +157,7 @@ tasks:
     status: complete
     quality_verdict: pass
     standards_verdict: pass
-    review_verdict: pending
+    review_verdict: pass
     content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
     receipt: receipts/T019.md
   T020:
@@ -165,6 +165,6 @@ tasks:
     status: complete
     quality_verdict: pass
     standards_verdict: pass
-    review_verdict: pending
+    review_verdict: pass
     content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
     receipt: receipts/T020.md

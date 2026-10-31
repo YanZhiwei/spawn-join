@@ -21,8 +21,8 @@
   分支 `ralph/007-llm-protocol-abstraction`，不存在于 `main`。它不能作为 `main` 的有效
   ADR 或链接目标；本 Feature 不修改不存在的文件。
 - 新 ADR-0006 已在 `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md`
-  以 `Proposed` 记录 LangChain-first 决策，并明确旧候选不作为基线。新 ADR 接受前不改写
-  旧设计的生命周期；由于旧文件不在 `main`，也没有可标记的 `Superseded by` 链接。
+  记录 LangChain-first 决策，并明确旧候选不作为基线；它在最终评审 `d6cdc37` 后由
+  `Proposed` 改为 `Accepted`。由于旧文件不在 `main`，没有可标记的 `Superseded by` 链接。
 - PR #16 保持 open；关闭或标记 superseded 需要用户单独授权。
 
 ## Conflicts with proposed work
@@ -47,7 +47,7 @@
 | `ModelCapabilities` | 不交付；当前无消费者，避免提前固化 | Plan Scope Deltas |
 | Channel 能力矩阵 | 不交付；用 `PingResult`、异常和 `ModelPage` 表达当前状态 | data-model、contracts |
 | PR #16 | 保持 open，不作为基线；关闭需授权 | Spec FR-018、research Decision 8 |
-| ADR | 新增 ADR-0006（Proposed）；不修改不存在的 ADR-0005 | ADR 文件、索引 |
+| ADR | 新增 ADR-0006；最终评审 `d6cdc37` 后 Accepted；不修改不存在的 ADR-0005 | ADR 文件、索引 |
 | Slice 策略 | 默认 `auto`；S0 → S1 → S2 → S3，stacked + 逐片 squash | ADR-0007、delivery-config、slices |
 
 ## Open decisions after planning
@@ -60,4 +60,4 @@
 - 未执行真实 LangChain Provider 请求；新设计主要依赖离线构造和 fake 测试。
 - 真实 channel HTTP 认证/目录行为尚未验证。
 - 没有外部应用消费者，公共 API 精简仍以旧适配层使用情况和当前需求为依据。
-- ADR-0006 仍是 Proposed；必须在实现、质量门和评审后由维护者确认是否 Accepted。
+- ADR-0006 已在最终评审 `d6cdc37` 后由维护者确认并改为 Accepted。
