@@ -1,12 +1,12 @@
 # Delivery evidence: LangChain-first LLM Runtime
 
 - **feature_id**: `008-langchain-first-llm-runtime`
-- **phase_id**: `s1-core-contract`
-- **base_revision**: `a524aaf9450dc2ca5862055bfff38f4d5de2841d`
+- **phase_id**: `s2-langchain-factory`
+- **base_revision**: `60de8a01dc2c9159eaea9863cafac6f6a8fb2c74`
 - **head_revision**: `working-tree`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
-- **result**: pass for S1 core contract and package checks; S2 adapter factory and real HTTP are not executed
+- **result**: pass for S2 LangChain factory and package checks; real channel HTTP and provider calls are not executed
 
 **Feature**: `008-langchain-first-llm-runtime`
 
@@ -138,6 +138,55 @@
 - `STANDARDS_VERDICT`: see `task-verdicts.yml`
 - `REVIEW_VERDICT`: see `task-verdicts.yml`
 
-## S2–S3
+## S2 — LangChain model factory (T011–T017)
 
-Not executed yet. Do not read this section as a pass for S2–S3.
+**S2 base HEAD**: `60de8a01dc2c9159eaea9863cafac6f6a8fb2c74`
+**Working tree**: S2 implementation and tests; final gate below
+
+### Scope
+
+- `packages/infra/llm-provider-langchain/pyproject.toml`
+- `packages/infra/llm-provider-langchain/README.md`
+- `packages/infra/llm-provider-langchain/uv.lock`
+- `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/{__init__,config,factory}.py`
+- `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/py.typed`
+- `packages/infra/llm-provider-langchain/tests/{test_package,test_validation,test_factory,test_public_api}.py`
+- removed `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/providers/`
+- `docs/architecture/package-boundaries.md`
+- `AGENTS.md`
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md`
+- `specs/008-langchain-first-llm-runtime/data-model.md`
+- `specs/008-langchain-first-llm-runtime/contracts/langchain-adapter-public-api.md`
+
+### Command receipts
+
+| # | Command | Exit | Result |
+|---|---|---|---|
+| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` | 0 | Black/isort/Ruff/Pyright strict; 38 pytest tests; wheel/sdist build; isolated install/pip check/import |
+| 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` | 0 | S2 prefix re-verified core package; 117 pytest tests; build/install |
+| 3 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | 0 | 79 files, 206 local links; specs/007 moved and restored |
+| 4 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors, 1 pre-existing warning |
+| 5 | `git diff --check` | 0 | No whitespace errors |
+
+### Limitations
+
+- No real channel HTTP, provider request, streaming call or tool execution was performed.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- The docs check temporarily moved local ignored `specs/007-llm-protocol-abstraction`; it was
+  restored unchanged.
+- Stacked PR creation, push and merge are not executed.
+
+### Fingerprints
+
+- `S2_CONTENT_FINGERPRINT`: `ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b`
+  (SHA-256 over the S2 source/test/docs/contract paths, updated after follow-up fixes)
+
+### Verdicts
+
+- `QUALITY_VERDICT`: see `task-verdicts.yml`
+- `STANDARDS_VERDICT`: see `task-verdicts.yml`
+- `REVIEW_VERDICT`: see `task-verdicts.yml`
+
+## S3
+
+Not executed yet. Do not read this section as a pass for S3.

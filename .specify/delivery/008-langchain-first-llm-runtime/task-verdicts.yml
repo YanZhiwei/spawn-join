@@ -88,3 +88,59 @@ tasks:
     review_verdict: pass
     content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
     receipt: receipts/T010.md
+  T011:
+    title: Update adapter dependencies and remove Provider namespaces
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T011.md
+  T012:
+    title: Add adapter configuration and validation
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T012.md
+  T013:
+    title: Add three-protocol LangChain factory
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T013.md
+  T014:
+    title: Expose adapter public API
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T014.md
+  T015:
+    title: Document adapter usage
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T015.md
+  T016:
+    title: Update architecture boundaries and AGENTS
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T016.md
+  T017:
+    title: Record ADR-0006 implementation status
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    receipt: receipts/T017.md

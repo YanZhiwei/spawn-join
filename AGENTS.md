@@ -115,7 +115,8 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
 2. `spawn-join-llm-provider` 可以依赖 Core，但不得依赖 LangChain 或具体 Provider SDK。
-3. `spawn-join-llm-provider-langchain` 负责框架适配和 Provider 实现，不能把框架类型泄漏回协议包。
+3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
+   不能把框架类型泄漏回协议包；应用层直接使用 LangChain 消息和 `BaseChatModel`。
 4. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
 5. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 6. 当前没有 `spawn-join-database` 和 `spawn-join-agent`；除非出现明确需求并完成边界设计，不要提前创建它们。

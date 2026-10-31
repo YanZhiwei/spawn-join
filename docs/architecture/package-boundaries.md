@@ -8,20 +8,24 @@
 | Distribution | Import package | 路径 | 分组 | 允许承担的职责 |
 |---|---|---|---|---|
 | `spawn-join-core` | `spawn_join_core` | [`packages/core/spawn-join-core`](../../packages/core/spawn-join-core/) | `core` | 跨领域稳定的配置机制、异常、类型和基础协议 |
-| `spawn-join-llm-provider` | `spawn_join_llm_provider` | [`packages/core/llm-provider`](../../packages/core/llm-provider/) | `core` | 与框架无关的 LLM 协议和领域抽象 |
-| `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 适配层及 Provider 实现 |
+| `spawn-join-llm-provider` | `spawn_join_llm_provider` | [`packages/core/llm-provider`](../../packages/core/llm-provider/) | `core` | 与框架无关的 LLM 协议选项、渠道契约和稳定错误 |
+| `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 模型工厂、协议选项映射和配置校验 |
 | `spawn-join-observability` | `spawn_join_observability` | [`packages/infra/spawn-join-observability`](../../packages/infra/spawn-join-observability/) | `infra` | 日志、追踪、指标等可观测性能力 |
 
-当前只有最小源码骨架。新增模块前，先确认它属于哪个 Distribution、由哪个包拥有，
-以及是否真的需要形成跨组件复用。
+当前两个 LLM 包已实现渠道/选项契约和 LangChain 模型工厂；新增模块前，先确认它属于哪个
+Distribution、由哪个包拥有，以及是否真的需要形成跨组件复用。
 
 ## Dependency Direction
 
 ```text
 业务应用
+    ├── LangChain BaseMessage / BaseChatModel
     ├── spawn-join-llm-provider-langchain
     │       ├── spawn-join-llm-provider
-    │       └── langchain-core
+    │       ├── langchain-core
+    │       ├── langchain-openai
+    │       ├── langchain-anthropic
+    │       └── pydantic
     └── spawn-join-observability
             └── spawn-join-core
 
@@ -34,8 +38,8 @@ spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
 2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core`，但不得依赖 LangChain 或具体
    Provider SDK。
-3. `spawn-join-llm-provider-langchain` 负责框架适配和 Provider 实现，不能把框架类型
-   泄漏回协议包。
+3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
+   不能把框架类型泄漏回协议包。应用层直接使用 LangChain 消息和 `BaseChatModel`。
 4. `spawn-join-observability` 可以依赖 Core，但不能反向成为 Core 的依赖。
 5. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
 
@@ -69,6 +73,8 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
   因为可导入就自动成为公共契约。
 - 与框架无关的领域抽象留在领域包；LangChain、Provider SDK、Redis、数据库等外部
   适配和副作用留在对应的 infra 或适配器包。
+- LLM 消息、工具调用、流式块和 usage 使用 LangChain 原生类型；协议包不重复定义
+  消息、请求/响应或流式事件。
 - 网络、文件、数据库、缓存、线程和任务等副作用必须有明确拥有者；Core 和协议层应
   保持尽可能纯粹、可替换和可测试。
 
@@ -77,9 +83,8 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
 - 只有至少两个组件存在稳定、真实的复用需求时，才考虑把能力提升到 Core。
 - 如果能力依赖第三方库，优先放入相应领域或 infra 包，而不是 Core。
 - 不要预先创建没有明确拥有者的 `utils.py`、`helpers.py`、`constants.py` 或万能基类。
-- `spawn-join-llm-provider-langchain` 内部的 Azure OpenAI、DeepSeek 等实现暂时共享一个
-  适配包。只有当某个 Provider 需要独立版本、依赖、测试或维护周期时，才考虑拆分为
-  独立 Distribution。
+- 未来的 Provider 集成暂时共享 `spawn-join-llm-provider-langchain` 适配包。只有当某个
+  Provider 需要独立版本、依赖、测试或维护周期时，才考虑拆分为独立 Distribution。
 
 ## Change Review
 
