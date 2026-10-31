@@ -7,6 +7,7 @@ import pytest
 
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
+    AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
     ChatCompletionsOptions,
@@ -85,6 +86,17 @@ def test_stop_values_must_not_be_empty() -> None:
 def test_chat_completions_allows_whitespace_stop_sequences() -> None:
     options = ChatCompletionsOptions(stop=("\n\n", "   ", "\t"))
     assert options.stop == ("\n\n", "   ", "\t")
+
+
+@pytest.mark.parametrize("stop", ["END", ""])
+def test_stop_must_be_a_tuple(stop: str) -> None:
+    with pytest.raises(ConfigurationError):
+        ChatCompletionsOptions(stop=cast(tuple[str, ...], stop))
+
+
+def test_stop_elements_must_be_strings() -> None:
+    with pytest.raises(ConfigurationError):
+        ChatCompletionsOptions(stop=cast(tuple[str, ...], ("END", 1)))
 
 
 def test_responses_defaults_and_store_false() -> None:
@@ -218,6 +230,33 @@ def test_anthropic_rejects_empty_stop_sequence() -> None:
 def test_anthropic_allows_whitespace_stop_sequences() -> None:
     options = AnthropicMessagesOptions(stop_sequences=("\n\n", "   "))
     assert options.stop_sequences == ("\n\n", "   ")
+
+
+@pytest.mark.parametrize("stop_sequences", ["END", ""])
+def test_anthropic_stop_sequences_must_be_a_tuple(
+    stop_sequences: str,
+) -> None:
+    with pytest.raises(ConfigurationError):
+        AnthropicMessagesOptions(stop_sequences=cast(tuple[str, ...], stop_sequences))
+
+
+def test_anthropic_rejects_mapping_thinking() -> None:
+    with pytest.raises(ConfigurationError):
+        AnthropicMessagesOptions(
+            max_output_tokens=4096,
+            thinking=cast(
+                AnthropicThinking,
+                {"type": "enabled", "budget_tokens": 2048},
+            ),
+        )
+
+
+def test_anthropic_rejects_arbitrary_thinking() -> None:
+    with pytest.raises(ConfigurationError):
+        AnthropicMessagesOptions(
+            max_output_tokens=4096,
+            thinking=cast(AnthropicThinking, object()),
+        )
 
 
 def test_anthropic_empty_stop_tuple_normalizes_to_none() -> None:

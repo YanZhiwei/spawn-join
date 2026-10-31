@@ -157,8 +157,8 @@ spawn-join-core
 - 文档、治理和静态检查；
 - `git diff --check` 和工作区构建副作用。
 
-S1/S2 已在 `ralph/008-langchain-first-llm-runtime` 分支实现：core 包 117 个测试、
-adapter 包 37 个测试，两个包的质量门和隔离构建通过；docs/governance 检查通过。真实
+S1/S2 已在 `ralph/008-langchain-first-llm-runtime` 分支实现：core 包 127 个测试、
+adapter 包 38 个测试，两个包的质量门和隔离构建通过；docs/governance 检查通过。真实
 channel HTTP、Provider 请求、pool 和路由仍未实现或执行。本 ADR 保持 `Proposed`，等待
 最终 reviewed HEAD 后再确认是否改为 `Accepted`。
 

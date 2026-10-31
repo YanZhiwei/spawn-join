@@ -31,14 +31,14 @@ tasks:
     review_verdict: pass
     content_fingerprint: tree:a524aaf:packages/core/llm-provider=9ad42cbe5ea124fc3af9b3c09cb5a5c6e896378d;packages/infra/llm-provider-langchain=21f75bf84b71be2833363b8b0df22e742dc35f1c
     receipt: receipts/T003.md
-    note: Pre-S1 baseline recorded at a524aaf; review pending after the S1 final gate.
+    note: Pre-S1 baseline recorded at a524aaf; S1 review passed at the S1 boundary.
   T004:
     title: Clean core package metadata and abstraction namespace
     status: complete
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T004.md
   T005:
     title: Add stable error hierarchy
@@ -46,7 +46,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T005.md
   T006:
     title: Add protocol-native option contracts
@@ -54,7 +54,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T006.md
   T007:
     title: Add channel configuration and contract types
@@ -62,7 +62,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T007.md
   T008:
     title: Expose the exact 20-symbol public API
@@ -70,7 +70,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T008.md
   T009:
     title: Add fake channel outcome matrix
@@ -78,7 +78,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T009.md
   T010:
     title: Document core channel and options contract
@@ -86,7 +86,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: 1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1
+    content_fingerprint: c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1
     receipt: receipts/T010.md
   T011:
     title: Update adapter dependencies and remove Provider namespaces
@@ -94,7 +94,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T011.md
   T012:
     title: Add adapter configuration and validation
@@ -102,7 +102,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T012.md
   T013:
     title: Add three-protocol LangChain factory
@@ -110,7 +110,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T013.md
   T014:
     title: Expose adapter public API
@@ -118,7 +118,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T014.md
   T015:
     title: Document adapter usage
@@ -126,7 +126,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T015.md
   T016:
     title: Update architecture boundaries and AGENTS
@@ -134,7 +134,7 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T016.md
   T017:
     title: Record ADR-0006 implementation status
@@ -142,5 +142,29 @@ tasks:
     quality_verdict: pass
     standards_verdict: pass
     review_verdict: pass
-    content_fingerprint: ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b
+    content_fingerprint: 0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f
     receipt: receipts/T017.md
+  T018:
+    title: Run full quality gates and regressions
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pending
+    content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
+    receipt: receipts/T018.md
+  T019:
+    title: Validate quickstart scenarios
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pending
+    content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
+    receipt: receipts/T019.md
+  T020:
+    title: Verify worktree hygiene and final paths
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pending
+    content_fingerprint: 3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92
+    receipt: receipts/T020.md

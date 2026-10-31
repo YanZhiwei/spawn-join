@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, cast
 
 from .errors import ConfigurationError
 
@@ -34,15 +34,22 @@ def _require_positive_int(value: int | None, *, field: str) -> None:
 
 
 def _normalize_stop(
-    values: tuple[str, ...] | None,
+    values: object,
     *,
     field: str,
 ) -> tuple[str, ...] | None:
+    if values is None:
+        return None
+    if not isinstance(values, tuple):
+        raise ConfigurationError(f"{field} must be a tuple of strings")
     if not values:
         return None
-    if any(value == "" for value in values):
-        raise ConfigurationError(f"{field} values must not be empty")
-    return values
+    normalized: list[str] = []
+    for value in cast(tuple[object, ...], values):
+        if not isinstance(value, str) or value == "":
+            raise ConfigurationError(f"{field} values must be non-empty strings")
+        normalized.append(value)
+    return tuple(normalized)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +119,13 @@ class AnthropicThinkingAdaptive:
 AnthropicThinking: TypeAlias = AnthropicThinkingBudget | AnthropicThinkingAdaptive
 
 
+def _is_thinking(value: object) -> bool:
+    return isinstance(
+        value,
+        (AnthropicThinkingBudget, AnthropicThinkingAdaptive),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class AnthropicMessagesOptions:
     """Options for the Anthropic Messages protocol."""
@@ -133,6 +147,11 @@ class AnthropicMessagesOptions:
             "stop_sequences",
             _normalize_stop(self.stop_sequences, field="stop_sequences"),
         )
+        if self.thinking is not None and not _is_thinking(self.thinking):
+            raise ConfigurationError(
+                "thinking must be AnthropicThinkingBudget or "
+                "AnthropicThinkingAdaptive"
+            )
         if isinstance(self.thinking, AnthropicThinkingBudget):
             if self.max_output_tokens is None:
                 raise ConfigurationError(

@@ -105,7 +105,8 @@ evidence 中，不把 ADR 状态当作机器验证结果。
 S0 必须验证：
 
 - `.specify/extensions/delivery/delivery-config.yml` 可解析，`pr_slicing` 为 `auto`；
-- `speckit.delivery.slice` 能读取配置并返回 stacked 或明确的 `needs_decision`；
+- `slices.md` 记录的 S0–S3 计划与 `pr_slicing: "auto"` 配置一致；本机未执行独立的
+  slice CLI receipt，不把计划文本当作命令执行证据；
 - `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` 通过；
 - `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` 通过；
 - ADR 索引、AGENTS、Delivery 说明和 ADR-0004 历史注记一致。

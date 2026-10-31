@@ -11,6 +11,10 @@ from .errors import ConfigurationError
 from .options import ProtocolKind
 
 
+def _is_protocol_kind(value: object) -> bool:
+    return isinstance(value, ProtocolKind)
+
+
 def _validate_name(name: str) -> None:
     if not name or name != name.strip():
         raise ConfigurationError(
@@ -86,6 +90,8 @@ class ChannelConfig:
     timeout_seconds: float = 30.0
 
     def __post_init__(self) -> None:
+        if not _is_protocol_kind(self.protocol):
+            raise ConfigurationError("Channel protocol must be a ProtocolKind")
         _validate_name(self.name)
         _validate_endpoint(self.endpoint)
         _validate_credential_ref(self.credential_ref)

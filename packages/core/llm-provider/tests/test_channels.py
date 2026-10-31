@@ -2,6 +2,7 @@
 
 import asyncio
 from dataclasses import FrozenInstanceError
+from typing import cast
 
 import pytest
 
@@ -87,6 +88,12 @@ def test_channel_config_reads_all_fields() -> None:
     assert config.endpoint == "https://api.example.com/v1"
     assert config.credential_ref == "openai-default"
     assert config.timeout_seconds == 30.0
+
+
+@pytest.mark.parametrize("protocol", ["chat_completions", 1, None])
+def test_channel_protocol_must_be_a_protocol_kind(protocol: object) -> None:
+    with pytest.raises(ConfigurationError):
+        _config(protocol=cast(ProtocolKind, protocol))
 
 
 @pytest.mark.parametrize(

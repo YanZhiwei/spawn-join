@@ -1,12 +1,12 @@
 # Delivery evidence: LangChain-first LLM Runtime
 
 - **feature_id**: `008-langchain-first-llm-runtime`
-- **phase_id**: `s2-langchain-factory`
-- **base_revision**: `60de8a01dc2c9159eaea9863cafac6f6a8fb2c74`
+- **phase_id**: `s3-final-verification`
+- **base_revision**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
 - **head_revision**: `working-tree`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
-- **result**: pass for S2 LangChain factory and package checks; real channel HTTP and provider calls are not executed
+- **result**: pass for the full repository quality gate, gate regressions and quickstart construction checks; no remote CI, push or merge was executed
 
 **Feature**: `008-langchain-first-llm-runtime`
 
@@ -114,7 +114,7 @@
 
 | # | Command | Exit | Result |
 |---|---|---|---|
-| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` (S1 final) | 0 | Black/isort/Ruff/Pyright strict; 117 pytest tests; wheel/sdist build; isolated install/pip check/import |
+| 1 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider` (S1 final) | 0 | Black/isort/Ruff/Pyright strict; 127 pytest tests; wheel/sdist build; isolated install/pip check/import |
 | 2 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` (baseline, skeleton unchanged) | 0 | Adapter package passes before its S2 changes |
 | 3 | `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 0 | 0 errors, 1 pre-existing warning |
 | 4 | `git diff --check` | 0 | No whitespace errors |
@@ -129,8 +129,8 @@
 
 ### Fingerprints
 
-- `S1_CONTENT_FINGERPRINT`: `1091ee66dac4637f1627e9b9b8b906fd445fef636efc6b3d36fd274e60b5eee1`
-  (SHA-256 over the S1 source/test/contract paths; updated after the final S1 fixes)
+- `S1_CONTENT_FINGERPRINT`: `c9d3238032d12939d85f8756fe49a977da0a08c08cff4bd27f95ad0e8897f4a1`
+  (SHA-256 over the S1 source/test/contract paths; updated after final review hardening)
 
 ### Verdicts
 
@@ -178,8 +178,8 @@
 
 ### Fingerprints
 
-- `S2_CONTENT_FINGERPRINT`: `ed7b8cf38d3c7399068ae2262edf8c8f409afc30608f78a3d167816dc3e6201b`
-  (SHA-256 over the S2 source/test/docs/contract paths, updated after follow-up fixes)
+- `S2_CONTENT_FINGERPRINT`: `0f30aa05113a10731ad0c3eccffc51191d69ff2aa7718d4bb11acbf9c59f952f`
+  (SHA-256 over the S2 source/test/docs/contract paths, updated after final review hardening)
 
 ### Verdicts
 
@@ -187,6 +187,69 @@
 - `STANDARDS_VERDICT`: see `task-verdicts.yml`
 - `REVIEW_VERDICT`: see `task-verdicts.yml`
 
-## S3
+## S3 — Final verification and evidence (T018–T020)
 
-Not executed yet. Do not read this section as a pass for S3.
+**S3 base HEAD**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
+**Working tree**: final verification; no source changes expected
+
+### Scope
+
+- `.specify/delivery/008-langchain-first-llm-runtime/evidence.md`
+- `.specify/delivery/008-langchain-first-llm-runtime/task-verdicts.yml`
+- `.specify/delivery/008-langchain-first-llm-runtime/receipts/T018.md`
+- `.specify/delivery/008-langchain-first-llm-runtime/receipts/T019.md`
+- `.specify/delivery/008-langchain-first-llm-runtime/receipts/T020.md`
+- `specs/008-langchain-first-llm-runtime/quickstart.md` only if a command or expectation is stale
+
+### Command receipts
+
+| # | Command | Exit | Result |
+|---|---|---|---|
+| 1 | `pwsh -NoProfile -File scripts/quality.ps1` | 0 | Full repository gate: four packages, docs, governance, static, build/isolated install |
+| 2 | `pwsh -NoProfile -File scripts/test-governance.ps1` | 0 | 23 governance regression scenarios passed |
+| 3 | `pwsh -NoProfile -File scripts/test-static.ps1` | 0 | 3 static regression scenarios passed |
+| 4 | `pwsh -NoProfile -File scripts/test-quality.ps1` | 0 | 9 gate regression scenarios passed; no root project artifacts |
+| 5 | quickstart public-export commands | 0 | core `__all__` has 20 symbols; adapter `__all__` is `['ChatModelConfig', 'create_chat_model']` |
+| 6 | quickstart three-model construction | 0 | `ChatOpenAI False`, `ChatOpenAI True`, `ChatAnthropic`; all `BaseChatModel` checks true; sentinel key masked |
+| 7 | `git diff --check` / `git status --short --branch --untracked-files=all` | 0 | No whitespace errors; only the S3 evidence bookkeeping change is uncommitted |
+| 8 | build artifact scan | 0 | No `build/` or `dist/`; four ignored `src/*.egg-info` editable metadata directories were present and are cleaned before handoff |
+
+### Limitations
+
+- The full `scripts/quality.ps1` run required temporarily moving local ignored
+  `specs/007-llm-protocol-abstraction` because it links ADR-0005 from unmerged PR #16; it was
+  restored unchanged.
+- No remote CI, push, PR, merge or release action was performed.
+- No real channel HTTP, provider request or streaming call was executed.
+- `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` remains `Proposed`.
+- The quickstart `ainvoke`/`astream` examples are intentionally commented because this verification
+  is offline; message and streaming behavior remains LangChain-native and was not re-tested here.
+- The four `src/*.egg-info` directories are ignored editable-install metadata, not tracked build
+  outputs; they are removed before handoff but may be recreated by a later `uv sync`.
+
+### Final review fixes
+
+- R1: `stop`/`stop_sequences` now reject non-tuple and non-string elements; `thinking` rejects
+  mappings and arbitrary objects in `AnthropicMessagesOptions`; factory `_thinking_payload()` raises
+  on unknown values. Regression tests added.
+- R2: ADR-0006 and evidence now record core 127 tests and adapter 38 tests.
+- R3: root `README.md` and `docs/development/quality-gates.md` no longer claim skeleton-only state
+  or a fixed 20-test suite.
+- R4: `ChannelConfig.protocol` is validated as `ProtocolKind` at construction; tests cover string,
+  int and None.
+- R6: slice counts/status and T003 review note reconciled.
+- R8: ADR-0007 no longer claims a standalone slice CLI receipt that was not captured.
+- Verification after fixes: core 127 tests, adapter 38 tests; both package gates, full
+  `scripts/quality.ps1`, governance/static/quality regressions, quickstart construction, and
+  `git diff --check` pass.
+
+### Fingerprints
+
+- `FINAL_CODE_CONTENT_FINGERPRINT`: `3dd7ea208a24316655725a583e302950c3ed1db195d4e0b3048c7f42acb7ce92`
+  (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
+
+### Verdicts
+
+- `QUALITY_VERDICT`: see `task-verdicts.yml`
+- `STANDARDS_VERDICT`: see `task-verdicts.yml`
+- `REVIEW_VERDICT`: see `task-verdicts.yml`

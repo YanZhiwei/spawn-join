@@ -1,6 +1,6 @@
 """Create configured LangChain chat models from explicit protocol configuration."""
 
-from typing import TypeVar
+from typing import cast
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
@@ -10,6 +10,7 @@ from pydantic import SecretStr
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
     AnthropicThinking,
+    AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
     ChatCompletionsOptions,
     ConfigurationError,
@@ -19,26 +20,6 @@ from spawn_join_llm_provider import (
 )
 
 from .config import ChatModelConfig, validate_request
-
-OptionsT = TypeVar(
-    "OptionsT",
-    ChatCompletionsOptions,
-    ResponsesOptions,
-    AnthropicMessagesOptions,
-)
-
-
-def _require_options(
-    options: ProtocolOptions | None,
-    expected: type[OptionsT],
-) -> OptionsT | None:
-    if options is None:
-        return None
-    if not isinstance(options, expected):
-        raise ConfigurationError(
-            f"{type(options).__name__} is not valid for the configured protocol"
-        )
-    return options
 
 
 def _chat_completions_model(
@@ -88,6 +69,10 @@ def _responses_model(
     )
 
 
+def _is_adaptive_thinking(value: object) -> bool:
+    return isinstance(value, AnthropicThinkingAdaptive)
+
+
 def _thinking_payload(
     thinking: AnthropicThinking | None,
 ) -> dict[str, str | int] | None:
@@ -95,7 +80,9 @@ def _thinking_payload(
         return None
     if isinstance(thinking, AnthropicThinkingBudget):
         return {"type": "enabled", "budget_tokens": thinking.budget_tokens}
-    return {"type": "adaptive"}
+    if _is_adaptive_thinking(thinking):
+        return {"type": "adaptive"}
+    raise ConfigurationError("Unsupported Anthropic thinking configuration")
 
 
 def _anthropic_model(
@@ -139,19 +126,19 @@ def create_chat_model(
             return _chat_completions_model(
                 config,
                 secret,
-                _require_options(options, ChatCompletionsOptions),
+                cast(ChatCompletionsOptions | None, options),
             )
         case ProtocolKind.RESPONSES:
             return _responses_model(
                 config,
                 secret,
-                _require_options(options, ResponsesOptions),
+                cast(ResponsesOptions | None, options),
             )
         case ProtocolKind.ANTHROPIC_MESSAGES:
             return _anthropic_model(
                 config,
                 secret,
-                _require_options(options, AnthropicMessagesOptions),
+                cast(AnthropicMessagesOptions | None, options),
             )
         case _:
             raise ConfigurationError(f"Unsupported protocol: {config.channel.protocol}")

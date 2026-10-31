@@ -27,7 +27,7 @@
 - Delete branch after merge: yes
 - Freeze integration before final review: yes
 - Why this mode: `delivery-config.yml` now sets `pr_slicing: "auto"` and every slice is classified
-  `standalone` (S1–S3 are provisional until their boundary checks); the slice command therefore
+  `standalone` (S1–S3 verified at their recorded boundary checks); the slice command therefore
   selects stacked. `stack_provider: manual` and `use_queue: false` mean no native stack or merge
   queue is claimed. `merge_policy.final: squash` is reserved for an integration rollup and is
   unused in stacked mode. S0 is a bootstrap policy PR because `main` still has `pr_slicing: "off"`
@@ -38,12 +38,12 @@
 | ID | Goal | Kind | Depends on | Task IDs | Paths | Trunk-safe | Flag | Merge order |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | S0 | Enable default Slice delivery and record the policy | governance | - | T001–T002 | `.specify/extensions/delivery/delivery-config.yml`, `docs/decisions/engineering/0007-default-slice-delivery.md`, `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md`, `.specify/delivery/008-langchain-first-llm-runtime/{exploration,decision-context,slices,evidence}.md`, `task-verdicts.yml`, `receipts/{T001,T002}.md`, `docs/decisions/README.md`, `AGENTS.md`, `docs/development/spec-kit-delivery.md`, `docs/decisions/engineering/0004-release-managed-delivery-installation.md` | standalone (verified at gate) | - | 1 |
-| S1 | Core options/channel/errors contract, tests and README | foundation + behavior | S0 | T003–T010 | `packages/core/llm-provider/`, `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` | standalone (provisional) | - | 2 |
-| S2 | LangChain model factory, tests, adapter README and architecture docs | behavior + documentation | S1 | T011–T017 | `packages/infra/llm-provider-langchain/`, `docs/architecture/package-boundaries.md`, `AGENTS.md`, `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` | standalone (provisional) | - | 3 |
-| S3 | Full gates, quickstart validation, evidence and hygiene | verification | S2 | T018–T020 | `.specify/delivery/008-langchain-first-llm-runtime/evidence.md`, `specs/008-langchain-first-llm-runtime/quickstart.md` | standalone (provisional) | - | 4 |
+| S1 | Core options/channel/errors contract, tests and README | foundation + behavior | S0 | T003–T010 | `packages/core/llm-provider/`, `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` | standalone (verified) | - | 2 |
+| S2 | LangChain model factory, tests, adapter README and architecture docs | behavior + documentation | S1 | T011–T017 | `packages/infra/llm-provider-langchain/`, `docs/architecture/package-boundaries.md`, `AGENTS.md`, `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` | standalone (verified) | - | 3 |
+| S3 | Full gates, quickstart validation, evidence and hygiene | verification | S2 | T018–T020 | `.specify/delivery/008-langchain-first-llm-runtime/evidence.md`, `specs/008-langchain-first-llm-runtime/quickstart.md` | standalone (verified) | - | 4 |
 
-The base classification is `standalone`; S1–S3 remain hypotheses until the declared boundary checks
-run. S0 is verified by the current gate's docs/governance/YAML receipts.
+The base classification is `standalone`; S1–S3 were verified at their recorded boundary checks.
+S0 is verified by the current gate's docs/governance/YAML receipts.
 
 ## Slice details
 
@@ -88,7 +88,7 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
   `packages/core/llm-provider/tests/{test_errors,test_options,test_channels,test_public_api}.py`
   (new) and `test_package.py` (modify); `packages/core/llm-provider/{pyproject.toml,README.md}`
   (modify); `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` (new baseline)
-- Trunk-safe: standalone (provisional)
+- Trunk-safe: standalone (verified)
 - Evidence: the adapter remains a skeleton and does not import the new core symbols; both package
   quality gates can pass on this prefix. The declared verification must run before claiming
   standalone.
@@ -102,9 +102,9 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
   channel outcome matrix, no LangChain dependency.
 - Not in this slice: adapter factory, adapter README, architecture package-boundary updates.
 - Rollback: revert the S1 commit; the adapter skeleton remains valid.
-- Diff budget: approximately 13 files; likely more than 400 changed lines because contract tests
-  are included. Exception reason: the core contract and its tests are the smallest independently
-  testable prefix; splitting source and tests would violate the same-task test rule.
+- Diff budget: 23 files, approximately 1332 changed lines including delivery records. Exception
+  reason: the core contract and its tests are the smallest independently testable prefix;
+  splitting source and tests would violate the same-task test rule.
 
 ### S2 — LangChain model factory
 
@@ -119,7 +119,7 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
   `packages/infra/llm-provider-langchain/{pyproject.toml,README.md,uv.lock}` (modify);
   `docs/architecture/package-boundaries.md` and `AGENTS.md` (modify);
   `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` (modify verification status)
-- Trunk-safe: standalone (provisional)
+- Trunk-safe: standalone (verified)
 - Evidence: S1 provides the core contract; S2 only adds the adapter consumer. The adapter and core
   quality gates are expected to pass on this prefix; verify at the S2 boundary before claiming
   standalone.
@@ -134,9 +134,9 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
   `SecretStr`, no Provider wrapper, no real HTTP, dependency direction.
 - Not in this slice: full repository static check, quickstart final validation, final evidence.
 - Rollback: revert the S2 commit; the core package remains usable without the adapter.
-- Diff budget: approximately 14 files including `uv.lock`; likely more than 400 changed lines.
-  Exception reason: the adapter factory and its tests are one behavior boundary; generated lockfile
-  content is not a review target but remains in the diff.
+- Diff budget: 26 files including `uv.lock`, approximately 1292 changed lines. Exception reason:
+  the adapter factory and its tests are one behavior boundary; generated lockfile content is not
+  a review target but remains in the diff.
 
 ### S3 — Verification and evidence
 
@@ -145,7 +145,7 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
 - Task IDs: T018, T019, T020
 - Expected paths: `.specify/delivery/008-langchain-first-llm-runtime/evidence.md` (modify);
   `specs/008-langchain-first-llm-runtime/quickstart.md` (modify only if stale)
-- Trunk-safe: standalone (provisional)
+- Trunk-safe: standalone (verified)
 - Evidence: no source changes; only verification and evidence. The declared commands must run at
   the current HEAD.
 - Target verification: all T018 commands plus `git diff --check` and
@@ -155,7 +155,7 @@ run. S0 is verified by the current gate's docs/governance/YAML receipts.
 - Review focus: commands, exit codes, base/head, unexecuted or blocked checks, no false pass claims.
 - Not in this slice: implementation changes; if a check fails, return to the owning slice.
 - Rollback: revert the S3 commit; source behavior is unchanged.
-- Diff budget: 2–3 files, under 20 files and 400 lines.
+- Diff budget: 5 files (evidence, task-verdicts, T018–T020 receipts), under 20 files and 400 lines.
 
 ## Coverage and validation
 
