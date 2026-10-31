@@ -5,7 +5,7 @@
 - **feature_id**: `delivery-v021-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v021-upgrade`
 - **base_revision**: `9cdb10a334acf9100ae822f7220cb67fa7a25650`
-- **head_revision**: `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`
+- **head_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c` (PR #17 squash-merge commit; v0.2.1 content landed with the v0.2.2 upgrade)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
 - **result**: pass for scoped installation consistency and generated-command checks; Workflows and independent Doctor prompt not run
@@ -18,9 +18,10 @@ data, so no Spec/Plan/Tasks, delivery Workflow run or Ralph queue is required.
 The starting worktree was clean at detached `HEAD` `9cdb10a`; the installation changes were
 committed as `2976eb3bc8ea721b941376765d5610a772abc547`, with the PR-template follow-ups as
 `cb38b8ec4c403f19c592378b763bf9175e4ce2bc` and
-`306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`, on `chore/delivery-v021-upgrade`. This evidence
-is re-anchored in a docs-only follow-up commit. No merge or release action was made; publishing
-the branch is a separate review step.
+`306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`, on `chore/delivery-v021-upgrade`. The branch was
+not merged separately: its content landed with the v0.2.2 upgrade in PR #17
+(`353af49cf9db6014b7af0437a3f9dc0dd651437c`), so this superseded record is anchored to that
+merge commit. No release action was made.
 
 ## Changed paths and ownership
 
@@ -165,6 +166,6 @@ is not an independent Review, a Ralph receipt, or an end-to-end semantic workflo
   their content hash matches the index; `git diff --name-only` remains the content diff.
 - Evidence covers material change commits `2976eb3bc8ea721b941376765d5610a772abc547`,
   `cb38b8ec4c403f19c592378b763bf9175e4ce2bc` and
-  `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`; the evidence re-anchor commit changes only
-  `harness/` records. Later material changes require renewed confirmation rather than reuse
-  of this record.
+  `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`, which became reachable in `main` through the
+  PR #17 squash-merge commit `353af49cf9db6014b7af0437a3f9dc0dd651437c`. Later material changes
+  require renewed confirmation rather than reuse of this record.

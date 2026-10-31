@@ -4,7 +4,7 @@
 
 - **feature_id**: `delivery-v022-upgrade` (Lightweight run label; no Feature created)
 - **phase_id**: `delivery-v022-upgrade`
-- **base_revision**: `035979d6f345899119adc5ad830217f193af7fe8`
+- **base_revision**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` (main base of PR #17)
 - **head_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c` (PR #17 squash-merge commit)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\stellar-engine`
 - **recorded_at**: 2026-10-30
@@ -15,11 +15,11 @@ packaged Delivery PR-template fallback to Chinese; it does not change Python beh
 package dependencies, public APIs, architecture or durable data, so no Spec/Plan/Tasks,
 delivery Workflow run or Ralph queue is required.
 
-The starting worktree was clean at branch head `035979d`; this upgrade was committed as
-`079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on `chore/delivery-v021-upgrade` and
-squash-merged through PR #17 as `353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is
-anchored to that merge commit; the merge preserved the recorded tree. No release action is
-made by the installation.
+The work started from `035979d` (the unmerged v0.2.1 branch head) on top of `main`
+`9cdb10a`; this upgrade was committed as `079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on
+`chore/delivery-v021-upgrade` and squash-merged through PR #17 as
+`353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is anchored to that merge commit; the
+merge preserved the recorded tree. No release action is made by the installation.
 
 ## Changed paths and ownership
 

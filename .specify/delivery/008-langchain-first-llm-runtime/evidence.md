@@ -2,7 +2,7 @@
 
 - **feature_id**: `008-langchain-first-llm-runtime`
 - **phase_id**: `s3-final-verification`
-- **base_revision**: `4598eb5108b33f3b55af251ee78af405f2ad86bd`
+- **base_revision**: `353af49cf9db6014b7af0437a3f9dc0dd651437c` (feature base HEAD, `origin/main` at kickoff)
 - **head_revision**: `468ee7f49de87921fd04b0f7256d306018d12490` (PR #18 squash-merge commit)
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-10-31
@@ -271,3 +271,6 @@
   post-merge source of truth.
 - The feature branch `ralph/008-langchain-first-llm-runtime` was deleted locally and on
   `origin` after merge, consistent with `merge_policy.delete_branch: true`.
+- Re-anchoring: `base_revision` used to point at the S2 commit `4598eb5`, which became
+  unreachable from any ref after the merged branch was deleted. The field now points at the
+  feature base `353af49`; S3 scope and results are unchanged.
