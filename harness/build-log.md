@@ -804,11 +804,11 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 ## 2026-10-30 — Delivery Bundle v0.2.1 升级
 
-**Status**: 已安装；安装一致性与针对性检查通过；未提交、未推送
+**Status**: 已安装；安装一致性与针对性检查通过；内容随后随 PR #17 squash 合并（`353af49`）
 
 **Route**: Lightweight（上游 minor 版本升级，不新增 Python 行为或 Feature 工件）
 
-**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `306bc1b31f3baf36d094f74fdffa5c20eedd0e1a`
+**Base/head**: `9cdb10a334acf9100ae822f7220cb67fa7a25650` → `353af49cf9db6014b7af0437a3f9dc0dd651437c`（内容随 PR #17 squash 合并）
 
 - v0.2.0 增加 Slice 计划/Slice Gate、`slices.md` 和合并策略；v0.2.1 让 Handoff 把正文
   写入本地 `PR_BODY_PATH`，并保持静态 PR 模板安装为显式 opt-in。
@@ -825,7 +825,8 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - PR 模板改为默认使用 SD v0.2.1 仓库自带的中文 `.github/pull_request_template.md`：
   项目保存同名副本并由 `pull_request_template` 指向它；扩展包的英文 fallback 未使用，
   `install_pull_request_template: false`，旧项目模板保留在 Git 历史中。
-- 未创建提交、推送、合并或发布；`specify integration status` 仍提示 32 个项目自有
+- 该升级验证本身未创建提交、推送、合并或发布；后续提交与 PR #17 合并是单独授权的动作。
+  `specify integration status` 仍提示 32 个项目自有
   核心技能/模板修改，未使用 `--force` 消除。
 
 验证记录：[v0.2.1 升级 evidence](evidence/delivery-v021-upgrade.md)。
@@ -847,7 +848,8 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - 文档、治理、静态、完整四包质量矩阵、门禁回归 9 场景、治理回归 23 场景、静态回归
   3 场景通过。Workflow、独立 Review 和 Doctor Agent 运行未执行，保留为限制。
 - v0.2.1 evidence 标记为 superseded；旧项目模板保留在 Git 历史中。
-- 已创建提交并推送到 PR 分支；未合并或发布；`specify integration status` 仍提示 32 个项目
+- 已创建提交并推送到 PR 分支，随后通过 PR #17 squash 合并为 `353af49`；未发布；
+  `specify integration status` 仍提示 32 个项目
   自有核心技能/模板修改，未使用 `--force` 消除。
 
 验证记录：[v0.2.2 升级 evidence](evidence/delivery-v022-upgrade.md)。

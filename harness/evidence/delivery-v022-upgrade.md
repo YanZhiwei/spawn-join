@@ -19,8 +19,9 @@ The work started from `035979d` (the unmerged v0.2.1 branch head) on top of `mai
 `9cdb10a`; this upgrade was committed as `079ccc2e4991b26e8bdd7113a46df00e1a1803ce` on
 `chore/delivery-v021-upgrade` and squash-merged through PR #17 as
 `353af49cf9db6014b7af0437a3f9dc0dd651437c`. This record is anchored to that merge commit.
-Compared with `079ccc2`, the merged tree differs only in `harness/build-log.md` and this
-record; no installer-owned file changed. No release action is made by the installation.
+Compared with `079ccc2`, the PR #17 merge tree `353af49` differs only in
+`harness/build-log.md` and this record; no installer-owned file changed. No release action is
+made by the installation.
 
 ## Changed paths and ownership
 

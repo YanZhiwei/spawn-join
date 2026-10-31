@@ -223,9 +223,9 @@
 - The full `scripts/quality.ps1` run required temporarily moving local ignored
   `specs/007-llm-protocol-abstraction` because it links ADR-0005 from unmerged PR #16; it was
   restored unchanged.
-- During S3 (before PR #18), no remote CI, push, PR creation, merge or release action was
-  performed. PR #18 and its squash merge happened afterwards and are recorded in
-  "Post-merge closure".
+- During S3, local verification ran offline, but the branch had already been pushed and PR #18
+  opened; remote Quality runs covered `3088ce8` and `b514a3c`. No merge or release occurred
+  during S3; the merge is recorded in "Post-merge closure".
 - No real channel HTTP, provider request or streaming call was executed.
 - `docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md` was accepted at the final
   reviewed HEAD `3088ce8`; implementation and quality gates passed.
@@ -260,8 +260,8 @@
 - `FINAL_CODE_CONTENT_FINGERPRINT`: `769a3b858dca10c0fb470a7856909b125f2fa154974df3f85bf662f47acd1f0e`
   (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
 - Scope note: this fingerprint binds the reviewed implementation head `3088ce8`. Commits after
-  it (`c6e0df1`, `e451315`) changed only the two package READMEs, contract prose and delivery
-  records, so the hash does not describe the merged tree. It is retained because
+  it (`b514a3c`, `c6e0df1`, `e451315`) changed only the two package READMEs, contract prose and
+  delivery records, so the hash does not describe the merged tree. It is retained because
   `task-verdicts.yml` T018–T020 cite it.
 
 ### Verdicts
@@ -285,5 +285,6 @@
 - Re-anchoring: `base_revision` used to point at the S3 base HEAD `4598eb5`, which became
   unreachable from any ref after the merged branch was deleted. The field now points at the
   feature base `353af49`; S3 scope and results are unchanged. Branch-only SHAs in this record
-  (`4598eb5`, `3088ce8`, `e451315`) are historical references and are not resolvable in a
-  fresh clone; the verifiable anchors are `353af49` and `468ee7f`.
+  (for example `a524aaf`, `60de8a0`, `d6cdc37`, `4598eb5`, `3088ce8`, `e451315`) are historical
+  references and are not resolvable in a fresh clone; the verifiable anchors are `353af49` and
+  `468ee7f`.
