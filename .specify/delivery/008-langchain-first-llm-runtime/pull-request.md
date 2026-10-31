@@ -48,6 +48,7 @@ LangChain 作为消息和模型运行时；继续维护两套契约会增加映�
 | `packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/` | 新增 `config.py`、`factory.py`，重写 `__init__.py`，删除空 `providers/` | `ChatModelConfig` 继承 `EndpointConfig`，直接创建 `BaseChatModel`；不依赖 channel、不保留 Provider 包装 |
 | `packages/infra/llm-provider-langchain/tests/` | 新增工厂、校验、公共 API 测试 | 覆盖三协议、选项映射、密钥掩码和失败路径 |
 | `docs/architecture/package-boundaries.md`、`AGENTS.md` | 更新两包职责和依赖方向 | 让文档匹配实现 |
+| `packages/core/llm-provider/README.md`、`packages/infra/llm-provider-langchain/README.md` | 重写为使用者和维护者文档 | 覆盖快速开始、公共 API、选项映射、工具/流式、错误、安全与验证入口 |
 | `docs/decisions/llm-provider/0006-*`、`docs/decisions/engineering/0007-*`、索引 | 新增/接受 ADR | 记录 LangChain-first 和默认 Slice 决策 |
 | `.specify/extensions/delivery/delivery-config.yml` | `pr_slicing: "auto"` | 默认启用 Slice 交付 |
 | `.specify/delivery/008-*` | exploration、decision-context、slices、evidence、receipts、task verdicts | 记录范围、切片、验证和残余风险 |
@@ -97,11 +98,11 @@ flowchart LR
 | --- | --- | --- |
 | 构建 | pass | `scripts/quality.ps1` 全量四包隔离构建与安装 |
 | 测试 | pass | core 129 tests；adapter 38 tests |
-| 规范与 Spec 审查 | pass | final independent review at `d6cdc37`；convergence 无缺口 |
+| 规范与 Spec 审查 | pass | final independent review at `3088ce8`（B+A 解耦）无阻断项；convergence 无缺口 |
 | ADR 一致性 | pass | ADR-0006/0007 Accepted；索引与实现一致 |
 | 变更范围的简化检查 | pass | 删除重复消息/Provider 层；无新增 pool/路由 |
 | 门禁回归 | pass | `test-quality` 9、`test-governance` 23、`test-static` 3 |
-| quickstart | pass | 20/2 导出；三模型构造；API key 掩码 |
+| quickstart | pass | 21/2 导出；三模型构造；API key 掩码 |
 | 文档/治理/静态 | pass | `quality.ps1` 全量退出 0；本机 `specs/007` 临时移出并恢复 |
 
 ## 文档
@@ -112,9 +113,7 @@ flowchart LR
 
 ## 回滚
 
-按提交逆序 revert：
-`4b9058f`（证据/ADR 状态）→ `d6cdc37`（最终评审修复）→ `4598eb5`（S2）→ `60de8a0`（S1）
-→ `a524aaf`（S0）。没有持久化数据或外部资源需要清理。
+按提交逆序 revert 当前分支的 S0–S3、B+A 解耦和文档收口提交；没有持久化数据或外部资源需要清理。
 
 ## AI 辅助
 
@@ -123,8 +122,9 @@ flowchart LR
 
 ## 评审说明
 
-- 最终独立评审在 `d6cdc37` 通过；`4b9058f` 只更新 Delivery 证据、receipts 和 ADR 状态。
-- 本地全量质量门通过；远端 CI、push、PR 创建和 merge 未执行，需要单独授权。
+- 最终独立评审在 `3088ce8` 通过（B+A `EndpointConfig` 解耦）；其后的提交只更新 Delivery 证据、
+  receipts、ADR 措辞、契约文字和包 README。
+- 本地全量质量门通过；远端 CI 已运行；merge 未执行，需要单独授权。
 - 真实 channel HTTP、Provider 请求、streaming/tool execution 未执行；这些能力不在本 PR 范围。
 - PR #16 保持 open、未合并；本 PR 从 `main` 重新实现。
 
