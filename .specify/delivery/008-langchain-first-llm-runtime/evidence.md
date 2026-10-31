@@ -131,7 +131,7 @@
 
 ### Fingerprints
 
-- `S1_CONTENT_FINGERPRINT`: `0f1d9210cc7534b36bb82a991dbf629ff15ffef5ab2c66fd959492e70ae81482`
+- `S1_CONTENT_FINGERPRINT`: `0ab984b576728fc5987d62e0418b3c2dea1f9c90eb91b11c057ca12aa17bf343`
   (SHA-256 over the S1 source/test/contract paths; updated after final review hardening)
 
 ### Verdicts
@@ -181,7 +181,7 @@
 
 ### Fingerprints
 
-- `S2_CONTENT_FINGERPRINT`: `dae823f4a0c620d7c4a18fea7a5f4cc9b88562a82d75a14519ed7c32e00819ce`
+- `S2_CONTENT_FINGERPRINT`: `2d8907d639391b4796943dbefc6ea5fd9607789a7689e02844cde80a3a3296ca`
   (SHA-256 over the S2 source/test/docs/contract paths, updated after final review hardening)
 
 ### Verdicts
@@ -255,7 +255,7 @@
 
 ### Fingerprints
 
-- `FINAL_CODE_CONTENT_FINGERPRINT`: `f52259199108a0e48fd9737f4a029d5d74ddbd77946918024049e9be9db22417`
+- `FINAL_CODE_CONTENT_FINGERPRINT`: `769a3b858dca10c0fb470a7856909b125f2fa154974df3f85bf662f47acd1f0e`
   (SHA-256 over the final tracked code/docs/spec paths; delivery bookkeeping files excluded)
 
 ### Verdicts
