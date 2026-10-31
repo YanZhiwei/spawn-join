@@ -6,7 +6,7 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.2.2。当前默认
+本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.3.0。当前默认
 OpenCode，入口为 `.opencode/commands/speckit.delivery.route.md`（`/speckit.delivery.route`），
 保留 Codex 核心技能。旧项目 sd/speckit-delivery 拷贝门面已移除；不转发到用户级旧技能。
 安装与升级以 [`Delivery 安装说明`](docs/development/spec-kit-delivery.md) 为准。
@@ -16,9 +16,11 @@ OpenCode，入口为 `.opencode/commands/speckit.delivery.route.md`（`/speckit.
 Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
 质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 已登记扩展，但
 `auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
-v0.2.2 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
-计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用 v0.2.2 随包中文模板及其
-`.github/pull_request_template.md` 静态副本；项目默认启用 `pr_slicing: "auto"` 的 Slice
+v0.3.0 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
+计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用随包中文模板及其
+`.github/pull_request_template.md` 静态副本；v0.3.0 新增 `speckit.delivery.close`，按 PR
+结果把运行标记为 `delivered`/`abandoned`/`superseded`，并把持久 `evidence.md` 与本地运行
+工作区分开；项目默认启用 `pr_slicing: "auto"` 的 Slice
 路径，所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`，`tasks.md` 仍是唯一执行队列。
 Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
 不得把 standalone 质量入口、workflow 配置或本机成功误报为完整自动化或远端强制已通过；
