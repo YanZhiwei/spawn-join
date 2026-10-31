@@ -7,7 +7,7 @@
 - Decision owner: 仓库维护者
 - Accepted by / date: 用户在 2026-10-28 合并 PR #8，接受 Bundle v0.1.1 接入与治理方案
 - Depends on: [ADR-0001](0001-delivery-and-durable-design.md)、[ADR-0002](0002-untrack-historical-feature-artifacts.md)、[ADR-0003](0003-enable-delivery-and-ralph.md)
-- Related: [安装说明](../../development/spec-kit-delivery.md)
+- Related: [安装说明](../../development/spec-kit-delivery.md)、[ADR-0007](0007-default-slice-delivery.md)
 - Supersedes: 无；拟更新 ADR-0003 的手动接入实现，不改变其权限和证据边界
 - Superseded by: 无
 
@@ -49,9 +49,11 @@
 分发问题已由 v0.1.1 修复；v0.1.2 增加 Diagram 扩展和代码上下文步骤，不改变授权、
 证据或禁止自动远端写入的边界。v0.1.3 增加范围取证、有界修复复审及快照绑定的独立 Review，
 仍不授权自动执行。v0.2.0/0.2.1/0.2.2 增加 Slice 边界、合并策略、Handoff 正文落盘和
-中文兜底 PR 模板，但 Publish/Merge 仍需单独授权；项目选择单 PR 路径时不启用
-Stacked/Integration。不得用修改发布文件或降级全局 CLI 掩盖未来漂移。升级 Release 或
-改变宿主时重新执行隔离验证。用户级旧入口保留供其他项目使用，本项目使用 Bundle 管理的
+中文兜底 PR 模板，但 Publish/Merge 仍需单独授权。项目在 2026-10-30 选择单 PR 路径时
+不启用 Stacked/Integration；2026-10-31 由
+[ADR-0007](0007-default-slice-delivery.md) 改为默认 `pr_slicing: "auto"`，standalone 或
+flagged 切片使用 stacked，integration 仍需单独评审。不得用修改发布文件或降级全局 CLI 掩盖未来
+漂移。升级 Release 或改变宿主时重新执行隔离验证。用户级旧入口保留供其他项目使用，本项目使用 Bundle 管理的
 项目级命令。
 
 ## Verification and implementation status
@@ -70,9 +72,11 @@ v0.1.4 为 Doctor Reviewer 路径补丁，经隔离副本验证后安装在 v0.1
 [v0.1.4 evidence](../../../harness/evidence/delivery-v014-upgrade.md)。
 v0.2.0 增加 Slice 计划、Slice Gate 和合并策略；v0.2.1 增加 Handoff 正文落盘与
 `PR_BODY_PATH` 契约，并让静态 PR 模板安装保持显式 opt-in；v0.2.2 把随包兜底 PR 模板改为
-中文。项目保持 `pr_slicing: "off"` 的单 PR 路径，`stack_provider: manual`、
+中文。v0.2.2 安装时项目保持 `pr_slicing: "off"` 的单 PR 路径，`stack_provider: manual`、
 `use_queue: false`、`final: squash`，以匹配仓库 required linear history；PR 模板使用
-v0.2.2 中文兜底及其 `.github` 静态副本。记录见
+v0.2.2 中文兜底及其 `.github` 静态副本。2026-10-31 由
+[ADR-0007](0007-default-slice-delivery.md) 改为默认 `pr_slicing: "auto"`，本 ADR 的安装
+与来源决策不变。记录见
 [v0.2.2 evidence](../../../harness/evidence/delivery-v022-upgrade.md)。
 本 ADR 的 Accepted 只表示决策获批；不声明真实 Ralph 循环已运行。
 
@@ -95,3 +99,5 @@ v0.2.2 中文兜底及其 `.github` 静态副本。记录见
   单 PR 线性历史策略，既有 PR 模板和核心定制保留。
 - 2026-10-30：升级至 v0.2.2，使用随包中文 PR 模板及其 `.github` 静态副本；组件数、
   命令面和权限边界不变。
+- 2026-10-31：按维护者要求由 [ADR-0007](0007-default-slice-delivery.md) 默认启用
+  `pr_slicing: "auto"`；固定 Release 安装、来源和权限边界不变。

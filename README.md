@@ -32,7 +32,8 @@ SpawnJoin 是一个面向多个私有 Python 项目的基础设施组件单仓�
 `pyproject.toml` 为准。
 
 完整目录结构只维护在[仓库地图](docs/architecture/repository-map.md)，首页不复制完整树。
-当前领域代码仍是最小骨架；尚不包含 `spawn-join-database` 或 `spawn-join-agent`。
+当前已实现 LLM channel/options 契约与 LangChain 模型工厂；observability 仍为骨架，
+尚不包含 `spawn-join-database` 或 `spawn-join-agent`。
 
 ## SDD 与 Harness 工程治理
 
@@ -218,7 +219,8 @@ dependencies = [
 
 - 只有至少两个组件存在稳定、真实的复用需求时，才考虑把能力提升到 Core。
 - 如果能力依赖 Redis、Azure OpenAI、SQLAlchemy 等第三方库，优先放入相应领域包，而不是 Core。
-- 新增实现时，放入对应领域的 `implementations/` 或 `providers/`，不要直接堆到包根目录。
+- 新增实现时，放入对应领域的既有模块或经 Plan 批准的新模块；不要为形式预建空的
+  `implementations/` 或 `providers/` 目录。
 - 每个包都应能独立安装、测试、构建和发布。
 - 公共 API 通过包的 `__init__.py` 明确导出；内部实现不要无意中成为公共契约。
 
@@ -226,7 +228,7 @@ dependencies = [
 
 | 类别 | 当前边界 |
 |---|---|
-| 领域包 | 四个独立 Distribution、最小源码骨架与包级边界测试；尚无具体模型或可观测性业务实现 |
+| 领域包 | 四个独立 Distribution；LLM 包已实现 channel/options 契约与 LangChain 模型工厂，observability 仍为骨架 |
 | SDD 基础 | 已有 Constitution、Spec Kit 模板/脚本和 Bundle v0.2.2 管理的 Delivery 原生命令；Feature 工件本地化 |
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
 | 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、actionlint、PSScriptAnalyzer、构建/安装验证和 GitHub Actions |
