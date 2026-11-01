@@ -73,6 +73,8 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
   因为可导入就自动成为公共契约。
 - 与框架无关的领域抽象留在领域包；LangChain、Provider SDK、Redis、数据库等外部
   适配和副作用留在对应的 infra 或适配器包。
+- 模型文件（`model.yaml`）与环境变量/`.env` 解析属于
+  `spawn-join-llm-provider-langchain`；协议包只保留配置类型和校验，不读取文件。
 - LLM 消息、工具调用、流式块和 usage 使用 LangChain 原生类型；协议包不重复定义
   消息、请求/响应或流式事件。
 - 网络、文件、数据库、缓存、线程和任务等副作用必须有明确拥有者；Core 和协议层应

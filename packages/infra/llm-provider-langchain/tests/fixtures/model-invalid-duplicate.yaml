@@ -1,0 +1,13 @@
+schema_version: 1
+default: fast
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-test-mini
+    api_key_env: OPENAI_API_KEY
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-test-mini
+    api_key_env: OPENAI_API_KEY

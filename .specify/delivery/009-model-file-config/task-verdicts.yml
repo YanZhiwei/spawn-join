@@ -1,0 +1,95 @@
+feature: 009-model-file-config
+updated_at: 2026-11-01
+base_revision: 9dcc51a632fba7be05f5ef72df11133789ce050c
+head_revision: working-tree
+tasks:
+  T001:
+    title: 增加 model file 依赖并刷新锁文件
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 7c6e52e8232f38948d649bf345df256ba55ec2825e63d37036d865ebcd49eaba
+    receipt: receipts/T001.md
+    note: 质量门全通过（38 tests）；独立评审 pass；依赖契约测试同步更新。
+  T002:
+    title: 添加 model file 测试夹具
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 13670260a4fb246384c5ae802a32f08af9c4b64120de78143a082e87a87a9b52
+    receipt: receipts/T002.md
+    note: 双协议有效夹具与重复键失败夹具；独立评审 pass。
+  T003:
+    title: YAML 文档边界与重复键/递归别名检查
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: a70475b84bb432487008b831a85c19f004f47dc3c2522b46724658590553dbd6
+    receipt: receipts/T003.md
+    note: 两轮独立评审；修复非 UTF-8 与递归别名；10 个解析测试，目标包 48 tests 全通过。
+  T004:
+    title: US1 目录加载与模型创建
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: a088df88d9d209fd94c27122a1c4feaec02bcffe204ea119d99f0b76f677ad3c
+    receipt: receipts/T004.md
+    note: 两轮独立评审；4 个公共导出；37 个 parser/catalog 测试，目标包 75 tests 全通过。
+  T005:
+    title: 协议选项与 thinking 解析
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 5f1ddfe8b13f0b3bc01985426b74e43cd8e835ab77c615b3bd730c0763909809
+    receipt: receipts/T005.md
+    note: 三种协议选项与 thinking；两轮独立评审；51 个 parser/catalog 测试，目标包 89 tests 全通过。
+  T006:
+    title: US2 模型清单与展示名
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: da55672989065ee3106bcd9c1015cf2a9fe2ad214e1552b956a49f7c99f9f586
+    receipt: receipts/T006.md
+    note: 两轮独立评审；5 个公共导出；61 个 target tests，整包 96 tests 全通过。
+  T007:
+    title: US3 .env 与密钥优先级
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 22657da25ec0068b008b2a29ad840d88342868229fc285aa59bd7c350334639d
+    receipt: receipts/T007.md
+    note: 两轮独立评审；修复 dotenv 默认插值；70 个 target tests，整包 105 tests 全通过。
+  T008:
+    title: 适配包 README 的模型文件与凭据说明
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 47f18fbdefc24f8f46862a54f5a210ff035372bde922927d0f0961d533bc2bf5
+    receipt: receipts/T008.md
+    note: 两轮独立评审；docs 检查通过；公共 API、优先级与安全说明同步。
+  T009:
+    title: core README、包边界与 .gitignore
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 523cbc8000fa691aa84dbdf1ef02406541f5c7eafd62e5951ea34b33c95eb729
+    receipt: receipts/T009.md
+    note: docs/governance 通过；独立评审 pass；协议包代码未改。
+  T010:
+    title: 最终验证
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: tree:d711a7b0f25b3a9b33da8a803cce40b404e74959
+    receipt: receipts/T010.md
+    note: quickstart、目标包质量门、docs、governance、diff check 全部通过。

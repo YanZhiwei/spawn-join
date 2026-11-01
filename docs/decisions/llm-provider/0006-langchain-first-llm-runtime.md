@@ -71,6 +71,8 @@ SpawnJoin 需要决定 LLM 消息和模型调用的长期运行时边界。此�
     `ChannelUnavailableError`、`UnsupportedChannelOperationError`、
     `ChannelResponseError`。
 - `spawn-join-llm-provider-langchain` 只保留 `ChatModelConfig` 与 `create_chat_model`。
+  2026-11-01 由 [ADR-0008](0008-model-file-and-env-boundary.md) 扩展，新增
+  `ModelCatalog`、`ModelSummary`、`load_model_catalog`；ADR-0008 仍为 Proposed。
   工厂根据显式协议返回配置好的 `BaseChatModel`，不返回项目自定义 Provider 包装。
 - 协议选项是模型构造时的类型化默认值；不公开任意字典映射或额外调用包装。逐次调用覆盖
   使用 LangChain 原生参数。
