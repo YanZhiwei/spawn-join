@@ -4,11 +4,12 @@
 - **phase_id**: `documentation`
 - **lane**: Lightweight
 - **base_revision**: `0f34357e1aebcb9ccc1ec2e0f067d001b1c26a81`
-- **head_revision**: `0f34357e1aebcb9ccc1ec2e0f067d001b1c26a81` plus the documented working-tree changes
+- **head_revision**: `0e0b55bb6a2b7e99dee27d476acdc7c6f06b623a` (reviewed documentation payload; publication-record-only successor retains the same governed content)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\calm-nebula`
 - **recorded_at**: 2026-11-01
 - **status**: active
-- **result**: pass for the local documentation diff, affected package quality, offline examples and independent review; not published
+- **result**: pass for local documentation quality, offline examples and independent review; PR open, remote CI outcome not claimed
+- **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/24
 
 ## Request, route and scope
 
@@ -94,7 +95,9 @@ This proves SDK request mapping, not a real model's acceptance or reasoning outp
   It hashes sorted `path<TAB>100644<TAB>SHA256(raw worktree bytes)<LF>` records
   for the two READMEs, build-log and new run ignore policy. No staged changes.
 - Requirements/policy fingerprint:
-  `71af48118fc2b77ec6c35ac346029c5c56154c51320d98736af2d380765c2c0a`;
+  `170f6da1d6fab8089f677f22089028529f43676e2d69d029d061b213e66ee4db`
+  after recording explicit publication authorization (initial preparation identity:
+  `71af48118fc2b77ec6c35ac346029c5c56154c51320d98736af2d380765c2c0a`);
   policy-only fingerprint:
   `eaf0d99271aceb53715ecc13797f6f9519fab2501e8c9dcc983ac4aa5ef24e8f`.
 - Evidence/result finalization, ignored receipts/review reports and PR body are
@@ -150,3 +153,28 @@ The docs qualify the examples by the locked SDK versions and actual model/servic
 support; package `>=1.0` dependency lower bounds are not presented as proof that
 all historical SDK versions accept every example. No unrelated validation or
 metadata issue is repaired as part of this documentation change.
+
+## Authorized PR publication — 2026-11-01
+
+- Branch: `docs/native-reasoning-usage`; target: `main`.
+- Documentation commit: `0e0b55bb6a2b7e99dee27d476acdc7c6f06b623a`.
+- PR: [#24](https://github.com/YanZhiwei/spawn-join/pull/24), created open and not merged.
+- `git fetch origin main`: exit 0; target matched the original base before publishing.
+- `git switch -c docs/native-reasoning-usage`: exit 0.
+- `git commit -m "docs: explain native LangChain reasoning controls"`: exit 0;
+  exactly the five scoped paths committed.
+- `git push --set-upstream origin docs/native-reasoning-usage`: exit 0.
+- `gh pr create --repo YanZhiwei/spawn-join --base main --head docs/native-reasoning-usage --title "docs: 补充 LangChain 原生思考参数用法" --body-file .specify/delivery/lightweight-native-reasoning-docs/pull-request.md`:
+  exit 0; returned the PR URL above.
+- Independent six-dimensional review was refreshed at the documentation commit
+  against unchanged governed content and the explicit publication authorization;
+  NRDOC-001 remains resolved and the repair budget is not reset. Current package
+  input bytes still match their original passing receipts. Documentation and
+  governance checks pass after the authorization update; publication-record-only
+  changes are rechecked before the follow-up evidence commit.
+- The follow-up commit only updates this publication record, which is declared
+  report bookkeeping. Its own SHA is intentionally not self-embedded; the exact
+  outgoing commit range is the PR's `headRefOid`, with governed payload bound by
+  the content fingerprint above. No additional product change is inferred.
+- The run stays `active`: do not mark it `delivered` until a separately authorized,
+  observed merged/closed outcome is recorded. No merge or release was performed.
