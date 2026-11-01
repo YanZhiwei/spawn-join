@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
+from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 
@@ -48,7 +49,7 @@ class ModelCatalog:
         cls,
         path: str | Path = DEFAULT_MODEL_FILE,
         *,
-        env_file: str | Path | None = None,
+        env_file: str | Path | None | Literal["auto"] = "auto",
     ) -> ModelCatalog:
         """Load and validate a catalog from an explicit YAML file."""
         entries, default_name = parse_catalog(path)

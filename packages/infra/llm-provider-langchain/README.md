@@ -112,7 +112,7 @@ models:
 ```python
 from spawn_join_llm_provider_langchain import ModelCatalog
 
-catalog = ModelCatalog.from_file("model.yaml", env_file=".env")
+catalog = ModelCatalog.from_file()  # CWD/model.yaml + CWD/.env (if present)
 model = catalog.create_chat_model()  # default: fast
 claude = catalog.create_chat_model("claude")
 
@@ -120,7 +120,7 @@ for item in catalog.models:
     print(item.name, item.model, item.display_name)
 ```
 
-`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。省略 `path` 时默认读取当前工作目录的 `model.yaml`；`env_file` 仍必须显式传入。
+`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。省略 `path` 时默认读取当前工作目录的 `model.yaml`；`env_file` 默认 `"auto"`，读取当前工作目录的 `.env`（存在时），`None` 关闭。
 
 `.env` 只保存 key，模型文件只保存变量名：
 
@@ -131,7 +131,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 规则：
 
-- `.env` 仅在显式传入 `env_file=` 时读取，不自动发现、不搜索同目录。
+- `.env` 默认读取当前工作目录的 `.env`（存在时，缺失跳过）；`env_file=None` 关闭；不搜索其他路径。
 - 进程环境（或调用方传入的 `environ=`）优先于 `.env`。
 - 进程环境存在但为空/空白时报错，不回退到 `.env`。
 - `.env` 使用 `interpolate=False`，`${VAR}` 不会被展开，也不会读取进程环境。
@@ -370,7 +370,7 @@ class ChatModelConfig(EndpointConfig):
 | 递归 YAML 别名 | `ConfigurationError`（recursive alias，不含位置） |
 | `schema_version` / 字段 / 选项非法 | `ConfigurationError`（含 YAML 路径） |
 | 密钥变量缺失或为空 | `ConfigurationError`（含模型名与变量名） |
-| 显式 `.env` 不存在 | `ConfigurationError` |
+| 显式 `env_file` 路径不存在 | `ConfigurationError`（默认 `.env` 缺失时跳过） |
 
 LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一套推理异常层次。
 
@@ -379,7 +379,7 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 - API key 只在工厂调用时传入，并包装为 `SecretStr`。
 - `ChatModelConfig` 不保存 API key；`ModelCatalog` 只保留被 `api_key_env` 引用的
   `.env` 快照用于创建，不提供公开读取，`repr` 不显示。
-- `.env` 仅在显式 `env_file=` 时读取；`interpolate=False`，不会展开 `${VAR}`。
+- `.env` 默认读取当前工作目录的 `.env`（存在时）；`env_file=None` 关闭；`interpolate=False`，不会展开 `${VAR}`。
 - 进程环境优先；进程环境存在但为空时报错，不回退到 `.env`。
 - 加载时只快照被 `api_key_env` 引用的变量；不修改 `os.environ`。
 - endpoint 拒绝内嵌用户名/密码、空白/控制字符、非法 host/port。

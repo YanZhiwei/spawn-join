@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 
 from dotenv import dotenv_values
 
@@ -25,11 +26,21 @@ def _read_env_file(path: Path, referenced: set[str]) -> Mapping[str, str]:
 
 
 def load_env_snapshot(
-    env_file: str | Path | None,
+    env_file: str | Path | None | Literal["auto"],
     referenced: set[str],
 ) -> tuple[Path | None, Mapping[str, str]]:
-    """Read an explicit env file, keeping only referenced variables."""
+    """Read an env file, keeping only referenced variables.
+
+    ``"auto"`` reads the current directory's ``.env`` when it exists and
+    silently skips it otherwise. ``None`` disables env-file reading. An
+    explicit path must exist.
+    """
     if env_file is None:
         return None, {}
+    if env_file == "auto":
+        candidate = Path(".env")
+        if not candidate.is_file():
+            return None, {}
+        return candidate, _read_env_file(candidate, referenced)
     env_path = Path(env_file)
     return env_path, _read_env_file(env_path, referenced)

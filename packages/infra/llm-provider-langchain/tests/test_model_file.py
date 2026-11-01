@@ -129,8 +129,13 @@ def test_null_document_is_returned_for_schema_validation(tmp_path: Path) -> None
     assert document is None
 
 
-def _catalog(tmp_path: Path, text: str) -> ModelCatalog:
-    return load_model_catalog(_write(tmp_path, text))
+def _catalog(
+    tmp_path: Path,
+    text: str,
+    *,
+    env_file: str | Path | None = None,
+) -> ModelCatalog:
+    return load_model_catalog(_write(tmp_path, text), env_file=env_file)
 
 
 def _single_model_yaml(
@@ -791,10 +796,10 @@ def test_missing_env_file_is_rejected(tmp_path: Path) -> None:
         load_model_catalog(catalog_path, env_file=tmp_path / "missing.env")
 
 
-def test_env_file_is_not_read_implicitly(tmp_path: Path) -> None:
+def test_env_file_is_not_read_when_disabled(tmp_path: Path) -> None:
     catalog_path = _write(tmp_path, _single_model_yaml())
     _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
-    catalog = load_model_catalog(catalog_path)
+    catalog = load_model_catalog(catalog_path, env_file=None)
 
     with pytest.raises(ConfigurationError, match="not set"):
         catalog.create_chat_model(environ={})
@@ -837,7 +842,9 @@ def test_env_file_does_not_interpolate_process_values(
 
 
 def test_model_catalog_from_file_classmethod(tmp_path: Path) -> None:
-    catalog = ModelCatalog.from_file(_write(tmp_path, _single_model_yaml()))
+    catalog = ModelCatalog.from_file(
+        _write(tmp_path, _single_model_yaml()), env_file=None
+    )
 
     model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
 
@@ -852,15 +859,74 @@ def test_from_file_defaults_to_cwd_model_yaml(
     monkeypatch.chdir(tmp_path)
     (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
 
-    catalog = ModelCatalog.from_file()
+    catalog = ModelCatalog.from_file(env_file=None)
     model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
 
     assert isinstance(model, ChatOpenAI)
     assert model.model_name == "gpt-test"
 
 
+def test_default_env_file_is_loaded_from_cwd(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
+    _write_env(tmp_path, "OPENAI_API_KEY=sk-from-default-env\n")
+
+    catalog = ModelCatalog.from_file()
+    model = catalog.create_chat_model(environ={})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "sk-from-default-env"
+
+
+def test_missing_default_env_file_is_ignored(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
+
+    catalog = ModelCatalog.from_file()
+
+    with pytest.raises(ConfigurationError, match="not set"):
+        catalog.create_chat_model(environ={})
+
+
+def test_env_file_none_disables_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
+    _write_env(tmp_path, "OPENAI_API_KEY=sk-from-default-env\n")
+
+    catalog = ModelCatalog.from_file(env_file=None)
+
+    with pytest.raises(ConfigurationError, match="not set"):
+        catalog.create_chat_model(environ={})
+
+
+def test_process_env_precedes_default_env_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
+    _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+
+    catalog = ModelCatalog.from_file()
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-from-process"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "sk-from-process"
+
+
 def test_repository_fixture_catalog_loads() -> None:
-    catalog = load_model_catalog(FIXTURES / "model.yaml")
+    catalog = load_model_catalog(FIXTURES / "model.yaml", env_file=None)
 
     assert catalog.default_name == "fast"
     assert [item.name for item in catalog.models] == ["fast", "claude"]

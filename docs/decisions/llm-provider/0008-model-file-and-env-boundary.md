@@ -57,9 +57,8 @@ ADR-0006 已确定：
   可选 `display_name`、`timeout_seconds`、`max_retries`、`options`。
 - **凭据引用**：只接受 `api_key_env: ENV_VAR_NAME`。不支持 `${VAR}`、`$VAR` 或
   `os.environ/VAR` 插值；内联 `api_key` 作为未知字段拒绝。
-- **优先级**：进程环境高于显式传入的 `.env`；变量存在但为空/空白时视为非法，不回退。
-- **副作用**：库不修改 `os.environ`；`.env` 只在调用方显式传入时读取，并在加载时
-  只快照被引用的变量。
+- **优先级**：进程/系统环境高于 `.env`；`.env` 默认读取当前工作目录的 `.env`（存在时），`env_file=None` 关闭，显式路径必须存在；变量存在但为空/空白时视为非法，不回退。
+- **副作用**：库不修改 `os.environ`；`.env` 在加载时只快照被引用的变量。
 - **严格性**：未知字段、重复键、类型错误、空模型集合、无效 `default` 全部在构造模型
   前拒绝；错误包含 YAML 路径，不包含密钥值或文件行内容。
 - **展示名**：`display_name` 可选，缺省回退为选择名；它不参与查找、默认选择或协议判断。
@@ -75,7 +74,7 @@ ADR-0006 已确定：
 
 ```text
 应用
-  └── load_model_catalog("model.yaml", env_file=".env")
+  └── load_model_catalog("model.yaml", env_file="auto")
         ├── YAML compose + 重复键/递归别名检查
         ├── schema 校验 → ChatModelConfig / ProtocolOptions（复用现有类型）
         ├── .env 读取（可选）→ 仅保留 api_key_env 引用
@@ -101,7 +100,7 @@ spawn-join-llm-provider
 
 1. 目录对象创建后不可变；重新加载才反映文件修改。
 2. 错误消息、清单与 `repr` 不含密钥值。
-3. `.env` 不是隐式输入；不传 `env_file` 就不读取。
+3. `.env` 默认读取当前工作目录的 `.env`（存在时）；`env_file=None` 关闭；不搜索其他路径。
 4. 选择名在单个文件内唯一；展示名允许重复。
 5. 文件层不定义第二套协议选项，只映射到现有类型。
 
