@@ -2,7 +2,12 @@
 
 import spawn_join_llm_provider_langchain as adapter
 
-EXPECTED_EXPORTS = ["ChatModelConfig", "create_chat_model"]
+EXPECTED_EXPORTS = [
+    "ChatModelConfig",
+    "ModelCatalog",
+    "create_chat_model",
+    "load_model_catalog",
+]
 
 FORBIDDEN_NAMES = [
     "ChatRequest",

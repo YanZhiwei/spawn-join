@@ -1,11 +1,16 @@
 """Tests for model file parsing and catalog resolution."""
 
+import os
 import re
 from pathlib import Path
 
 import pytest
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from spawn_join_llm_provider import ConfigurationError
+from spawn_join_llm_provider_langchain import ModelCatalog, load_model_catalog
 from spawn_join_llm_provider_langchain.model_file import (
     _load_yaml_document,  # pyright: ignore[reportPrivateUsage]
 )
@@ -122,3 +127,304 @@ def test_null_document_is_returned_for_schema_validation(tmp_path: Path) -> None
     document = _load_yaml_document(_write(tmp_path, "null\n"))
 
     assert document is None
+
+
+def _catalog(tmp_path: Path, text: str) -> ModelCatalog:
+    return load_model_catalog(_write(tmp_path, text))
+
+
+def _single_model_yaml(*, extra: str = "", key: str = "OPENAI_API_KEY") -> str:
+    return (
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: chat_completions\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        f"    api_key_env: {key}\n"
+        f"{extra}"
+    )
+
+
+def _multi_model_yaml() -> str:
+    return (
+        "schema_version: 1\n"
+        "default: fast\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: chat_completions\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "  claude:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.anthropic.com\n"
+        "    model: claude-test\n"
+        "    api_key_env: ANTHROPIC_API_KEY\n"
+    )
+
+
+def test_single_model_without_default(tmp_path: Path) -> None:
+    catalog = _catalog(
+        tmp_path,
+        _single_model_yaml(
+            extra="    timeout_seconds: 12\n    max_retries: 2\n",
+        ),
+    )
+
+    assert catalog.default_name == "fast"
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "gpt-test"
+    assert model.openai_api_base == "https://api.example.com/v1"
+    assert model.request_timeout == 12.0
+    assert model.max_retries == 2
+
+
+def test_multiple_models_use_default_and_name(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _multi_model_yaml())
+
+    default_model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+    claude = catalog.create_chat_model(
+        "claude", environ={"ANTHROPIC_API_KEY": "sk-ant-test"}
+    )
+
+    assert isinstance(default_model, ChatOpenAI)
+    assert default_model.model_name == "gpt-test"
+    assert isinstance(claude, ChatAnthropic)
+    assert claude.model == "claude-test"
+
+
+def test_unknown_model_lists_available_names(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _multi_model_yaml())
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        catalog.create_chat_model("missing", environ={})
+
+    message = str(excinfo.value)
+    assert "Unknown model" in message
+    assert "fast" in message
+    assert "claude" in message
+
+
+def test_model_names_are_case_sensitive(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _multi_model_yaml())
+
+    with pytest.raises(ConfigurationError, match="Unknown model"):
+        catalog.create_chat_model("Fast", environ={"OPENAI_API_KEY": "sk-test"})
+
+
+def test_unknown_protocol_reports_entry_path(tmp_path: Path) -> None:
+    text = _single_model_yaml().replace("chat_completions", "grpc", 1)
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        _catalog(tmp_path, text)
+
+    message = str(excinfo.value)
+    assert "models.fast.protocol" in message
+    assert "unsupported protocol" in message
+
+
+def test_invalid_endpoint_reports_entry_path(tmp_path: Path) -> None:
+    text = _single_model_yaml().replace(
+        "https://api.example.com/v1", "ftp://example.com"
+    )
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        _catalog(tmp_path, text)
+
+    assert "models.fast" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("timeout_seconds", "true", "must be a number"),
+        ("max_retries", "true", "must be an integer"),
+    ],
+)
+def test_boolean_is_rejected_for_numeric_fields(
+    tmp_path: Path,
+    field: str,
+    value: str,
+    expected: str,
+) -> None:
+    text = _single_model_yaml(extra=f"    {field}: {value}\n")
+
+    with pytest.raises(ConfigurationError, match=expected):
+        _catalog(tmp_path, text)
+
+
+def test_missing_api_key_reports_variable_name(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _single_model_yaml(key="MISSING_KEY"))
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        catalog.create_chat_model(environ={})
+
+    message = str(excinfo.value)
+    assert "MISSING_KEY" in message
+    assert "not set" in message
+
+
+def test_empty_api_key_is_rejected(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _single_model_yaml(key="EMPTY_KEY"))
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        catalog.create_chat_model(environ={"EMPTY_KEY": "   "})
+
+    assert "EMPTY_KEY is empty" in str(excinfo.value)
+
+
+def test_environ_mapping_supplies_api_key(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _single_model_yaml(key="INJECTED_KEY"))
+
+    model = catalog.create_chat_model(environ={"INJECTED_KEY": "sk-injected"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "sk-injected"
+
+
+def test_os_environ_is_not_modified(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_TEST_KEY", "sk-test")
+    before = dict(os.environ)
+    catalog = _catalog(tmp_path, _single_model_yaml(key="CATALOG_TEST_KEY"))
+
+    catalog.create_chat_model()
+
+    assert dict(os.environ) == before
+
+
+def test_literal_api_key_field_is_rejected(tmp_path: Path) -> None:
+    text = _single_model_yaml(extra="    api_key: sk-sentinel\n")
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        _catalog(tmp_path, text)
+
+    message = str(excinfo.value)
+    assert "unknown field(s): api_key" in message
+    assert "sk-sentinel" not in message
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("2", "only version 1"),
+        ("true", "must be an integer"),
+    ],
+)
+def test_schema_version_is_validated(
+    tmp_path: Path,
+    value: str,
+    expected: str,
+) -> None:
+    text = _single_model_yaml().replace(
+        "schema_version: 1", f"schema_version: {value}", 1
+    )
+
+    with pytest.raises(ConfigurationError, match=expected):
+        _catalog(tmp_path, text)
+
+
+def test_models_must_not_be_empty(tmp_path: Path) -> None:
+    with pytest.raises(ConfigurationError, match="at least one model"):
+        _catalog(tmp_path, "schema_version: 1\nmodels: {}\n")
+
+
+def test_default_is_required_for_multiple_models(tmp_path: Path) -> None:
+    text = _multi_model_yaml().replace("default: fast\n", "", 1)
+
+    with pytest.raises(ConfigurationError, match="required when multiple"):
+        _catalog(tmp_path, text)
+
+
+def test_default_must_reference_existing_model(tmp_path: Path) -> None:
+    text = _multi_model_yaml().replace("default: fast", "default: missing", 1)
+
+    with pytest.raises(ConfigurationError, match="unknown model"):
+        _catalog(tmp_path, text)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ('""', "non-empty"),
+        ("123", "must be a string"),
+    ],
+)
+def test_display_name_is_validated(
+    tmp_path: Path,
+    value: str,
+    expected: str,
+) -> None:
+    text = _single_model_yaml(extra=f"    display_name: {value}\n")
+
+    with pytest.raises(ConfigurationError, match=expected):
+        _catalog(tmp_path, text)
+
+
+def test_non_mapping_root_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ConfigurationError, match="<root>: must be a mapping"):
+        _catalog(tmp_path, "- one\n")
+
+
+def test_explicit_null_default_is_rejected(tmp_path: Path) -> None:
+    text = _single_model_yaml().replace(
+        "schema_version: 1\n", "schema_version: 1\ndefault: null\n", 1
+    )
+
+    with pytest.raises(ConfigurationError, match="must be a string"):
+        _catalog(tmp_path, text)
+
+
+@pytest.mark.parametrize(
+    ("extra", "expected"),
+    [
+        ("    timeout_seconds: 0\n", "timeout_seconds must be finite and positive"),
+        ("    max_retries: -1\n", "max_retries must be non-negative"),
+    ],
+)
+def test_invalid_numeric_values_are_rejected(
+    tmp_path: Path,
+    extra: str,
+    expected: str,
+) -> None:
+    with pytest.raises(ConfigurationError, match=expected):
+        _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+
+def test_api_key_env_must_be_a_valid_name(tmp_path: Path) -> None:
+    with pytest.raises(ConfigurationError, match="valid environment variable name"):
+        _catalog(tmp_path, _single_model_yaml(key="OPENAI-API-KEY"))
+
+
+def test_environ_mapping_replaces_process_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-process")
+    catalog = _catalog(tmp_path, _single_model_yaml())
+
+    with pytest.raises(ConfigurationError, match="not set"):
+        catalog.create_chat_model(environ={})
+
+
+def test_anthropic_entry_maps_timeout_and_retries(tmp_path: Path) -> None:
+    text = _multi_model_yaml().replace(
+        "    model: claude-test\n",
+        "    model: claude-test\n    timeout_seconds: 45\n    max_retries: 2\n",
+        1,
+    )
+    catalog = _catalog(tmp_path, text)
+
+    claude = catalog.create_chat_model(
+        "claude", environ={"ANTHROPIC_API_KEY": "sk-ant-test"}
+    )
+
+    assert isinstance(claude, ChatAnthropic)
+    assert claude.default_request_timeout == 45.0
+    assert claude.max_retries == 2

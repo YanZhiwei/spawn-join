@@ -30,3 +30,12 @@ tasks:
     content_fingerprint: a70475b84bb432487008b831a85c19f004f47dc3c2522b46724658590553dbd6
     receipt: receipts/T003.md
     note: 两轮独立评审；修复非 UTF-8 与递归别名；10 个解析测试，目标包 48 tests 全通过。
+  T004:
+    title: US1 目录加载与模型创建
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: a088df88d9d209fd94c27122a1c4feaec02bcffe204ea119d99f0b76f677ad3c
+    receipt: receipts/T004.md
+    note: 两轮独立评审；4 个公共导出；37 个 parser/catalog 测试，目标包 75 tests 全通过。
