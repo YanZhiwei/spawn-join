@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ._model_catalog import ModelCatalog, ModelSummary
+from ._catalog import ModelCatalog, ModelSummary
 
 __all__ = ["ModelCatalog", "ModelSummary", "load_model_catalog"]
 

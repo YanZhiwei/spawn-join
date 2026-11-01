@@ -21,8 +21,8 @@ from spawn_join_llm_provider import (
     ResponsesOptions,
 )
 
-from ._model_yaml import load_yaml_document
-from .config import ChatModelConfig
+from ..config import ChatModelConfig
+from ._yaml import load_yaml_document
 
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _T = TypeVar("_T")

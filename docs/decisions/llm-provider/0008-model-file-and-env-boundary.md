@@ -48,7 +48,9 @@ ADR-0006 已确定：
 
 ## Decision
 
-在 `spawn-join-llm-provider-langchain` 中增加 `model_file.py`，并采用以下约束：
+在 `spawn-join-llm-provider-langchain` 中增加 `model_file/` 包（公共入口
+`__init__.py`，私有实现 `_yaml.py`、`_schema.py`、`_catalog.py`、`_env.py`），
+并采用以下约束：
 
 - **文件格式**：显式路径的单个 YAML 文件，`schema_version: 1`；顶层 `models` 映射、
   可选 `default`；每个条目包含 `protocol`、`endpoint`、`model`、`api_key_env`，以及

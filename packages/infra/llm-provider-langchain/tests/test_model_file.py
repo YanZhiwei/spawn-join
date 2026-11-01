@@ -11,7 +11,7 @@ from pydantic import SecretStr
 
 from spawn_join_llm_provider import ConfigurationError
 from spawn_join_llm_provider_langchain import ModelCatalog, load_model_catalog
-from spawn_join_llm_provider_langchain._model_yaml import (
+from spawn_join_llm_provider_langchain.model_file._yaml import (
     load_yaml_document,  # pyright: ignore[reportPrivateUsage]
 )
 
