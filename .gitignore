@@ -29,5 +29,8 @@ pip-wheel-metadata/
 # Local Feature delivery artifacts; historical specs were untracked by ADR-0002 and stay local only.
 /specs/
 
+# Local secrets for model file configuration; only variable names belong in model.yaml.
+/.env
+
 # pyproject.toml, uv.lock, .python-version, and uv.toml are project inputs;
 # keep them visible to Git when a Distribution uses them.

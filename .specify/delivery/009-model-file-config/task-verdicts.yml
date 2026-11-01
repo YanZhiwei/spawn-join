@@ -75,3 +75,12 @@ tasks:
     content_fingerprint: 47f18fbdefc24f8f46862a54f5a210ff035372bde922927d0f0961d533bc2bf5
     receipt: receipts/T008.md
     note: 两轮独立评审；docs 检查通过；公共 API、优先级与安全说明同步。
+  T009:
+    title: core README、包边界与 .gitignore
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 523cbc8000fa691aa84dbdf1ef02406541f5c7eafd62e5951ea34b33c95eb729
+    receipt: receipts/T009.md
+    note: docs/governance 通过；独立评审 pass；协议包代码未改。
