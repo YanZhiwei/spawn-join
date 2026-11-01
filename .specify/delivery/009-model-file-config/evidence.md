@@ -5,7 +5,7 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `02fe63894d3d8c3fe307203b74b92dcdc959c564` (code HEAD; evidence commit follows)
+- **head_revision**: `0635d256ce5128b419927e65db0c9a5f29768deb` (code HEAD; evidence commit follows)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
 - **status**: active
@@ -29,6 +29,7 @@
 | review fixes | `aa96a57` | extra failure-path tests, contract/ADR consistency, slice deviations |
 | review refactor | `0711cf1` | simplify repeated parsing helpers; keep strict boundary |
 | readability refactor | `02fe638` | split long parsers into named steps; rename `_CatalogEntry`; section navigation |
+| OOP constructor | `0635d25` | add `ModelCatalog.from_file`; keep `load_model_catalog` wrapper |
 
 ## Verification
 
@@ -85,6 +86,18 @@ named steps without changing the public contract:
 The file is slightly longer (604 → 676 lines) because of docstrings and split
 function boundaries, but each function now has one named responsibility.
 Public API, schema, error messages and 110 tests are unchanged.
+
+## Review follow-up: OOP boundary
+
+Constitution II reserves objects for state, invariants and lifecycle, and allows
+stateless transformations to remain functions. The runtime already follows that:
+`ModelCatalog` owns entries/default/env snapshot and `create_chat_model`;
+`ModelSummary` and `_CatalogEntry` are frozen value objects. Parsing stays
+functional because it is stateless validation.
+
+To make construction available on the object itself, `ModelCatalog.from_file`
+was added as the OOP entry point; `load_model_catalog` remains as the equivalent
+function wrapper for the existing public contract.
 
 ## Limitations and residual risks
 
