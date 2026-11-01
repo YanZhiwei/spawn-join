@@ -5,7 +5,7 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `50cf425d91bcd4bac8c2ee23df919c25dfc17f84` (code HEAD; evidence commit follows)
+- **head_revision**: `532de05bc656946685d37559032127b9a9a154d1` (code HEAD; evidence commit follows)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
 - **status**: active
@@ -32,7 +32,8 @@
 | OOP constructor | `0635d25` | add `ModelCatalog.from_file`; keep `load_model_catalog` wrapper |
 | file split | `7199c6b` | thin facade + focused private modules |
 | package move | `fd58558` | move implementation into `model_file/` package |
-| default path | `50cf425` | default to cwd `model.yaml`; keep `.env` explicit |
+| default path | `50cf425` | default to cwd `model.yaml` |
+| default env file | `532de05` | `env_file="auto"` reads cwd `.env` if present; `None` disables |
 
 ## Verification
 
@@ -118,13 +119,19 @@ responsibility:
 `from spawn_join_llm_provider_langchain.model_file import ...` and
 `ModelCatalog.from_file` remain unchanged; 111 tests pass.
 
-## Review follow-up: default model file
+## Review follow-up: default model and env files
 
-`ModelCatalog.from_file()` and `load_model_catalog()` now default `path` to the
-current working directory's `model.yaml`; an explicit path still overrides it.
-`env_file` remains `None` by default: automatically reading `.env` would change
-FR-018/ADR-0008's explicit credential boundary. A regression test changes into a
-temporary directory and loads the default file.
+`ModelCatalog.from_file()` and `load_model_catalog()` now default:
+
+- `path` → current working directory `model.yaml`;
+- `env_file` → `"auto"`, which reads current working directory `.env` if it
+  exists and silently skips it otherwise.
+
+`env_file=None` disables env-file reading; an explicit env-file path must exist.
+Key precedence remains process/system environment first, then the `.env`
+snapshot. The default `.env` is not interpolated and only referenced variables
+are retained. Regression tests cover default loading, missing default `.env`,
+`None` disabling, and process-env precedence.
 
 ## Limitations and residual risks
 
