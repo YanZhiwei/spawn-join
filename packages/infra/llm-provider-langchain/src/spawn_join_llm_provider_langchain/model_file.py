@@ -65,7 +65,15 @@ _ANTHROPIC_FIELDS = frozenset(
     }
 )
 
+_ROOT_REQUIRED_FIELDS = frozenset({"schema_version", "models"})
+_ROOT_OPTIONAL_FIELDS = frozenset({"default"})
+_ENTRY_REQUIRED_FIELDS = frozenset({"protocol", "endpoint", "model", "api_key_env"})
+_ENTRY_OPTIONAL_FIELDS = frozenset(
+    {"display_name", "timeout_seconds", "max_retries", "options"}
+)
 
+
+# --- YAML document boundary -------------------------------------------------
 def _check_duplicate_keys(node: yaml.Node) -> None:
     """Reject literal duplicate keys and recursive aliases in one document."""
     _walk_node(node, active=set(), visited=set())
@@ -141,6 +149,7 @@ def _load_yaml_document(path: Path) -> object:
     return document
 
 
+# --- Schema field parsing ---------------------------------------------------
 def _as_mapping(value: object, path: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ConfigurationError(f"{path}: must be a mapping")
@@ -281,96 +290,121 @@ def _parse_options(
     value: object,
     path: str,
 ) -> ProtocolOptions:
+    """Parse one protocol's options mapping into its typed dataclass."""
     fields = _as_mapping(value, path)
-
     match protocol:
         case ProtocolKind.CHAT_COMPLETIONS:
-            _require_keys(
-                fields,
-                required=frozenset(),
-                optional=_CHAT_COMPLETIONS_FIELDS,
-                path=path,
-            )
-            temperature = _optional(fields, "temperature", _as_number, path)
-            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
-            top_p = _optional(fields, "top_p", _as_number, path)
-            stop = _optional(fields, "stop", _as_string_tuple, path)
-            seed = _optional(fields, "seed", _as_int, path)
-            try:
-                return ChatCompletionsOptions(
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    top_p=top_p,
-                    stop=stop,
-                    seed=seed,
-                )
-            except ConfigurationError as exc:
-                raise ConfigurationError(f"{path}: {exc}") from exc
-
+            return _parse_chat_completions_options(fields, path)
         case ProtocolKind.RESPONSES:
-            _require_keys(
-                fields,
-                required=frozenset(),
-                optional=_RESPONSES_FIELDS,
-                path=path,
-            )
-            temperature = _optional(fields, "temperature", _as_number, path)
-            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
-            top_p = _optional(fields, "top_p", _as_number, path)
-            store = _optional(fields, "store", _as_bool, path)
-            reasoning_effort = cast(
-                "Literal['low', 'medium', 'high'] | None",
-                _optional(fields, "reasoning_effort", _as_str, path),
-            )
-            truncation = cast(
-                "Literal['auto', 'disabled'] | None",
-                _optional(fields, "truncation", _as_str, path),
-            )
-            try:
-                return ResponsesOptions(
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    top_p=top_p,
-                    store=store,
-                    reasoning_effort=reasoning_effort,
-                    truncation=truncation,
-                )
-            except ConfigurationError as exc:
-                raise ConfigurationError(f"{path}: {exc}") from exc
-
+            return _parse_responses_options(fields, path)
         case ProtocolKind.ANTHROPIC_MESSAGES:
-            _require_keys(
-                fields,
-                required=frozenset(),
-                optional=_ANTHROPIC_FIELDS,
-                path=path,
-            )
-            temperature = _optional(fields, "temperature", _as_number, path)
-            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
-            top_p = _optional(fields, "top_p", _as_number, path)
-            top_k = _optional(fields, "top_k", _as_int, path)
-            stop_sequences = _optional(fields, "stop_sequences", _as_string_tuple, path)
-            thinking = (
-                _parse_thinking(fields["thinking"], f"{path}.thinking")
-                if "thinking" in fields
-                else None
-            )
-            try:
-                return AnthropicMessagesOptions(
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    top_p=top_p,
-                    top_k=top_k,
-                    stop_sequences=stop_sequences,
-                    thinking=thinking,
-                )
-            except ConfigurationError as exc:
-                raise ConfigurationError(f"{path}: {exc}") from exc
-
+            return _parse_anthropic_options(fields, path)
         case _:
             raise ConfigurationError(f"Unsupported protocol: {protocol}")
 
 
+def _parse_chat_completions_options(
+    fields: Mapping[str, object],
+    path: str,
+) -> ChatCompletionsOptions:
+    """Parse options for the OpenAI Chat Completions protocol."""
+    _require_keys(
+        fields,
+        required=frozenset(),
+        optional=_CHAT_COMPLETIONS_FIELDS,
+        path=path,
+    )
+    temperature = _optional(fields, "temperature", _as_number, path)
+    max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+    top_p = _optional(fields, "top_p", _as_number, path)
+    stop = _optional(fields, "stop", _as_string_tuple, path)
+    seed = _optional(fields, "seed", _as_int, path)
+
+    try:
+        return ChatCompletionsOptions(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            top_p=top_p,
+            stop=stop,
+            seed=seed,
+        )
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"{path}: {exc}") from exc
+
+
+def _parse_responses_options(
+    fields: Mapping[str, object],
+    path: str,
+) -> ResponsesOptions:
+    """Parse options for the OpenAI Responses protocol."""
+    _require_keys(
+        fields,
+        required=frozenset(),
+        optional=_RESPONSES_FIELDS,
+        path=path,
+    )
+    temperature = _optional(fields, "temperature", _as_number, path)
+    max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+    top_p = _optional(fields, "top_p", _as_number, path)
+    store = _optional(fields, "store", _as_bool, path)
+    reasoning_effort = cast(
+        "Literal['low', 'medium', 'high'] | None",
+        _optional(fields, "reasoning_effort", _as_str, path),
+    )
+    truncation = cast(
+        "Literal['auto', 'disabled'] | None",
+        _optional(fields, "truncation", _as_str, path),
+    )
+
+    try:
+        return ResponsesOptions(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            top_p=top_p,
+            store=store,
+            reasoning_effort=reasoning_effort,
+            truncation=truncation,
+        )
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"{path}: {exc}") from exc
+
+
+def _parse_anthropic_options(
+    fields: Mapping[str, object],
+    path: str,
+) -> AnthropicMessagesOptions:
+    """Parse options for the Anthropic Messages protocol."""
+    _require_keys(
+        fields,
+        required=frozenset(),
+        optional=_ANTHROPIC_FIELDS,
+        path=path,
+    )
+    temperature = _optional(fields, "temperature", _as_number, path)
+    max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+    top_p = _optional(fields, "top_p", _as_number, path)
+    top_k = _optional(fields, "top_k", _as_int, path)
+    stop_sequences = _optional(fields, "stop_sequences", _as_string_tuple, path)
+    thinking = (
+        _parse_thinking(fields["thinking"], f"{path}.thinking")
+        if "thinking" in fields
+        else None
+    )
+
+    try:
+        return AnthropicMessagesOptions(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            top_p=top_p,
+            top_k=top_k,
+            stop_sequences=stop_sequences,
+            thinking=thinking,
+        )
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"{path}: {exc}") from exc
+
+
+# --- Catalog runtime --------------------------------------------------------
 @dataclass(frozen=True, slots=True)
 class ModelSummary:
     """A display-ready view of one catalog entry."""
@@ -381,7 +415,7 @@ class ModelSummary:
 
 
 @dataclass(frozen=True, slots=True)
-class _ModelEntry:
+class _CatalogEntry:
     name: str
     display_name: str
     config: ChatModelConfig
@@ -393,7 +427,7 @@ class _ModelEntry:
 class ModelCatalog:
     """An immutable set of validated model entries plus a default name."""
 
-    _entries: Mapping[str, _ModelEntry] = field(repr=False)
+    _entries: Mapping[str, _CatalogEntry] = field(repr=False)
     _default_name: str = field(repr=False)
     _env_file: Path | None = field(repr=False)
     _env_values: Mapping[str, str] = field(repr=False)
@@ -441,7 +475,7 @@ class ModelCatalog:
         names = tuple(self._entries)
         return f"ModelCatalog(models={names!r}, default={self._default_name!r})"
 
-    def _resolve_entry(self, name: str | None) -> _ModelEntry:
+    def _resolve_entry(self, name: str | None) -> _CatalogEntry:
         selected = self._default_name if name is None else name
         entry = self._entries.get(selected)
         if entry is None:
@@ -453,7 +487,7 @@ class ModelCatalog:
 
     def _resolve_api_key(
         self,
-        entry: _ModelEntry,
+        entry: _CatalogEntry,
         environ: Mapping[str, str] | None,
     ) -> str:
         source = os.environ if environ is None else environ
@@ -475,62 +509,79 @@ class ModelCatalog:
         return value
 
 
-def _parse_entry(name: str, value: object) -> _ModelEntry:
+def _parse_entry(name: str, value: object) -> _CatalogEntry:
+    """Parse and validate one named model entry."""
     path = f"models.{name}"
     fields = _as_mapping(value, path)
     _require_keys(
         fields,
-        required=frozenset({"protocol", "endpoint", "model", "api_key_env"}),
-        optional=frozenset(
-            {"display_name", "timeout_seconds", "max_retries", "options"}
-        ),
+        required=_ENTRY_REQUIRED_FIELDS,
+        optional=_ENTRY_OPTIONAL_FIELDS,
         path=path,
     )
+    config = _parse_model_config(fields, path)
+    return _CatalogEntry(
+        name=name,
+        display_name=_parse_display_name(fields, name, path),
+        config=config,
+        api_key_env=_parse_api_key_env(fields, path),
+        options=_parse_entry_options(fields, config.protocol, path),
+    )
 
+
+def _parse_model_config(
+    fields: Mapping[str, object],
+    path: str,
+) -> ChatModelConfig:
+    """Build the endpoint/model configuration for one entry."""
     protocol = _parse_protocol(fields["protocol"], f"{path}.protocol")
     endpoint = _as_str(fields["endpoint"], f"{path}.endpoint")
     model = _as_str(fields["model"], f"{path}.model")
-    api_key_env = _validate_env_name(
-        _as_str(fields["api_key_env"], f"{path}.api_key_env"),
-        f"{path}.api_key_env",
-    )
-    display_name_raw = _optional(fields, "display_name", _as_str, path)
-    display_name = name
-    if display_name_raw is not None:
-        display_name = _validate_label(display_name_raw, f"{path}.display_name")
-
     timeout_seconds = _optional(fields, "timeout_seconds", _as_number, path)
-    if timeout_seconds is None:
-        timeout_seconds = 30.0
-
     max_retries = _optional(fields, "max_retries", _as_int, path)
-    if max_retries is None:
-        max_retries = 0
 
     try:
-        config = ChatModelConfig(
+        return ChatModelConfig(
             protocol=protocol,
             endpoint=endpoint,
             model=model,
-            timeout_seconds=timeout_seconds,
-            max_retries=max_retries,
+            timeout_seconds=30.0 if timeout_seconds is None else timeout_seconds,
+            max_retries=0 if max_retries is None else max_retries,
         )
     except ConfigurationError as exc:
         raise ConfigurationError(f"{path}: {exc}") from exc
 
-    options: ProtocolOptions | None = None
-    if "options" in fields:
-        options = _parse_options(protocol, fields["options"], f"{path}.options")
 
-    return _ModelEntry(
-        name=name,
-        display_name=display_name,
-        config=config,
-        api_key_env=api_key_env,
-        options=options,
-    )
+def _parse_display_name(
+    fields: Mapping[str, object],
+    name: str,
+    path: str,
+) -> str:
+    """Return the explicit display name or fall back to the selection name."""
+    value = _optional(fields, "display_name", _as_str, path)
+    if value is None:
+        return name
+    return _validate_label(value, f"{path}.display_name")
 
 
+def _parse_api_key_env(fields: Mapping[str, object], path: str) -> str:
+    """Validate and return the environment variable that references the key."""
+    field_path = f"{path}.api_key_env"
+    return _validate_env_name(_as_str(fields["api_key_env"], field_path), field_path)
+
+
+def _parse_entry_options(
+    fields: Mapping[str, object],
+    protocol: ProtocolKind,
+    path: str,
+) -> ProtocolOptions | None:
+    """Parse options only when the entry declares them."""
+    if "options" not in fields:
+        return None
+    return _parse_options(protocol, fields["options"], f"{path}.options")
+
+
+# --- Environment snapshot and public loading API ----------------------------
 def _read_env_file(path: Path, referenced: set[str]) -> Mapping[str, str]:
     if not path.is_file():
         raise ConfigurationError(f"Env file not found: {path}")
@@ -551,54 +602,75 @@ def load_model_catalog(
     env_file: str | Path | None = None,
 ) -> ModelCatalog:
     """Load and validate a model catalog from an explicit YAML file."""
-    document = _load_yaml_document(Path(path))
-    root = _as_mapping(document, "<root>")
-    _require_keys(
-        root,
-        required=frozenset({"schema_version", "models"}),
-        optional=frozenset({"default"}),
-        path="<root>",
-    )
-
-    schema_version = _as_int(root["schema_version"], "schema_version")
-    if schema_version != 1:
-        raise ConfigurationError("schema_version: only version 1 is supported")
-
-    models = _as_mapping(root["models"], "models")
-    if not models:
-        raise ConfigurationError("models: at least one model is required")
-
-    entries: dict[str, _ModelEntry] = {}
-    for name, value in models.items():
-        validated_name = _validate_label(name, "models: model name")
-        entries[validated_name] = _parse_entry(validated_name, value)
-
-    default_value = root.get("default")
-    if "default" not in root:
-        if len(entries) != 1:
-            raise ConfigurationError(
-                "default: required when multiple models are defined"
-            )
-        default_name = next(iter(entries))
-    else:
-        default_name = _as_str(default_value, "default")
-        if default_name not in entries:
-            available = ", ".join(entries)
-            raise ConfigurationError(
-                f"default: unknown model {default_name!r}; available models: "
-                f"{available}"
-            )
-
-    env_path: Path | None = None
-    env_values: Mapping[str, str] = {}
-    if env_file is not None:
-        env_path = Path(env_file)
-        referenced = {entry.api_key_env for entry in entries.values()}
-        env_values = _read_env_file(env_path, referenced)
-
+    root = _parse_root(path)
+    entries = _parse_models(root["models"])
+    default_name = _resolve_default_name(root, entries)
+    env_path, env_values = _load_env_snapshot(env_file, entries)
     return ModelCatalog(
         _entries=entries,
         _default_name=default_name,
         _env_file=env_path,
         _env_values=env_values,
     )
+
+
+def _parse_root(path: str | Path) -> dict[str, object]:
+    """Load the YAML document and validate its top-level fields."""
+    document = _load_yaml_document(Path(path))
+    root = _as_mapping(document, "<root>")
+    _require_keys(
+        root,
+        required=_ROOT_REQUIRED_FIELDS,
+        optional=_ROOT_OPTIONAL_FIELDS,
+        path="<root>",
+    )
+    schema_version = _as_int(root["schema_version"], "schema_version")
+    if schema_version != 1:
+        raise ConfigurationError("schema_version: only version 1 is supported")
+    return root
+
+
+def _parse_models(value: object) -> dict[str, _CatalogEntry]:
+    """Parse every named entry, rejecting an empty model map."""
+    models = _as_mapping(value, "models")
+    if not models:
+        raise ConfigurationError("models: at least one model is required")
+
+    entries: dict[str, _CatalogEntry] = {}
+    for name, entry_value in models.items():
+        validated_name = _validate_label(name, "models: model name")
+        entries[validated_name] = _parse_entry(validated_name, entry_value)
+    return entries
+
+
+def _resolve_default_name(
+    root: Mapping[str, object],
+    entries: Mapping[str, _CatalogEntry],
+) -> str:
+    """Resolve the explicit default, or the sole model's name."""
+    if "default" not in root:
+        if len(entries) != 1:
+            raise ConfigurationError(
+                "default: required when multiple models are defined"
+            )
+        return next(iter(entries))
+
+    name = _as_str(root["default"], "default")
+    if name not in entries:
+        available = ", ".join(entries)
+        raise ConfigurationError(
+            f"default: unknown model {name!r}; available models: {available}"
+        )
+    return name
+
+
+def _load_env_snapshot(
+    env_file: str | Path | None,
+    entries: Mapping[str, _CatalogEntry],
+) -> tuple[Path | None, Mapping[str, str]]:
+    """Read an explicit env file, keeping only referenced variables."""
+    if env_file is None:
+        return None, {}
+    env_path = Path(env_file)
+    referenced = {entry.api_key_env for entry in entries.values()}
+    return env_path, _read_env_file(env_path, referenced)
