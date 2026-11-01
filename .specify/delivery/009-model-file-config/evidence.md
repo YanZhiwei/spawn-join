@@ -5,7 +5,7 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `7199c6b400a43b976fef6ef906840f070aa22e7f` (code HEAD; evidence commit follows)
+- **head_revision**: `fd585585b76adb03fe309c8b072736b9f3b7ca6c` (code HEAD; evidence commit follows)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
 - **status**: active
@@ -31,6 +31,7 @@
 | readability refactor | `02fe638` | split long parsers into named steps; rename `_CatalogEntry`; section navigation |
 | OOP constructor | `0635d25` | add `ModelCatalog.from_file`; keep `load_model_catalog` wrapper |
 | file split | `7199c6b` | thin facade + focused private modules |
+| package move | `fd58558` | move implementation into `model_file/` package |
 
 ## Verification
 
@@ -107,11 +108,11 @@ responsibility:
 
 | Module | Lines | Responsibility |
 | --- | ---: | --- |
-| `model_file.py` | 18 | public `load_model_catalog` and re-exports |
-| `_model_yaml.py` | 85 | YAML boundary, duplicate keys, recursive aliases |
-| `_model_schema.py` | 452 | document/entry/options schema parsing |
-| `_model_catalog.py` | 130 | `ModelCatalog` runtime and key resolution |
-| `_model_env.py` | 35 | explicit `.env` reading |
+| `model_file/__init__.py` | 18 | public `load_model_catalog` and re-exports |
+| `model_file/_yaml.py` | 85 | YAML boundary, duplicate keys, recursive aliases |
+| `model_file/_schema.py` | 452 | document/entry/options schema parsing |
+| `model_file/_catalog.py` | 130 | `ModelCatalog` runtime and key resolution |
+| `model_file/_env.py` | 35 | explicit `.env` reading |
 
 `from spawn_join_llm_provider_langchain.model_file import ...` and
 `ModelCatalog.from_file` remain unchanged; 111 tests pass.
