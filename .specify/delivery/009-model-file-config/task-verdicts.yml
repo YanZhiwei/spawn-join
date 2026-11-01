@@ -39,3 +39,12 @@ tasks:
     content_fingerprint: a088df88d9d209fd94c27122a1c4feaec02bcffe204ea119d99f0b76f677ad3c
     receipt: receipts/T004.md
     note: 两轮独立评审；4 个公共导出；37 个 parser/catalog 测试，目标包 75 tests 全通过。
+  T005:
+    title: 协议选项与 thinking 解析
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 5f1ddfe8b13f0b3bc01985426b74e43cd8e835ab77c615b3bd730c0763909809
+    receipt: receipts/T005.md
+    note: 三种协议选项与 thinking；两轮独立评审；51 个 parser/catalog 测试，目标包 89 tests 全通过。

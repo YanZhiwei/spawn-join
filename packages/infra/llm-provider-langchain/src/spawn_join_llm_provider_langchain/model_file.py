@@ -9,12 +9,22 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import cast
+from typing import Literal, cast
 
 import yaml
 from langchain_core.language_models import BaseChatModel
 
-from spawn_join_llm_provider import ConfigurationError, ProtocolKind
+from spawn_join_llm_provider import (
+    AnthropicMessagesOptions,
+    AnthropicThinking,
+    AnthropicThinkingAdaptive,
+    AnthropicThinkingBudget,
+    ChatCompletionsOptions,
+    ConfigurationError,
+    ProtocolKind,
+    ProtocolOptions,
+    ResponsesOptions,
+)
 
 from .config import ChatModelConfig
 from .factory import create_chat_model as _create_chat_model
@@ -154,6 +164,58 @@ def _as_number(value: object, path: str) -> float:
     return float(value)
 
 
+def _as_bool(value: object, path: str) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigurationError(f"{path}: must be a boolean")
+    return value
+
+
+def _as_string_tuple(value: object, path: str) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        raise ConfigurationError(f"{path}: must be a list of strings")
+    items = cast("list[object]", value)
+    result: list[str] = []
+    for index, item in enumerate(items):
+        if not isinstance(item, str) or item == "":
+            raise ConfigurationError(f"{path}[{index}]: must be a non-empty string")
+        result.append(item)
+    return tuple(result)
+
+
+def _optional_str(fields: Mapping[str, object], name: str, path: str) -> str | None:
+    if name not in fields:
+        return None
+    return _as_str(fields[name], f"{path}.{name}")
+
+
+def _optional_int(fields: Mapping[str, object], name: str, path: str) -> int | None:
+    if name not in fields:
+        return None
+    return _as_int(fields[name], f"{path}.{name}")
+
+
+def _optional_number(
+    fields: Mapping[str, object], name: str, path: str
+) -> float | None:
+    if name not in fields:
+        return None
+    return _as_number(fields[name], f"{path}.{name}")
+
+
+def _optional_bool(fields: Mapping[str, object], name: str, path: str) -> bool | None:
+    if name not in fields:
+        return None
+    return _as_bool(fields[name], f"{path}.{name}")
+
+
+def _optional_string_tuple(
+    fields: Mapping[str, object], name: str, path: str
+) -> tuple[str, ...] | None:
+    if name not in fields:
+        return None
+    return _as_string_tuple(fields[name], f"{path}.{name}")
+
+
 def _validate_label(value: str, path: str) -> str:
     if not value or value != value.strip():
         raise ConfigurationError(
@@ -178,12 +240,165 @@ def _parse_protocol(value: object, path: str) -> ProtocolKind:
         raise ConfigurationError(f"{path}: unsupported protocol {raw!r}") from exc
 
 
+def _parse_thinking(value: object, path: str) -> AnthropicThinking:
+    fields = _require_string_keys(_as_mapping(value, path), path)
+    _require_keys(
+        fields,
+        required=frozenset({"mode"}),
+        optional=frozenset({"budget_tokens"}),
+        path=path,
+    )
+    mode = _as_str(fields["mode"], f"{path}.mode")
+
+    if mode == "adaptive":
+        if "budget_tokens" in fields:
+            raise ConfigurationError(
+                f"{path}: budget_tokens is not allowed for adaptive thinking"
+            )
+        return AnthropicThinkingAdaptive()
+
+    if mode == "budget":
+        if "budget_tokens" not in fields:
+            raise ConfigurationError(
+                f"{path}: budget_tokens is required for budget thinking"
+            )
+        budget = _as_int(fields["budget_tokens"], f"{path}.budget_tokens")
+        try:
+            return AnthropicThinkingBudget(budget_tokens=budget)
+        except ConfigurationError as exc:
+            raise ConfigurationError(f"{path}: {exc}") from exc
+
+    raise ConfigurationError(f"{path}.mode: must be 'budget' or 'adaptive'")
+
+
+def _parse_options(
+    protocol: ProtocolKind,
+    value: object,
+    path: str,
+) -> ProtocolOptions:
+    fields = _require_string_keys(_as_mapping(value, path), path)
+
+    match protocol:
+        case ProtocolKind.CHAT_COMPLETIONS:
+            _require_keys(
+                fields,
+                required=frozenset(),
+                optional=frozenset(
+                    {
+                        "temperature",
+                        "max_output_tokens",
+                        "top_p",
+                        "stop",
+                        "seed",
+                    }
+                ),
+                path=path,
+            )
+            temperature = _optional_number(fields, "temperature", path)
+            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
+            top_p = _optional_number(fields, "top_p", path)
+            stop = _optional_string_tuple(fields, "stop", path)
+            seed = _optional_int(fields, "seed", path)
+            try:
+                return ChatCompletionsOptions(
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    top_p=top_p,
+                    stop=stop,
+                    seed=seed,
+                )
+            except ConfigurationError as exc:
+                raise ConfigurationError(f"{path}: {exc}") from exc
+
+        case ProtocolKind.RESPONSES:
+            _require_keys(
+                fields,
+                required=frozenset(),
+                optional=frozenset(
+                    {
+                        "temperature",
+                        "max_output_tokens",
+                        "top_p",
+                        "store",
+                        "reasoning_effort",
+                        "truncation",
+                    }
+                ),
+                path=path,
+            )
+            temperature = _optional_number(fields, "temperature", path)
+            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
+            top_p = _optional_number(fields, "top_p", path)
+            store = _optional_bool(fields, "store", path)
+            reasoning_effort = cast(
+                "Literal['low', 'medium', 'high'] | None",
+                _optional_str(fields, "reasoning_effort", path),
+            )
+            truncation = cast(
+                "Literal['auto', 'disabled'] | None",
+                _optional_str(fields, "truncation", path),
+            )
+            try:
+                return ResponsesOptions(
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    top_p=top_p,
+                    store=store,
+                    reasoning_effort=reasoning_effort,
+                    truncation=truncation,
+                )
+            except ConfigurationError as exc:
+                raise ConfigurationError(f"{path}: {exc}") from exc
+
+        case ProtocolKind.ANTHROPIC_MESSAGES:
+            _require_keys(
+                fields,
+                required=frozenset(),
+                optional=frozenset(
+                    {
+                        "temperature",
+                        "max_output_tokens",
+                        "top_p",
+                        "top_k",
+                        "stop_sequences",
+                        "thinking",
+                    }
+                ),
+                path=path,
+            )
+            temperature = _optional_number(fields, "temperature", path)
+            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
+            top_p = _optional_number(fields, "top_p", path)
+            top_k = _optional_int(fields, "top_k", path)
+            stop_sequences = _optional_string_tuple(fields, "stop_sequences", path)
+            thinking = (
+                _parse_thinking(fields["thinking"], f"{path}.thinking")
+                if "thinking" in fields
+                else None
+            )
+            try:
+                return AnthropicMessagesOptions(
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    top_p=top_p,
+                    top_k=top_k,
+                    stop_sequences=stop_sequences,
+                    thinking=thinking,
+                )
+            except ConfigurationError as exc:
+                raise ConfigurationError(f"{path}: {exc}") from exc
+
+        case _:
+            raise ConfigurationError(f"Unsupported protocol: {protocol}")
+
+
 @dataclass(frozen=True, slots=True)
 class _ModelEntry:
     name: str
     display_name: str
     config: ChatModelConfig
     api_key_env: str
+    options: ProtocolOptions | None
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -211,7 +426,9 @@ class ModelCatalog:
         entry = self._resolve_entry(name)
         api_key = self._resolve_api_key(entry, environ)
         try:
-            return _create_chat_model(entry.config, api_key=api_key)
+            return _create_chat_model(
+                entry.config, api_key=api_key, options=entry.options
+            )
         except ConfigurationError as exc:
             raise ConfigurationError(f"models.{entry.name}: {exc}") from exc
 
@@ -254,7 +471,9 @@ def _parse_entry(name: str, value: object) -> _ModelEntry:
     _require_keys(
         fields,
         required=frozenset({"protocol", "endpoint", "model", "api_key_env"}),
-        optional=frozenset({"display_name", "timeout_seconds", "max_retries"}),
+        optional=frozenset(
+            {"display_name", "timeout_seconds", "max_retries", "options"}
+        ),
         path=path,
     )
 
@@ -293,11 +512,16 @@ def _parse_entry(name: str, value: object) -> _ModelEntry:
     except ConfigurationError as exc:
         raise ConfigurationError(f"{path}: {exc}") from exc
 
+    options: ProtocolOptions | None = None
+    if "options" in fields:
+        options = _parse_options(protocol, fields["options"], f"{path}.options")
+
     return _ModelEntry(
         name=name,
         display_name=display_name,
         config=config,
         api_key_env=api_key_env,
+        options=options,
     )
 
 

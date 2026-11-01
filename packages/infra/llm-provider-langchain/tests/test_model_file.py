@@ -133,13 +133,19 @@ def _catalog(tmp_path: Path, text: str) -> ModelCatalog:
     return load_model_catalog(_write(tmp_path, text))
 
 
-def _single_model_yaml(*, extra: str = "", key: str = "OPENAI_API_KEY") -> str:
+def _single_model_yaml(
+    *,
+    extra: str = "",
+    key: str = "OPENAI_API_KEY",
+    protocol: str = "chat_completions",
+    endpoint: str = "https://api.example.com/v1",
+) -> str:
     return (
         "schema_version: 1\n"
         "models:\n"
         "  fast:\n"
-        "    protocol: chat_completions\n"
-        "    endpoint: https://api.example.com/v1\n"
+        f"    protocol: {protocol}\n"
+        f"    endpoint: {endpoint}\n"
         "    model: gpt-test\n"
         f"    api_key_env: {key}\n"
         f"{extra}"
@@ -428,3 +434,223 @@ def test_anthropic_entry_maps_timeout_and_retries(tmp_path: Path) -> None:
     assert isinstance(claude, ChatAnthropic)
     assert claude.default_request_timeout == 45.0
     assert claude.max_retries == 2
+
+
+def test_chat_completions_options_are_mapped(tmp_path: Path) -> None:
+    extra = (
+        "    options:\n"
+        "      temperature: 0.2\n"
+        "      max_output_tokens: 1024\n"
+        "      top_p: 0.9\n"
+        '      stop: ["\\n\\n", "END"]\n'
+        "      seed: 42\n"
+    )
+    catalog = _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.temperature == 0.2
+    assert model.max_tokens == 1024
+    assert model.top_p == 0.9
+    assert model.stop == ["\n\n", "END"]
+    assert model.seed == 42
+
+
+def test_responses_options_are_mapped(tmp_path: Path) -> None:
+    extra = (
+        "    options:\n"
+        "      temperature: 0.1\n"
+        "      max_output_tokens: 2048\n"
+        "      top_p: 0.8\n"
+        "      store: false\n"
+        "      reasoning_effort: medium\n"
+        "      truncation: disabled\n"
+    )
+    catalog = _catalog(
+        tmp_path,
+        _single_model_yaml(protocol="responses", extra=extra),
+    )
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.use_responses_api is True
+    assert model.temperature == 0.1
+    assert model.max_tokens == 2048
+    assert model.top_p == 0.8
+    assert model.store is False
+    assert model.reasoning_effort == "medium"
+    assert model.truncation == "disabled"
+
+
+def test_anthropic_options_are_mapped(tmp_path: Path) -> None:
+    extra = (
+        "    options:\n"
+        "      temperature: 0.5\n"
+        "      max_output_tokens: 4096\n"
+        "      top_p: 0.7\n"
+        "      top_k: 10\n"
+        '      stop_sequences: ["\\n\\n"]\n'
+        "      thinking:\n"
+        "        mode: budget\n"
+        "        budget_tokens: 2048\n"
+    )
+    catalog = _catalog(
+        tmp_path,
+        _single_model_yaml(
+            protocol="anthropic_messages",
+            endpoint="https://api.anthropic.com",
+            key="ANTHROPIC_API_KEY",
+            extra=extra,
+        ),
+    )
+
+    model = catalog.create_chat_model(environ={"ANTHROPIC_API_KEY": "sk-ant-test"})
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.temperature == 0.5
+    assert model.max_tokens == 4096
+    assert model.top_p == 0.7
+    assert model.top_k == 10
+    assert model.stop_sequences == ["\n\n"]
+    assert model.thinking == {"type": "enabled", "budget_tokens": 2048}
+
+
+def test_option_from_another_protocol_is_rejected(tmp_path: Path) -> None:
+    extra = "    options:\n      store: false\n"
+
+    with pytest.raises(ConfigurationError, match="unknown field"):
+        _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+
+def test_unknown_option_is_rejected(tmp_path: Path) -> None:
+    extra = "    options:\n      temperature_v2: 0.2\n"
+
+    with pytest.raises(ConfigurationError, match="unknown field"):
+        _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        (
+            "      thinking:\n"
+            "        mode: budget\n"
+            "        budget_tokens: 2048\n",
+            "max_output_tokens is required",
+        ),
+        (
+            "      max_output_tokens: 2048\n"
+            "      thinking:\n"
+            "        mode: budget\n"
+            "        budget_tokens: 2048\n",
+            "must be less than max_output_tokens",
+        ),
+        (
+            "      max_output_tokens: 4096\n"
+            "      thinking:\n"
+            "        mode: adaptive\n"
+            "        budget_tokens: 2048\n",
+            "not allowed for adaptive",
+        ),
+        (
+            "      max_output_tokens: 4096\n"
+            "      thinking:\n"
+            "        mode: other\n",
+            "must be 'budget' or 'adaptive'",
+        ),
+    ],
+)
+def test_thinking_rules_are_enforced(
+    tmp_path: Path,
+    options: str,
+    expected: str,
+) -> None:
+    extra = "    options:\n" + options
+
+    with pytest.raises(ConfigurationError, match=expected):
+        _catalog(
+            tmp_path,
+            _single_model_yaml(
+                protocol="anthropic_messages",
+                endpoint="https://api.anthropic.com",
+                key="ANTHROPIC_API_KEY",
+                extra=extra,
+            ),
+        )
+
+
+def test_stop_must_be_a_list(tmp_path: Path) -> None:
+    extra = '    options:\n      stop: "x"\n'
+
+    with pytest.raises(ConfigurationError, match="must be a list of strings"):
+        _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+
+def test_adaptive_thinking_is_mapped(tmp_path: Path) -> None:
+    extra = (
+        "    options:\n"
+        "      max_output_tokens: 4096\n"
+        "      thinking:\n"
+        "        mode: adaptive\n"
+    )
+    catalog = _catalog(
+        tmp_path,
+        _single_model_yaml(
+            protocol="anthropic_messages",
+            endpoint="https://api.anthropic.com",
+            key="ANTHROPIC_API_KEY",
+            extra=extra,
+        ),
+    )
+
+    model = catalog.create_chat_model(environ={"ANTHROPIC_API_KEY": "sk-ant-test"})
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.thinking == {"type": "adaptive"}
+
+
+def test_thinking_must_be_a_mapping(tmp_path: Path) -> None:
+    extra = "    options:\n      thinking: adaptive\n"
+
+    with pytest.raises(ConfigurationError, match="must be a mapping"):
+        _catalog(
+            tmp_path,
+            _single_model_yaml(
+                protocol="anthropic_messages",
+                endpoint="https://api.anthropic.com",
+                key="ANTHROPIC_API_KEY",
+                extra=extra,
+            ),
+        )
+
+
+def test_thinking_unknown_field_is_rejected(tmp_path: Path) -> None:
+    extra = (
+        "    options:\n"
+        "      max_output_tokens: 4096\n"
+        "      thinking:\n"
+        "        mode: adaptive\n"
+        "        extra: true\n"
+    )
+
+    with pytest.raises(ConfigurationError, match="unknown field"):
+        _catalog(
+            tmp_path,
+            _single_model_yaml(
+                protocol="anthropic_messages",
+                endpoint="https://api.anthropic.com",
+                key="ANTHROPIC_API_KEY",
+                extra=extra,
+            ),
+        )
+
+
+def test_option_error_path_is_not_duplicated(tmp_path: Path) -> None:
+    extra = "    options:\n      temperature: high\n"
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        _catalog(tmp_path, _single_model_yaml(extra=extra))
+
+    assert str(excinfo.value).count("models.fast.options") == 1
