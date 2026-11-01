@@ -1,11 +1,11 @@
 # ADR-0008: 模型目录文件与凭据边界
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-01
 - Domain: llm-provider
 - Classification: 本决策约束 LLM 模型配置的持久格式、凭据来源、适配包公共契约和依赖边界，属于 `llm-provider` 领域。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 用户 2026-11-01 Code Review 通过并授权合并 PR #27
 - Depends on: [ADR-0006](../llm-provider/0006-langchain-first-llm-runtime.md)
 - Related: [包边界](../../architecture/package-boundaries.md)；Spec、Plan 与文件契约留在本地被忽略的 Feature 目录，不在此建立链接
 - Supersedes: 无；本 ADR 扩展 ADR-0006 的适配包公共面，不替代其 LangChain-first 决策
@@ -125,10 +125,11 @@ spawn-join-llm-provider
 
 ## Verification and implementation status
 
-已实现并通过目标包与全仓库本地质量门、quickstart 和最终独立评审；等待用户
-Code Review 与 PR CI。本 ADR 仍为 `Proposed`，不代表已合并或已发布。实际命令与
-结果由 Delivery evidence 记录。
+已实现并通过目标包与全仓库本地质量门、quickstart、最终独立评审以及 PR #27 的
+14 项 CI 检查；PR #27 已 squash 合并为 `1958071d5f011aeafe9fac36f2c6018d5019ffef`。
+实际命令与结果由 Delivery evidence 记录。
 
 ## Revision history
 
 - 2026-11-01：提出模型文件、`.env` 边界与公共 API 扩展的候选决策。
+- 2026-11-01：用户 Code Review 通过并授权合并；PR #27 合并为 `1958071`，状态改为 Accepted。

@@ -5,11 +5,15 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `532de05bc656946685d37559032127b9a9a154d1` (code HEAD; evidence commit follows)
+- **head_revision**: `1958071d5f011aeafe9fac36f2c6018d5019ffef` (PR #27 squash merge; reviewed branch head `532de05` is not reachable after squash)
+- **merged_revision**: `1958071d5f011aeafe9fac36f2c6018d5019ffef` (PR #27 squash merge)
+- **pull_request**: 27
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
-- **status**: active
-- **result**: pass for the full local quality gate, target package quality, docs, governance, quickstart, and final independent review; PR CI and user Code Review pending
+- **outcome_recorded_at**: 2026-11-01
+- **merged_at**: 2026-11-01T15:15:46Z
+- **status**: delivered
+- **result**: pass for the full local quality gate, target package quality, docs, governance, quickstart, final independent review, and all 14 PR CI checks; merged as PR #27
 
 ## Commits
 
