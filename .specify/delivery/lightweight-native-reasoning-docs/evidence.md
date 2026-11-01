@@ -4,12 +4,15 @@
 - **phase_id**: `documentation`
 - **lane**: Lightweight
 - **base_revision**: `0f34357e1aebcb9ccc1ec2e0f067d001b1c26a81`
-- **head_revision**: `0e0b55bb6a2b7e99dee27d476acdc7c6f06b623a` (reviewed documentation payload; publication-record-only successor retains the same governed content)
+- **head_revision**: `e05587d2b67002d6e1a0002a9b48d856f6585d2a` (PR #24 squash-merge commit; tree matches the published PR head)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\calm-nebula`
 - **recorded_at**: 2026-11-01
-- **status**: active
-- **result**: pass for local documentation quality, offline examples and independent review; PR open, remote CI outcome not claimed
+- **status**: delivered
+- **result**: pass for local documentation verification and independent review; PR #24 merged with all 14 remote checks successful
 - **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/24
+- **outcome_recorded_at**: 2026-11-01
+- **merged_revision**: `e05587d2b67002d6e1a0002a9b48d856f6585d2a`
+- **merged_at**: 2026-11-01T04:08:55Z
 
 ## Request, route and scope
 
@@ -178,3 +181,37 @@ metadata issue is repaired as part of this documentation change.
   the content fingerprint above. No additional product change is inferred.
 - The run stays `active`: do not mark it `delivered` until a separately authorized,
   observed merged/closed outcome is recorded. No merge or release was performed.
+
+## Post-merge closure — 2026-11-01
+
+This section records the later observed outcome and supersedes the earlier
+preparation/publication statements that the PR was open and remote CI unverified;
+those historical sections remain unchanged.
+
+- Close identity: `delivery_run=lightweight-native-reasoning-docs`,
+  `outcome=merged`, `pr=https://github.com/YanZhiwei/spawn-join/pull/24`.
+- GitHub reports `state=MERGED`, merged at `2026-11-01T04:08:55Z`, with merge
+  revision `e05587d2b67002d6e1a0002a9b48d856f6585d2a`.
+- The published PR head was `ec9f48b100c947d6ef5c8f8be399dde7a7381a97`.
+  All 14 reported checks succeeded: the 12 package/platform/Python combinations,
+  Governance and gate regression, and the aggregate Quality Gate. The verified
+  [Quality run](https://github.com/YanZhiwei/spawn-join/actions/runs/41271767747)
+  covers that published head; no new local or remote test run is implied by close.
+- Verification used `gh pr view 24 --repo YanZhiwei/spawn-join --json number,url,state,mergedAt,mergeCommit,headRefName,headRefOid,baseRefName,statusCheckRollup`
+  and `git fetch origin main`, both exit 0. The merge revision is an ancestor of
+  fetched `origin/main` (`git merge-base --is-ancestor`, exit 0).
+- `git rev-parse 'e05587d2b67002d6e1a0002a9b48d856f6585d2a^{tree}'` and
+  `git rev-parse 'ec9f48b100c947d6ef5c8f8be399dde7a7381a97^{tree}'` both returned
+  `ecf8a588932520e8b39cc0e576efa07d742a2318`; `git diff --exit-code` between the
+  two revisions returned 0. The squash merge preserved the entire published
+  content. An initial unquoted PowerShell tree-expression invocation was invalid;
+  the quoted commands above supplied the successful comparison.
+- Header `head_revision` is re-anchored to the resolvable merged revision;
+  original reviewed/published revisions remain in the history above. Current
+  local HEAD at closure is `ec9f48b100c947d6ef5c8f8be399dde7a7381a97` on
+  `docs/native-reasoning-usage`; closure does not switch or rewrite branches.
+- Only this evidence file is updated by close. Delivered evidence and all local
+  working artifacts are retained under the merged-outcome rule; no files or
+  branches are deleted. No commit, push, PR creation, merge or release is
+  performed by this closure step. The local close record still requires a
+  separately authorized commit/publication to persist it remotely.
