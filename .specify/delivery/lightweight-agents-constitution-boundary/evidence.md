@@ -4,12 +4,14 @@
 - **phase_id**: `documentation`
 - **lane**: Lightweight
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f`
-- **head_revision**: `working-tree`
+- **head_revision**: `26ff674daa7594e8d000346bab1ac39ca7ebdbed`
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\neon-nebula`
 - **recorded_at**: 2026-11-01
-- **status**: active
-- **result**: pass for local documentation/governance checks and PR CI; user review pending
+- **status**: delivered
+- **result**: pass for local documentation/governance checks and PR CI; merged as 26ff674
 - **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/26
+- **outcome_recorded_at**: 2026-11-01
+- **merged_revision**: `26ff674daa7594e8d000346bab1ac39ca7ebdbed`
 
 ## Request and scope
 
@@ -67,6 +69,32 @@ All commands run from the recorded working directory.
   governed `AGENTS.md` bytes. Its fresh CI run is observed in the PR rather than
   recursively embedded in this file. No merge, release or automatic write is
   authorized by this record.
+
+## Post-merge closure — 2026-11-01
+
+This section records the later observed outcome and supersedes the earlier
+review-pending/publication-open statements; those historical sections remain
+unchanged.
+
+- Close identity: `delivery_run=lightweight-agents-constitution-boundary`,
+  `outcome=merged`, `pr=https://github.com/YanZhiwei/spawn-join/pull/26`.
+- GitHub reports `state=MERGED`, merged at `2026-11-01T09:14:30Z`, with merge
+  revision `26ff674daa7594e8d000346bab1ac39ca7ebdbed`.
+- The published PR head was `82283dee50f3eb4a5e32495295e6385d56a503ac`.
+  All 14 reported checks succeeded on that head: 12 package/platform/Python
+  combinations, Governance and gate regression, and the aggregate Quality Gate
+  (run [41278911323](https://github.com/YanZhiwei/spawn-join/actions/runs/41278911323)).
+- `git fetch origin main` and `git merge-base --is-ancestor` confirm the merge
+  revision is on `origin/main`. The merge revision tree and the published PR
+  head tree are both `6896dbaa7083baa4989a1b6cc4be8d6904fdbff1`, so the squash
+  merge preserved the published content.
+- Header `head_revision` is re-anchored to the merged revision; the original
+  reviewed and published heads remain in the history above. Current checkout is
+  the published branch `docs/agents-constitution-boundary` at `82283de`, not the
+  merged `main`; closure does not switch or rewrite branches.
+- Only this evidence file is updated by close. No merge, release, push or PR
+  creation is performed by this closure step. The local close record still
+  requires separately authorized commit/publication to persist remotely.
 
 ## Limitations
 
