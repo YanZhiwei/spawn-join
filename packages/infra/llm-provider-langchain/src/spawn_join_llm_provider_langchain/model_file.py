@@ -393,6 +393,15 @@ def _parse_options(
 
 
 @dataclass(frozen=True, slots=True)
+class ModelSummary:
+    """A display-ready view of one catalog entry."""
+
+    name: str
+    model: str
+    display_name: str
+
+
+@dataclass(frozen=True, slots=True)
 class _ModelEntry:
     name: str
     display_name: str
@@ -410,6 +419,18 @@ class ModelCatalog:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_entries", MappingProxyType(dict(self._entries)))
+
+    @property
+    def models(self) -> tuple[ModelSummary, ...]:
+        """Return display summaries in the order defined by the file."""
+        return tuple(
+            ModelSummary(
+                name=entry.name,
+                model=entry.config.model,
+                display_name=entry.display_name,
+            )
+            for entry in self._entries.values()
+        )
 
     @property
     def default_name(self) -> str:

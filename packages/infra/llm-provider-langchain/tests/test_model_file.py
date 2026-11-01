@@ -359,6 +359,8 @@ def test_default_must_reference_existing_model(tmp_path: Path) -> None:
     ("value", "expected"),
     [
         ('""', "non-empty"),
+        ('"   "', "non-empty"),
+        ('"bad\\u0007name"', "control characters"),
         ("123", "must be a string"),
     ],
 )
@@ -654,3 +656,75 @@ def test_option_error_path_is_not_duplicated(tmp_path: Path) -> None:
         _catalog(tmp_path, _single_model_yaml(extra=extra))
 
     assert str(excinfo.value).count("models.fast.options") == 1
+
+
+def test_model_summaries_expose_display_names_and_order(tmp_path: Path) -> None:
+    text = _multi_model_yaml().replace(
+        "    model: gpt-test\n",
+        "    model: gpt-test\n    display_name: GPT Test Mini\n",
+        1,
+    )
+    catalog = _catalog(tmp_path, text)
+
+    summaries = [(item.name, item.model, item.display_name) for item in catalog.models]
+
+    assert summaries == [
+        ("fast", "gpt-test", "GPT Test Mini"),
+        ("claude", "claude-test", "claude"),
+    ]
+
+
+def test_duplicate_display_names_are_allowed(tmp_path: Path) -> None:
+    text = (
+        _multi_model_yaml()
+        .replace(
+            "    model: gpt-test\n",
+            "    model: gpt-test\n    display_name: Shared Name\n",
+            1,
+        )
+        .replace(
+            "    model: claude-test\n",
+            "    model: claude-test\n    display_name: Shared Name\n",
+            1,
+        )
+    )
+    catalog = _catalog(tmp_path, text)
+
+    assert [item.display_name for item in catalog.models] == [
+        "Shared Name",
+        "Shared Name",
+    ]
+
+
+def test_catalog_repr_hides_keys_and_endpoints(tmp_path: Path) -> None:
+    catalog = _catalog(tmp_path, _multi_model_yaml())
+
+    text = repr(catalog)
+
+    assert "fast" in text
+    assert "claude" in text
+    assert "OPENAI_API_KEY" not in text
+    assert "ANTHROPIC_API_KEY" not in text
+    assert "api.example.com" not in text
+    assert "sk-" not in text
+
+
+def test_display_name_cannot_be_used_for_lookup(tmp_path: Path) -> None:
+    text = _single_model_yaml(extra="    display_name: Friendly Name\n")
+    catalog = _catalog(tmp_path, text)
+
+    with pytest.raises(ConfigurationError, match="Unknown model"):
+        catalog.create_chat_model(
+            "Friendly Name", environ={"OPENAI_API_KEY": "sk-test"}
+        )
+
+
+def test_display_name_cannot_be_used_as_default(tmp_path: Path) -> None:
+    text = _single_model_yaml(extra="    display_name: Friendly Name\n").replace(
+        "schema_version: 1\n",
+        "schema_version: 1\ndefault: Friendly Name\n",
+        1,
+    )
+
+    with pytest.raises(ConfigurationError, match="unknown model"):
+        _catalog(tmp_path, text)

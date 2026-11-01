@@ -48,3 +48,12 @@ tasks:
     content_fingerprint: 5f1ddfe8b13f0b3bc01985426b74e43cd8e835ab77c615b3bd730c0763909809
     receipt: receipts/T005.md
     note: 三种协议选项与 thinking；两轮独立评审；51 个 parser/catalog 测试，目标包 89 tests 全通过。
+  T006:
+    title: US2 模型清单与展示名
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: da55672989065ee3106bcd9c1015cf2a9fe2ad214e1552b956a49f7c99f9f586
+    receipt: receipts/T006.md
+    note: 两轮独立评审；5 个公共导出；61 个 target tests，整包 96 tests 全通过。
