@@ -84,3 +84,12 @@ tasks:
     content_fingerprint: 523cbc8000fa691aa84dbdf1ef02406541f5c7eafd62e5951ea34b33c95eb729
     receipt: receipts/T009.md
     note: docs/governance 通过；独立评审 pass；协议包代码未改。
+  T010:
+    title: 最终验证
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: tree:d711a7b0f25b3a9b33da8a803cce40b404e74959
+    receipt: receipts/T010.md
+    note: quickstart、目标包质量门、docs、governance、diff check 全部通过。
