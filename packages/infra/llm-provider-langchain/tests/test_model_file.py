@@ -834,3 +834,52 @@ def test_env_file_does_not_interpolate_process_values(
     assert isinstance(model, ChatOpenAI)
     assert isinstance(model.openai_api_key, SecretStr)
     assert model.openai_api_key.get_secret_value() == "${T007_SENTINEL}"
+
+
+def test_repository_fixture_catalog_loads() -> None:
+    catalog = load_model_catalog(FIXTURES / "model.yaml")
+
+    assert catalog.default_name == "fast"
+    assert [item.name for item in catalog.models] == ["fast", "claude"]
+    assert [item.display_name for item in catalog.models] == [
+        "GPT Test Mini",
+        "Claude Test",
+    ]
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "gpt-test-mini"
+
+
+def test_unsafe_yaml_tag_is_rejected(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        "schema_version: 1\nmodels: !!python/object:os.system {}\n",
+    )
+
+    with pytest.raises(ConfigurationError, match="not valid YAML"):
+        load_model_catalog(path)
+
+
+def test_missing_required_entry_field_is_reported(tmp_path: Path) -> None:
+    text = _single_model_yaml().replace(
+        "    endpoint: https://api.example.com/v1\n", "", 1
+    )
+
+    with pytest.raises(ConfigurationError, match="missing required field"):
+        _catalog(tmp_path, text)
+
+
+def test_missing_required_top_level_field_is_reported(tmp_path: Path) -> None:
+    with pytest.raises(ConfigurationError, match="missing required field"):
+        _catalog(tmp_path, "schema_version: 1\n")
+
+
+def test_non_utf8_env_file_is_rejected(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = tmp_path / "invalid.env"
+    env_path.write_bytes(b"\xff\xfe\x00")
+
+    with pytest.raises(ConfigurationError, match="Env file could not be read"):
+        load_model_catalog(catalog_path, env_file=env_path)

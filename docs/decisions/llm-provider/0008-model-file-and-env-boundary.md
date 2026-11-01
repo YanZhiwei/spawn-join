@@ -74,7 +74,7 @@ ADR-0006 已确定：
 ```text
 应用
   └── load_model_catalog("model.yaml", env_file=".env")
-        ├── YAML SafeLoader + 重复键检查
+        ├── YAML compose + 重复键/递归别名检查
         ├── schema 校验 → ChatModelConfig / ProtocolOptions（复用现有类型）
         ├── .env 读取（可选）→ 仅保留 api_key_env 引用
         └── ModelCatalog（不可变）
@@ -124,8 +124,9 @@ spawn-join-llm-provider
 
 ## Verification and implementation status
 
-尚未实现。本 ADR 为 `Proposed`，不代表代码、测试或质量门已通过。实现后由 Delivery
-evidence 记录实际命令、退出码和范围；批准前不得把计划描述成已验证结果。
+已实现并通过目标包与全仓库本地质量门、quickstart 和最终独立评审；等待用户
+Code Review 与 PR CI。本 ADR 仍为 `Proposed`，不代表已合并或已发布。实际命令与
+结果由 Delivery evidence 记录。
 
 ## Revision history
 

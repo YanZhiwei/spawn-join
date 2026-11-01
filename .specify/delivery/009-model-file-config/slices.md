@@ -67,7 +67,7 @@
 - Interim public subset: S2 导出 `load_model_catalog` 与 `ModelCatalog`，但 `ModelCatalog.models` 在 S3 增加、`env_file` 参数在 S4 增加。两者都是向后兼容的纯增量；`contracts/public-api.md` 描述的是 S4 之后的最终状态。
 - Not in this slice: 清单展示（S3）、`.env`（S4）。
 - Rollback: revert 切片；公共面回到 2 个名字。
-- Diff budget: 约 4 文件 / 350–400 行。若实际超过 400 行，按 `slice_warn_lines` 记录理由（一个用户可见能力的完整创建路径），不改变任务映射。
+- Diff budget: 实际 `9678cce..925665c` 新增 1,031 行（源码 493 行），超过 `slice_warn_lines: 400`；已记录为预算例外，理由是一个用户可见能力的完整创建与选项路径。
 
 ### S3 — US2：模型清单与展示名
 
@@ -150,3 +150,4 @@
 - Approved mode / snapshot: stacked；plan SHA256 `C7E856C1C8AC9282C78C62CBB28C7EAFEE78C157180E0507C0DFF00648D410DF`；tasks SHA256 `02101F5ED95D7A976934C9A5E6470A92435DB49C9DA50504C1134DE4A9A96654`
 - Queue correction: 2026-11-01 Ralph 预检发现 `uv sync --locked` 使“只改 pyproject”的 T001 无法独立通过；原 T001/T002 合并为新 T001，其余任务顺延一位。切片边界与需求映射不变。
 - Design note correction: 2026-11-01 T003 实现时把 `_StrictSafeLoader` 子类改为 `yaml.compose` 节点树检查（重复键/递归别名）+ `safe_load`。行为与安全属性不变；原始方案会触发 Pyright 对未类型化 PyYAML 成员的错误，并遗漏非 UTF-8/递归别名边界。plan/research/data-model 已同步，任务边界不变。
+- Delivery deviation: 2026-11-01 为便于用户 Code Review，本次以**单个 Feature PR** 承载 5 个切片；不声称 stacked 交付已完成。合并方式（逐片 squash 或单 PR squash）待用户评审后决定，未授权 push/merge 前不执行。
