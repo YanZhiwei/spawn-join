@@ -1,6 +1,7 @@
 # Delivery evidence: 009-model-file-config
 
 - **feature_id**: `009-model-file-config`
+- **phase_id**: `final-verification`
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
@@ -48,7 +49,7 @@
 - **ADR status**: ADR-0008 remains `Proposed`; ADR-0006 carries a dated note that its adapter public surface is extended. Acceptance follows the user's review.
 - Out of scope: channel config, multi-file merge, auto-discovery, hot reload, interpolation, provider routing/pool, real Provider requests.
 
-## Residual risks
+## Limitations and residual risks
 
 - Remote CI is the first check on the actual GitHub runner; local full quality passed.
 - No real Provider request was executed; model construction is offline by design.
