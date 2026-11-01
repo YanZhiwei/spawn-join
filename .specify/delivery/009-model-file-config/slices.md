@@ -5,8 +5,8 @@
 - Delivery run / canonical path: `.specify/delivery/009-model-file-config/`
 - Feature / spec / plan / tasks:
   - `specs/009-model-file-config/spec.md`
-  - `specs/009-model-file-config/plan.md`（SHA256 `D80195B6AE5D9763EA0259EE857A22C922F911D91A12A313430EAED4EEC999FB`）
-  - `specs/009-model-file-config/tasks.md`（SHA256 `9EA4E1E3E93369FE3D698A9EA23B6059C54DDB1CC50E1717A4B75CC2618A5141`；2026-11-01 合并原 T001/T002 后的队列）
+  - `specs/009-model-file-config/plan.md`（SHA256 `C7E856C1C8AC9282C78C62CBB28C7EAFEE78C157180E0507C0DFF00648D410DF`）
+  - `specs/009-model-file-config/tasks.md`（SHA256 `02101F5ED95D7A976934C9A5E6470A92435DB49C9DA50504C1134DE4A9A96654`；2026-11-01 合并原 T001/T002、拆分 T003/T004 助手后的队列）
 - Baseline HEAD: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f`；工作树在计划阶段只有本地忽略工件
 - Design approval: 用户 2026-11-01 回复“plan 通过”，针对上述 plan 快照
 - Artifact policy: ephemeral（`specs/` 本地忽略；本文件与 evidence 在 `.specify/delivery/`）
@@ -42,14 +42,14 @@
 
 ### S1 — 依赖与 YAML 解析边界
 
-- Acceptance outcome: 适配包安装 PyYAML/python-dotenv，内部 YAML 解析器能拒绝语法错误、重复键和非映射根节点，且不泄露文件内容。
+- Acceptance outcome: 适配包安装 PyYAML/python-dotenv，内部 YAML 解析器能拒绝语法错误、重复键、递归别名、非 UTF-8 和非映射根节点，且不泄露文件内容。
 - Task IDs: T001、T002、T003
 - Expected paths: `packages/infra/llm-provider-langchain/pyproject.toml`（modify）、`uv.lock`（modify，生成文件）、`src/.../model_file.py`（new）、`tests/test_model_file.py`（new）、`tests/fixtures/model.yaml`（new）、`tests/fixtures/model-invalid-duplicate.yaml`（new）
 - Trunk-safe: `standalone`
 - Evidence: 只新增内部模块与依赖；不导出新公共名字，现有公共 API 测试不变；目标包测试可独立通过。
 - Target verification: `uv lock --check --directory packages/infra/llm-provider-langchain`；`uv sync --locked --directory packages/infra/llm-provider-langchain`；`pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain`
 - Flag: N/A
-- Review focus: 重复键检测是否只作用于字面键；`SafeLoader` 是否保持；错误消息是否只含行列/problem。
+- Review focus: 是否只使用 `SafeLoader`/`safe_load`；compose 检查是否覆盖嵌套与序列、是否拒绝递归别名；错误消息是否只含行列/problem/path。
 - Not in this slice: 公共导出与目录对象（S2）。
 - Rollback: revert 切片提交并重新 `uv sync --locked`。
 - Diff budget: 约 6 文件 / 300–350 行（`uv.lock` 不计）。
@@ -147,5 +147,6 @@
 - SLICE_APPROVAL: approved
 - Approved by: 用户 2026-11-01 回复「slice 通过」，随后授权 Ralph 执行
 - Choice / accepted risks: stacked；5 个 standalone 切片；接受 S2 接近 400 行的预算说明
-- Approved mode / snapshot: stacked；plan SHA256 `D80195B6AE5D9763EA0259EE857A22C922F911D91A12A313430EAED4EEC999FB`；tasks SHA256 `9EA4E1E3E93369FE3D698A9EA23B6059C54DDB1CC50E1717A4B75CC2618A5141`
+- Approved mode / snapshot: stacked；plan SHA256 `C7E856C1C8AC9282C78C62CBB28C7EAFEE78C157180E0507C0DFF00648D410DF`；tasks SHA256 `02101F5ED95D7A976934C9A5E6470A92435DB49C9DA50504C1134DE4A9A96654`
 - Queue correction: 2026-11-01 Ralph 预检发现 `uv sync --locked` 使“只改 pyproject”的 T001 无法独立通过；原 T001/T002 合并为新 T001，其余任务顺延一位。切片边界与需求映射不变。
+- Design note correction: 2026-11-01 T003 实现时把 `_StrictSafeLoader` 子类改为 `yaml.compose` 节点树检查（重复键/递归别名）+ `safe_load`。行为与安全属性不变；原始方案会触发 Pyright 对未类型化 PyYAML 成员的错误，并遗漏非 UTF-8/递归别名边界。plan/research/data-model 已同步，任务边界不变。

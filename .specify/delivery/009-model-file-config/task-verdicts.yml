@@ -21,3 +21,12 @@ tasks:
     content_fingerprint: 13670260a4fb246384c5ae802a32f08af9c4b64120de78143a082e87a87a9b52
     receipt: receipts/T002.md
     note: 双协议有效夹具与重复键失败夹具；独立评审 pass。
+  T003:
+    title: YAML 文档边界与重复键/递归别名检查
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: a70475b84bb432487008b831a85c19f004f47dc3c2522b46724658590553dbd6
+    receipt: receipts/T003.md
+    note: 两轮独立评审；修复非 UTF-8 与递归别名；10 个解析测试，目标包 48 tests 全通过。
