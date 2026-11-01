@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import Literal, cast
 
 import yaml
+from dotenv import dotenv_values
 from langchain_core.language_models import BaseChatModel
 
 from spawn_join_llm_provider import (
@@ -416,9 +417,14 @@ class ModelCatalog:
 
     _entries: Mapping[str, _ModelEntry] = field(repr=False)
     _default_name: str = field(repr=False)
+    _env_file: Path | None = field(repr=False)
+    _env_values: Mapping[str, str] = field(repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_entries", MappingProxyType(dict(self._entries)))
+        object.__setattr__(
+            self, "_env_values", MappingProxyType(dict(self._env_values))
+        )
 
     @property
     def models(self) -> tuple[ModelSummary, ...]:
@@ -467,17 +473,22 @@ class ModelCatalog:
             )
         return entry
 
-    @staticmethod
     def _resolve_api_key(
+        self,
         entry: _ModelEntry,
         environ: Mapping[str, str] | None,
     ) -> str:
         source = os.environ if environ is None else environ
         value = source.get(entry.api_key_env)
         if value is None:
+            value = self._env_values.get(entry.api_key_env)
+        if value is None:
+            location = "the environment"
+            if self._env_file is not None:
+                location = f"the environment or {self._env_file}"
             raise ConfigurationError(
                 f"models.{entry.name}.api_key_env: {entry.api_key_env} is not "
-                "set in the environment"
+                f"set in {location}"
             )
         if not value.strip():
             raise ConfigurationError(
@@ -546,7 +557,25 @@ def _parse_entry(name: str, value: object) -> _ModelEntry:
     )
 
 
-def load_model_catalog(path: str | Path) -> ModelCatalog:
+def _read_env_file(path: Path, referenced: set[str]) -> Mapping[str, str]:
+    if not path.is_file():
+        raise ConfigurationError(f"Env file not found: {path}")
+    try:
+        values = dotenv_values(path, encoding="utf-8-sig", interpolate=False)
+    except (OSError, UnicodeError) as exc:
+        raise ConfigurationError(f"Env file could not be read: {path}") from exc
+    return {
+        key: value
+        for key, value in values.items()
+        if key in referenced and value is not None
+    }
+
+
+def load_model_catalog(
+    path: str | Path,
+    *,
+    env_file: str | Path | None = None,
+) -> ModelCatalog:
     """Load and validate a model catalog from an explicit YAML file."""
     document = _load_yaml_document(Path(path))
     root = _require_string_keys(_as_mapping(document, "<root>"), "<root>")
@@ -586,4 +615,16 @@ def load_model_catalog(path: str | Path) -> ModelCatalog:
                 f"{available}"
             )
 
-    return ModelCatalog(_entries=entries, _default_name=default_name)
+    env_path: Path | None = None
+    env_values: Mapping[str, str] = {}
+    if env_file is not None:
+        env_path = Path(env_file)
+        referenced = {entry.api_key_env for entry in entries.values()}
+        env_values = _read_env_file(env_path, referenced)
+
+    return ModelCatalog(
+        _entries=entries,
+        _default_name=default_name,
+        _env_file=env_path,
+        _env_values=env_values,
+    )

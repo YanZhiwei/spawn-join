@@ -728,3 +728,109 @@ def test_display_name_cannot_be_used_as_default(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigurationError, match="unknown model"):
         _catalog(tmp_path, text)
+
+
+def _write_env(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / ".env"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_env_file_supplies_api_key(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    model = catalog.create_chat_model(environ={})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "sk-from-file"
+
+
+def test_process_env_wins_over_env_file(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+    catalog = load_model_catalog(catalog_path, env_file=str(env_path))
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-from-process"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "sk-from-process"
+
+
+def test_empty_process_value_does_not_fall_back_to_env_file(
+    tmp_path: Path,
+) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    with pytest.raises(ConfigurationError, match="is empty"):
+        catalog.create_chat_model(environ={"OPENAI_API_KEY": "   "})
+
+
+def test_missing_key_mentions_env_file(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "UNRELATED=value\n")
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        catalog.create_chat_model(environ={})
+
+    message = str(excinfo.value)
+    assert "OPENAI_API_KEY" in message
+    assert str(env_path) in message
+
+
+def test_missing_env_file_is_rejected(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+
+    with pytest.raises(ConfigurationError, match="Env file not found"):
+        load_model_catalog(catalog_path, env_file=tmp_path / "missing.env")
+
+
+def test_env_file_is_not_read_implicitly(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+    catalog = load_model_catalog(catalog_path)
+
+    with pytest.raises(ConfigurationError, match="not set"):
+        catalog.create_chat_model(environ={})
+
+
+def test_empty_env_file_value_is_rejected(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=\n")
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    with pytest.raises(ConfigurationError, match="is empty"):
+        catalog.create_chat_model(environ={})
+
+
+def test_env_file_creation_does_not_modify_os_environ(tmp_path: Path) -> None:
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=sk-from-file\n")
+    before = dict(os.environ)
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    catalog.create_chat_model(environ={})
+
+    assert dict(os.environ) == before
+
+
+def test_env_file_does_not_interpolate_process_values(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("T007_SENTINEL", "sk-from-process")
+    catalog_path = _write(tmp_path, _single_model_yaml())
+    env_path = _write_env(tmp_path, "OPENAI_API_KEY=${T007_SENTINEL}\n")
+    catalog = load_model_catalog(catalog_path, env_file=env_path)
+
+    model = catalog.create_chat_model(environ={})
+
+    assert isinstance(model, ChatOpenAI)
+    assert isinstance(model.openai_api_key, SecretStr)
+    assert model.openai_api_key.get_secret_value() == "${T007_SENTINEL}"

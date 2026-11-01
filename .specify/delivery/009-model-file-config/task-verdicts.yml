@@ -57,3 +57,12 @@ tasks:
     content_fingerprint: da55672989065ee3106bcd9c1015cf2a9fe2ad214e1552b956a49f7c99f9f586
     receipt: receipts/T006.md
     note: 两轮独立评审；5 个公共导出；61 个 target tests，整包 96 tests 全通过。
+  T007:
+    title: US3 .env 与密钥优先级
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 22657da25ec0068b008b2a29ad840d88342868229fc285aa59bd7c350334639d
+    receipt: receipts/T007.md
+    note: 两轮独立评审；修复 dotenv 默认插值；70 个 target tests，整包 105 tests 全通过。
