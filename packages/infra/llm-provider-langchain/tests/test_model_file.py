@@ -836,6 +836,15 @@ def test_env_file_does_not_interpolate_process_values(
     assert model.openai_api_key.get_secret_value() == "${T007_SENTINEL}"
 
 
+def test_model_catalog_from_file_classmethod(tmp_path: Path) -> None:
+    catalog = ModelCatalog.from_file(_write(tmp_path, _single_model_yaml()))
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "gpt-test"
+
+
 def test_repository_fixture_catalog_loads() -> None:
     catalog = load_model_catalog(FIXTURES / "model.yaml")
 

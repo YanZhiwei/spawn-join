@@ -438,6 +438,25 @@ class ModelCatalog:
             self, "_env_values", MappingProxyType(dict(self._env_values))
         )
 
+    @classmethod
+    def from_file(
+        cls,
+        path: str | Path,
+        *,
+        env_file: str | Path | None = None,
+    ) -> ModelCatalog:
+        """Load and validate a catalog from an explicit YAML file."""
+        root = _parse_root(path)
+        entries = _parse_models(root["models"])
+        default_name = _resolve_default_name(root, entries)
+        env_path, env_values = _load_env_snapshot(env_file, entries)
+        return cls(
+            _entries=entries,
+            _default_name=default_name,
+            _env_file=env_path,
+            _env_values=env_values,
+        )
+
     @property
     def models(self) -> tuple[ModelSummary, ...]:
         """Return display summaries in the order defined by the file."""
@@ -602,16 +621,7 @@ def load_model_catalog(
     env_file: str | Path | None = None,
 ) -> ModelCatalog:
     """Load and validate a model catalog from an explicit YAML file."""
-    root = _parse_root(path)
-    entries = _parse_models(root["models"])
-    default_name = _resolve_default_name(root, entries)
-    env_path, env_values = _load_env_snapshot(env_file, entries)
-    return ModelCatalog(
-        _entries=entries,
-        _default_name=default_name,
-        _env_file=env_path,
-        _env_values=env_values,
-    )
+    return ModelCatalog.from_file(path, env_file=env_file)
 
 
 def _parse_root(path: str | Path) -> dict[str, object]:

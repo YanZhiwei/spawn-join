@@ -110,15 +110,17 @@ models:
 ```
 
 ```python
-from spawn_join_llm_provider_langchain import load_model_catalog
+from spawn_join_llm_provider_langchain import ModelCatalog
 
-catalog = load_model_catalog("model.yaml", env_file=".env")
+catalog = ModelCatalog.from_file("model.yaml", env_file=".env")
 model = catalog.create_chat_model()  # default: fast
 claude = catalog.create_chat_model("claude")
 
 for item in catalog.models:
     print(item.name, item.model, item.display_name)
 ```
+
+`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。
 
 `.env` 只保存 key，模型文件只保存变量名：
 
