@@ -54,10 +54,10 @@
 
 ## Scope and deviations
 
-- Implemented: schema v1 `model.yaml`, strict parsing, three protocol options, `thinking`, display names, 5-name public API, explicit `.env` with process-env precedence, READMEs, ADR-0008 (Proposed), package boundary note.
-- **Delivery deviation**: the approved slice plan describes 5 stacked PRs; this handoff uses **one feature PR** for user review. Stacked delivery is not claimed; merge method is pending user review.
+- Implemented: schema v1 `model.yaml`, strict parsing, three protocol options, `thinking`, display names, 5-name public API, explicit `.env` with process-env precedence, READMEs, ADR-0008 (Accepted), package boundary note.
+- **Delivery deviation**: the approved slice plan describes 5 stacked PRs; this handoff used **one feature PR** for user review and squash-merged it as PR #27. Stacked delivery is not claimed.
 - **Slice budget exception**: S2 (`9678cce..925665c`) added 1,031 lines (493 source), above `slice_warn_lines: 400`; recorded in `slices.md`.
-- **ADR status**: ADR-0008 remains `Proposed`; ADR-0006 carries a dated note that its adapter public surface is extended. Acceptance follows the user's review.
+- **ADR status**: ADR-0008 is `Accepted`; ADR-0006 carries a dated note that its adapter public surface is extended.
 - Out of scope: channel config, multi-file merge, auto-discovery, hot reload, interpolation, provider routing/pool, real Provider requests.
 
 ## Review follow-up: simpler deserialization?
