@@ -52,7 +52,7 @@ ADR-0006 已确定：
 `__init__.py`，私有实现 `_yaml.py`、`_schema.py`、`_catalog.py`、`_env.py`），
 并采用以下约束：
 
-- **文件格式**：显式路径的单个 YAML 文件，`schema_version: 1`；顶层 `models` 映射、
+- **文件格式**：默认当前工作目录的 `model.yaml`（可显式覆盖），`schema_version: 1`；顶层 `models` 映射、
   可选 `default`；每个条目包含 `protocol`、`endpoint`、`model`、`api_key_env`，以及
   可选 `display_name`、`timeout_seconds`、`max_retries`、`options`。
 - **凭据引用**：只接受 `api_key_env: ENV_VAR_NAME`。不支持 `${VAR}`、`$VAR` 或

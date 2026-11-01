@@ -120,7 +120,7 @@ for item in catalog.models:
     print(item.name, item.model, item.display_name)
 ```
 
-`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。
+`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。省略 `path` 时默认读取当前工作目录的 `model.yaml`；`env_file` 仍必须显式传入。
 
 `.env` 只保存 key，模型文件只保存变量名：
 

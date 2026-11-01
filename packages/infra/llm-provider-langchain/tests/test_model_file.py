@@ -845,6 +845,20 @@ def test_model_catalog_from_file_classmethod(tmp_path: Path) -> None:
     assert model.model_name == "gpt-test"
 
 
+def test_from_file_defaults_to_cwd_model_yaml(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "model.yaml").write_text(_single_model_yaml(), encoding="utf-8")
+
+    catalog = ModelCatalog.from_file()
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "gpt-test"
+
+
 def test_repository_fixture_catalog_loads() -> None:
     catalog = load_model_catalog(FIXTURES / "model.yaml")
 

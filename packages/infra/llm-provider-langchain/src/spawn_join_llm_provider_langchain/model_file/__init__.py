@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ._catalog import ModelCatalog, ModelSummary
+from ._catalog import DEFAULT_MODEL_FILE, ModelCatalog, ModelSummary
 
 __all__ = ["ModelCatalog", "ModelSummary", "load_model_catalog"]
 
 
 def load_model_catalog(
-    path: str | Path,
+    path: str | Path = DEFAULT_MODEL_FILE,
     *,
     env_file: str | Path | None = None,
 ) -> ModelCatalog:

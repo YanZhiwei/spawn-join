@@ -16,6 +16,8 @@ from ..factory import create_chat_model as _create_chat_model
 from ._env import load_env_snapshot
 from ._schema import CatalogEntry, parse_catalog
 
+DEFAULT_MODEL_FILE = Path("model.yaml")
+
 
 @dataclass(frozen=True, slots=True)
 class ModelSummary:
@@ -44,7 +46,7 @@ class ModelCatalog:
     @classmethod
     def from_file(
         cls,
-        path: str | Path,
+        path: str | Path = DEFAULT_MODEL_FILE,
         *,
         env_file: str | Path | None = None,
     ) -> ModelCatalog:
