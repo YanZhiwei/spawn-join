@@ -132,6 +132,116 @@ options = AnthropicMessagesOptions(
 `AnthropicThinkingAdaptive()` 可用于自适应 thinking。budget 模式要求
 `max_output_tokens` 存在且大于 `budget_tokens`。
 
+## 思考与思考强度
+
+**当前就可以通过 LangChain 原生调用参数控制思考，无需修改工厂或新增 Options 字段。**
+`create_chat_model()` 返回原生 `BaseChatModel`；协议选项是构造默认值，单次调用参数直接
+交给 LangChain，并按其规则覆盖默认值。
+
+### 单次调用设置强度
+
+以下是完整异步调用示例。`protocol` 必须与服务端接口匹配，可选择
+`CHAT_COMPLETIONS`、`RESPONSES` 或 `ANTHROPIC_MESSAGES`：
+
+```python
+import asyncio
+import os
+
+from langchain_core.messages import HumanMessage
+from spawn_join_llm_provider import ProtocolKind
+from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
+
+
+async def main() -> None:
+    model = create_chat_model(
+        ChatModelConfig(
+            protocol=ProtocolKind.CHAT_COMPLETIONS,
+            endpoint=os.environ["LLM_BASE_URL"],
+            model=os.environ["LLM_MODEL"],
+            timeout_seconds=60.0,
+        ),
+        api_key=os.environ["LLM_API_KEY"],
+    )
+
+    response = await model.ainvoke(
+        [HumanMessage(content="分析这个方案的优缺点")],
+        reasoning_effort="high",
+        max_tokens=8192,
+    )
+    print(response.content)
+
+
+asyncio.run(main())
+```
+
+运行前设置 `LLM_BASE_URL`、`LLM_MODEL` 和 `LLM_API_KEY`。地址应使用对应服务的 API
+base URL，模型必须支持所选协议和参数；实际执行 `ainvoke()` 会向该服务发送请求。
+示例显式设置 `max_tokens`，以满足 Anthropic 的必填输出预算；LangChain 会为 OpenAI
+协议转换为相应的 token 上限参数。预算值仍需符合目标模型限制。
+
+同一个 `reasoning_effort` 名称由 LangChain 按协议处理：
+
+| 协议 | 调用参数 | LangChain 负责的请求映射 |
+|---|---|---|
+| `chat_completions` | `reasoning_effort="high"` | `reasoning_effort` |
+| `responses` | `reasoning_effort="high"` | `reasoning.effort` |
+| `anthropic_messages` | `reasoning_effort="high"` | `output_config.effort` |
+
+不需要在应用中手工组装 `reasoning` / `output_config`，也不需要把强度换算成 token
+预算。Anthropic 的 `effort` 是 LangChain `reasoning_effort` 的别名；通常只传一个即可。
+
+### Anthropic 显式思考模式
+
+以下片段放在异步函数内，`model` 必须由 `ANTHROPIC_MESSAGES` 协议创建，并使用支持
+相应模式的模型：
+
+```python
+# 自适应思考，并指定投入强度。
+response = await model.ainvoke(
+    [HumanMessage(content="分析这个方案的优缺点")],
+    thinking={"type": "adaptive"},
+    reasoning_effort="high",
+    max_tokens=8192,
+)
+```
+
+对于支持固定预算或关闭思考的模型，也可以分别使用：
+
+```python
+# 固定预算：budget_tokens 至少为 1024，且小于 max_tokens。
+response = await model.ainvoke(
+    [HumanMessage(content="分析这个方案的优缺点")],
+    thinking={"type": "enabled", "budget_tokens": 2048},
+    max_tokens=4096,
+)
+
+# 显式关闭：仅适用于支持 disabled 的模型。
+response = await model.ainvoke(
+    [HumanMessage(content="你好")],
+    thinking={"type": "disabled"},
+    max_tokens=4096,
+)
+```
+
+### 默认值、兼容性与边界
+
+- 当前 `ChatCompletionsOptions` 没有 `reasoning_effort`；`ResponsesOptions` 已支持
+  `low` / `medium` / `high`；`AnthropicMessagesOptions` 已支持固定预算和自适应
+  `thinking`，但没有 `reasoning_effort`。这不限制原生调用参数入口。
+- `Options` 中的 `None` 表示不指定该默认值，不表示显式关闭思考。不传调用覆盖值时，
+  继续使用模型构造配置及 LangChain / 服务端默认行为。
+- 字段同名不代表各模型支持相同等级，也不保证所有模型都允许关闭思考。思考强度不等于
+  固定 token 预算；不指定 `thinking` 时的行为由 LangChain 和目标模型决定。
+- 上述调用形状对照了仓库 `uv.lock` 中的 `langchain-openai==1.7.3` 和
+  `langchain-anthropic==1.7.7`。不能仅凭包声明的 `>=1.0` 下限断言旧版本支持全部示例；
+  在仓库内请使用 `uv sync --locked`，其他环境应核对实际安装版本。
+- 兼容 OpenAI 的服务未必支持相同的思考扩展。本包不猜测模型能力、不自动切换协议或
+  降级参数；不支持参数时的异常由 LangChain / 服务端产生，应用负责处理。
+- 这些示例说明现有调用入口，不代表本项目已执行真实 Provider 集成验证。
+
+参考：[LangChain OpenAI 集成](https://docs.langchain.com/oss/python/integrations/chat/openai)、
+[LangChain Anthropic reasoning_effort](https://reference.langchain.com/python/langchain-anthropic/chat_models/ChatAnthropic/reasoning_effort)。
+
 ## 工具调用
 
 工具定义和工具选择使用 LangChain 原生 API：

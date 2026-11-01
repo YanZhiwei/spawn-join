@@ -901,3 +901,20 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
   未使用 `--force` 消除。
 
 验证记录：[v0.3.1 升级 evidence](evidence/delivery-v031-upgrade.md)。
+
+## 2026-11-01 — LLM 原生思考参数用法文档
+
+**Status**: 文档已更新；验证结果和独立评审状态见 evidence；未提交或发布
+
+**Route**: Lightweight（只说明现有原生调用能力，不创建 Feature 工件）
+
+**Base/head**: `0f34357e1aebcb9ccc1ec2e0f067d001b1c26a81` + 本次文档工作树
+
+- 协议包 README 区分 Options 构造默认值与 LangChain 单次调用参数。
+- 适配包 README 增加完整异步调用、`reasoning_effort`、Anthropic 思考模式、
+  模型/SDK 兼容性和错误处理边界；不增加参数转换或能力推断。
+- 离线执行示例发现 Anthropic 必填输出预算，已为示例补充 `max_tokens`；
+  HTTP 拦截探针验证三种协议映射及三种 Anthropic 思考模式，不验证真实模型接受情况。
+- Python 源码、公共 API、依赖、权限和运行时行为保持不变；不调用真实 Provider。
+
+验证记录：[原生思考参数文档 evidence](../.specify/delivery/lightweight-native-reasoning-docs/evidence.md)。
