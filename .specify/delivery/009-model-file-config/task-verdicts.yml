@@ -66,3 +66,12 @@ tasks:
     content_fingerprint: 22657da25ec0068b008b2a29ad840d88342868229fc285aa59bd7c350334639d
     receipt: receipts/T007.md
     note: 两轮独立评审；修复 dotenv 默认插值；70 个 target tests，整包 105 tests 全通过。
+  T008:
+    title: 适配包 README 的模型文件与凭据说明
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 47f18fbdefc24f8f46862a54f5a210ff035372bde922927d0f0961d533bc2bf5
+    receipt: receipts/T008.md
+    note: 两轮独立评审；docs 检查通过；公共 API、优先级与安全说明同步。

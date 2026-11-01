@@ -5,6 +5,7 @@
 应用直接使用 LangChain 的消息、工具、流式输出和回调；这个包只负责：
 
 - 根据 protocol / endpoint / model 创建 `ChatOpenAI` 或 `ChatAnthropic`；
+- 从显式 `model.yaml` 加载一组模型，按 `default` 或名字创建；
 - 把三种协议的类型化选项映射成 LangChain 构造参数；
 - 在创建模型前校验配置和选项；
 - 用 `SecretStr` 包装 API key。
@@ -44,6 +45,8 @@ uv sync --locked --directory packages/infra/llm-provider-langchain
 - `langchain-openai`
 - `langchain-anthropic`
 - `pydantic`
+- `PyYAML`
+- `python-dotenv`
 
 ## 快速开始
 
@@ -72,6 +75,68 @@ print(response.content)
 ```
 
 `api_key` 只在调用时传入，并立即包装为 `pydantic.SecretStr`；不会进入配置对象、repr 或日志。
+
+## 模型文件与凭据
+
+除了代码构造配置，也可以从显式路径的 `model.yaml` 加载一组模型：
+
+```yaml
+schema_version: 1
+default: fast
+
+models:
+  fast:
+    display_name: GPT Test Mini
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-test-mini
+    timeout_seconds: 30
+    max_retries: 1
+    api_key_env: OPENAI_API_KEY
+    options:
+      temperature: 0.2
+      max_output_tokens: 1024
+
+  claude:
+    protocol: anthropic_messages
+    endpoint: https://api.anthropic.com
+    model: claude-test
+    api_key_env: ANTHROPIC_API_KEY
+    options:
+      max_output_tokens: 4096
+      thinking:
+        mode: budget
+        budget_tokens: 2048
+```
+
+```python
+from spawn_join_llm_provider_langchain import load_model_catalog
+
+catalog = load_model_catalog("model.yaml", env_file=".env")
+model = catalog.create_chat_model()  # default: fast
+claude = catalog.create_chat_model("claude")
+
+for item in catalog.models:
+    print(item.name, item.model, item.display_name)
+```
+
+`.env` 只保存 key，模型文件只保存变量名：
+
+```dotenv
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+规则：
+
+- `.env` 仅在显式传入 `env_file=` 时读取，不自动发现、不搜索同目录。
+- 进程环境（或调用方传入的 `environ=`）优先于 `.env`。
+- 进程环境存在但为空/空白时报错，不回退到 `.env`。
+- `.env` 使用 `interpolate=False`，`${VAR}` 不会被展开，也不会读取进程环境。
+- 加载时只快照 `api_key_env` 引用到的变量；不修改 `os.environ`。
+- 不实现变量插值、内联 `api_key`、多文件合并或热重载。
+- 所有校验失败抛 `ConfigurationError`，带 YAML 路径；错误和 `repr` 不含密钥或文件行内容。
+- `display_name` 缺省回退为选择名；它不参与查找、`default` 或协议选择。
 
 ## 协议与选项
 
@@ -298,15 +363,25 @@ class ChatModelConfig(EndpointConfig):
 | 选项类型与协议不匹配 | `ConfigurationError` |
 | 选项值非法 | `ConfigurationError` |
 | 未知 protocol 值 | `ConfigurationError` |
+| 模型文件缺失、不可读或非 UTF-8 | `ConfigurationError`（含路径） |
+| YAML 语法错误、重复键 | `ConfigurationError`（含行列，不含文件内容） |
+| 递归 YAML 别名 | `ConfigurationError`（recursive alias，不含位置） |
+| `schema_version` / 字段 / 选项非法 | `ConfigurationError`（含 YAML 路径） |
+| 密钥变量缺失或为空 | `ConfigurationError`（含模型名与变量名） |
+| 显式 `.env` 不存在 | `ConfigurationError` |
 
 LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一套推理异常层次。
 
 ## 安全
 
 - API key 只在工厂调用时传入，并包装为 `SecretStr`。
-- `ChatModelConfig` 不保存 API key。
+- `ChatModelConfig` 不保存 API key；`ModelCatalog` 只保留被 `api_key_env` 引用的
+  `.env` 快照用于创建，不提供公开读取，`repr` 不显示。
+- `.env` 仅在显式 `env_file=` 时读取；`interpolate=False`，不会展开 `${VAR}`。
+- 进程环境优先；进程环境存在但为空时报错，不回退到 `.env`。
+- 加载时只快照被 `api_key_env` 引用的变量；不修改 `os.environ`。
 - endpoint 拒绝内嵌用户名/密码、空白/控制字符、非法 host/port。
-- 配置和错误信息不要求输出完整私有 endpoint。
+- 错误信息不拼接 YAML 行内容，不回显密钥值。
 - 默认 `max_retries=0`，不隐藏 SDK 的自动重试。
 
 ## 设计边界
@@ -316,8 +391,9 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 - 不提供 `map_options()` / `bind_options()` 之类的公共字典通道；选项在构造时映射。
 - 不实现真实 channel HTTP、pool、路由、健康选路或 HTTP 连接池。
 - 不根据模型名称推断协议；协议必须显式配置。
-- 公共 API 只有 `ChatModelConfig` 和 `create_chat_model`，由
-  [`test_public_api.py`](tests/test_public_api.py) 固定。
+- 模型文件加载与环境变量解析归本适配包；协议包保持框架无关且不新增依赖。
+- 公共 API 为 `ChatModelConfig`、`ModelCatalog`、`ModelSummary`、`create_chat_model`、
+  `load_model_catalog`，由 [`test_public_api.py`](tests/test_public_api.py) 固定。
 
 ## 开发与验证
 
