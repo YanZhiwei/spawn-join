@@ -1,0 +1,28 @@
+schema_version: 1
+default: fast
+
+models:
+  fast:
+    display_name: GPT Test Mini
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-test-mini
+    timeout_seconds: 30
+    max_retries: 1
+    api_key_env: OPENAI_API_KEY
+    options:
+      temperature: 0.2
+      max_output_tokens: 1024
+
+  claude:
+    display_name: Claude Test
+    protocol: anthropic_messages
+    endpoint: https://api.anthropic.com
+    model: claude-test
+    timeout_seconds: 60
+    api_key_env: ANTHROPIC_API_KEY
+    options:
+      max_output_tokens: 4096
+      thinking:
+        mode: budget
+        budget_tokens: 2048
