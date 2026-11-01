@@ -1,15 +1,23 @@
-"""Load model catalogs from an explicit YAML file and resolve API keys."""
+"""Load model catalogs from an explicit YAML file and resolve API keys.
+
+The file boundary is intentionally explicit. The project's existing
+``ChatModelConfig`` and protocol options are standard-library dataclasses: they
+validate domain rules but do not reject unknown YAML keys or Python bool/str
+coercions. Pydantic's dataclass adapter also echoes input values in errors.
+Keeping the parsing here preserves strict schema, no-interpolation and
+secret-safe diagnostics without defining a second configuration schema.
+"""
 
 from __future__ import annotations
 
 import os
 import re
 import unicodedata
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Literal, cast
+from typing import Literal, TypeVar, cast
 
 import yaml
 from dotenv import dotenv_values
@@ -31,6 +39,31 @@ from .config import ChatModelConfig
 from .factory import create_chat_model as _create_chat_model
 
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_T = TypeVar("_T")
+
+_CHAT_COMPLETIONS_FIELDS = frozenset(
+    {"temperature", "max_output_tokens", "top_p", "stop", "seed"}
+)
+_RESPONSES_FIELDS = frozenset(
+    {
+        "temperature",
+        "max_output_tokens",
+        "top_p",
+        "store",
+        "reasoning_effort",
+        "truncation",
+    }
+)
+_ANTHROPIC_FIELDS = frozenset(
+    {
+        "temperature",
+        "max_output_tokens",
+        "top_p",
+        "top_k",
+        "stop_sequences",
+        "thinking",
+    }
+)
 
 
 def _check_duplicate_keys(node: yaml.Node) -> None:
@@ -108,17 +141,11 @@ def _load_yaml_document(path: Path) -> object:
     return document
 
 
-def _as_mapping(value: object, path: str) -> dict[object, object]:
+def _as_mapping(value: object, path: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ConfigurationError(f"{path}: must be a mapping")
-    return cast("dict[object, object]", value)
-
-
-def _require_string_keys(
-    mapping: Mapping[object, object], path: str
-) -> dict[str, object]:
     result: dict[str, object] = {}
-    for key, item in mapping.items():
+    for key, item in cast("dict[object, object]", value).items():
         if not isinstance(key, str):
             raise ConfigurationError(f"{path}: keys must be strings")
         result[key] = item
@@ -183,38 +210,15 @@ def _as_string_tuple(value: object, path: str) -> tuple[str, ...]:
     return tuple(result)
 
 
-def _optional_str(fields: Mapping[str, object], name: str, path: str) -> str | None:
+def _optional(
+    fields: Mapping[str, object],
+    name: str,
+    parser: Callable[[object, str], _T],
+    path: str,
+) -> _T | None:
     if name not in fields:
         return None
-    return _as_str(fields[name], f"{path}.{name}")
-
-
-def _optional_int(fields: Mapping[str, object], name: str, path: str) -> int | None:
-    if name not in fields:
-        return None
-    return _as_int(fields[name], f"{path}.{name}")
-
-
-def _optional_number(
-    fields: Mapping[str, object], name: str, path: str
-) -> float | None:
-    if name not in fields:
-        return None
-    return _as_number(fields[name], f"{path}.{name}")
-
-
-def _optional_bool(fields: Mapping[str, object], name: str, path: str) -> bool | None:
-    if name not in fields:
-        return None
-    return _as_bool(fields[name], f"{path}.{name}")
-
-
-def _optional_string_tuple(
-    fields: Mapping[str, object], name: str, path: str
-) -> tuple[str, ...] | None:
-    if name not in fields:
-        return None
-    return _as_string_tuple(fields[name], f"{path}.{name}")
+    return parser(fields[name], f"{path}.{name}")
 
 
 def _validate_label(value: str, path: str) -> str:
@@ -242,7 +246,7 @@ def _parse_protocol(value: object, path: str) -> ProtocolKind:
 
 
 def _parse_thinking(value: object, path: str) -> AnthropicThinking:
-    fields = _require_string_keys(_as_mapping(value, path), path)
+    fields = _as_mapping(value, path)
     _require_keys(
         fields,
         required=frozenset({"mode"}),
@@ -277,29 +281,21 @@ def _parse_options(
     value: object,
     path: str,
 ) -> ProtocolOptions:
-    fields = _require_string_keys(_as_mapping(value, path), path)
+    fields = _as_mapping(value, path)
 
     match protocol:
         case ProtocolKind.CHAT_COMPLETIONS:
             _require_keys(
                 fields,
                 required=frozenset(),
-                optional=frozenset(
-                    {
-                        "temperature",
-                        "max_output_tokens",
-                        "top_p",
-                        "stop",
-                        "seed",
-                    }
-                ),
+                optional=_CHAT_COMPLETIONS_FIELDS,
                 path=path,
             )
-            temperature = _optional_number(fields, "temperature", path)
-            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
-            top_p = _optional_number(fields, "top_p", path)
-            stop = _optional_string_tuple(fields, "stop", path)
-            seed = _optional_int(fields, "seed", path)
+            temperature = _optional(fields, "temperature", _as_number, path)
+            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+            top_p = _optional(fields, "top_p", _as_number, path)
+            stop = _optional(fields, "stop", _as_string_tuple, path)
+            seed = _optional(fields, "seed", _as_int, path)
             try:
                 return ChatCompletionsOptions(
                     temperature=temperature,
@@ -315,29 +311,20 @@ def _parse_options(
             _require_keys(
                 fields,
                 required=frozenset(),
-                optional=frozenset(
-                    {
-                        "temperature",
-                        "max_output_tokens",
-                        "top_p",
-                        "store",
-                        "reasoning_effort",
-                        "truncation",
-                    }
-                ),
+                optional=_RESPONSES_FIELDS,
                 path=path,
             )
-            temperature = _optional_number(fields, "temperature", path)
-            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
-            top_p = _optional_number(fields, "top_p", path)
-            store = _optional_bool(fields, "store", path)
+            temperature = _optional(fields, "temperature", _as_number, path)
+            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+            top_p = _optional(fields, "top_p", _as_number, path)
+            store = _optional(fields, "store", _as_bool, path)
             reasoning_effort = cast(
                 "Literal['low', 'medium', 'high'] | None",
-                _optional_str(fields, "reasoning_effort", path),
+                _optional(fields, "reasoning_effort", _as_str, path),
             )
             truncation = cast(
                 "Literal['auto', 'disabled'] | None",
-                _optional_str(fields, "truncation", path),
+                _optional(fields, "truncation", _as_str, path),
             )
             try:
                 return ResponsesOptions(
@@ -355,23 +342,14 @@ def _parse_options(
             _require_keys(
                 fields,
                 required=frozenset(),
-                optional=frozenset(
-                    {
-                        "temperature",
-                        "max_output_tokens",
-                        "top_p",
-                        "top_k",
-                        "stop_sequences",
-                        "thinking",
-                    }
-                ),
+                optional=_ANTHROPIC_FIELDS,
                 path=path,
             )
-            temperature = _optional_number(fields, "temperature", path)
-            max_output_tokens = _optional_int(fields, "max_output_tokens", path)
-            top_p = _optional_number(fields, "top_p", path)
-            top_k = _optional_int(fields, "top_k", path)
-            stop_sequences = _optional_string_tuple(fields, "stop_sequences", path)
+            temperature = _optional(fields, "temperature", _as_number, path)
+            max_output_tokens = _optional(fields, "max_output_tokens", _as_int, path)
+            top_p = _optional(fields, "top_p", _as_number, path)
+            top_k = _optional(fields, "top_k", _as_int, path)
+            stop_sequences = _optional(fields, "stop_sequences", _as_string_tuple, path)
             thinking = (
                 _parse_thinking(fields["thinking"], f"{path}.thinking")
                 if "thinking" in fields
@@ -499,7 +477,7 @@ class ModelCatalog:
 
 def _parse_entry(name: str, value: object) -> _ModelEntry:
     path = f"models.{name}"
-    fields = _require_string_keys(_as_mapping(value, path), path)
+    fields = _as_mapping(value, path)
     _require_keys(
         fields,
         required=frozenset({"protocol", "endpoint", "model", "api_key_env"}),
@@ -516,22 +494,18 @@ def _parse_entry(name: str, value: object) -> _ModelEntry:
         _as_str(fields["api_key_env"], f"{path}.api_key_env"),
         f"{path}.api_key_env",
     )
+    display_name_raw = _optional(fields, "display_name", _as_str, path)
     display_name = name
-    if "display_name" in fields:
-        display_name = _validate_label(
-            _as_str(fields["display_name"], f"{path}.display_name"),
-            f"{path}.display_name",
-        )
+    if display_name_raw is not None:
+        display_name = _validate_label(display_name_raw, f"{path}.display_name")
 
-    timeout_seconds = 30.0
-    if "timeout_seconds" in fields:
-        timeout_seconds = _as_number(
-            fields["timeout_seconds"], f"{path}.timeout_seconds"
-        )
+    timeout_seconds = _optional(fields, "timeout_seconds", _as_number, path)
+    if timeout_seconds is None:
+        timeout_seconds = 30.0
 
-    max_retries = 0
-    if "max_retries" in fields:
-        max_retries = _as_int(fields["max_retries"], f"{path}.max_retries")
+    max_retries = _optional(fields, "max_retries", _as_int, path)
+    if max_retries is None:
+        max_retries = 0
 
     try:
         config = ChatModelConfig(
@@ -578,7 +552,7 @@ def load_model_catalog(
 ) -> ModelCatalog:
     """Load and validate a model catalog from an explicit YAML file."""
     document = _load_yaml_document(Path(path))
-    root = _require_string_keys(_as_mapping(document, "<root>"), "<root>")
+    root = _as_mapping(document, "<root>")
     _require_keys(
         root,
         required=frozenset({"schema_version", "models"}),
@@ -590,7 +564,7 @@ def load_model_catalog(
     if schema_version != 1:
         raise ConfigurationError("schema_version: only version 1 is supported")
 
-    models = _require_string_keys(_as_mapping(root["models"], "models"), "models")
+    models = _as_mapping(root["models"], "models")
     if not models:
         raise ConfigurationError("models: at least one model is required")
 
