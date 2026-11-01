@@ -5,7 +5,7 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `aa96a5763cff10cf6d74fa6bb1d1cf36c4a6cc40` (code + review fixes; evidence/PR body commit follows)
+- **head_revision**: `0711cf1c58eab1e997b3d3d0f1f5b9011de68fbd` (code HEAD; evidence commit follows)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
 - **status**: active
@@ -27,6 +27,7 @@
 | T009 | `d711a7b` | core README, package boundaries, `.gitignore` |
 | T010 | `04369c9` | final verification record |
 | review fixes | `aa96a57` | extra failure-path tests, contract/ADR consistency, slice deviations |
+| review refactor | `0711cf1` | simplify repeated parsing helpers; keep strict boundary |
 
 ## Verification
 
@@ -48,6 +49,24 @@
 - **Slice budget exception**: S2 (`9678cce..925665c`) added 1,031 lines (493 source), above `slice_warn_lines: 400`; recorded in `slices.md`.
 - **ADR status**: ADR-0008 remains `Proposed`; ADR-0006 carries a dated note that its adapter public surface is extended. Acceptance follows the user's review.
 - Out of scope: channel config, multi-file merge, auto-discovery, hot reload, interpolation, provider routing/pool, real Provider requests.
+
+## Review follow-up: simpler deserialization?
+
+Review feedback suggested replacing the manual parser with YAML → entity
+serialization/deserialization. A Pydantic `TypeAdapter` spike on the existing
+dataclasses showed regressions:
+
+- `timeout_seconds: true` and `max_retries: true` were silently coerced to
+  `1.0` / `1` (violates strict type checks);
+- unknown keys were ignored (violates unknown-field rejection);
+- `ValidationError` text echoed input values (secret-leak risk);
+- a full Pydantic schema would duplicate `ChatModelConfig` / `ProtocolOptions`,
+  violating FR-017 and ADR-0008.
+
+The accepted behavior-preserving change removes six `_optional_*` helpers and
+the separate string-key helper, replacing them with one generic `_optional`
+and string-key-enforcing `_as_mapping`; protocol field sets are constants.
+Public API, schema, error messages and 110 tests are unchanged.
 
 ## Limitations and residual risks
 
