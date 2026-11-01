@@ -1,0 +1,4 @@
+# Run workspace is local; retain only the durable evidence and this policy.
+/*
+!/.gitignore
+!/evidence.md

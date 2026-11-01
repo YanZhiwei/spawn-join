@@ -94,6 +94,36 @@ anthropic = AnthropicMessagesOptions(
 选项只表达协议原生参数，不包含工具定义或工具选择；工具调用使用 LangChain 的
 `bind_tools` / `tool_choice`。
 
+### 思考参数：构造默认值与调用覆盖
+
+这里的 `Options` 只覆盖模型**构造时的部分默认值**，不是 LangChain 调用能力的完整清单：
+
+| 选项类型 | 当前可配置的思考默认值 |
+|---|---|
+| `ChatCompletionsOptions` | 尚无思考字段 |
+| `ResponsesOptions` | `reasoning_effort`：`low`、`medium`、`high` |
+| `AnthropicMessagesOptions` | `thinking`：固定 token 预算或自适应模式 |
+
+**没有对应的 Options 字段，不代表模型调用不支持思考。** 工厂返回的是 LangChain
+原生 `BaseChatModel`，应用可在 `ainvoke()` 等调用中直接传入 `reasoning_effort`、
+Anthropic `thinking` 等原生参数，不需要扩展协议选项或自行转换请求。
+
+例如，已创建的模型可以这样设置单次调用的思考强度：
+
+```python
+# 在 async 函数内；model 由 create_chat_model() 创建。
+response = await model.ainvoke(
+    [HumanMessage(content="分析这个方案的优缺点")],
+    reasoning_effort="high",
+    max_tokens=8192,
+)
+```
+
+`HumanMessage` 来自 `langchain_core.messages`。完整构造示例、Anthropic 思考模式和
+兼容性说明见
+[适配包的思考与思考强度](../../infra/llm-provider-langchain/README.md#思考与思考强度)。
+具体模型和服务端必须支持所传参数；本包不做能力推断、强度到 token 预算的换算或自动降级。
+
 ## 公共 API
 
 ### 配置类型
