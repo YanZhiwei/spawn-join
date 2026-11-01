@@ -8,7 +8,8 @@
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\neon-nebula`
 - **recorded_at**: 2026-11-01
 - **status**: active
-- **result**: pass for local documentation and governance checks; PR CI and user review pending
+- **result**: pass for local documentation/governance checks and PR CI; user review pending
+- **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/26
 
 ## Request and scope
 
@@ -53,6 +54,20 @@ All commands run from the recorded working directory.
 - `REVIEW_VERDICT: pending` — independent/user code review is intentionally
   pending per the request; do not merge before it.
 
+## Publication and CI
+
+- Branch: `docs/agents-constitution-boundary`; target: `main`; PR
+  [#26](https://github.com/YanZhiwei/spawn-join/pull/26) is open.
+- Product commit: `716aedb15a82c0d5a87211250b92d99e890c5ce4`.
+- CI run
+  [41278752422](https://github.com/YanZhiwei/spawn-join/actions/runs/41278752422)
+  passed all 14 reported checks: 12 package/platform/Python combinations,
+  Governance and gate regression, and the aggregate Quality Gate.
+- This evidence update is a report-bookkeeping commit; it does not change the
+  governed `AGENTS.md` bytes. Its fresh CI run is observed in the PR rather than
+  recursively embedded in this file. No merge, release or automatic write is
+  authorized by this record.
+
 ## Limitations
 
 - No Python package, runtime, dependency, build, type or test surface changed;
@@ -62,5 +77,6 @@ All commands run from the recorded working directory.
 - The historical governance warning for
   `harness/evidence/delivery-v022-upgrade.md` is pre-existing and outside this
   scope.
-- No commit, push, PR, merge or release was performed when this record was
-  created; publication follows the separately authorized PR step.
+- Commit, push and PR creation were performed with explicit user authorization.
+  No merge, release or automatic remote write was performed; the PR remains open
+  for user code review.
