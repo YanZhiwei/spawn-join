@@ -5,7 +5,7 @@
 - **branch**: `ralph/009-model-file-config`
 - **base_revision**: `392aa909bcfe57f47d84d3d5e782ffd5fed4ae1f` (`main` at kickoff)
 - **branch_base**: `9dcc51a632fba7be05f5ef72df11133789ce050c` (planning artifacts commit)
-- **head_revision**: `0711cf1c58eab1e997b3d3d0f1f5b9011de68fbd` (code HEAD; evidence commit follows)
+- **head_revision**: `02fe63894d3d8c3fe307203b74b92dcdc959c564` (code HEAD; evidence commit follows)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\witty-island`
 - **recorded_at**: 2026-11-01
 - **status**: active
@@ -28,6 +28,7 @@
 | T010 | `04369c9` | final verification record |
 | review fixes | `aa96a57` | extra failure-path tests, contract/ADR consistency, slice deviations |
 | review refactor | `0711cf1` | simplify repeated parsing helpers; keep strict boundary |
+| readability refactor | `02fe638` | split long parsers into named steps; rename `_CatalogEntry`; section navigation |
 
 ## Verification
 
@@ -66,6 +67,23 @@ dataclasses showed regressions:
 The accepted behavior-preserving change removes six `_optional_*` helpers and
 the separate string-key helper, replacing them with one generic `_optional`
 and string-key-enforcing `_as_mapping`; protocol field sets are constants.
+Public API, schema, error messages and 110 tests are unchanged.
+
+## Review follow-up: readability
+
+Review feedback also called out readability. The parser was reorganised into
+named steps without changing the public contract:
+
+- `load_model_catalog` → `_parse_root` / `_parse_models` /
+  `_resolve_default_name` / `_load_env_snapshot`;
+- `_parse_entry` → `_parse_model_config` / `_parse_display_name` /
+  `_parse_api_key_env` / `_parse_entry_options`;
+- `_parse_options` → one small function per protocol;
+- `_ModelEntry` renamed to `_CatalogEntry`, with YAML/schema/catalog/env
+  section markers for navigation.
+
+The file is slightly longer (604 → 676 lines) because of docstrings and split
+function boundaries, but each function now has one named responsibility.
 Public API, schema, error messages and 110 tests are unchanged.
 
 ## Limitations and residual risks
