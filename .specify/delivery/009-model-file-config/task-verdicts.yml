@@ -1,0 +1,14 @@
+feature: 009-model-file-config
+updated_at: 2026-11-01
+base_revision: 9dcc51a632fba7be05f5ef72df11133789ce050c
+head_revision: working-tree
+tasks:
+  T001:
+    title: 增加 model file 依赖并刷新锁文件
+    status: complete
+    quality_verdict: pass
+    standards_verdict: pass
+    review_verdict: pass
+    content_fingerprint: 7c6e52e8232f38948d649bf345df256ba55ec2825e63d37036d865ebcd49eaba
+    receipt: receipts/T001.md
+    note: 质量门全通过（38 tests）；独立评审 pass；依赖契约测试同步更新。

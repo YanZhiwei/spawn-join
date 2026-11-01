@@ -28,4 +28,6 @@ def test_framework_dependency_belongs_to_adapter() -> None:
         "langchain-openai",
         "langchain-anthropic",
         "pydantic",
+        "PyYAML",
+        "python-dotenv",
     }
