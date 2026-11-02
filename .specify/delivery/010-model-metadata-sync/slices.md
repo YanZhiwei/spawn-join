@@ -223,4 +223,4 @@
 - Approved by: 用户 2026-11-02
 - Choice / accepted risks: 批准更新后的 10 个切片；接受 S1/S5/S7 预算例外；用户明确要求不创建本地 git commit，代码留在工作树供晚间 code review。
 - Approved mode / snapshot: stacked；`tasks.md` T001-T049 + 修订后的 `plan.md`/`spec.md`；`main` 线性历史。
-- Commit policy: 本次运行跳过本地提交（用户 override）。不执行 Ralph 的 per-task commit gate，不声明 `ALL_TASKS_DONE`；代码、测试和证据以工作树快照为准，等待用户 code review。`delivery-config.yml` 的 `auto_commit: task-only` 在本次运行不适用，影响是任务复选框和 Ralph receipt 不能作为最终完成证据，后续需由 review/evidence 补足。
+- Commit policy: 用户先要求不创建本地 commit，随后授权创建 PR。已创建单个实现提交用于 PR 评审；未执行 Ralph 的 per-task commit gate，未声明 `ALL_TASKS_DONE`。任务复选框和 Ralph receipt 仍不作为最终完成证据，后续需由 review/evidence 补足。

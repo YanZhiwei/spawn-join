@@ -3,11 +3,11 @@
 - **feature_id**: `010-model-metadata-sync`
 - **phase_id**: `implementation-working-tree`
 - **base_revision**: `f717f71b5360b1c4e8b421301359787b0e41db9e`
-- **head_revision**: `working-tree`（用户要求不创建本地 commit）
+- **head_revision**: `5f77e3606d974286d345a51719281658e918053d`
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\tidy-canyon`
 - **recorded_at**: 2026-11-02
 - **status**: active
-- **result**: pass for the available local implementation checks; independent code review and final Delivery review pending
+- **result**: pass for the available local implementation checks; implementation commit created for PR review; independent code review and final Delivery review pending
 
 ## Scope implemented in the working tree
 
@@ -38,8 +38,9 @@ The live sync command was run against a temporary directory under the approved
 
 ## Evidence limitations and residual risk
 
-- **No local Git commits** by explicit user request; `head_revision` is `working-tree`.
-  Consequently, Ralph per-task commit gates and `ALL_TASKS_DONE` are not used, and task
+- **No per-task Ralph commits or receipts**: the user first requested no local commits,
+  then authorized a PR. A single implementation commit was created for the PR; one task
+  checkbox/receipt per task was not produced. `ALL_TASKS_DONE` is not claimed, and task
   checkboxes remain open pending code review.
 - ADR-0009 remains **Proposed**; finalization must run after an independent review whose
   reviewed HEAD matches the accepted design.
