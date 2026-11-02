@@ -11,10 +11,16 @@ from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 
-from spawn_join_llm_provider import ConfigurationError
+from spawn_join_llm_provider import (
+    ConfigurationError,
+    ModelMetadata,
+    ModelMetadataDocument,
+    ModelSourceRef,
+)
 
 from ..factory import create_chat_model as _create_chat_model
 from ._env import load_env_snapshot
+from ._metadata import load_metadata_document, resolve_metadata
 from ._schema import CatalogEntry, parse_catalog
 
 DEFAULT_MODEL_FILE = Path("model.yaml")
@@ -27,6 +33,11 @@ class ModelSummary:
     name: str
     model: str
     display_name: str
+    metadata_ref: str | None = None
+    metadata_source: Mapping[str, ModelSourceRef] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    metadata: ModelMetadata | None = None
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -37,6 +48,7 @@ class ModelCatalog:
     _default_name: str = field(repr=False)
     _env_file: Path | None = field(repr=False)
     _env_values: Mapping[str, str] = field(repr=False)
+    _metadata_document: ModelMetadataDocument | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_entries", MappingProxyType(dict(self._entries)))
@@ -50,16 +62,21 @@ class ModelCatalog:
         path: str | Path = DEFAULT_MODEL_FILE,
         *,
         env_file: str | Path | None | Literal["auto"] = "auto",
+        metadata_file: str | Path | None = None,
     ) -> ModelCatalog:
         """Load and validate a catalog from an explicit YAML file."""
         entries, default_name = parse_catalog(path)
         referenced = {entry.api_key_env for entry in entries.values()}
         env_path, env_values = load_env_snapshot(env_file, referenced)
+        metadata_document = (
+            None if metadata_file is None else load_metadata_document(metadata_file)
+        )
         return cls(
             _entries=entries,
             _default_name=default_name,
             _env_file=env_path,
             _env_values=env_values,
+            _metadata_document=metadata_document,
         )
 
     @property
@@ -70,6 +87,9 @@ class ModelCatalog:
                 name=entry.name,
                 model=entry.config.model,
                 display_name=entry.display_name,
+                metadata_ref=entry.metadata_ref,
+                metadata_source=entry.metadata_source,
+                metadata=resolve_metadata(entry, self._metadata_document),
             )
             for entry in self._entries.values()
         )

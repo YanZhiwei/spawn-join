@@ -53,7 +53,7 @@ pwsh -NoProfile -File scripts/test-governance.ps1
 pwsh -NoProfile -File scripts/test-static.ps1
 ```
 
-Package 是四个真实 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理、静态分析和包检查；
+Package 是五个真实 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理、静态分析和包检查；
 指定 Package 的包级任务不重复执行仓库级检查。只指定其他 Check 时不宣称其他门禁通过。
 工具缺失、锁不一致、安装失败都不会被跳过。
 
@@ -85,14 +85,14 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 临时目录父路径默认使用系统临时目录；本机可设置 `SPAWN_JOIN_TEMP_DIR` 为已存在路径。
 成功或失败都会在 finally 中删除本次创建的唯一子目录，不清理整个父目录或用户源树。
-四个包现已补齐包级 README、LICENSE 与 `license` 元数据；构建不再产生
+五个包现已补齐包级 README、LICENSE 与 `license` 元数据；构建不再产生
 `sdist: standard file not found` 警告。
 
 ## CI and merge protection
 
 [`quality.yml`](../../.github/workflows/quality.yml) 对所有 PR、main push 和手动运行启用：
 
-- 四个包 × Linux/Python 3.11、Linux/Python 3.14、Windows/Python 3.11，共 12 组合；
+- 五个包 × Linux/Python 3.11、Linux/Python 3.14、Windows/Python 3.11，共 15 组合；
 - 独立 governance job 执行文档和门禁故障回归；
 - 最后固定名称 `Quality Gate`，只有 packages 和 governance 都为 success 才成功；
 - 无路径过滤，避免只改文档时 required check 永远 pending；
@@ -117,7 +117,7 @@ gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Deliver
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
-- pytest 用例覆盖四包的导入、身份、运行时依赖边界，以及 LLM 契约和工厂行为；具体数量随包
+- pytest 用例覆盖五包的导入、身份、运行时依赖边界，以及 LLM 契约、工厂和同步行为；具体数量随包
   演进，不把用例数量当作业务覆盖率。
 - 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
 - 治理检查的链接扫描同时覆盖已跟踪与未跟踪（未被 Git 忽略）的 Markdown；新建 README

@@ -7,6 +7,7 @@ import unicodedata
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Literal, TypeVar, cast
 
 from spawn_join_llm_provider import (
@@ -16,9 +17,12 @@ from spawn_join_llm_provider import (
     AnthropicThinkingBudget,
     ChatCompletionsOptions,
     ConfigurationError,
+    ModelMetadataOverride,
+    ModelSourceRef,
     ProtocolKind,
     ProtocolOptions,
     ResponsesOptions,
+    parse_model_metadata_override,
 )
 
 from ..config import ChatModelConfig
@@ -54,8 +58,11 @@ _ANTHROPIC_FIELDS = frozenset(
 _ROOT_REQUIRED_FIELDS = frozenset({"schema_version", "models"})
 _ROOT_OPTIONAL_FIELDS = frozenset({"default"})
 _ENTRY_REQUIRED_FIELDS = frozenset({"protocol", "endpoint", "model", "api_key_env"})
-_ENTRY_OPTIONAL_FIELDS = frozenset(
+_ENTRY_OPTIONAL_FIELDS_V1 = frozenset(
     {"display_name", "timeout_seconds", "max_retries", "options"}
+)
+_ENTRY_OPTIONAL_FIELDS_V2 = _ENTRY_OPTIONAL_FIELDS_V1 | frozenset(
+    {"metadata_ref", "metadata_source", "metadata"}
 )
 
 
@@ -320,26 +327,96 @@ class CatalogEntry:
     config: ChatModelConfig
     api_key_env: str
     options: ProtocolOptions | None
+    metadata_ref: str | None
+    metadata_source: Mapping[str, ModelSourceRef]
+    metadata: ModelMetadataOverride | None
 
 
-def _parse_entry(name: str, value: object) -> CatalogEntry:
+def _parse_entry(name: str, value: object, schema_version: int) -> CatalogEntry:
     """Parse and validate one named model entry."""
     path = f"models.{name}"
     fields = _as_mapping(value, path)
+    optional_fields = (
+        _ENTRY_OPTIONAL_FIELDS_V1 if schema_version == 1 else _ENTRY_OPTIONAL_FIELDS_V2
+    )
     _require_keys(
         fields,
         required=_ENTRY_REQUIRED_FIELDS,
-        optional=_ENTRY_OPTIONAL_FIELDS,
+        optional=optional_fields,
         path=path,
     )
     config = _parse_model_config(fields, path)
+    metadata_ref = _parse_metadata_ref(fields, path)
     return CatalogEntry(
         name=name,
         display_name=_parse_display_name(fields, name, path),
         config=config,
         api_key_env=_parse_api_key_env(fields, path),
         options=_parse_entry_options(fields, config.protocol, path),
+        metadata_ref=metadata_ref,
+        metadata_source=_parse_metadata_source(fields, path, metadata_ref),
+        metadata=_parse_entry_metadata(fields, path),
     )
+
+
+def _parse_metadata_ref(
+    fields: Mapping[str, object],
+    path: str,
+) -> str | None:
+    """Parse the optional shared-model reference."""
+    value = _optional(fields, "metadata_ref", _as_str, path)
+    if value is None:
+        return None
+    if not value or value != value.strip() or "/" not in value:
+        raise ConfigurationError(f"{path}.metadata_ref: must use <lab>/<model>")
+    return value
+
+
+def _parse_metadata_source(
+    fields: Mapping[str, object],
+    path: str,
+    metadata_ref: str | None,
+) -> Mapping[str, ModelSourceRef]:
+    """Parse explicit source IDs mapped to provider/model coordinates."""
+    if "metadata_source" not in fields:
+        return MappingProxyType({})
+    if metadata_ref is None:
+        raise ConfigurationError(f"{path}.metadata_source: metadata_ref is required")
+    source_fields = _as_mapping(
+        fields["metadata_source"],
+        f"{path}.metadata_source",
+    )
+    if not source_fields:
+        raise ConfigurationError(f"{path}.metadata_source: must not be empty")
+    result: dict[str, ModelSourceRef] = {}
+    for source_id, value in source_fields.items():
+        ref_path = f"{path}.metadata_source.{source_id}"
+        ref_fields = _as_mapping(value, ref_path)
+        _require_keys(
+            ref_fields,
+            required=frozenset({"provider", "model"}),
+            optional=frozenset(),
+            path=ref_path,
+        )
+        try:
+            result[source_id] = ModelSourceRef(
+                source_id=source_id,
+                provider=_as_str(ref_fields["provider"], f"{ref_path}.provider"),
+                model=_as_str(ref_fields["model"], f"{ref_path}.model"),
+            )
+        except ConfigurationError as exc:
+            raise ConfigurationError(f"{ref_path}: {exc}") from exc
+    return MappingProxyType(result)
+
+
+def _parse_entry_metadata(
+    fields: Mapping[str, object],
+    path: str,
+) -> ModelMetadataOverride | None:
+    """Parse the optional inline metadata override."""
+    if "metadata" not in fields:
+        return None
+    return parse_model_metadata_override(fields["metadata"], f"{path}.metadata")
 
 
 def _parse_model_config(
@@ -394,7 +471,7 @@ def _parse_entry_options(
     return _parse_options(protocol, fields["options"], f"{path}.options")
 
 
-def _parse_root(path: str | Path) -> dict[str, object]:
+def _parse_root(path: str | Path) -> tuple[dict[str, object], int]:
     """Load the YAML document and validate its top-level fields."""
     document = load_yaml_document(Path(path))
     root = _as_mapping(document, "<root>")
@@ -405,12 +482,12 @@ def _parse_root(path: str | Path) -> dict[str, object]:
         path="<root>",
     )
     schema_version = _as_int(root["schema_version"], "schema_version")
-    if schema_version != 1:
-        raise ConfigurationError("schema_version: only version 1 is supported")
-    return root
+    if schema_version not in {1, 2}:
+        raise ConfigurationError("schema_version: only versions 1 and 2 are supported")
+    return root, schema_version
 
 
-def _parse_models(value: object) -> dict[str, CatalogEntry]:
+def _parse_models(value: object, schema_version: int) -> dict[str, CatalogEntry]:
     """Parse every named entry, rejecting an empty model map."""
     models = _as_mapping(value, "models")
     if not models:
@@ -419,7 +496,9 @@ def _parse_models(value: object) -> dict[str, CatalogEntry]:
     entries: dict[str, CatalogEntry] = {}
     for name, entry_value in models.items():
         validated_name = _validate_label(name, "models: model name")
-        entries[validated_name] = _parse_entry(validated_name, entry_value)
+        entries[validated_name] = _parse_entry(
+            validated_name, entry_value, schema_version
+        )
     return entries
 
 
@@ -446,7 +525,7 @@ def _resolve_default_name(
 
 def parse_catalog(path: str | Path) -> tuple[dict[str, CatalogEntry], str]:
     """Parse one YAML document into validated entries and a default name."""
-    root = _parse_root(path)
-    entries = _parse_models(root["models"])
+    root, schema_version = _parse_root(path)
+    entries = _parse_models(root["models"], schema_version)
     default_name = _resolve_default_name(root, entries)
     return entries, default_name

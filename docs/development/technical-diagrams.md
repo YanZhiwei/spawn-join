@@ -37,7 +37,7 @@ $cli = Join-Path (Get-Location) '.agents/skills/fireworks-tech-graph/scripts/fir
 将 `path/to/...` 替换为实际路径；不要原样执行占位命令。`-B` 避免在 vendored 工具目录
 生成字节码缓存。生成器检查的是布局/结构规则，不证明图与代码事实一致。
 
-PNG 另需 CairoSVG 及可用的 Cairo 系统库，或 `rsvg-convert`。不要为绘图修改四包的
+PNG 另需 CairoSVG 及可用的 Cairo 系统库，或 `rsvg-convert`。不要为绘图修改五包的
 dev group/锁文件，也不创建根级 `.venv`。确有 PNG 任务且缺少依赖时，可在批准的临时
 工具目录创建环境后安装 CairoSVG（需要公开包索引网络）：
 

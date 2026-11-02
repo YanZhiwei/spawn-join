@@ -75,5 +75,6 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0006 | llm-provider | [以 LangChain 作为 LLM 运行时，保留渠道与协议选项](llm-provider/0006-langchain-first-llm-runtime.md) | Accepted |
 | ADR-0007 | engineering | [默认启用 Slice 交付](engineering/0007-default-slice-delivery.md) | Accepted |
 | ADR-0008 | llm-provider | [模型目录文件与凭据边界](llm-provider/0008-model-file-and-env-boundary.md) | Accepted |
+| ADR-0009 | llm-provider | [模型元数据与手动同步边界](llm-provider/0009-model-metadata-and-sync.md) | Proposed |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。

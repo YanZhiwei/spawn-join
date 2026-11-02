@@ -192,6 +192,32 @@ LLMProviderError
 配置非法、选项与协议不匹配、endpoint 无效、凭据引用为空或 timeout 非正数都会在构造时
 抛 `ConfigurationError`。
 
+## 模型元数据契约
+
+`spawn_join_llm_provider.metadata` 提供只读、可校验的模型元数据类型：
+
+- `ModelMetadata`、`ModelModalities`、`ModelCapabilitiesMetadata`、`ModelReasoning`、
+  `ModelLimits`、`ModelPricing`、`ModelPriceRate`、`ModelPriceTier`；
+- `ModelMetadataDocument`、`ModelSource`、`ModelChannel`、`ModelMetadataOverride`；
+- `parse_model_metadata_document`、`parse_model_metadata_override`、
+  `apply_metadata_override`。
+
+约束：
+
+- 这些类型只描述事实，不参与协议选择、路由、降级或能力协商；它们不是 ADR-0006 禁止的
+  运行时 `ModelCapabilities` 抽象。
+- 价格使用带 `modality`、`direction`、`unit`、`amount` 的费率列表；金额必须有限且
+  非负，单位必须显式；支持可选的长上下文阶梯。
+- 快照文档只接受 `schema_version: 1`，未知字段、未知枚举、重复费率和乱序阶梯在解析时
+  拒绝。
+- 覆盖采用整段替换：`pricing`、`limits`、`capabilities`、`modalities`、`status`；
+  不做字段级深合并。
+- 本包不读取文件、不访问网络；快照文件和同步命令属于
+  `spawn-join-llm-model-sync`。
+
+长期边界见
+[ADR-0009](../../../docs/decisions/llm-provider/0009-model-metadata-and-sync.md)。
+
 ## 设计边界
 
 - 不定义 `Message`、内容块、工具、请求/响应、流式事件或 `LLMProvider`。

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spawn-join-llm-model-sync"
+version = "0.1.0"
+description = "Manual model metadata sync tooling for SpawnJoin LLM catalogs."
+readme = "README.md"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+authors = [{ name = "Yan Zhiwei" }]
+requires-python = ">=3.11"
+dependencies = [
+    "spawn-join-llm-provider>=0.1.0,<0.2.0",
+    "spawn-join-llm-provider-langchain>=0.1.0,<0.2.0",
+    "platformdirs>=4.13.5,<5",
+]
+
+[project.scripts]
+model-sync = "spawn_join_llm_model_sync._cli:main"
+
+[project.urls]
+Repository = "https://github.com/YanZhiwei/spawn-join"
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1,<27",
+    "isort>=9.0.2,<10",
+    "pyright>=1.1.414,<2",
+    "pytest>=9.1.1,<10",
+    "ruff>=0.17.2,<0.18",
+]
+
+[tool.uv.sources]
+spawn-join-llm-provider = { path = "../../core/llm-provider", editable = true }
+spawn-join-llm-provider-langchain = { path = "../llm-provider-langchain", editable = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]

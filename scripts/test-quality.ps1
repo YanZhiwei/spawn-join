@@ -53,6 +53,13 @@ try {
     foreach ($file in @('README.md', 'AGENTS.md', '.specify/memory/constitution.md')) {
         Set-Content -LiteralPath (Join-Path $fixture $file) -Value '# Fixture'
     }
+    $qualityText = Get-Content -Raw -LiteralPath $runner
+    if ($qualityText -notmatch 'spawn-join-llm-model-sync') {
+        throw 'quality.ps1 does not register spawn-join-llm-model-sync.'
+    }
+    $script:assertions++
+    Write-Host 'PASS: new Distribution is registered in quality.ps1'
+
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize fixture Git repository.' }
     Assert-GateResult 'clean full pipeline, including isolated wheel install' all $true ''
