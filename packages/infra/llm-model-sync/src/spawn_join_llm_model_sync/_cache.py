@@ -69,6 +69,14 @@ def write_report(cache_dir: Path, result: SyncResult) -> Path:
         "",
         *[f"- `{item}`" for item in result.unmatched],
         "",
+        "## Ignored upstream models",
+        "",
+        *(
+            [f"- `{item}`" for item in result.ignored_model_ids]
+            if result.ignored_model_ids
+            else ["(none)"]
+        ),
+        "",
         "## Warnings",
         "",
         *[f"- {item}" for item in result.warnings],

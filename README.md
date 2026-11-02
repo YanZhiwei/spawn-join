@@ -99,6 +99,22 @@ Harness 将计划、观察和结论分开保存：
 ADR 可以包含必要设计和图表，但不替代正式契约、测试或任务；Accepted 只代表决策获批，
 不表示已经实现或验证。模板与状态规则见[决策入口](docs/decisions/README.md)。
 
+## 模型元数据同步
+
+`model.yaml` 的 `metadata_ref` / `metadata_source` 可以关联价格、能力、模态、上下文和
+生命周期元数据。同步是手动操作，不会修改 `model.yaml`，也不会自动注册模型：
+
+```powershell
+uv sync --locked --directory packages/infra/llm-model-sync
+model-sync sync --source models.dev --model-file model.yaml --check
+model-sync sync --source models.dev --model-file model.yaml --apply
+```
+
+快照默认写在 `model.yaml` 同目录的 `model-metadata.json`；运行时通过
+`ModelCatalog.from_file(..., metadata_file=...)` 显式读取。使用、失败保护、回滚和新增
+同步源的说明见
+[`spawn-join-llm-model-sync`](packages/infra/llm-model-sync/README.md)。
+
 ## 本地开发与质量验证
 
 ### 独立环境与日常运行

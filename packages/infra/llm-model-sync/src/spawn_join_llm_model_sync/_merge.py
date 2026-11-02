@@ -25,6 +25,7 @@ class MergedMetadata:
     matched: tuple[str, ...]
     unmatched: tuple[str, ...]
     ignored_models: int
+    ignored_model_ids: tuple[str, ...]
     warnings: tuple[str, ...]
 
 
@@ -102,13 +103,19 @@ def merge_source(
             override=host.override,
         )
 
-    ignored = max(catalog.total_models - len(request.refs), 0)
+    ignored_ids = catalog.unreferenced_models
+    ignored = (
+        len(ignored_ids)
+        if ignored_ids
+        else max(catalog.total_models - len(catalog.models), 0)
+    )
     return MergedMetadata(
         models=models,
         channels=channels,
         matched=tuple(matched),
         unmatched=tuple(unmatched),
         ignored_models=ignored,
+        ignored_model_ids=ignored_ids,
         warnings=tuple(warnings),
     )
 

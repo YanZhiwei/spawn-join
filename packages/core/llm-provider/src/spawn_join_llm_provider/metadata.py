@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from enum import StrEnum
@@ -13,6 +13,7 @@ from types import MappingProxyType
 from typing import TypeVar, cast
 
 from .errors import ConfigurationError
+from .parsing import FieldReader
 
 _MODEL_KEY = re.compile(r"^[^/\s]+/[^/\s].*$")
 _REVISION = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -21,8 +22,16 @@ _MONTH = re.compile(r"^\d{4}-\d{2}$")
 _CURRENCY = re.compile(r"^[A-Z]{3}$")
 _SOURCE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 _MODALITY_ORDER = ("text", "image", "audio", "video", "pdf")
-_T = TypeVar("_T")
 _EnumT = TypeVar("_EnumT", bound=StrEnum)
+_READER = FieldReader(ConfigurationError)
+_as_mapping = _READER.as_mapping
+_require_keys = _READER.require_keys
+_as_str = _READER.as_str
+_as_int = _READER.as_int
+_as_non_negative_int = _READER.as_non_negative_int
+_as_number = _READER.as_non_negative_number
+_as_bool = _READER.as_bool
+_optional = _READER.optional
 
 
 class ModelType(StrEnum):
@@ -74,41 +83,6 @@ class PriceUnit(StrEnum):
     PER_REQUEST = "per_request"
 
 
-def _as_mapping(value: object, path: str) -> dict[str, object]:
-    if not isinstance(value, Mapping):
-        raise ConfigurationError(f"{path}: must be a mapping")
-    result: dict[str, object] = {}
-    for key, item in cast("Mapping[object, object]", value).items():
-        if not isinstance(key, str):
-            raise ConfigurationError(f"{path}: keys must be strings")
-        result[key] = item
-    return result
-
-
-def _require_keys(
-    mapping: Mapping[str, object],
-    *,
-    required: frozenset[str],
-    optional: frozenset[str],
-    path: str,
-) -> None:
-    missing = required.difference(mapping)
-    unknown = set(mapping).difference(required, optional)
-    problems: list[str] = []
-    if missing:
-        problems.append(f"missing required field(s): {', '.join(sorted(missing))}")
-    if unknown:
-        problems.append(f"unknown field(s): {', '.join(sorted(unknown))}")
-    if problems:
-        raise ConfigurationError(f"{path}: {'; '.join(problems)}")
-
-
-def _as_str(value: object, path: str) -> str:
-    if not isinstance(value, str):
-        raise ConfigurationError(f"{path}: must be a string")
-    return value
-
-
 def _as_non_empty_str(value: object, path: str) -> str:
     text = _as_str(value, path)
     if not text or text != text.strip():
@@ -118,34 +92,6 @@ def _as_non_empty_str(value: object, path: str) -> str:
     if any(unicodedata.category(character).startswith("C") for character in text):
         raise ConfigurationError(f"{path}: must not contain control characters")
     return text
-
-
-def _as_int(value: object, path: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise ConfigurationError(f"{path}: must be an integer")
-    return value
-
-
-def _as_non_negative_int(value: object, path: str) -> int:
-    number = _as_int(value, path)
-    if number < 0:
-        raise ConfigurationError(f"{path}: must be non-negative")
-    return number
-
-
-def _as_number(value: object, path: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ConfigurationError(f"{path}: must be a number")
-    number = float(value)
-    if not isfinite(number) or number < 0:
-        raise ConfigurationError(f"{path}: must be finite and non-negative")
-    return number
-
-
-def _as_bool(value: object, path: str) -> bool:
-    if not isinstance(value, bool):
-        raise ConfigurationError(f"{path}: must be a boolean")
-    return value
 
 
 def _as_date(value: object, path: str) -> date:
@@ -189,17 +135,6 @@ def _as_string_tuple(value: object, path: str, *, non_empty: bool) -> tuple[str,
     if non_empty and not result:
         raise ConfigurationError(f"{path}: must not be empty")
     return tuple(result)
-
-
-def _optional(
-    fields: Mapping[str, object],
-    name: str,
-    parser: Callable[[object, str], _T],
-    path: str,
-) -> _T | None:
-    if name not in fields:
-        return None
-    return parser(fields[name], f"{path}.{name}")
 
 
 def _parse_model_key(value: object, path: str) -> str:

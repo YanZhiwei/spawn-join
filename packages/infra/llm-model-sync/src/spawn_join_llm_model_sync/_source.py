@@ -18,6 +18,8 @@ from spawn_join_llm_provider import (
     ModelMetadataOverride,
 )
 
+from ._url import redact_url, validate_source_url
+
 _SOURCE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 _USER_AGENT = "spawn-join-model-sync/0.1"
 
@@ -49,6 +51,11 @@ class SourceInfo:
             value = getattr(self, name)
             if not value or not value.strip():
                 raise ConfigurationError(f"source {name} must not be empty")
+        object.__setattr__(
+            self,
+            "default_url",
+            validate_source_url(self.default_url),
+        )
         if self.min_models <= 0:
             raise ConfigurationError("source min_models must be positive")
 
@@ -66,6 +73,8 @@ class SourceConfig:
             raise ConfigurationError("source timeout_seconds must be positive")
         if self.min_models is not None and self.min_models <= 0:
             raise ConfigurationError("source min_models must be positive")
+        if self.url is not None:
+            object.__setattr__(self, "url", validate_source_url(self.url))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -124,6 +133,7 @@ class SourceCatalog:
     hosts: Mapping[str, Mapping[str, ModelHostMetadata]]
     total_models: int
     total_providers: int
+    unreferenced_models: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -132,6 +142,14 @@ class SourceCatalog:
         for key, model in self.models.items():
             if key != model.key:
                 raise ConfigurationError("source models key must match model key")
+        unreferenced = tuple(sorted(set(self.unreferenced_models)))
+        for ref in unreferenced:
+            if not ref or not ref.strip():
+                raise ConfigurationError("unreferenced source models must not be empty")
+        if len(unreferenced) > self.total_models:
+            raise ConfigurationError(
+                "unreferenced source models must not exceed total_models"
+            )
         hosts: dict[str, Mapping[str, ModelHostMetadata]] = {}
         for provider, models in self.hosts.items():
             if not provider or not provider.strip():
@@ -139,6 +157,7 @@ class SourceCatalog:
             hosts[provider] = MappingProxyType(dict(models))
         object.__setattr__(self, "models", MappingProxyType(dict(self.models)))
         object.__setattr__(self, "hosts", MappingProxyType(hosts))
+        object.__setattr__(self, "unreferenced_models", unreferenced)
 
 
 def _empty_environ() -> dict[str, str]:
@@ -157,8 +176,8 @@ class SyncContext:
     def __post_init__(self) -> None:
         if not isfinite(self.timeout_seconds) or self.timeout_seconds <= 0:
             raise ConfigurationError("sync timeout_seconds must be positive")
-        if self.url is not None and not self.url.strip():
-            raise ConfigurationError("sync url must not be empty")
+        if self.url is not None:
+            object.__setattr__(self, "url", validate_source_url(self.url))
         object.__setattr__(self, "environ", MappingProxyType(dict(self.environ)))
 
 
@@ -176,12 +195,16 @@ class SyncResult:
     warnings: tuple[str, ...]
     exit_code: int
     report_path: Path | None = None
+    ignored_model_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.exit_code not in {0, 1, 2, 3}:
             raise ConfigurationError("sync exit_code must be 0, 1, 2, or 3")
         if self.ignored_models < 0:
             raise ConfigurationError("sync ignored_models must be non-negative")
+        for ref in self.ignored_model_ids:
+            if not ref or not ref.strip():
+                raise ConfigurationError("sync ignored_model_ids must not be empty")
 
 
 class Fetcher(Protocol):
@@ -194,12 +217,17 @@ class UrllibFetcher:
     """Default fetcher using the Python standard library."""
 
     def __call__(self, url: str, *, timeout: float) -> bytes:
+        safe_url = redact_url(url)
+        try:
+            validate_source_url(url)
+        except ConfigurationError as exc:
+            raise SourceFetchError(f"invalid source URL: {exc}") from exc
         request = Request(url, headers={"User-Agent": _USER_AGENT})
         try:
             with urlopen(request, timeout=timeout) as response:  # noqa: S310
                 return response.read()
         except (URLError, OSError) as exc:
-            raise SourceFetchError(f"cannot fetch {url}: {exc}") from exc
+            raise SourceFetchError(f"cannot fetch {safe_url}: {exc}") from exc
 
 
 @runtime_checkable

@@ -193,7 +193,7 @@ def test_inline_metadata_wins_over_snapshot(tmp_path: Path) -> None:
     assert fast.metadata.pricing.rates[0].amount == 0.5
 
 
-def test_channel_base_model_mismatch_is_rejected(tmp_path: Path) -> None:
+def test_channel_base_model_mismatch_names_snapshot_path(tmp_path: Path) -> None:
     path = _write(tmp_path, _model_v2())
     snapshot_data = _snapshot()
     channels = cast("dict[str, object]", snapshot_data["channels"])
@@ -205,8 +205,55 @@ def test_channel_base_model_mismatch_is_rejected(tmp_path: Path) -> None:
     snapshot.write_text(json.dumps(snapshot_data), encoding="utf-8")
 
     catalog = ModelCatalog.from_file(path, env_file=None, metadata_file=snapshot)
-    with pytest.raises(ConfigurationError, match="does not match"):
+    with pytest.raises(ConfigurationError) as excinfo:
         _ = catalog.models
+
+    message = str(excinfo.value)
+    assert str(snapshot) in message
+    assert "does not match" in message
+
+
+def test_unsupported_snapshot_version_names_path(tmp_path: Path) -> None:
+    path = _write(tmp_path, _model_v2())
+    snapshot_data = _snapshot()
+    snapshot_data["schema_version"] = 2
+    snapshot = tmp_path / "model-metadata.json"
+    snapshot.write_text(json.dumps(snapshot_data), encoding="utf-8")
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        ModelCatalog.from_file(path, env_file=None, metadata_file=snapshot)
+
+    message = str(excinfo.value)
+    assert str(snapshot) in message
+    assert "only version 1" in message
+
+
+def test_unknown_snapshot_field_names_path(tmp_path: Path) -> None:
+    path = _write(tmp_path, _model_v2())
+    snapshot_data = _snapshot()
+    snapshot_data["unexpected"] = True
+    snapshot = tmp_path / "model-metadata.json"
+    snapshot.write_text(json.dumps(snapshot_data), encoding="utf-8")
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        ModelCatalog.from_file(path, env_file=None, metadata_file=snapshot)
+
+    message = str(excinfo.value)
+    assert str(snapshot) in message
+    assert "unknown field" in message
+
+
+def test_invalid_utf8_snapshot_names_path(tmp_path: Path) -> None:
+    path = _write(tmp_path, _model_v2())
+    snapshot = tmp_path / "model-metadata.json"
+    snapshot.write_bytes(b"\xff\xfe\x00")
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        ModelCatalog.from_file(path, env_file=None, metadata_file=snapshot)
+
+    message = str(excinfo.value)
+    assert str(snapshot) in message
+    assert "not valid UTF-8" in message
 
 
 def test_missing_metadata_file_is_rejected(tmp_path: Path) -> None:

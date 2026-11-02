@@ -49,6 +49,7 @@ class ModelCatalog:
     _env_file: Path | None = field(repr=False)
     _env_values: Mapping[str, str] = field(repr=False)
     _metadata_document: ModelMetadataDocument | None = field(default=None, repr=False)
+    _metadata_file: Path | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_entries", MappingProxyType(dict(self._entries)))
@@ -77,6 +78,7 @@ class ModelCatalog:
             _env_file=env_path,
             _env_values=env_values,
             _metadata_document=metadata_document,
+            _metadata_file=(None if metadata_file is None else Path(metadata_file)),
         )
 
     @property
@@ -89,7 +91,11 @@ class ModelCatalog:
                 display_name=entry.display_name,
                 metadata_ref=entry.metadata_ref,
                 metadata_source=entry.metadata_source,
-                metadata=resolve_metadata(entry, self._metadata_document),
+                metadata=resolve_metadata(
+                    entry,
+                    self._metadata_document,
+                    self._metadata_file,
+                ),
             )
             for entry in self._entries.values()
         )

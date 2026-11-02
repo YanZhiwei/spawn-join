@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Literal, TypeVar, cast
+from typing import Literal, cast
 
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
@@ -24,12 +24,20 @@ from spawn_join_llm_provider import (
     ResponsesOptions,
     parse_model_metadata_override,
 )
+from spawn_join_llm_provider.parsing import FieldReader
 
 from ..config import ChatModelConfig
 from ._yaml import load_yaml_document
 
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_T = TypeVar("_T")
+_READER = FieldReader(ConfigurationError)
+_as_mapping = _READER.as_mapping
+_require_keys = _READER.require_keys
+_as_str = _READER.as_str
+_as_int = _READER.as_int
+_as_number = _READER.as_number
+_as_bool = _READER.as_bool
+_optional = _READER.optional
 
 _CHAT_COMPLETIONS_FIELDS = frozenset(
     {"temperature", "max_output_tokens", "top_p", "stop", "seed"}
@@ -66,63 +74,6 @@ _ENTRY_OPTIONAL_FIELDS_V2 = _ENTRY_OPTIONAL_FIELDS_V1 | frozenset(
 )
 
 
-def _as_mapping(value: object, path: str) -> dict[str, object]:
-    if not isinstance(value, dict):
-        raise ConfigurationError(f"{path}: must be a mapping")
-    result: dict[str, object] = {}
-    for key, item in cast("dict[object, object]", value).items():
-        if not isinstance(key, str):
-            raise ConfigurationError(f"{path}: keys must be strings")
-        result[key] = item
-    return result
-
-
-def _require_keys(
-    mapping: Mapping[str, object],
-    *,
-    required: frozenset[str],
-    optional: frozenset[str],
-    path: str,
-) -> None:
-    problems: list[str] = []
-    missing = required.difference(mapping)
-    if missing:
-        joined = ", ".join(sorted(missing))
-        problems.append(f"missing required field(s): {joined}")
-
-    unknown = set(mapping).difference(required, optional)
-    if unknown:
-        joined = ", ".join(sorted(unknown))
-        problems.append(f"unknown field(s): {joined}")
-
-    if problems:
-        raise ConfigurationError(f"{path}: {'; '.join(problems)}")
-
-
-def _as_str(value: object, path: str) -> str:
-    if not isinstance(value, str):
-        raise ConfigurationError(f"{path}: must be a string")
-    return value
-
-
-def _as_int(value: object, path: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise ConfigurationError(f"{path}: must be an integer")
-    return value
-
-
-def _as_number(value: object, path: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ConfigurationError(f"{path}: must be a number")
-    return float(value)
-
-
-def _as_bool(value: object, path: str) -> bool:
-    if not isinstance(value, bool):
-        raise ConfigurationError(f"{path}: must be a boolean")
-    return value
-
-
 def _as_string_tuple(value: object, path: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise ConfigurationError(f"{path}: must be a list of strings")
@@ -133,17 +84,6 @@ def _as_string_tuple(value: object, path: str) -> tuple[str, ...]:
             raise ConfigurationError(f"{path}[{index}]: must be a non-empty string")
         result.append(item)
     return tuple(result)
-
-
-def _optional(
-    fields: Mapping[str, object],
-    name: str,
-    parser: Callable[[object, str], _T],
-    path: str,
-) -> _T | None:
-    if name not in fields:
-        return None
-    return parser(fields[name], f"{path}.{name}")
 
 
 def _validate_label(value: str, path: str) -> str:

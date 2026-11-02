@@ -32,6 +32,10 @@ def load_metadata_document(path: str | Path) -> ModelMetadataDocument:
     metadata_path = Path(path)
     try:
         text = metadata_path.read_text(encoding="utf-8")
+    except UnicodeError as exc:
+        raise ConfigurationError(
+            f"metadata file {metadata_path}: not valid UTF-8"
+        ) from exc
     except OSError as exc:
         raise ConfigurationError(
             f"metadata file {metadata_path}: cannot be read"
@@ -43,12 +47,18 @@ def load_metadata_document(path: str | Path) -> ModelMetadataDocument:
             f"metadata file {metadata_path}: not valid JSON at line "
             f"{exc.lineno}, column {exc.colno}"
         ) from exc
-    return parse_model_metadata_document(cast("Mapping[str, object]", raw))
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"metadata file {metadata_path}: {exc}") from exc
+    try:
+        return parse_model_metadata_document(cast("Mapping[str, object]", raw))
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"metadata file {metadata_path}: {exc}") from exc
 
 
 def resolve_metadata(
     entry: CatalogEntry,
     document: ModelMetadataDocument | None,
+    metadata_file: Path | None = None,
 ) -> ModelMetadata | None:
     """Resolve shared, channel, and inline metadata for one entry."""
     if document is None or entry.metadata_ref is None:
@@ -59,9 +69,13 @@ def resolve_metadata(
     channel = document.channels.get(entry.name)
     if channel is not None:
         if channel.base_model != entry.metadata_ref:
+            location = (
+                f"metadata file {metadata_file}: " if metadata_file is not None else ""
+            )
             raise ConfigurationError(
-                f"models.{entry.name}.metadata_ref: metadata channel base_model "
-                f"{channel.base_model!r} does not match {entry.metadata_ref!r}"
+                f"{location}models.{entry.name}.metadata_ref: metadata channel "
+                f"base_model {channel.base_model!r} does not match "
+                f"{entry.metadata_ref!r}"
             )
         shared = apply_metadata_override(shared, channel.override)
     if entry.metadata is not None:

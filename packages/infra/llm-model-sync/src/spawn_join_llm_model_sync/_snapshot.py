@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -54,6 +55,37 @@ def build_snapshot_mapping(
     return mapping
 
 
+def preserve_unchanged_provenance(
+    *,
+    previous: ModelMetadataDocument | None,
+    models: dict[str, ModelMetadata],
+    channels: dict[str, ModelChannel],
+    sources: dict[str, ModelSource],
+) -> dict[str, ModelSource]:
+    """Reuse previous fetch times when the snapshot content is unchanged."""
+    if previous is None:
+        return sources
+    if dict(previous.models) != models or dict(previous.channels) != channels:
+        return sources
+    if set(previous.sources) != set(sources):
+        return sources
+    for source_id, source in sources.items():
+        old = previous.sources[source_id]
+        if (old.url, old.revision, old.license) != (
+            source.url,
+            source.revision,
+            source.license,
+        ):
+            return sources
+    return {
+        source_id: replace(
+            source,
+            fetched_at=previous.sources[source_id].fetched_at,
+        )
+        for source_id, source in sources.items()
+    }
+
+
 def serialize_snapshot(mapping: dict[str, object]) -> str:
     """Serialize a validated snapshot deterministically."""
     return (
@@ -69,12 +101,20 @@ def serialize_snapshot(mapping: dict[str, object]) -> str:
 
 def write_snapshot_atomic(path: Path, text: str) -> None:
     """Write a snapshot atomically in the destination directory."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        dir=path.parent,
-    )
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise SyncError(
+            f"cannot prepare snapshot directory {path.parent}: {exc}"
+        ) from exc
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=path.parent,
+        )
+    except OSError as exc:
+        raise SyncError(f"cannot create temporary snapshot for {path}: {exc}") from exc
     temporary = Path(temporary_name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
@@ -93,6 +133,8 @@ def load_snapshot_text(path: Path) -> str | None:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return None
+    except UnicodeError as exc:
+        raise SyncError(f"cannot read snapshot {path}: not valid UTF-8") from exc
     except OSError as exc:
         raise SyncError(f"cannot read snapshot {path}: {exc}") from exc
 
