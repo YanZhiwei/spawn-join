@@ -12,6 +12,7 @@ from spawn_join_llm_provider import (
     ModelMetadataOverride,
     ModelModalities,
     ModelPriceRate,
+    ModelPriceTier,
     ModelPricing,
     ModelReasoning,
     ModelStatus,
@@ -218,6 +219,38 @@ def test_unsorted_tiers_are_sorted() -> None:
     parsed_pricing = parsed.models["openai/gpt-5"].pricing
     assert parsed_pricing is not None
     assert [tier.min_input_tokens for tier in parsed_pricing.tiers] == [272000, 500000]
+
+
+def test_tier_rates_are_canonically_sorted() -> None:
+    output = ModelPriceRate(
+        modality=Modality.TEXT,
+        direction=PriceDirection.OUTPUT,
+        unit=PriceUnit.PER_MILLION_TOKENS,
+        amount=10.0,
+    )
+    cache = ModelPriceRate(
+        modality=Modality.TEXT,
+        direction=PriceDirection.CACHE_READ,
+        unit=PriceUnit.PER_MILLION_TOKENS,
+        amount=0.1,
+    )
+    input_rate = ModelPriceRate(
+        modality=Modality.TEXT,
+        direction=PriceDirection.INPUT,
+        unit=PriceUnit.PER_MILLION_TOKENS,
+        amount=1.0,
+    )
+
+    tier = ModelPriceTier(
+        min_input_tokens=272000,
+        rates=(output, cache, input_rate),
+    )
+
+    assert [rate.direction for rate in tier.rates] == [
+        PriceDirection.CACHE_READ,
+        PriceDirection.INPUT,
+        PriceDirection.OUTPUT,
+    ]
 
 
 def test_channel_must_reference_known_model() -> None:

@@ -91,7 +91,20 @@ def merge_source(
                 f"{source_ref.provider}/{source_ref.model} not found"
             )
             continue
+        if host.canonical_model_inferred:
+            warnings.append(
+                f"{summary.name}: source {source_id} host "
+                f"{source_ref.provider}/{source_ref.model} has no "
+                f"canonical_model_id; inferred {host.canonical_model!r}"
+            )
         if host.canonical_model != ref:
+            if host.canonical_model_inferred:
+                warnings.append(
+                    f"{summary.name}: inferred canonical model "
+                    f"{host.canonical_model!r} does not match {ref!r}; "
+                    "skipping this channel"
+                )
+                continue
             raise SyncError(
                 f"{summary.name}: source {source_id} host "
                 f"{source_ref.provider}/{source_ref.model} maps to "

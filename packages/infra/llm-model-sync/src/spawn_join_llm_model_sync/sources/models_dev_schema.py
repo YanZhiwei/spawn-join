@@ -148,6 +148,7 @@ class ModelsDevModel:
                 modalities=self.modalities,
                 status=None if self.status is None else status_or_active(self.status),
             ),
+            canonical_model_inferred=self.canonical_model_id is None,
         )
 
 
@@ -231,9 +232,9 @@ def _optional_str(
     name: str,
     path: str,
 ) -> str | None:
-    value = _READER.optional(fields, name, _READER.as_str, path)
-    if value is None:
+    if name not in fields or fields[name] is None:
         return None
+    value = _READER.as_str(fields[name], f"{path}.{name}")
     if not value.strip():
         raise SourcePayloadError(f"{path}.{name}: must not be empty")
     return value
@@ -254,7 +255,7 @@ def _optional_date(
     name: str,
     path: str,
 ) -> date | None:
-    text = _READER.optional(fields, name, _READER.as_str, path)
+    text = _optional_str(fields, name, path)
     if text is None:
         return None
     normalized = f"{text}-01" if len(text) == 7 else text
@@ -325,7 +326,7 @@ def _reasoning(
     path: str,
     warnings: list[str],
 ) -> ModelReasoning | None:
-    if "reasoning" not in fields:
+    if "reasoning" not in fields or fields["reasoning"] is None:
         if "reasoning_options" in fields:
             warnings.append(
                 f"{path}.reasoning_options: ignored because reasoning is absent"

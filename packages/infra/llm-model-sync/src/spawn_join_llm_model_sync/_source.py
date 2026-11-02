@@ -119,6 +119,7 @@ class ModelHostMetadata:
 
     canonical_model: str
     override: ModelMetadataOverride
+    canonical_model_inferred: bool = False
 
     def __post_init__(self) -> None:
         if not self.canonical_model or "/" not in self.canonical_model:

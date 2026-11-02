@@ -174,6 +174,43 @@ def test_unknown_tier_shape_is_a_warning(catalog_payload: bytes) -> None:
     assert pricing.tiers == ()
 
 
+def test_null_optional_fields_are_treated_as_absent(catalog_payload: bytes) -> None:
+    data = json.loads(catalog_payload)
+    model = data["models"]["openai/gpt-5"]
+    for field in (
+        "description",
+        "family",
+        "license",
+        "knowledge",
+        "release_date",
+        "last_updated",
+        "open_weights",
+        "status",
+        "reasoning",
+    ):
+        model[field] = None
+    host = data["providers"]["backup"]["models"]["gpt-5"]
+    host["canonical_model_id"] = None
+    host["status"] = None
+    host["reasoning"] = None
+    request = SourceRequest(
+        refs=("openai/gpt-5",),
+        hosts=(SourceHostRef(provider="backup", model="gpt-5"),),
+    )
+
+    catalog = ModelsDevSource().translate(
+        json.dumps(data).encode("utf-8"),
+        request,
+    )
+
+    shared = catalog.models["openai/gpt-5"]
+    assert shared.description is None
+    assert shared.capabilities.reasoning is None
+    backup = catalog.hosts["backup"]["gpt-5"]
+    assert backup.canonical_model == "backup/gpt-5"
+    assert backup.canonical_model_inferred is True
+
+
 def test_duplicate_json_key_is_rejected(catalog_payload: bytes) -> None:
     with pytest.raises(SourcePayloadError, match="duplicate key"):
         ModelsDevSource().translate(

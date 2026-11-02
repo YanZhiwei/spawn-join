@@ -66,6 +66,7 @@ def test_sync_command_with_fake_source(
     model_file: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     registry = SourceRegistry([fake_source])
     monkeypatch.setattr(
@@ -93,3 +94,5 @@ def test_sync_command_with_fake_source(
 
     assert code == 0
     assert output.exists()
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ignored_upstream_model_ids"] == []

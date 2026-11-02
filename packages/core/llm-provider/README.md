@@ -208,8 +208,8 @@ LLMProviderError
   运行时 `ModelCapabilities` 抽象。
 - 价格使用带 `modality`、`direction`、`unit`、`amount` 的费率列表；金额必须有限且
   非负，单位必须显式；支持可选的长上下文阶梯。
-- 快照文档只接受 `schema_version: 1`，未知字段、未知枚举、重复费率和乱序阶梯在解析时
-  拒绝。
+- 快照文档只接受 `schema_version: 1`，未知字段、未知枚举和重复费率在解析时拒绝；
+  顶层费率、阶梯费率和阶梯阈值按规范排序。
 - 覆盖采用整段替换：`pricing`、`limits`、`capabilities`、`modalities`、`status`；
   不做字段级深合并。
 - 本包不读取文件、不访问网络；快照文件和同步命令属于

@@ -619,6 +619,52 @@ def test_temp_file_failure_is_a_sync_error(
         write_snapshot_atomic(tmp_path / "snapshot.json", "{}\n")
 
 
+def test_missing_canonical_id_fallback_mismatch_is_a_warning(
+    fake_source: Any,
+    fake_source_builder: Any,
+    model_file: Path,
+    tmp_path: Path,
+) -> None:
+    payload = json.loads(fake_source.fetch(SyncContext(cache_dir=tmp_path)))
+    del payload["providers"]["backup"]["models"]["gpt-5"]["canonical_model_id"]
+    source = fake_source_builder(json.dumps(payload).encode("utf-8"))
+    output = tmp_path / "model-metadata.json"
+
+    result = _run(
+        source=source,
+        model_file=model_file,
+        output=output,
+        cache_dir=tmp_path / "cache",
+        apply=True,
+    )
+
+    document = json.loads(output.read_text(encoding="utf-8"))
+    assert "fast-backup" not in document["channels"]
+    assert any("has no canonical_model_id" in item for item in result.warnings)
+    assert any("skipping this channel" in item for item in result.warnings)
+
+
+def test_duplicate_key_in_previous_snapshot_is_rejected(
+    fake_source: Any,
+    model_file: Path,
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "model-metadata.json"
+    output.write_text(
+        '{"schema_version":1,"schema_version":1,"sources":{},"models":{},"channels":{}}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SyncError, match="duplicate key"):
+        _run(
+            source=fake_source,
+            model_file=model_file,
+            output=output,
+            cache_dir=tmp_path / "cache",
+            apply=True,
+        )
+
+
 def test_apply_and_check_are_mutually_exclusive(
     fake_source: Any,
     model_file: Path,

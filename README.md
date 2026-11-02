@@ -106,8 +106,8 @@ ADR 可以包含必要设计和图表，但不替代正式契约、测试或任�
 
 ```powershell
 uv sync --locked --directory packages/infra/llm-model-sync
-model-sync sync --source models.dev --model-file model.yaml --check
-model-sync sync --source models.dev --model-file model.yaml --apply
+uv run --locked --directory packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --check
+uv run --locked --directory packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --apply
 ```
 
 快照默认写在 `model.yaml` 同目录的 `model-metadata.json`；运行时通过

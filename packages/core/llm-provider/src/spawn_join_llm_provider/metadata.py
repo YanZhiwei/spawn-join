@@ -211,6 +211,19 @@ class ModelPriceTier:
         if not self.rates:
             raise ConfigurationError("price tier must contain at least one rate")
         _validate_unique_rates(self.rates, "price tier")
+        object.__setattr__(
+            self,
+            "rates",
+            tuple(sorted(self.rates, key=_rate_sort_key)),
+        )
+
+
+def _rate_sort_key(rate: ModelPriceRate) -> tuple[int, str, str]:
+    return (
+        _MODALITY_ORDER.index(rate.modality.value),
+        rate.direction.value,
+        rate.unit.value,
+    )
 
 
 def _validate_unique_rates(rates: tuple[ModelPriceRate, ...], path: str) -> None:
@@ -236,16 +249,7 @@ class ModelPricing:
         if not self.rates:
             raise ConfigurationError("pricing must contain at least one rate")
         _validate_unique_rates(self.rates, "pricing")
-        sorted_rates = tuple(
-            sorted(
-                self.rates,
-                key=lambda rate: (
-                    _MODALITY_ORDER.index(rate.modality.value),
-                    rate.direction.value,
-                    rate.unit.value,
-                ),
-            )
-        )
+        sorted_rates = tuple(sorted(self.rates, key=_rate_sort_key))
         object.__setattr__(self, "rates", sorted_rates)
 
         thresholds: set[int] = set()

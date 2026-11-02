@@ -35,18 +35,18 @@ models:
         model: gpt-5
 ```
 
-常用命令：
+在包目录执行（或激活该包 `.venv` 后直接使用 `model-sync`）：
 
 ```powershell
-model-sync sources
-model-sync sync --source models.dev
-model-sync sync --source models.dev --apply
-model-sync sync --source models.dev --check
-model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
-model-sync sync --source models.dev --cache-dir <path> --timeout 60
+uv run --locked model-sync sources
+uv run --locked model-sync sync --source models.dev
+uv run --locked model-sync sync --source models.dev --apply
+uv run --locked model-sync sync --source models.dev --check
+uv run --locked model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
+uv run --locked model-sync sync --source models.dev --cache-dir <path> --timeout 60
 ```
 
-- 不带 `--apply` / `--check` 时只计算差异，不写快照。
+- 不带 `--apply` / `--check` 时只计算差异，不写快照；有差异时返回 `2`。
 - `--apply` 原子替换快照；内容不变时不重写。
 - `--check` 发现漂移返回 `2`，不写快照。
 - `--apply` 和 `--check` 互斥。
@@ -57,7 +57,7 @@ model-sync sync --source models.dev --cache-dir <path> --timeout 60
 |---|---|
 | `0` | 成功；无漂移或应用成功 |
 | `1` | 参数、配置或凭据 URL 非法 |
-| `2` | `--check` 发现漂移，或快照不存在 |
+| `2` | 检测到漂移（dry-run 或 `--check`），或快照不存在 |
 | `3` | 网络、上游结构、空/缩水响应、快照校验失败 |
 
 运行时读取必须显式传快照路径；库不会搜索用户目录或发起网络请求：

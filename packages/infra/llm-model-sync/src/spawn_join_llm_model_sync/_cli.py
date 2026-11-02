@@ -151,6 +151,7 @@ def _print_result(result: SyncResult, *, as_json: bool) -> None:
                     "matched": list(result.matched),
                     "unmatched": list(result.unmatched),
                     "ignored_upstream_models": result.ignored_models,
+                    "ignored_upstream_model_ids": list(result.ignored_model_ids),
                     "warnings": list(result.warnings),
                     "exit_code": result.exit_code,
                     "report_path": (
