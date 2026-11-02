@@ -6,8 +6,10 @@
 - **head_revision**: `5f77e3606d974286d345a51719281658e918053d`
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\tidy-canyon`
 - **recorded_at**: 2026-11-02
+- **pull_request**: 31
+- **pull_request_url**: https://github.com/YanZhiwei/spawn-join/pull/31
 - **status**: active
-- **result**: pass for the available local implementation checks; implementation commit created for PR review; independent code review and final Delivery review pending
+- **result**: pass for the available local implementation checks; PR #31 opened for review; remote CI, independent code review and final Delivery review pending
 
 ## Scope implemented in the working tree
 
