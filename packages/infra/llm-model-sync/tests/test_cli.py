@@ -20,6 +20,29 @@ def test_sources_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert payload[0]["license"] == "MIT"
 
 
+def test_invalid_url_returns_configuration_exit_code(
+    model_file: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = main(
+        [
+            "sync",
+            "--source",
+            "models.dev",
+            "--model-file",
+            str(model_file),
+            "--cache-dir",
+            str(tmp_path / "cache"),
+            "--url",
+            "https://example.com:bad/catalog.json",
+        ]
+    )
+
+    assert code == 1
+    assert "valid port" in capsys.readouterr().err
+
+
 def test_unknown_source_is_a_configuration_error(
     model_file: Path,
     tmp_path: Path,

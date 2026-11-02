@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from http.client import InvalidURL
+
 from spawn_join_llm_provider import ModelMetadata
 
 from .._source import (
@@ -47,7 +49,7 @@ class ModelsDevSource:
             return self._fetcher(url, timeout=context.timeout_seconds)
         except SourceFetchError:
             raise
-        except OSError as exc:
+        except (OSError, InvalidURL) as exc:
             raise SourceFetchError(f"cannot fetch {safe_url}: {exc}") from exc
 
     def translate(

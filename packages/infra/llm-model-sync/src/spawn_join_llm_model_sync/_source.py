@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from http.client import InvalidURL
 from math import isfinite
 from pathlib import Path
 from types import MappingProxyType
@@ -227,7 +228,7 @@ class UrllibFetcher:
         try:
             with urlopen(request, timeout=timeout) as response:  # noqa: S310
                 return response.read()
-        except (URLError, OSError) as exc:
+        except (URLError, OSError, InvalidURL) as exc:
             raise SourceFetchError(f"cannot fetch {safe_url}: {exc}") from exc
 
 

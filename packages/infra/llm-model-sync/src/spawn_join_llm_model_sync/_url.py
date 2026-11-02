@@ -59,6 +59,12 @@ def validate_source_url(url: str) -> str:
         raise ConfigurationError("source url must use http or https")
     if not parts.hostname:
         raise ConfigurationError("source url must include a host")
+    if any(character.isspace() or ord(character) < 32 for character in parts.netloc):
+        raise ConfigurationError("source url authority must not contain whitespace")
+    try:
+        _ = parts.port
+    except ValueError as exc:
+        raise ConfigurationError("source url must contain a valid port") from exc
     if parts.username is not None or parts.password is not None:
         raise ConfigurationError("source url must not embed credentials")
     try:

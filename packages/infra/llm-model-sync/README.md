@@ -35,15 +35,15 @@ models:
         model: gpt-5
 ```
 
-在包目录执行（或激活该包 `.venv` 后直接使用 `model-sync`）：
+在包含 `model.yaml` 的目录执行（把 `<repo>` 替换为仓库路径；`--project` 不会改变当前目录）：
 
 ```powershell
-uv run --locked model-sync sources
-uv run --locked model-sync sync --source models.dev
-uv run --locked model-sync sync --source models.dev --apply
-uv run --locked model-sync sync --source models.dev --check
-uv run --locked model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
-uv run --locked model-sync sync --source models.dev --cache-dir <path> --timeout 60
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sources
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --apply
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --check
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
+uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --cache-dir <path> --timeout 60
 ```
 
 - 不带 `--apply` / `--check` 时只计算差异，不写快照；有差异时返回 `2`。

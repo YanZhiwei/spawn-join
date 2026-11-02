@@ -25,6 +25,14 @@ def test_source_url_allows_non_sensitive_query() -> None:
     assert config.url == "https://example.com/catalog.json?format=json"
 
 
+def test_source_url_rejects_invalid_authority() -> None:
+    with pytest.raises(ConfigurationError, match="valid port"):
+        SourceConfig(url="https://example.com:bad/catalog.json")
+
+    with pytest.raises(ConfigurationError, match="whitespace"):
+        SourceConfig(url="https://exa mple.com/catalog.json")
+
+
 def test_fetch_error_does_not_expose_embedded_credentials() -> None:
     with pytest.raises(SourceFetchError) as excinfo:
         UrllibFetcher()(
