@@ -8,8 +8,9 @@
 - **recorded_at**: 2026-11-02
 - **pull_request**: 31
 - **pull_request_url**: https://github.com/YanZhiwei/spawn-join/pull/31
+- **github_actions_run**: 41437947965（success；15 package jobs + governance + `Quality Gate`）
 - **status**: active
-- **result**: pass for the available local implementation checks; PR #31 opened for review; remote CI, independent code review and final Delivery review pending
+- **result**: pass for local implementation checks and remote PR CI; independent code review and final Delivery review pending
 
 ## Scope implemented in the working tree
 
