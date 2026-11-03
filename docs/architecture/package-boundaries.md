@@ -34,14 +34,15 @@
             └── spawn-join-core
 
 spawn-join-llm-provider ──> spawn-join-core
+                     └──> pydantic
 spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
 ```
 
 必须保持以下方向：
 
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
-2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core`，但不得依赖 LangChain 或具体
-   Provider SDK。
+2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core` 和通用校验库 `pydantic`，但不得
+   依赖 LangChain 或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包。应用层直接使用 LangChain 消息和 `BaseChatModel`。
 4. `spawn-join-observability` 可以依赖 Core，但不能反向成为 Core 的依赖。

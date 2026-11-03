@@ -20,6 +20,7 @@ from spawn_join_llm_provider import (
     PriceDirection,
     PriceUnit,
     apply_metadata_override,
+    decode_metadata_document,
     parse_model_metadata_document,
 )
 
@@ -219,6 +220,14 @@ def test_unsorted_tiers_are_sorted() -> None:
     parsed_pricing = parsed.models["openai/gpt-5"].pricing
     assert parsed_pricing is not None
     assert [tier.min_input_tokens for tier in parsed_pricing.tiers] == [272000, 500000]
+
+
+def test_decode_rejects_duplicate_json_keys() -> None:
+    with pytest.raises(ConfigurationError, match="duplicate key"):
+        decode_metadata_document(
+            '{"schema_version":1,"schema_version":1,'
+            '"sources":{},"models":{},"channels":{}}'
+        )
 
 
 def test_tier_rates_are_canonically_sorted() -> None:

@@ -65,6 +65,9 @@ reasoning 控制、工具/结构化输出、embedding 或生命周期状态。�
 - 纯元数据类型、快照文档解析和覆盖合并放在 `spawn-join-llm-provider`：
   `ModelMetadata`、`ModelMetadataDocument`、`ModelMetadataOverride`、`ModelPricing`、
   `ModelPriceRate`、`ModelPriceTier`、`ModelType`、`Modality`、`ModelStatus` 等。
+- 边界字段校验使用 Pydantic dataclass；公共对象仍是 dataclass，保留 frozen、slots、
+  kw_only 和 `dataclasses.replace` 语义。Pydantic 只作为通用校验依赖，不引入 LangChain
+  或 Provider SDK。
 - 这些类型只描述事实，不参与协议选择、路由、降级或能力协商。它们不是 ADR-0006 禁止的
   运行时 `ModelCapabilities` 抽象。
 - 价格使用带 `modality`、`direction`、`unit`、`amount` 的费率列表；金额必须是有限
@@ -243,3 +246,5 @@ spawn-join-core
 ## Revision history
 
 - 2026-11-02：提出模型元数据、手动同步、源注册和运行时可选读取的候选决策。
+- 2026-11-03：元数据边界增加 Pydantic dataclass 校验，保持 dataclass 公共语义；拆分
+  `metadata/` 包并共享 JSON codec。

@@ -17,6 +17,7 @@ EXPECTED_EXPORTS = [
     "ChannelUnavailableError",
     "ChatCompletionsOptions",
     "ConfigurationError",
+    "DuplicateKeyError",
     "EndpointConfig",
     "LLMProviderError",
     "Modality",
@@ -46,8 +47,10 @@ EXPECTED_EXPORTS = [
     "ResponsesOptions",
     "UnsupportedChannelOperationError",
     "apply_metadata_override",
+    "decode_metadata_document",
     "parse_model_metadata_document",
     "parse_model_metadata_override",
+    "reject_duplicate_keys",
 ]
 
 FORBIDDEN_NAMES = [

@@ -1301,11 +1301,15 @@ name = "spawn-join-llm-provider"
 version = "0.1.0"
 source = { editable = "../../core/llm-provider" }
 dependencies = [
+    { name = "pydantic" },
     { name = "spawn-join-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "spawn-join-core", editable = "../../core/spawn-join-core" }]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.0,<3.0" },
+    { name = "spawn-join-core", editable = "../../core/spawn-join-core" },
+]
 
 [package.metadata.requires-dev]
 dev = [

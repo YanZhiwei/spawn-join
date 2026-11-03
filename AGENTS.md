@@ -119,7 +119,8 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 架构规则：
 
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
-2. `spawn-join-llm-provider` 可以依赖 Core，但不得依赖 LangChain 或具体 Provider SDK。
+2. `spawn-join-llm-provider` 可以依赖 Core 和通用校验库 Pydantic，但不得依赖 LangChain
+   或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包；应用层直接使用 LangChain 消息和 `BaseChatModel`。
 4. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向

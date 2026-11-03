@@ -200,7 +200,12 @@ LLMProviderError
   `ModelLimits`、`ModelPricing`、`ModelPriceRate`、`ModelPriceTier`；
 - `ModelMetadataDocument`、`ModelSource`、`ModelChannel`、`ModelMetadataOverride`；
 - `parse_model_metadata_document`、`parse_model_metadata_override`、
-  `apply_metadata_override`。
+  `apply_metadata_override`、`decode_metadata_document`、`reject_duplicate_keys`。
+
+实现使用 Pydantic dataclass 做边界字段校验，但公共对象仍是 dataclass，支持
+`dataclasses.replace`、`frozen`、`slots` 和 `kw_only`。未知字段、类型错误和嵌套模型
+由 Pydantic 校验；重复费率、排序、跨字段引用等业务不变量仍由 `__post_init__` 维护。
+Pydantic 是通用校验依赖，不引入 LangChain、Provider SDK 或网络/文件副作用。
 
 约束：
 

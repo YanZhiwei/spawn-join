@@ -1,0 +1,61 @@
+"""Validated model metadata contracts and parsers."""
+
+from .codec import (
+    DuplicateKeyError,
+    decode_metadata_document,
+    reject_duplicate_keys,
+)
+from .parsing import (
+    parse_model_metadata_document,
+    parse_model_metadata_override,
+)
+from .types import (
+    Modality,
+    ModelCapabilitiesMetadata,
+    ModelChannel,
+    ModelLimits,
+    ModelMetadata,
+    ModelMetadataDocument,
+    ModelMetadataOverride,
+    ModelModalities,
+    ModelPriceRate,
+    ModelPriceTier,
+    ModelPricing,
+    ModelReasoning,
+    ModelReasoningBudget,
+    ModelSource,
+    ModelSourceRef,
+    ModelStatus,
+    ModelType,
+    PriceDirection,
+    PriceUnit,
+    apply_metadata_override,
+)
+
+__all__ = [
+    "DuplicateKeyError",
+    "Modality",
+    "ModelCapabilitiesMetadata",
+    "ModelChannel",
+    "ModelLimits",
+    "ModelMetadata",
+    "ModelMetadataDocument",
+    "ModelMetadataOverride",
+    "ModelModalities",
+    "ModelPriceRate",
+    "ModelPriceTier",
+    "ModelPricing",
+    "ModelReasoning",
+    "ModelReasoningBudget",
+    "ModelSource",
+    "ModelSourceRef",
+    "ModelStatus",
+    "ModelType",
+    "PriceDirection",
+    "PriceUnit",
+    "apply_metadata_override",
+    "decode_metadata_document",
+    "parse_model_metadata_document",
+    "parse_model_metadata_override",
+    "reject_duplicate_keys",
+]

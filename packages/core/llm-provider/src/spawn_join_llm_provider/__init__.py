@@ -18,6 +18,7 @@ from .errors import (
     UnsupportedChannelOperationError,
 )
 from .metadata import (
+    DuplicateKeyError,
     Modality,
     ModelCapabilitiesMetadata,
     ModelChannel,
@@ -38,8 +39,10 @@ from .metadata import (
     PriceDirection,
     PriceUnit,
     apply_metadata_override,
+    decode_metadata_document,
     parse_model_metadata_document,
     parse_model_metadata_override,
+    reject_duplicate_keys,
 )
 from .options import (
     AnthropicMessagesOptions,
@@ -65,6 +68,7 @@ __all__ = [
     "ChannelUnavailableError",
     "ChatCompletionsOptions",
     "ConfigurationError",
+    "DuplicateKeyError",
     "EndpointConfig",
     "LLMProviderError",
     "Modality",
@@ -94,6 +98,8 @@ __all__ = [
     "ResponsesOptions",
     "UnsupportedChannelOperationError",
     "apply_metadata_override",
+    "decode_metadata_document",
     "parse_model_metadata_document",
     "parse_model_metadata_override",
+    "reject_duplicate_keys",
 ]

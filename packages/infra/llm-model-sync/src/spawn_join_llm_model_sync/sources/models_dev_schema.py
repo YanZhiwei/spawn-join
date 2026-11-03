@@ -11,6 +11,7 @@ from types import MappingProxyType
 from spawn_join_llm_model_sync._snapshot import status_or_active
 
 from spawn_join_llm_provider import (
+    DuplicateKeyError,
     Modality,
     ModelCapabilitiesMetadata,
     ModelLimits,
@@ -25,6 +26,7 @@ from spawn_join_llm_provider import (
     ModelType,
     PriceDirection,
     PriceUnit,
+    reject_duplicate_keys,
 )
 from spawn_join_llm_provider.parsing import FieldReader
 
@@ -36,15 +38,6 @@ class SourcePayloadError(SyncError):
 
 
 _READER = FieldReader(SourcePayloadError)
-
-
-def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            raise SourcePayloadError(f"duplicate key {key!r} in source payload")
-        result[key] = value
-    return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,7 +159,9 @@ class ModelsDevCatalog:
         except UnicodeDecodeError as exc:
             raise SourcePayloadError("source payload is not valid UTF-8") from exc
         try:
-            raw = json.loads(text, object_pairs_hook=_unique_object)
+            raw = json.loads(text, object_pairs_hook=reject_duplicate_keys)
+        except DuplicateKeyError as exc:
+            raise SourcePayloadError(f"{exc} in source payload") from exc
         except json.JSONDecodeError as exc:
             raise SourcePayloadError(
                 f"source payload is not valid JSON at line {exc.lineno}, "

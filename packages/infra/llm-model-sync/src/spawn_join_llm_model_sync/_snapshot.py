@@ -8,7 +8,6 @@ import tempfile
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
 
 from spawn_join_llm_provider import (
     ConfigurationError,
@@ -24,6 +23,7 @@ from spawn_join_llm_provider import (
     ModelSource,
     ModelSourceRef,
     ModelStatus,
+    decode_metadata_document,
     parse_model_metadata_document,
 )
 
@@ -139,31 +139,13 @@ def load_snapshot_text(path: Path) -> str | None:
         raise SyncError(f"cannot read snapshot {path}: {exc}") from exc
 
 
-def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate key {key!r}")
-        result[key] = value
-    return result
-
-
 def load_previous_document(path: Path) -> ModelMetadataDocument | None:
     """Load a previous snapshot for preservation of missing referenced models."""
     text = load_snapshot_text(path)
     if text is None:
         return None
     try:
-        raw = json.loads(text, object_pairs_hook=_unique_object)
-    except json.JSONDecodeError as exc:
-        raise SyncError(
-            f"snapshot {path}: not valid JSON at line {exc.lineno}, "
-            f"column {exc.colno}"
-        ) from exc
-    except ValueError as exc:
-        raise SyncError(f"snapshot {path}: {exc}") from exc
-    try:
-        return parse_model_metadata_document(cast("dict[str, object]", raw))
+        return decode_metadata_document(text)
     except ConfigurationError as exc:
         raise SyncError(f"snapshot {path}: {exc}") from exc
 
