@@ -27,4 +27,4 @@ def test_protocol_only_depends_on_core() -> None:
         re.split(r"[<>=!~;\[\s]", requirement, maxsplit=1)[0]
         for requirement in requirements
     }
-    assert dependency_names == {"spawn-join-core"}
+    assert dependency_names == {"spawn-join-core", "pydantic"}

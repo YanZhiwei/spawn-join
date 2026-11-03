@@ -10,10 +10,11 @@
 | `spawn-join-core` | `spawn_join_core` | [`packages/core/spawn-join-core`](../../packages/core/spawn-join-core/) | `core` | 跨领域稳定的配置机制、异常、类型和基础协议 |
 | `spawn-join-llm-provider` | `spawn_join_llm_provider` | [`packages/core/llm-provider`](../../packages/core/llm-provider/) | `core` | 与框架无关的 LLM 协议选项、渠道契约和稳定错误 |
 | `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 模型工厂、协议选项映射和配置校验 |
+| `spawn-join-llm-model-sync` | `spawn_join_llm_model_sync` | [`packages/infra/llm-model-sync`](../../packages/infra/llm-model-sync/) | `infra` | 手动模型元数据同步、源注册和确定性快照生成 |
 | `spawn-join-observability` | `spawn_join_observability` | [`packages/infra/spawn-join-observability`](../../packages/infra/spawn-join-observability/) | `infra` | 日志、追踪、指标等可观测性能力 |
 
-当前两个 LLM 包已实现渠道/选项契约和 LangChain 模型工厂；新增模块前，先确认它属于哪个
-Distribution、由哪个包拥有，以及是否真的需要形成跨组件复用。
+当前三个 LLM 包已实现渠道/选项契约、LangChain 模型工厂和手动元数据同步；新增模块前，
+先确认它属于哪个 Distribution、由哪个包拥有，以及是否真的需要形成跨组件复用。
 
 ## Dependency Direction
 
@@ -26,22 +27,30 @@ Distribution、由哪个包拥有，以及是否真的需要形成跨组件复�
     │       ├── langchain-openai
     │       ├── langchain-anthropic
     │       └── pydantic
+    ├── spawn-join-llm-model-sync
+    │       ├── spawn-join-llm-provider
+    │       ├── platformdirs
+    │       └── PyYAML
     └── spawn-join-observability
             └── spawn-join-core
 
 spawn-join-llm-provider ──> spawn-join-core
+                     └──> pydantic
 spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
 ```
 
 必须保持以下方向：
 
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
-2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core`，但不得依赖 LangChain 或具体
-   Provider SDK。
+2. `spawn-join-llm-provider` 可以依赖 `spawn-join-core` 和通用校验库 `pydantic`，但不得
+   依赖 LangChain 或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包。应用层直接使用 LangChain 消息和 `BaseChatModel`。
-4. `spawn-join-observability` 可以依赖 Core，但不能反向成为 Core 的依赖。
-5. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
+4. `spawn-join-llm-model-sync` 的运行时依赖只允许 `spawn-join-llm-provider` 和通用工具；
+   不得运行时依赖 LangChain 适配包。完整 `model.yaml` 解析仍由适配包负责，同步工具只
+   读取元数据投影。
+5. `spawn-join-observability` 可以依赖 Core，但不能反向成为 Core 的依赖。
+6. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
 
 ## Independent uv Projects
 
@@ -52,13 +61,14 @@ spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
 | `spawn-join-core` | `packages/core/spawn-join-core/.venv/` | `packages/core/spawn-join-core/uv.lock` | 无 SpawnJoin 包依赖 |
 | `spawn-join-llm-provider` | `packages/core/llm-provider/.venv/` | `packages/core/llm-provider/uv.lock` | `spawn-join-core` 的相对路径源 |
 | `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider` 的相对路径源 |
+| `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-llm-provider-langchain` 的相对路径源 |
 | `spawn-join-observability` | `packages/infra/spawn-join-observability/.venv/` | `packages/infra/spawn-join-observability/uv.lock` | `spawn-join-core` 的相对路径源 |
 
 包间的发布依赖仍然写在 `[project].dependencies` 中；仅开发期的本地路径解析写在对应
 `pyproject.toml` 的 `[tool.uv.sources]` 中。这样既保留 Distribution 的发布元数据，
 又允许每个包在自己的环境中以 editable 方式开发。
 
-四个包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
+五个包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
 属于本机或构建产物，不应提交。
 
 共享质量策略放在根 tool-only `pyproject.toml`，不创建根级 Python project 或共享环境。
@@ -75,6 +85,8 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
   适配和副作用留在对应的 infra 或适配器包。
 - 模型文件（`model.yaml`）与环境变量/`.env` 解析属于
   `spawn-join-llm-provider-langchain`；协议包只保留配置类型和校验，不读取文件。
+- 模型元数据契约、快照文档解析和覆盖合并属于 `spawn-join-llm-provider`；
+  手动同步、源注册、缓存和 CLI 副作用属于 `spawn-join-llm-model-sync`。
 - LLM 消息、工具调用、流式块和 usage 使用 LangChain 原生类型；协议包不重复定义
   消息、请求/响应或流式事件。
 - 网络、文件、数据库、缓存、线程和任务等副作用必须有明确拥有者；Core 和协议层应

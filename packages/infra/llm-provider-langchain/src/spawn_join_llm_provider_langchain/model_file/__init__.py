@@ -14,6 +14,11 @@ def load_model_catalog(
     path: str | Path = DEFAULT_MODEL_FILE,
     *,
     env_file: str | Path | None | Literal["auto"] = "auto",
+    metadata_file: str | Path | None = None,
 ) -> ModelCatalog:
     """Load and validate a model catalog from an explicit YAML file."""
-    return ModelCatalog.from_file(path, env_file=env_file)
+    return ModelCatalog.from_file(
+        path,
+        env_file=env_file,
+        metadata_file=metadata_file,
+    )

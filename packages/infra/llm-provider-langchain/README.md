@@ -140,6 +140,52 @@ ANTHROPIC_API_KEY=sk-ant-...
 - 所有校验失败抛 `ConfigurationError`，带 YAML 路径；错误和 `repr` 不含密钥或文件行内容。
 - `display_name` 缺省回退为选择名；它不参与查找、`default` 或协议选择。
 
+### 模型元数据快照
+
+`schema_version: 2` 的条目可以选择性声明元数据：
+
+```yaml
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-5
+    api_key_env: OPENAI_API_KEY
+    metadata_ref: openai/gpt-5
+    metadata_source:
+      models.dev:
+        provider: openai
+        model: gpt-5
+    metadata:
+      pricing:
+        currency: USD
+        rates:
+          - modality: text
+            direction: input
+            unit: per_million_tokens
+            amount: 1.25
+```
+
+```python
+catalog = ModelCatalog.from_file(
+    "model.yaml",
+    metadata_file="model-metadata.json",
+)
+summary = catalog.models[0]
+print(summary.metadata_ref, summary.metadata)
+```
+
+规则：
+
+- `metadata_ref` 使用 `<lab>/<model>` 显式匹配，不做名称模糊猜测。
+- `metadata_source` 必须和 `metadata_ref` 同时存在；它只用于同步工具解析渠道覆盖，
+  不参与协议选择或模型创建。
+- 合并优先级：共享模型事实 → `channels.<条目名>` → 条目的 `metadata` 人工覆盖。
+- `metadata_file=None` 时不读取快照，行为与 v1 完全一致；提供路径但文件缺失、JSON
+  非法或 `base_model` 不匹配时抛 `ConfigurationError`。
+- 加载快照不发起网络请求，也不搜索 AppData；路径必须显式传入。
+- 元数据是只读描述，不驱动路由、降级或能力协商。
+
 ## 协议与选项
 
 | 协议 | 返回类型 | 选项映射 |

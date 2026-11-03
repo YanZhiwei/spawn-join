@@ -6,7 +6,8 @@ Run read-only quality checks using each Distribution's locked environment.
 [CmdletBinding()]
 param(
     [ValidateSet('spawn-join-core', 'spawn-join-llm-provider',
-        'spawn-join-llm-provider-langchain', 'spawn-join-observability')]
+        'spawn-join-llm-provider-langchain', 'spawn-join-llm-model-sync',
+        'spawn-join-observability')]
     [string]$Package,
 
     [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs', 'governance', 'static')]
@@ -34,6 +35,12 @@ $packages = [ordered]@{
         Import = 'spawn_join_llm_provider_langchain'
         Build = @('spawn-join-core', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain')
+    }
+    'spawn-join-llm-model-sync' = @{
+        Path = 'packages/infra/llm-model-sync'
+        Import = 'spawn_join_llm_model_sync'
+        Build = @('spawn-join-core', 'spawn-join-llm-provider',
+            'spawn-join-llm-model-sync')
     }
     'spawn-join-observability' = @{
         Path = 'packages/infra/spawn-join-observability'

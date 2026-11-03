@@ -29,6 +29,7 @@ jobs:
           - spawn-join-core
           - spawn-join-llm-provider
           - spawn-join-llm-provider-langchain
+          - spawn-join-llm-model-sync
           - spawn-join-observability
         platform:
           - {os: ubuntu-latest, python: '3.11'}

@@ -324,7 +324,7 @@ def test_literal_api_key_field_is_rejected(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("2", "only version 1"),
+        ("3", "only versions 1 and 2"),
         ("true", "must be an integer"),
     ],
 )
