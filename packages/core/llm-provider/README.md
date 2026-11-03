@@ -20,7 +20,7 @@
 
 - 没有真实 channel HTTP 实现；
 - 没有 `ChannelPool`、模型路由或健康选路；
-- 协议包只依赖 `spawn-join-core`。
+- 协议包只依赖 `spawn-join-core` 和通用校验库 Pydantic。
 
 ## 安装
 

@@ -22,6 +22,7 @@ from spawn_join_llm_provider import (
     apply_metadata_override,
     decode_metadata_document,
     parse_model_metadata_document,
+    parse_model_metadata_override,
 )
 
 
@@ -186,7 +187,7 @@ def test_negative_price_is_rejected() -> None:
     first = _as_dict(_as_list(pricing["rates"])[0])
     first["amount"] = -1
 
-    with pytest.raises(ConfigurationError, match="finite and non-negative"):
+    with pytest.raises(ConfigurationError, match="amount"):
         parse_model_metadata_document(document)
 
 
@@ -260,6 +261,75 @@ def test_tier_rates_are_canonically_sorted() -> None:
         PriceDirection.INPUT,
         PriceDirection.OUTPUT,
     ]
+
+
+def test_numeric_date_is_rejected() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    model["release_date"] = 1754524800
+
+    with pytest.raises(ConfigurationError, match="release_date"):
+        parse_model_metadata_document(document)
+
+
+def test_datetime_release_date_is_rejected() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    model["release_date"] = "2025-08-07T00:00:00"
+
+    with pytest.raises(ConfigurationError, match="release_date"):
+        parse_model_metadata_document(document)
+
+
+def test_negative_price_error_contains_model_and_field_path() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    pricing = _as_dict(model["pricing"])
+    rate = _as_dict(_as_list(pricing["rates"])[0])
+    rate["amount"] = -1
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_document(document)
+
+    message = str(excinfo.value)
+    assert "models.openai/gpt-5" in message
+    assert "amount" in message
+
+
+def test_model_key_mismatch_is_rejected() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    model["key"] = "other/model"
+
+    with pytest.raises(ConfigurationError, match="must match"):
+        parse_model_metadata_document(document)
+
+
+def test_channel_override_key_is_rejected() -> None:
+    document = _valid_document()
+    channel = _as_dict(_as_dict(document["channels"])["fast"])
+    channel["override"] = {}
+
+    with pytest.raises(ConfigurationError, match="unknown field"):
+        parse_model_metadata_document(document)
+
+
+def test_duplicate_efforts_are_deduplicated() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    capabilities = _as_dict(model["capabilities"])
+    reasoning = _as_dict(capabilities["reasoning"])
+    reasoning["efforts"] = ["low", "low", "high"]
+
+    parsed = parse_model_metadata_document(document)
+    parsed_reasoning = parsed.models["openai/gpt-5"].capabilities.reasoning
+    assert parsed_reasoning is not None
+    assert parsed_reasoning.efforts == ("low", "high")
+
+
+def test_override_requires_mapping() -> None:
+    with pytest.raises(ConfigurationError, match="must be a mapping"):
+        parse_model_metadata_override(None)
 
 
 def test_channel_must_reference_known_model() -> None:

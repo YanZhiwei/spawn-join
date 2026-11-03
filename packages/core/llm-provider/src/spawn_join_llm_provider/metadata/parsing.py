@@ -42,13 +42,14 @@ def _normalize_channel(value: object, name: str) -> object:
     if not isinstance(value, Mapping):
         return value
     channel = _mapping(cast("object", value), path)
+    if "override" in channel:
+        raise ConfigurationError(f"{path}: unknown field(s): override")
     override = {
         field: channel.pop(field)
         for field in list(channel)
         if field in _OVERRIDE_FIELDS
     }
-    if "override" not in channel:
-        channel["override"] = override
+    channel["override"] = override
     if "source" in channel:
         channel["source"] = _normalize_source(channel["source"])
     return channel
@@ -58,6 +59,11 @@ def _normalize_model(value: object, key: str) -> object:
     if not isinstance(value, Mapping):
         return value
     model = _mapping(cast("object", value), f"models.{key}")
+    supplied = model.get("key")
+    if supplied is not None and supplied != key:
+        raise ConfigurationError(
+            f"models.{key}.key: model key must match models map key"
+        )
     model["key"] = key
     return model
 
@@ -102,6 +108,8 @@ def parse_model_metadata_override(
     path: str = "metadata",
 ) -> ModelMetadataOverride:
     """Parse a channel or inline override mapping."""
+    if not isinstance(value, Mapping):
+        raise ConfigurationError(f"{path}: must be a mapping")
     try:
         return _OVERRIDE_ADAPTER.validate_python(value)
     except ValidationError as exc:

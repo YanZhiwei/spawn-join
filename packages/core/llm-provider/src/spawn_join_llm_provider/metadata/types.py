@@ -10,8 +10,17 @@ from datetime import UTC, date, datetime
 from enum import StrEnum
 from math import isfinite
 from types import MappingProxyType
+from typing import Annotated
 
-from pydantic import ConfigDict, StrictBool, StrictFloat, StrictInt
+from pydantic import (
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    field_validator,
+)
 from pydantic.dataclasses import dataclass
 
 from ..errors import ConfigurationError
@@ -128,6 +137,39 @@ def _parse_knowledge(value: object, path: str) -> str:
     raise ConfigurationError(f"{path}: must use YYYY-MM or YYYY-MM-DD")
 
 
+def _strict_date(value: object) -> date:
+    if isinstance(value, datetime):
+        raise ValueError("must be a YYYY-MM-DD string")
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        raise ValueError("must be a YYYY-MM-DD string")
+    if _DATE.fullmatch(value) is None:
+        raise ValueError("must use YYYY-MM-DD")
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("must be a valid date") from exc
+
+
+def _strict_datetime(value: object) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if not isinstance(value, str):
+        raise ValueError("must be an ISO 8601 datetime string")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("must be an ISO 8601 datetime") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise ValueError("must include a UTC offset")
+    return parsed
+
+
+StrictDate = Annotated[date, BeforeValidator(_strict_date)]
+StrictDatetime = Annotated[datetime, BeforeValidator(_strict_datetime)]
+
+
 @dataclass(frozen=True, slots=True, kw_only=True, config=_METADATA_CONFIG)
 class ModelPriceRate:
     """One billable rate for a modality and direction."""
@@ -135,7 +177,7 @@ class ModelPriceRate:
     modality: Modality
     direction: PriceDirection
     unit: PriceUnit
-    amount: StrictFloat
+    amount: Annotated[StrictFloat, Field(ge=0, allow_inf_nan=False)]
 
     def __post_init__(self) -> None:
         amount = float(self.amount)
@@ -185,7 +227,7 @@ def _validate_unique_rates(rates: tuple[ModelPriceRate, ...], path: str) -> None
 class ModelPricing:
     """A currency and a deterministic set of rates and tiers."""
 
-    currency: str
+    currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
     rates: tuple[ModelPriceRate, ...]
     tiers: tuple[ModelPriceTier, ...] = ()
 
@@ -270,6 +312,7 @@ class ModelReasoning:
     budget_tokens: ModelReasoningBudget | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "efforts", tuple(dict.fromkeys(self.efforts)))
         for effort in self.efforts:
             _as_non_empty_str(effort, "reasoning effort")
         if not self.supported and (
@@ -321,7 +364,7 @@ def _validate_optional_metadata_strings(metadata: object) -> None:
 class ModelMetadata:
     """Model-level facts independent of a serving channel."""
 
-    key: str
+    key: Annotated[str, Field(pattern=r"^[^/\s]+/[^/\s].*$")]
     name: str
     type: ModelType
     modalities: ModelModalities
@@ -336,17 +379,26 @@ class ModelMetadata:
     license: str | None = None
     open_weights: StrictBool | None = None
     interleaved: str | None = None
-    release_date: date | None = None
+    release_date: StrictDate | None = None
     knowledge: str | None = None
-    last_updated: date | None = None
+    last_updated: StrictDate | None = None
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, value: str) -> str:
+        return _as_non_empty_str(value, "metadata name")
+
+    @field_validator("knowledge")
+    @classmethod
+    def _validate_knowledge(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _parse_knowledge(value, "metadata knowledge")
 
     def __post_init__(self) -> None:
         if _MODEL_KEY.fullmatch(self.key) is None:
             raise ConfigurationError("metadata key must use <lab>/<model>")
-        _as_non_empty_str(self.name, "metadata name")
         _validate_optional_metadata_strings(self)
-        if self.knowledge is not None:
-            _parse_knowledge(self.knowledge, "metadata knowledge")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, config=_METADATA_CONFIG)
@@ -364,7 +416,7 @@ class ModelMetadataOverride:
 class ModelSourceRef:
     """The source-specific coordinates for one channel override."""
 
-    source_id: str
+    source_id: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")]
     provider: str
     model: str
 
@@ -378,10 +430,10 @@ class ModelSourceRef:
 class ModelSource:
     """Provenance for one metadata source."""
 
-    url: str
-    revision: str
-    fetched_at: datetime
-    license: str
+    url: Annotated[str, Field(min_length=1)]
+    revision: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
+    fetched_at: StrictDatetime
+    license: Annotated[str, Field(min_length=1)]
 
     def __post_init__(self) -> None:
         _as_non_empty_str(self.url, "source url")
@@ -398,7 +450,7 @@ class ModelSource:
 class ModelChannel:
     """A channel override linked to one shared model."""
 
-    base_model: str
+    base_model: Annotated[str, Field(pattern=r"^[^/\s]+/[^/\s].*$")]
     override: ModelMetadataOverride
     source: ModelSourceRef | None = None
 

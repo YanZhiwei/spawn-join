@@ -176,7 +176,8 @@ model-sync sync --source models.dev
 
 ```text
 spawn-join-core
-    └── spawn-join-llm-provider              # 纯元数据类型
+    └── spawn-join-llm-provider              # 元数据类型 + Pydantic 边界校验
+            ├── pydantic                     # 通用字段校验
             ├── spawn-join-llm-provider-langchain
             │       └── spawn-join-llm-model-sync   # 复用 model.yaml 解析
             └── spawn-join-llm-model-sync           # 也可只依赖元数据类型
