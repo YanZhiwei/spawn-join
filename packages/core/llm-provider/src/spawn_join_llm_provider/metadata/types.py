@@ -99,6 +99,13 @@ def _as_non_empty_str(value: object, path: str) -> str:
     return text
 
 
+def _parse_model_key(value: object, path: str) -> str:
+    key = _as_non_empty_str(value, path)
+    if _MODEL_KEY.fullmatch(key) is None:
+        raise ConfigurationError(f"{path}: must use <lab>/<model>")
+    return key
+
+
 def _parse_source_id(value: object, path: str) -> str:
     source_id = _as_non_empty_str(value, path)
     if _SOURCE_ID.fullmatch(source_id) is None:
@@ -190,8 +197,20 @@ class ModelPriceRate:
 class ModelPriceTier:
     """A long-context price tier."""
 
-    min_input_tokens: StrictInt
-    rates: tuple[ModelPriceRate, ...]
+    min_input_tokens: Annotated[StrictInt, Field(gt=0)]
+    rates: Annotated[tuple[ModelPriceRate, ...], Field(min_length=1)]
+
+    @field_validator("rates")
+    @classmethod
+    def _validate_tier_rates(
+        cls,
+        rates: tuple[ModelPriceRate, ...],
+    ) -> tuple[ModelPriceRate, ...]:
+        try:
+            _validate_unique_rates(rates, "price tier")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
+        return tuple(sorted(rates, key=_rate_sort_key))
 
     def __post_init__(self) -> None:
         if self.min_input_tokens <= 0:
@@ -228,8 +247,33 @@ class ModelPricing:
     """A currency and a deterministic set of rates and tiers."""
 
     currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
-    rates: tuple[ModelPriceRate, ...]
+    rates: Annotated[tuple[ModelPriceRate, ...], Field(min_length=1)]
     tiers: tuple[ModelPriceTier, ...] = ()
+
+    @field_validator("rates")
+    @classmethod
+    def _validate_pricing_rates(
+        cls,
+        rates: tuple[ModelPriceRate, ...],
+    ) -> tuple[ModelPriceRate, ...]:
+        try:
+            _validate_unique_rates(rates, "pricing")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
+        return tuple(sorted(rates, key=_rate_sort_key))
+
+    @field_validator("tiers")
+    @classmethod
+    def _validate_tiers(
+        cls,
+        tiers: tuple[ModelPriceTier, ...],
+    ) -> tuple[ModelPriceTier, ...]:
+        thresholds: set[int] = set()
+        for tier in tiers:
+            if tier.min_input_tokens in thresholds:
+                raise ValueError("pricing tier thresholds must be unique")
+            thresholds.add(tier.min_input_tokens)
+        return tuple(sorted(tiers, key=lambda tier: tier.min_input_tokens))
 
     def __post_init__(self) -> None:
         _parse_currency(self.currency, "pricing currency")
@@ -255,7 +299,7 @@ class ModelPricing:
 class ModelModalities:
     """Input and output modalities with canonical ordering."""
 
-    input: tuple[Modality, ...]
+    input: Annotated[tuple[Modality, ...], Field(min_length=1)]
     output: tuple[Modality, ...]
 
     def __post_init__(self) -> None:
@@ -311,10 +355,20 @@ class ModelReasoning:
     efforts: tuple[str, ...] = ()
     budget_tokens: ModelReasoningBudget | None = None
 
+    @field_validator("efforts")
+    @classmethod
+    def _validate_efforts(cls, efforts: tuple[str, ...]) -> tuple[str, ...]:
+        result: list[str] = []
+        for effort in efforts:
+            try:
+                text = _as_non_empty_str(effort, "reasoning effort")
+            except ConfigurationError as exc:
+                raise ValueError(str(exc)) from exc
+            if text not in result:
+                result.append(text)
+        return tuple(result)
+
     def __post_init__(self) -> None:
-        object.__setattr__(self, "efforts", tuple(dict.fromkeys(self.efforts)))
-        for effort in self.efforts:
-            _as_non_empty_str(effort, "reasoning effort")
         if not self.supported and (
             self.toggle is not None or self.efforts or self.budget_tokens is not None
         ):
@@ -340,9 +394,9 @@ class ModelCapabilitiesMetadata:
 class ModelLimits:
     """Context and token limits; None means unknown."""
 
-    context: StrictInt | None = None
-    input: StrictInt | None = None
-    output: StrictInt | None = None
+    context: Annotated[StrictInt | None, Field(ge=0)] = None
+    input: Annotated[StrictInt | None, Field(ge=0)] = None
+    output: Annotated[StrictInt | None, Field(ge=0)] = None
 
     def __post_init__(self) -> None:
         for name in ("context", "input", "output"):
@@ -383,17 +437,41 @@ class ModelMetadata:
     knowledge: str | None = None
     last_updated: StrictDate | None = None
 
+    @field_validator("key")
+    @classmethod
+    def _validate_key(cls, value: str) -> str:
+        try:
+            return _parse_model_key(value, "metadata key")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
+
     @field_validator("name")
     @classmethod
     def _validate_name(cls, value: str) -> str:
-        return _as_non_empty_str(value, "metadata name")
+        try:
+            return _as_non_empty_str(value, "metadata name")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
+
+    @field_validator("description", "family", "license", "interleaved")
+    @classmethod
+    def _validate_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            return _as_non_empty_str(value, "metadata text")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
 
     @field_validator("knowledge")
     @classmethod
     def _validate_knowledge(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        return _parse_knowledge(value, "metadata knowledge")
+        try:
+            return _parse_knowledge(value, "metadata knowledge")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
 
     def __post_init__(self) -> None:
         if _MODEL_KEY.fullmatch(self.key) is None:
@@ -420,6 +498,14 @@ class ModelSourceRef:
     provider: str
     model: str
 
+    @field_validator("provider", "model")
+    @classmethod
+    def _validate_coordinate(cls, value: str) -> str:
+        try:
+            return _as_non_empty_str(value, "source coordinate")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
+
     def __post_init__(self) -> None:
         _parse_source_id(self.source_id, "source id")
         _as_non_empty_str(self.provider, "source provider")
@@ -434,6 +520,14 @@ class ModelSource:
     revision: Annotated[str, Field(pattern=r"^sha256:[0-9a-f]{64}$")]
     fetched_at: StrictDatetime
     license: Annotated[str, Field(min_length=1)]
+
+    @field_validator("url", "license")
+    @classmethod
+    def _validate_source_text(cls, value: str) -> str:
+        try:
+            return _as_non_empty_str(value, "source text")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
 
     def __post_init__(self) -> None:
         _as_non_empty_str(self.url, "source url")
@@ -453,6 +547,14 @@ class ModelChannel:
     base_model: Annotated[str, Field(pattern=r"^[^/\s]+/[^/\s].*$")]
     override: ModelMetadataOverride
     source: ModelSourceRef | None = None
+
+    @field_validator("base_model")
+    @classmethod
+    def _validate_base_model(cls, value: str) -> str:
+        try:
+            return _parse_model_key(value, "channel base_model")
+        except ConfigurationError as exc:
+            raise ValueError(str(exc)) from exc
 
     def __post_init__(self) -> None:
         if _MODEL_KEY.fullmatch(self.base_model) is None:

@@ -3,18 +3,28 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import cast
+from typing import Any, cast
 
 from pydantic import TypeAdapter, ValidationError
 
 from ..errors import ConfigurationError
-from .types import ModelMetadataDocument, ModelMetadataOverride
+from .types import _parse_model_key  # pyright: ignore[reportPrivateUsage]
+from .types import (
+    ModelChannel,
+    ModelMetadata,
+    ModelMetadataDocument,
+    ModelMetadataOverride,
+    ModelSource,
+)
 
 _OVERRIDE_FIELDS = frozenset(
     {"pricing", "limits", "capabilities", "modalities", "status"}
 )
 _DOCUMENT_ADAPTER = TypeAdapter(ModelMetadataDocument)
 _OVERRIDE_ADAPTER = TypeAdapter(ModelMetadataOverride)
+_MODEL_ADAPTER = TypeAdapter(ModelMetadata)
+_CHANNEL_ADAPTER = TypeAdapter(ModelChannel)
+_SOURCE_ADAPTER = TypeAdapter(ModelSource)
 
 
 def _mapping(value: object, path: str) -> dict[str, object]:
@@ -56,9 +66,12 @@ def _normalize_channel(value: object, name: str) -> object:
 
 
 def _normalize_model(value: object, key: str) -> object:
+    _parse_model_key(key, f"models.{key}")
     if not isinstance(value, Mapping):
         return value
     model = _mapping(cast("object", value), f"models.{key}")
+    if "key" in model and model["key"] is None:
+        raise ConfigurationError(f"models.{key}.key: must not be null")
     supplied = model.get("key")
     if supplied is not None and supplied != key:
         raise ConfigurationError(
@@ -68,22 +81,49 @@ def _normalize_model(value: object, key: str) -> object:
     return model
 
 
+def _validate_nested(
+    adapter: TypeAdapter[Any],
+    value: object,
+    path: str,
+) -> None:
+    try:
+        adapter.validate_python(value)
+    except ValidationError as exc:
+        raise ConfigurationError(f"{path}: {_validation_message(exc)}") from exc
+    except ConfigurationError as exc:
+        raise ConfigurationError(f"{path}: {exc}") from exc
+
+
 def _normalize_document(value: object) -> object:
     root = _mapping(value, "<metadata>")
     normalized = dict(root)
     models = root.get("models")
     if isinstance(models, Mapping):
         models_map = _mapping(cast("object", models), "<metadata>.models")
-        normalized["models"] = {
-            key: _normalize_model(model, key) for key, model in models_map.items()
-        }
+        normalized_models: dict[str, object] = {}
+        for key, model in models_map.items():
+            normalized_model = _normalize_model(model, key)
+            _validate_nested(_MODEL_ADAPTER, normalized_model, f"models.{key}")
+            normalized_models[key] = normalized_model
+        normalized["models"] = normalized_models
     channels = root.get("channels")
     if isinstance(channels, Mapping):
         channels_map = _mapping(cast("object", channels), "<metadata>.channels")
-        normalized["channels"] = {
-            key: _normalize_channel(channel, key)
-            for key, channel in channels_map.items()
-        }
+        normalized_channels: dict[str, object] = {}
+        for key, channel in channels_map.items():
+            normalized_channel = _normalize_channel(channel, key)
+            _validate_nested(
+                _CHANNEL_ADAPTER,
+                normalized_channel,
+                f"channels.{key}",
+            )
+            normalized_channels[key] = normalized_channel
+        normalized["channels"] = normalized_channels
+    sources = root.get("sources")
+    if isinstance(sources, Mapping):
+        sources_map = _mapping(cast("object", sources), "<metadata>.sources")
+        for key, source in sources_map.items():
+            _validate_nested(_SOURCE_ADAPTER, source, f"sources.{key}")
     return normalized
 
 

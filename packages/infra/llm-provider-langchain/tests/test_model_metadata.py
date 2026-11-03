@@ -256,6 +256,36 @@ def test_invalid_utf8_snapshot_names_path(tmp_path: Path) -> None:
     assert "not valid UTF-8" in message
 
 
+def test_inline_metadata_limit_error_contains_entry_path(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """\
+schema_version: 2
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-5
+    api_key_env: FAST_API_KEY
+    metadata_ref: openai/gpt-5
+    metadata_source:
+      models.dev:
+        provider: openai
+        model: gpt-5
+    metadata:
+      limits:
+        context: -1
+""",
+    )
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        load_model_catalog(path, env_file=None)
+
+    message = str(excinfo.value)
+    assert "models.fast.metadata" in message
+    assert "context" in message
+
+
 def test_missing_metadata_file_is_rejected(tmp_path: Path) -> None:
     path = _write(tmp_path, _model_v2())
 

@@ -332,6 +332,65 @@ def test_override_requires_mapping() -> None:
         parse_model_metadata_override(None)
 
 
+def test_name_error_contains_model_path() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    model["name"] = " GPT-5"
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_document(document)
+
+    message = str(excinfo.value)
+    assert "models.openai/gpt-5" in message
+    assert "name" in message
+
+
+def test_duplicate_rate_error_contains_model_path() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    pricing = _as_dict(model["pricing"])
+    rates = _as_list(pricing["rates"])
+    rates.append(dict(_as_dict(rates[0])))
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_document(document)
+
+    message = str(excinfo.value)
+    assert "models.openai/gpt-5" in message
+    assert "rates" in message
+
+
+def test_invalid_model_map_key_is_rejected() -> None:
+    document = _valid_document()
+    models = _as_dict(document["models"])
+    models["openai/gpt-5 "] = models.pop("openai/gpt-5")
+
+    with pytest.raises(ConfigurationError, match="whitespace|must use"):
+        parse_model_metadata_document(document)
+
+
+def test_null_model_key_is_rejected() -> None:
+    document = _valid_document()
+    model = _as_dict(_as_dict(document["models"])["openai/gpt-5"])
+    model["key"] = None
+
+    with pytest.raises(ConfigurationError, match="null"):
+        parse_model_metadata_document(document)
+
+
+def test_channel_limit_error_contains_channel_path() -> None:
+    document = _valid_document()
+    channel = _as_dict(_as_dict(document["channels"])["fast"])
+    channel["limits"] = {"context": -1}
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_document(document)
+
+    message = str(excinfo.value)
+    assert "channels.fast" in message
+    assert "context" in message
+
+
 def test_channel_must_reference_known_model() -> None:
     document = _valid_document()
     channel = _as_dict(_as_dict(document["channels"])["fast"])
