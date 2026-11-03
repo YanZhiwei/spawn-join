@@ -1,4 +1,4 @@
-"""Merge source catalogs with model.yaml entries."""
+﻿"""Merge source catalogs with model.yaml entries."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from spawn_join_llm_provider import (
     ModelMetadata,
     ModelSourceRef,
 )
-from spawn_join_llm_provider_langchain import ModelSummary
 
+from ._model_file import ModelMetadataEntry
 from ._source import SourceCatalog, SourceHostRef, SourceRequest, SyncError
 
 
@@ -30,7 +30,7 @@ class MergedMetadata:
 
 
 def build_source_request(
-    summaries: Iterable[ModelSummary],
+    summaries: Iterable[ModelMetadataEntry],
     source_id: str,
 ) -> SourceRequest:
     """Collect unique refs and host coordinates from catalog summaries."""
@@ -58,7 +58,7 @@ def merge_source(
     *,
     source_id: str,
     catalog: SourceCatalog,
-    summaries: Iterable[ModelSummary],
+    summaries: Iterable[ModelMetadataEntry],
 ) -> MergedMetadata:
     """Resolve shared models and channel overrides for one source."""
     summary_list = tuple(summaries)
@@ -134,7 +134,7 @@ def merge_source(
 
 
 def existing_source_ref(
-    summary: ModelSummary,
+    summary: ModelMetadataEntry,
     source_id: str,
 ) -> ModelSourceRef | None:
     """Return one summary's explicit source reference when present."""
@@ -143,7 +143,7 @@ def existing_source_ref(
 
 def validate_channel_source(
     channel: ModelChannel,
-    summary: ModelSummary,
+    summary: ModelMetadataEntry,
 ) -> None:
     """Ensure a channel's base model matches the summary reference."""
     if summary.metadata_ref is None:

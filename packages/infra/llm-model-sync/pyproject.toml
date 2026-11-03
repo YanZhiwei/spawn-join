@@ -13,12 +13,12 @@ authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
     "spawn-join-llm-provider>=0.1.0,<0.2.0",
-    "spawn-join-llm-provider-langchain>=0.1.0,<0.2.0",
     "platformdirs>=4.13.5,<5",
+    "PyYAML>=6.0.3,<7",
 ]
 
 [project.scripts]
-model-sync = "spawn_join_llm_model_sync._cli:main"
+spawn-join-model-sync = "spawn_join_llm_model_sync._cli:main"
 
 [project.urls]
 Repository = "https://github.com/YanZhiwei/spawn-join"
@@ -30,6 +30,7 @@ dev = [
     "pyright>=1.1.414,<2",
     "pytest>=9.1.1,<10",
     "ruff>=0.17.2,<0.18",
+    "spawn-join-llm-provider-langchain",
 ]
 
 [tool.uv.sources]

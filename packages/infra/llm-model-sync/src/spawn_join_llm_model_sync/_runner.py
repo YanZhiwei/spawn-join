@@ -1,4 +1,4 @@
-"""Orchestrate one manual model metadata sync."""
+﻿"""Orchestrate one manual model metadata sync."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from spawn_join_llm_provider import (
     ModelMetadataDocument,
     ModelSource,
 )
-from spawn_join_llm_provider_langchain import ModelCatalog, ModelSummary
 
 from ._cache import (
     default_cache_dir,
@@ -22,6 +21,7 @@ from ._cache import (
     write_state,
 )
 from ._merge import build_source_request, merge_source
+from ._model_file import ModelMetadataEntry, load_model_metadata_entries
 from ._snapshot import (
     build_snapshot_mapping,
     load_previous_document,
@@ -56,8 +56,7 @@ def run_sync(
     if apply and check:
         raise ConfigurationError("--apply and --check are mutually exclusive")
 
-    catalog = ModelCatalog.from_file(model_file, env_file=None)
-    summaries = catalog.models
+    summaries = load_model_metadata_entries(model_file)
     request = build_source_request(summaries, source.info.id)
     if not request.refs:
         raise SyncError(
@@ -199,8 +198,8 @@ def _require_matched_models(matched: tuple[str, ...], *, source_id: str) -> None
 
 
 def _referenced_summaries(
-    summaries: tuple[ModelSummary, ...],
-) -> dict[str, ModelSummary]:
+    summaries: tuple[ModelMetadataEntry, ...],
+) -> dict[str, ModelMetadataEntry]:
     return {
         summary.name: summary
         for summary in summaries
@@ -211,7 +210,7 @@ def _referenced_summaries(
 def _previous_source_channels(
     *,
     previous: ModelMetadataDocument,
-    summaries: tuple[ModelSummary, ...],
+    summaries: tuple[ModelMetadataEntry, ...],
     source_id: str,
 ) -> dict[str, ModelChannel]:
     """Return prior channels still owned by the source and model.yaml."""
@@ -232,7 +231,7 @@ def _previous_source_channels(
 def _guard_channel_shrink(
     *,
     previous: ModelMetadataDocument,
-    summaries: tuple[ModelSummary, ...],
+    summaries: tuple[ModelMetadataEntry, ...],
     source_id: str,
     candidate_channels: dict[str, ModelChannel],
 ) -> None:
@@ -274,7 +273,7 @@ def _preserve_missing_models(
 def _preserve_previous_channels(
     *,
     previous: ModelMetadataDocument,
-    summaries: tuple[ModelSummary, ...],
+    summaries: tuple[ModelMetadataEntry, ...],
     source_id: str,
     models: dict[str, ModelMetadata],
     channels: dict[str, ModelChannel],

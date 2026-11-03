@@ -8,6 +8,7 @@ from pathlib import Path
 
 from spawn_join_llm_model_sync import ModelsDevSource
 from spawn_join_llm_model_sync._merge import build_source_request, merge_source
+from spawn_join_llm_model_sync._model_file import load_model_metadata_entries
 from spawn_join_llm_model_sync._snapshot import (
     build_snapshot_mapping,
     serialize_snapshot,
@@ -15,17 +16,16 @@ from spawn_join_llm_model_sync._snapshot import (
 )
 
 from spawn_join_llm_provider import ModelSource, parse_model_metadata_document
-from spawn_join_llm_provider_langchain import ModelCatalog
 
 
 def _mapping(model_file: Path, payload: bytes) -> dict[str, object]:
-    catalog = ModelCatalog.from_file(model_file, env_file=None)
-    request = build_source_request(catalog.models, "models.dev")
+    summaries = load_model_metadata_entries(model_file)
+    request = build_source_request(summaries, "models.dev")
     source_catalog = ModelsDevSource().translate(payload, request)
     merged = merge_source(
         source_id="models.dev",
         catalog=source_catalog,
-        summaries=catalog.models,
+        summaries=summaries,
     )
     source = ModelSource(
         url="https://models.dev/catalog.json",

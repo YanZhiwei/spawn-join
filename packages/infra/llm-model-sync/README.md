@@ -38,12 +38,12 @@ models:
 在包含 `model.yaml` 的目录执行（把 `<repo>` 替换为仓库路径；`--project` 不会改变当前目录）：
 
 ```powershell
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sources
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --apply
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --check
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
-uv run --project <repo>/packages/infra/llm-model-sync model-sync sync --source models.dev --model-file model.yaml --cache-dir <path> --timeout 60
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sources
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync --source models.dev --model-file model.yaml
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync --source models.dev --model-file model.yaml --apply
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync --source models.dev --model-file model.yaml --check
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync --source models.dev --model-file model.yaml --output model-metadata.json
+uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync --source models.dev --model-file model.yaml --cache-dir <path> --timeout 60
 ```
 
 - 不带 `--apply` / `--check` 时只计算差异，不写快照；有差异时返回 `2`。
@@ -92,11 +92,14 @@ for summary in catalog.models:
 ### 包边界
 
 - `spawn-join-llm-provider`：框架无关的元数据类型、快照解析和共享严格字段读取。
-- `spawn-join-llm-provider-langchain`：`model.yaml` 解析和运行时目录读取。
-- `spawn-join-llm-model-sync`：网络抓取、源注册、原始 DTO、快照生成、缓存和 CLI。
+- `spawn-join-llm-provider-langchain`：完整 `model.yaml` 解析和运行时目录读取；仅作为
+  本包的测试/dev 依赖，不是 CLI 运行时依赖。
+- `spawn-join-llm-model-sync`：网络抓取、源注册、原始 DTO、元数据投影、快照生成、缓存
+  和 CLI。
 
-依赖方向为 `llm-provider` → `llm-provider-langchain` → `llm-model-sync`，运行时包不得反向
-依赖同步工具。
+运行时依赖方向为 `llm-provider` → `llm-model-sync`；完整模型文件解析器仍属于
+`llm-provider-langchain`，但同步工具只读取元数据投影，不导入 LangChain。运行时包不得
+反向依赖同步工具。
 
 ### models.dev 数据流
 

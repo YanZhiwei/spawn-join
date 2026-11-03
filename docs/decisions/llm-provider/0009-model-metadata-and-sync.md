@@ -104,9 +104,11 @@ reasoning 控制、工具/结构化输出、embedding 或生命周期状态。�
 
 - 新增 infra Distribution `spawn-join-llm-model-sync`，拥有网络、缓存、报告、原子写和
   CLI 副作用。
-- 它依赖 `spawn-join-llm-provider` 获取元数据类型，并依赖
-  `spawn-join-llm-provider-langchain` 复用唯一的 `model.yaml` 解析，避免维护第二套
-  schema。代价是 CLI 安装会带入 LangChain 依赖；当前单消费者阶段接受该成本。
+- 它依赖 `spawn-join-llm-provider` 获取元数据类型，并依赖 `PyYAML`/`platformdirs` 完成
+  文件与缓存边界；运行时**不依赖** `spawn-join-llm-provider-langchain`。
+- 完整 `model.yaml` 解析仍由 `spawn-join-llm-provider-langchain` 维护；同步工具只读取
+  元数据投影（`metadata_ref`、`metadata_source`、`metadata`），避免把 LangChain 带入
+  CLI 安装。LangChain 适配包仅作为测试/dev 依赖用于一致性验证。
 - 首个源为 models.dev，抓取 `https://models.dev/catalog.json`，无需认证。
 - 源通过实例化 `SourceRegistry` 显式注册；重复 ID 默认失败；不做 entry-point 自动
   发现或运行时动态加载。
@@ -179,11 +181,12 @@ spawn-join-core
     └── spawn-join-llm-provider              # 元数据类型 + Pydantic 边界校验
             ├── pydantic                     # 通用字段校验
             ├── spawn-join-llm-provider-langchain
-            │       └── spawn-join-llm-model-sync   # 复用 model.yaml 解析
-            └── spawn-join-llm-model-sync           # 也可只依赖元数据类型
+            │       └── spawn-join-llm-model-sync   # dev/test only
+            └── spawn-join-llm-model-sync           # runtime: provider + PyYAML + platformdirs
 ```
 
-实际新包同时依赖适配包和协议包；不出现反向依赖或循环。
+实际 CLI 运行时只依赖 `spawn-join-llm-provider` 与通用工具；LangChain 适配包仅用于测试
+一致性，不进入运行时依赖图。
 
 关键不变量：
 
@@ -210,7 +213,8 @@ spawn-join-core
 
 - 新增一个 Distribution，带来独立 `pyproject.toml`、`uv.lock`、`.venv`、构建、
   README、quality profile 和维护责任；
-- 同步 CLI 依赖 LangChain 适配包，安装体积较大；
+- 同步 CLI 不依赖 LangChain 适配包，运行时只需 `spawn-join-llm-provider`、PyYAML 和
+  `platformdirs`；完整模型文件解析与运行时时序仍由适配包负责；
 - 快照需要手动刷新和评审，存在过期风险；
 - `model.yaml` v2 和快照 v1 都是长期格式，后续字段调整需要版本策略；
 - 当前只有一个源，源注册表的多数扩展路径尚未被第二个真实源验证。

@@ -1267,8 +1267,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "platformdirs" },
+    { name = "pyyaml" },
     { name = "spawn-join-llm-provider" },
-    { name = "spawn-join-llm-provider-langchain" },
 ]
 
 [package.dev-dependencies]
@@ -1278,13 +1278,14 @@ dev = [
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "spawn-join-llm-provider-langchain" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "platformdirs", specifier = ">=4.13.5,<5" },
+    { name = "pyyaml", specifier = ">=6.0.3,<7" },
     { name = "spawn-join-llm-provider", editable = "../../core/llm-provider" },
-    { name = "spawn-join-llm-provider-langchain", editable = "../llm-provider-langchain" },
 ]
 
 [package.metadata.requires-dev]
@@ -1294,6 +1295,7 @@ dev = [
     { name = "pyright", specifier = ">=1.1.414,<2" },
     { name = "pytest", specifier = ">=9.1.1,<10" },
     { name = "ruff", specifier = ">=0.17.2,<0.18" },
+    { name = "spawn-join-llm-provider-langchain", editable = "../llm-provider-langchain" },
 ]
 
 [[package]]

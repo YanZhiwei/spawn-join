@@ -40,7 +40,7 @@ $packages = [ordered]@{
         Path = 'packages/infra/llm-model-sync'
         Import = 'spawn_join_llm_model_sync'
         Build = @('spawn-join-core', 'spawn-join-llm-provider',
-            'spawn-join-llm-provider-langchain', 'spawn-join-llm-model-sync')
+            'spawn-join-llm-model-sync')
     }
     'spawn-join-observability' = @{
         Path = 'packages/infra/spawn-join-observability'
