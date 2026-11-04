@@ -10,6 +10,7 @@ import pytest
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableLambda
+from langgraph.checkpoint.memory import InMemorySaver
 from spawn_join_agent_deepagents.errors import (
     MiddlewareConfigurationError,
     ModelBindingError,
@@ -321,6 +322,105 @@ def test_offline_governed_delegation_uses_the_controller(
     assert any("researcher result" in content for content in contents)
     assert assembly.delegation_controller is not None
     assert assembly.delegation_controller.active_count == 0
+
+
+def test_subagent_interrupt_requires_a_checkpointer(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    researcher = SubAgentDefinition(
+        name="researcher",
+        description="Research.",
+        interrupt_on={"some_tool": True},
+    )
+
+    with pytest.raises(RecoveryConfigurationError, match="checkpointer"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor, worker),
+                subagents=(researcher,),
+            )
+        )
+
+
+def test_false_checkpointer_is_treated_as_absent(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+
+    with pytest.raises(RecoveryConfigurationError, match="checkpointer"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor, worker),
+                subagents=(_researcher_definition(),),
+                interrupt_on={"task": True},
+                checkpointer=False,
+            )
+        )
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            checkpointer=False,
+        )
+    )
+    assert assembly.report.resources.checkpointer == "absent"
+
+
+def test_explicit_require_worker_is_honored(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    models = ModelBindings(
+        catalog=None,
+        bindings=(
+            ModelBinding(ModelPurpose.SUPERVISOR, model=supervisor),
+            ModelBinding(
+                ModelPurpose.SUMMARIZATION,
+                inherit_from=ModelPurpose.SUPERVISOR,
+            ),
+        ),
+        require_worker=True,
+    )
+
+    with pytest.raises(ModelBindingError, match="worker"):
+        build_supervisor(SupervisorSpec(models=models))
+
+
+def test_build_calls_create_deep_agent_once_and_preserves_resources(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    checkpointer = InMemorySaver()
+    calls: list[dict[str, Any]] = []
+
+    def fake_create(**kwargs: Any) -> object:
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        fake_create,
+    )
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            checkpointer=checkpointer,
+            name="coordinator",
+        )
+    )
+
+    assert assembly.graph is not None
+    assert len(calls) == 1
+    assert calls[0]["model"] is supervisor
+    assert calls[0]["checkpointer"] is checkpointer
+    assert [item["name"] for item in calls[0]["subagents"]] == ["researcher"]
 
 
 def test_sync_invocation_with_policy_is_rejected(

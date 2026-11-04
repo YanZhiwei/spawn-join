@@ -51,6 +51,7 @@ def test_error_message_does_not_include_the_cause_text() -> None:
 _CURRENT_PUBLIC_NAMES = {
     "AgentConfigurationError",
     "AssemblyReport",
+    "AsyncDiagnosticCallback",
     "CompiledSubAgentDefinition",
     "DelegationConfiguration",
     "DelegationController",
@@ -58,6 +59,7 @@ _CURRENT_PUBLIC_NAMES = {
     "DelegationQueueFullError",
     "DelegationReport",
     "DelegationTimeoutError",
+    "DiagnosticCallback",
     "DiagnosticEvent",
     "DiagnosticEventType",
     "DiagnosticsConfig",
@@ -70,6 +72,7 @@ _CURRENT_PUBLIC_NAMES = {
     "ModelPurpose",
     "RecoveryConfigurationError",
     "RecoveryContext",
+    "ResolvedModelBindings",
     "ResourceReport",
     "SubAgentDefinition",
     "SubAgentKind",

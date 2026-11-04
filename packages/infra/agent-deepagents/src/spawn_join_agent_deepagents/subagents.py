@@ -21,6 +21,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from .errors import SubagentConfigurationError
+from .middleware import validate_middleware_scope
 from .models import ModelPurpose
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ class SubAgentDefinition:
             None if self.tools is None else tuple(self.tools),
         )
         object.__setattr__(self, "middleware", tuple(self.middleware))
+        validate_middleware_scope(self.middleware, f"subagents.{self.name}")
         if self.interrupt_on is not None:
             object.__setattr__(
                 self,

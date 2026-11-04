@@ -30,6 +30,7 @@ uv sync --locked --directory packages/infra/agent-deepagents
 - `deepagents>=0.7.32,<0.8`
 - `langchain>=1.4.7,<2.0`
 - `langchain-core>=1.7.0,<2.0`
+- `langgraph>=1.2,<2`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 
 本包不重复解析 `model.yaml`、`.env` 或 Provider SDK；配置模型由
@@ -208,12 +209,12 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 公共导出由 `spawn_join_agent_deepagents.__all__` 定义，主要包括：
 
 - `build_supervisor`、`SupervisorSpec`、`SupervisorAssembly`；
-- `ModelPurpose`、`ModelBinding`、`ModelBindings`；
+- `ModelPurpose`、`ModelBinding`、`ModelBindings`、`ResolvedModelBindings`；
 - `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`、`SubAgentMode`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
-- `DiagnosticsConfig`、`DiagnosticEvent`、`DiagnosticEventType`、`AssemblyReport`、
-  `SubagentReport`、`DelegationReport`、`ResourceReport`；
+- `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、
+  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、`ResourceReport`；
 - `RecoveryContext`；
 - 稳定错误类型（`AgentConfigurationError` 及其子类）。
 

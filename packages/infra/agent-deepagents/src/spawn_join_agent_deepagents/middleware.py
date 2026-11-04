@@ -32,6 +32,15 @@ def _empty_worker_overrides() -> Mapping[str, Sequence[AgentMiddleware[Any, Any,
     return {}
 
 
+def validate_middleware_scope(
+    middleware: Sequence[AgentMiddleware[Any, Any, Any]],
+    label: str,
+) -> None:
+    """Validate one product middleware list for duplicates and reserved names."""
+
+    _validate_scope(middleware, label)
+
+
 def _validate_scope(
     middleware: Sequence[AgentMiddleware[Any, Any, Any]],
     label: str,

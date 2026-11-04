@@ -81,10 +81,14 @@ def test_blank_thread_id_is_rejected() -> None:
 
 def test_interrupt_requires_a_checkpointer() -> None:
     with pytest.raises(RecoveryConfigurationError, match="checkpointer"):
-        validate_interrupt_checkpointer(None, {"approval_tool": True})
+        validate_interrupt_checkpointer(None, True)
 
-    validate_interrupt_checkpointer(object(), {"approval_tool": True})
-    validate_interrupt_checkpointer(None, None)
+    with pytest.raises(RecoveryConfigurationError, match="checkpointer"):
+        validate_interrupt_checkpointer(False, True)
+
+    validate_interrupt_checkpointer(object(), True)
+    validate_interrupt_checkpointer(None, False)
+    validate_interrupt_checkpointer(False, False)
 
 
 def test_native_interrupt_and_resume_with_host_checkpointer(

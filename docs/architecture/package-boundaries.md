@@ -37,6 +37,7 @@ DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确
     │       ├── deepagents
     │       ├── langchain
     │       ├── langchain-core
+    │       ├── langgraph
     │       └── spawn-join-llm-provider-langchain
     └── spawn-join-observability
             └── spawn-join-core
@@ -57,8 +58,8 @@ spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
    不得运行时依赖 LangChain 适配包。完整 `model.yaml` 解析仍由适配包负责，同步工具只
    读取元数据投影。
 5. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
-   受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain 和模型适配包，不得被 Core、
-   协议包或模型包反向依赖。
+   受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain、`langgraph` 和模型适配包，
+   不得被 Core、协议包或模型包反向依赖。
 6. `spawn-join-observability` 可以依赖 Core，但不能反向成为 Core 的依赖。
 7. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
 

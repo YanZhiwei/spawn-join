@@ -7,9 +7,13 @@ from dataclasses import fields
 from typing import Any
 
 import pytest
+from langchain.agents.middleware.types import AgentMiddleware
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableLambda
-from spawn_join_agent_deepagents.errors import SubagentConfigurationError
+from spawn_join_agent_deepagents.errors import (
+    MiddlewareConfigurationError,
+    SubagentConfigurationError,
+)
 from spawn_join_agent_deepagents.models import ModelPurpose
 from spawn_join_agent_deepagents.subagents import (
     CompiledSubAgentDefinition,
@@ -22,6 +26,16 @@ from spawn_join_agent_deepagents.subagents import (
 
 def _identity(value: Any) -> Any:
     return value
+
+
+class _MarkerMiddleware(AgentMiddleware[Any, Any, Any]):
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 def _compiled(
@@ -117,6 +131,27 @@ def test_compiled_fork_also_requires_opt_in() -> None:
         )
 
     validate_experimental_fork((definition,), allow_experimental_fork=True)
+
+
+def test_definition_middleware_reserved_name_is_rejected() -> None:
+    with pytest.raises(MiddlewareConfigurationError, match="reserved"):
+        SubAgentDefinition(
+            name="researcher",
+            description="Research.",
+            middleware=(_MarkerMiddleware("SummarizationMiddleware"),),
+        )
+
+
+def test_definition_middleware_duplicate_names_are_rejected() -> None:
+    with pytest.raises(MiddlewareConfigurationError, match="duplicate"):
+        SubAgentDefinition(
+            name="researcher",
+            description="Research.",
+            middleware=(
+                _MarkerMiddleware("audit"),
+                _MarkerMiddleware("audit"),
+            ),
+        )
 
 
 def test_explicit_model_and_purpose_are_preserved(

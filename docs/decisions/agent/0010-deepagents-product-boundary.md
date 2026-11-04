@@ -59,6 +59,7 @@ DeepAgents `0.7.32` 已提供模型—工具循环、子代理、Middleware、�
 deepagents>=0.7.32,<0.8
 langchain>=1.4.7,<2.0
 langchain-core>=1.7.0,<2.0
+langgraph>=1.2,<2
 spawn-join-llm-provider-langchain>=0.1.0,<0.2.0
 ```
 

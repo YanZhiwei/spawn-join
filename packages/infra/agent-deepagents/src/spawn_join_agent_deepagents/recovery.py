@@ -16,13 +16,19 @@ from langchain_core.runnables import RunnableConfig
 from .errors import RecoveryConfigurationError
 
 
+def checkpointer_present(checkpointer: object | None) -> bool:
+    """Return whether a host checkpointer is enabled."""
+
+    return checkpointer is not None and checkpointer is not False
+
+
 def validate_interrupt_checkpointer(
     checkpointer: object | None,
-    interrupt_on: Mapping[str, object] | None,
+    interrupt_configured: bool,
 ) -> None:
     """Reject an interrupt configuration without a host checkpointer."""
 
-    if interrupt_on and checkpointer is None:
+    if interrupt_configured and not checkpointer_present(checkpointer):
         raise RecoveryConfigurationError(
             "recovery: interrupt_on requires a host-provided checkpointer"
         )

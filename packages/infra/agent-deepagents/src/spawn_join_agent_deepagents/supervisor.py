@@ -43,7 +43,10 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
-from .recovery import validate_interrupt_checkpointer
+from .recovery import (
+    checkpointer_present,
+    validate_interrupt_checkpointer,
+)
 from .subagents import (
     CompiledSubAgentDefinition,
     ResponseFormatLike,
@@ -122,8 +125,10 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
     """Validate the spec and assemble exactly one native supervisor graph."""
 
     _validate_subagents(spec)
-    resolved = spec.models.resolve(require_worker=_worker_required(spec.subagents))
-    validate_interrupt_checkpointer(spec.checkpointer, spec.interrupt_on)
+    worker_requirement = spec.models.require_worker
+    if worker_requirement is None:
+        worker_requirement = _worker_required(spec.subagents)
+    resolved = spec.models.resolve(require_worker=worker_requirement)
 
     backend = spec.backend if spec.backend is not None else StateBackend()
     summary = _summary_middleware(resolved, backend)
@@ -175,6 +180,19 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
     spec.middleware.validate_for_subagents(
         declarative_names=declarative_names,
         compiled_names=compiled_names,
+    )
+    validate_interrupt_checkpointer(
+        spec.checkpointer,
+        _interrupt_configured(spec),
+    )
+
+
+def _interrupt_configured(spec: SupervisorSpec) -> bool:
+    if spec.interrupt_on:
+        return True
+    return any(
+        isinstance(definition, SubAgentDefinition) and bool(definition.interrupt_on)
+        for definition in spec.subagents
     )
 
 
@@ -366,7 +384,9 @@ def _create_graph(
             middleware=cast(Any, supervisor_middleware),
             subagents=native_subagents,
             backend=backend,
-            checkpointer=spec.checkpointer,
+            checkpointer=(
+                spec.checkpointer if checkpointer_present(spec.checkpointer) else None
+            ),
             store=spec.store,
             interrupt_on=(
                 None if spec.interrupt_on is None else dict(spec.interrupt_on)
@@ -449,6 +469,7 @@ def _build_report(
         replaced_defaults=(("SummarizationMiddleware",) if summary is not None else ()),
         warnings=warnings,
     )
+    interrupt_configured = _interrupt_configured(spec)
     delegation = None
     if spec.delegation is not None:
         delegation = DelegationReport(
@@ -470,9 +491,11 @@ def _build_report(
         resources=ResourceReport(
             backend="host" if spec.backend is not None else "default_state",
             store="host" if spec.store is not None else "absent",
-            checkpointer=("host" if spec.checkpointer is not None else "absent"),
-            interrupt_configured=bool(spec.interrupt_on),
-            thread_id_required=bool(spec.interrupt_on),
+            checkpointer=(
+                "host" if checkpointer_present(spec.checkpointer) else "absent"
+            ),
+            interrupt_configured=interrupt_configured,
+            thread_id_required=interrupt_configured,
         ),
         warnings=warnings,
         experimental_features=(

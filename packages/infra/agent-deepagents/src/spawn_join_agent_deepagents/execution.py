@@ -168,7 +168,11 @@ class DelegationController:
             self._waiters.append(future)
 
         await self._notify_queued(on_queued, future)
-        remaining = self._remaining(started_at, subagent_name)
+        try:
+            remaining = self._remaining(started_at, subagent_name)
+        except BaseException:
+            await self._remove_waiter_or_release(future)
+            raise
         try:
             if remaining is None:
                 await future

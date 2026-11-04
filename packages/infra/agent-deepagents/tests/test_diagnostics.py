@@ -441,6 +441,32 @@ def test_policy_and_diagnostics_event_sequences() -> None:
             DiagnosticEventType.DELEGATION_REJECTED,
         ]
 
+        events.clear()
+        controller_queue = DelegationController(
+            DelegationPolicy(
+                max_concurrency=1,
+                max_queue=1,
+                deadline_seconds=0.01,
+            )
+        )
+        cast(Any, controller_queue)._available = 0
+        policy_queue = DelegationPolicyMiddleware(
+            controller_queue,
+            emitter,
+        )
+        diagnostics_queue = DelegationDiagnosticsMiddleware(emitter)
+
+        with pytest.raises(DelegationTimeoutError):
+            await diagnostics_queue.awrap_tool_call(
+                request,
+                lambda item: policy_queue.awrap_tool_call(item, success),
+            )
+        assert [event.event_type for event in events] == [
+            DiagnosticEventType.DELEGATION_SELECTED,
+            DiagnosticEventType.DELEGATION_QUEUED,
+            DiagnosticEventType.DELEGATION_TIMED_OUT,
+        ]
+
     asyncio.run(scenario())
 
 
@@ -504,6 +530,42 @@ def test_offline_diagnostics_success(
     assert DiagnosticEventType.DELEGATION_COMPLETED in event_types
     assert any(event.tool_call_id == "call-researcher" for event in events)
     assert assembly.report.diagnostics_enabled is True
+
+
+def test_async_callback_receives_events_from_offline_graph(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    events: list[DiagnosticEvent] = []
+
+    async def async_callback(event: DiagnosticEvent) -> None:
+        events.append(event)
+
+    supervisor = make_sequence_model(
+        [
+            _task_call("researcher", "call-async"),
+            AIMessage(content="final answer"),
+        ]
+    )
+    worker = make_sequence_model([AIMessage(content="researcher result")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(
+                SubAgentDefinition(
+                    name="researcher",
+                    description="Research a topic.",
+                ),
+            ),
+            diagnostics=DiagnosticsConfig(async_callback=async_callback),
+            name="coordinator",
+        )
+    )
+
+    asyncio.run(assembly.graph.ainvoke({"messages": [HumanMessage(content="Start")]}))
+
+    event_types = [event.event_type for event in events]
+    assert DiagnosticEventType.DELEGATION_SELECTED in event_types
+    assert DiagnosticEventType.DELEGATION_COMPLETED in event_types
 
 
 def test_async_callback_warning_is_reported(

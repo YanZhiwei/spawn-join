@@ -285,6 +285,43 @@ def test_queue_and_started_callbacks_are_ordered() -> None:
     asyncio.run(scenario())
 
 
+def test_slow_queue_callback_does_not_leak_a_slot() -> None:
+    async def scenario() -> None:
+        controller = DelegationController(
+            DelegationPolicy(
+                max_concurrency=1,
+                max_queue=1,
+                deadline_seconds=0.05,
+            )
+        )
+
+        async def blocker() -> None:
+            await asyncio.sleep(0.01)
+
+        async def slow_queue_callback() -> None:
+            await asyncio.sleep(0.1)
+
+        async def quick() -> str:
+            return "ok"
+
+        first = asyncio.create_task(controller.run(blocker, subagent_name="first"))
+        await _wait_until(lambda: controller.active_count == 1)
+
+        with pytest.raises(DelegationTimeoutError, match="queued"):
+            await controller.run(
+                quick,
+                subagent_name="queued",
+                on_queued=slow_queue_callback,
+            )
+
+        await first
+        assert controller.active_count == 0
+        assert controller.waiting_count == 0
+        assert await controller.run(quick, subagent_name="next") == "ok"
+
+    asyncio.run(scenario())
+
+
 def test_controller_configuration_mismatch_is_rejected() -> None:
     controller = DelegationController(DelegationPolicy(max_concurrency=1, max_queue=0))
 

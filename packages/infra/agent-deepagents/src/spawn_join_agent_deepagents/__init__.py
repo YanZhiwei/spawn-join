@@ -2,7 +2,9 @@
 
 from .diagnostics import (
     AssemblyReport,
+    AsyncDiagnosticCallback,
     DelegationReport,
+    DiagnosticCallback,
     DiagnosticEvent,
     DiagnosticEventType,
     DiagnosticsConfig,
@@ -25,7 +27,12 @@ from .execution import (
     DelegationPolicy,
 )
 from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
-from .models import ModelBinding, ModelBindings, ModelPurpose
+from .models import (
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
+    ResolvedModelBindings,
+)
 from .recovery import RecoveryContext
 from .subagents import (
     CompiledSubAgentDefinition,
@@ -38,6 +45,7 @@ from .supervisor import SupervisorAssembly, SupervisorSpec, build_supervisor
 __all__ = [
     "AgentConfigurationError",
     "AssemblyReport",
+    "AsyncDiagnosticCallback",
     "CompiledSubAgentDefinition",
     "DelegationConfiguration",
     "DelegationController",
@@ -45,6 +53,7 @@ __all__ = [
     "DelegationQueueFullError",
     "DelegationReport",
     "DelegationTimeoutError",
+    "DiagnosticCallback",
     "DiagnosticEvent",
     "DiagnosticEventType",
     "DiagnosticsConfig",
@@ -57,6 +66,7 @@ __all__ = [
     "ModelPurpose",
     "RecoveryConfigurationError",
     "RecoveryContext",
+    "ResolvedModelBindings",
     "ResourceReport",
     "SubAgentDefinition",
     "SubAgentKind",
