@@ -7,15 +7,15 @@
 - **feature_id**: `011-deepagents-product-capabilities`
 - **phase_id**: `s8-final-validation`
 - **base_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
-- **head_revision**: `3196ab8330425d9e4f4db80f1eafa3825e7774b0`
+- **head_revision**: `d5afbd5ea1c019ff70a5deb96188590cbab67ce8`
 - **merge_base**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-11-04
 - **status**: active
-- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created and remote CI run 41860603215 passed required `Quality Gate`
+- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created. CI run 41860603215 passed on `3196ab8`; a Python 3.11 deadline fix landed in `d5afbd5` and requires a fresh CI run.
 - **pull_request**: 32 (https://github.com/YanZhiwei/spawn-join/pull/32)
-- **content_fingerprint**: `4ad4b52816f1458e03739aa9aed13197919d41e8f65de0108268a75d65e4cba4`
-  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**`, `.specify/delivery/011-deepagents-product-capabilities/evidence.md`, the historical `.specify/delivery/010-model-metadata-sync/evidence.md`, and `harness/build-log.md` as declared review/receipt bookkeeping. 113 reviewed paths. The reviewed product/requirements content is at `ff91d98`; later commits add only evidence/review/build-log and historical 010 close bookkeeping.
+- **content_fingerprint**: `1a1f2fe9220240914d2e323302e89e99ed183507c3f84398f0fb08d0db06b71b`
+  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**`, `.specify/delivery/011-deepagents-product-capabilities/evidence.md`, the historical `.specify/delivery/010-model-metadata-sync/evidence.md`, and `harness/build-log.md` as declared review/receipt bookkeeping. 113 reviewed paths. The reviewed content includes the F-07 deadline fix at `d5afbd5`; later commits add only bookkeeping.
 - **requirements_fingerprint**: `1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd`
   Method: same normalized per-file SHA-256; manifest `<normalized-sha256>\t<path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Inputs: spec.md, plan.md, research.md, data-model.md, contracts/public-api.md, tasks.md, quickstart.md, exploration.md, decision-context.md, slices.md, constitution.md, AGENTS.md, package-boundaries.md, quality-gates.md, ADR-0010, delivery-config.yml, reviewer.md.
 - **method_identity**: `builtin` reviewer contract; no external method/config/resource selected
@@ -56,7 +56,7 @@ All commands were executed from the repository root unless noted.
 
 | Command | Working directory | Exit code | Result |
 |---|---|---|---|
-| `uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests -q` | repo root | 0 | 114 tests passed |
+| `uv run --python 3.11 --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests -q` | repo root | 0 | 115 tests passed on Python 3.11.13 |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents` | repo root | 0 | format/lint/strict type/test/build, four local wheels, isolated install, `pip check`, isolated import |
 | `pwsh -NoProfile -File scripts/quality.ps1` | repo root | 0 | all six Distributions, docs, governance, and static checks passed |
 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | repo root | 0 | 101 files, 257 local targets |
@@ -88,11 +88,13 @@ All commands were executed from the repository root unless noted.
   default `general-purpose` and fails at model resolution rather than a dedicated validation
   error). Both fail safely before graph execution and do not block this delivery.
 - Review report: `.specify/delivery/011-deepagents-product-capabilities/reviews/outgoing-diff/review.yml`.
+- F-07: a Python 3.11 Windows CI run exposed a native `TimeoutError` leak when the controller deadline expired at the clock boundary. `execution.py` now uses `asyncio.Timeout.expired()` to distinguish controller expiry from a worker-owned `TimeoutError`; the new regression test and all 115 package tests pass on Python 3.11.13.
 
 ## Limitations and residual risk
 
-- Local validation was Windows/Python 3.13 only. The configured CI matrix (Linux 3.11/3.14,
-  Windows 3.11) has not been executed remotely for this branch; do not claim remote CI success.
+- Local validation includes Windows/Python 3.13 and a targeted/full package run on Python 3.11.13.
+  Remote CI run 41860603215 passed the configured Linux 3.11/3.14 and Windows 3.11 matrix on
+  `3196ab8`; the F-07 fix in `d5afbd5` requires a fresh remote run before merge.
 - Tests use deterministic fake models, structural fake catalogs, and in-memory checkpointing.
   No real Provider, network, MCP server, sandbox, or durable Store was exercised.
 - F-04 and F-06 are open non-blocking minors as described above.
@@ -115,9 +117,9 @@ All commands were executed from the repository root unless noted.
 - The single combined PR is an explicit user-authorized deviation from the original per-slice
   PR plan; S0–S8 review/commit boundaries and receipts remain intact.
 - PR #32 was created; remote CI run 41860603215 passed all package matrix jobs and the required
-  `Quality Gate` on `3196ab8`. Merge and release were not performed when this record was
-  refreshed; the final bookkeeping push requires a fresh `Quality Gate` before the authorized
-  squash merge.
+  `Quality Gate` on `3196ab8`. The F-07 deadline fix is in `d5afbd5`; its fresh `Quality Gate`
+  is required before the authorized squash merge. Merge and release were not performed when
+  this record was refreshed.
 
 ## Changed paths (main..HEAD, excluding review bookkeeping in the content fingerprint)
 
