@@ -13,7 +13,11 @@ from deepagents import DeepAgentState
 from deepagents.backends import StateBackend
 from deepagents.backends.protocol import BackendProtocol
 from deepagents.middleware.filesystem import FilesystemPermission
-from deepagents.middleware.subagents import CompiledSubAgent, SubAgent
+from deepagents.middleware.subagents import (
+    GENERAL_PURPOSE_SUBAGENT,
+    CompiledSubAgent,
+    SubAgent,
+)
 from deepagents.middleware.summarization import create_summarization_middleware
 from langchain.agents.middleware import InterruptOnConfig
 from langchain.agents.middleware.types import AgentMiddleware
@@ -49,6 +53,7 @@ from .recovery import (
     validate_interrupt_checkpointer,
 )
 from .subagents import (
+    DEFAULT_GENERAL_PURPOSE_NAME,
     CompiledSubAgentDefinition,
     ResponseFormatLike,
     SubAgentDefinition,
@@ -78,6 +83,7 @@ class SupervisorSpec:
     tools: Sequence[ToolLike] = ()
     system_prompt: str | SystemMessage | None = None
     subagents: Sequence[SubAgentDefinitionLike] = ()
+    control_default_subagent: bool = True
     middleware: MiddlewareConfiguration = field(default_factory=MiddlewareConfiguration)
     delegation: DelegationConfiguration | None = None
     diagnostics: DiagnosticsConfig | None = None
@@ -128,7 +134,7 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
     _validate_subagents(spec)
     worker_requirement = spec.models.require_worker
     if worker_requirement is None:
-        worker_requirement = _worker_required(spec.subagents)
+        worker_requirement = _worker_required(spec)
     resolved = spec.models.resolve(require_worker=worker_requirement)
 
     backend = spec.backend if spec.backend is not None else StateBackend()
@@ -173,6 +179,8 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
         for definition in spec.subagents
         if isinstance(definition, SubAgentDefinition)
     }
+    if _uses_controlled_general_purpose(spec):
+        declarative_names.add(DEFAULT_GENERAL_PURPOSE_NAME)
     compiled_names = {
         definition.name
         for definition in spec.subagents
@@ -189,21 +197,58 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
     )
 
 
-def _interrupt_configured(spec: SupervisorSpec) -> bool:
-    if spec.interrupt_on:
-        return True
-    return any(
-        isinstance(definition, SubAgentDefinition) and bool(definition.interrupt_on)
-        for definition in spec.subagents
+def _has_permission_interrupt(
+    permissions: Sequence[FilesystemPermission] | None,
+) -> bool:
+    return permissions is not None and any(
+        permission.mode == "interrupt" for permission in permissions
     )
 
 
-def _worker_required(subagents: Sequence[SubAgentDefinitionLike]) -> bool:
+def _interrupt_configured(spec: SupervisorSpec) -> bool:
+    if spec.interrupt_on:
+        return True
+    if _has_permission_interrupt(spec.permissions):
+        return True
+    for definition in spec.subagents:
+        if not isinstance(definition, SubAgentDefinition):
+            continue
+        if definition.interrupt_on:
+            return True
+        effective_permissions = (
+            definition.permissions
+            if definition.permissions is not None
+            else spec.permissions
+        )
+        if _has_permission_interrupt(effective_permissions):
+            return True
+    return False
+
+
+def _has_general_purpose(subagents: Sequence[SubAgentDefinitionLike]) -> bool:
+    return any(
+        definition.name == DEFAULT_GENERAL_PURPOSE_NAME for definition in subagents
+    )
+
+
+def _uses_controlled_general_purpose(spec: SupervisorSpec) -> bool:
+    return spec.control_default_subagent and not _has_general_purpose(spec.subagents)
+
+
+def _uses_upstream_general_purpose(spec: SupervisorSpec) -> bool:
+    return not spec.control_default_subagent and not _has_general_purpose(
+        spec.subagents
+    )
+
+
+def _worker_required(spec: SupervisorSpec) -> bool:
+    if _uses_controlled_general_purpose(spec):
+        return True
     return any(
         isinstance(definition, SubAgentDefinition)
         and definition.model is None
         and definition.model_purpose == ModelPurpose.WORKER
-        for definition in subagents
+        for definition in spec.subagents
     )
 
 
@@ -316,6 +361,8 @@ def _native_compiled(definition: CompiledSubAgentDefinition) -> CompiledSubAgent
 def _declarative_report(
     definition: SubAgentDefinition,
     middleware: tuple[MiddlewareType, ...],
+    *,
+    warnings: tuple[str, ...] = (),
 ) -> SubagentReport:
     model_source = (
         f"injected:{type(definition.model).__name__}"
@@ -331,6 +378,7 @@ def _declarative_report(
         availability=(
             "experimental" if definition.mode == SubAgentMode.FORK else "available"
         ),
+        warnings=warnings,
     )
 
 
@@ -346,6 +394,25 @@ def _compiled_report(definition: CompiledSubAgentDefinition) -> SubagentReport:
     )
 
 
+def _default_general_purpose_definition(
+    spec: SupervisorSpec,
+) -> SubAgentDefinition:
+    raw: Mapping[str, object] = cast(Mapping[str, object], GENERAL_PURPOSE_SUBAGENT)
+    description = raw.get("description")
+    system_prompt = raw.get("system_prompt")
+    if not isinstance(description, str) or not isinstance(system_prompt, str):
+        raise AgentConfigurationError(
+            "supervisor: upstream general-purpose definition is incomplete"
+        )
+    return SubAgentDefinition(
+        name=DEFAULT_GENERAL_PURPOSE_NAME,
+        description=description,
+        system_prompt=system_prompt,
+        model_purpose=ModelPurpose.WORKER,
+        skills=None if spec.skills is None else tuple(spec.skills),
+    )
+
+
 def _native_subagents(
     spec: SupervisorSpec,
     resolved: ResolvedModelBindings,
@@ -355,14 +422,32 @@ def _native_subagents(
     tuple[SubagentReport, ...],
     dict[str, tuple[str, ...]],
 ]:
+    definitions: list[SubAgentDefinitionLike] = list(spec.subagents)
+    controlled_default = _uses_controlled_general_purpose(spec)
+    if controlled_default:
+        definitions.insert(0, _default_general_purpose_definition(spec))
     native: list[SubAgent | CompiledSubAgent] = []
     reports: list[SubagentReport] = []
     per_subagent: dict[str, tuple[str, ...]] = {}
-    for definition in spec.subagents:
+    for definition in definitions:
         if isinstance(definition, SubAgentDefinition):
             middleware = _declarative_middleware(definition, spec, summary)
             native.append(_native_declarative(definition, resolved, middleware))
-            reports.append(_declarative_report(definition, middleware))
+            reports.append(
+                _declarative_report(
+                    definition,
+                    middleware,
+                    warnings=(
+                        (
+                            "package-controlled default subagent; "
+                            "uses the WORKER purpose and worker middleware",
+                        )
+                        if controlled_default
+                        and definition.name == DEFAULT_GENERAL_PURPOSE_NAME
+                        else ()
+                    ),
+                )
+            )
             per_subagent[definition.name] = tuple(item.name for item in middleware)
         else:
             native.append(_native_compiled(definition))
@@ -436,6 +521,8 @@ def _report_warnings(
     declarative_count = sum(
         isinstance(definition, SubAgentDefinition) for definition in spec.subagents
     )
+    if _uses_controlled_general_purpose(spec):
+        declarative_count += 1
     compiled_count = sum(
         isinstance(definition, CompiledSubAgentDefinition)
         for definition in spec.subagents
@@ -444,6 +531,11 @@ def _report_warnings(
         warnings.append(
             "middleware.workers: compiled subagents own their middleware and "
             "are not modified"
+        )
+    if _uses_upstream_general_purpose(spec):
+        warnings.append(
+            "general-purpose: upstream-owned default uses the supervisor model; "
+            "the WORKER binding and workers middleware do not apply"
         )
     if spec.middleware.workers and declarative_count == 0:
         warnings.append("middleware.workers: no declarative subagents are registered")
@@ -455,6 +547,13 @@ def _report_warnings(
     return tuple(warnings)
 
 
+_UPSTREAM_GENERAL_PURPOSE_MIDDLEWARE = (
+    "FilesystemMiddleware",
+    "SummarizationMiddleware",
+    "PatchToolCallsMiddleware",
+)
+
+
 def _build_report(
     spec: SupervisorSpec,
     resolved: ResolvedModelBindings,
@@ -464,10 +563,32 @@ def _build_report(
     summary: MiddlewareType | None,
 ) -> AssemblyReport:
     warnings = _report_warnings(spec, summary)
+    reports = list(subagent_reports)
+    per_subagent_report = dict(per_subagent)
+    if _uses_upstream_general_purpose(spec):
+        reports.insert(
+            0,
+            SubagentReport(
+                name=DEFAULT_GENERAL_PURPOSE_NAME,
+                kind=SubAgentKind.UPSTREAM_DEFAULT,
+                mode=SubAgentMode.ISOLATED,
+                model_source="upstream:supervisor",
+                middleware_names=_UPSTREAM_GENERAL_PURPOSE_MIDDLEWARE,
+                availability="available",
+                warnings=(
+                    "upstream-owned; WORKER binding and workers middleware "
+                    "do not apply",
+                ),
+            ),
+        )
+        per_subagent_report = {
+            DEFAULT_GENERAL_PURPOSE_NAME: _UPSTREAM_GENERAL_PURPOSE_MIDDLEWARE,
+            **per_subagent_report,
+        }
     middleware = MiddlewareScopeReport(
         supervisor_names=tuple(item.name for item in supervisor_middleware),
         worker_names=tuple(item.name for item in spec.middleware.workers),
-        per_subagent=per_subagent,
+        per_subagent=per_subagent_report,
         replaced_defaults=(("SummarizationMiddleware",) if summary is not None else ()),
         warnings=warnings,
     )
@@ -487,7 +608,7 @@ def _build_report(
         deepagents_version=deepagents.__version__,
         supervisor_name=spec.name,
         models=_model_source_labels(spec.models),
-        subagents=subagent_reports,
+        subagents=tuple(reports),
         middleware=middleware,
         delegation=delegation,
         resources=ResourceReport(

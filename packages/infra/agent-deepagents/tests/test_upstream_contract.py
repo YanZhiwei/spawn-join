@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from importlib.metadata import version
 from typing import Any, cast
 
 import deepagents
 from deepagents import CompiledSubAgent, SubAgent
 from deepagents.backends import StateBackend
-from deepagents.middleware.subagents import TaskToolSchema
+from deepagents.middleware.subagents import (
+    GENERAL_PURPOSE_SUBAGENT,
+    TaskToolSchema,
+)
 from deepagents.middleware.summarization import create_summarization_middleware
 from langchain_core.language_models import BaseChatModel
 from langgraph.errors import GraphInterrupt
@@ -39,6 +42,16 @@ def test_summarization_middleware_name_is_replaceable(
     )
 
     assert middleware.name == "SummarizationMiddleware"
+
+
+def test_general_purpose_default_is_available() -> None:
+    raw = cast(Mapping[str, object], GENERAL_PURPOSE_SUBAGENT)
+    description = raw.get("description")
+    system_prompt = raw.get("system_prompt")
+
+    assert raw.get("name") == "general-purpose"
+    assert isinstance(description, str) and description
+    assert isinstance(system_prompt, str) and system_prompt
 
 
 def test_task_schema_uses_the_native_delegation_arguments() -> None:

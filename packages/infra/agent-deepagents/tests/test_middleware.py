@@ -268,7 +268,7 @@ def test_middleware_scopes_execute_in_offline_delegation(
     )
 
 
-def test_worker_middleware_order_and_summarization_replacement(
+def test_requested_worker_middleware_order_and_summarization_replacement(
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
 ) -> None:
     events: list[str] = []

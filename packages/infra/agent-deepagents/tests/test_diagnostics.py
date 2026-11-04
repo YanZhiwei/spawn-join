@@ -572,13 +572,14 @@ def test_async_callback_warning_is_reported(
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
 ) -> None:
     supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
 
     async def async_callback(event: DiagnosticEvent) -> None:
         del event
 
     assembly = build_supervisor(
         SupervisorSpec(
-            models=_bindings(supervisor),
+            models=_bindings(supervisor, worker),
             diagnostics=DiagnosticsConfig(async_callback=async_callback),
             name="coordinator",
         )

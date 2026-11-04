@@ -17,7 +17,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - supervisor、workers、per-subagent override 三种 Middleware 作用域；
 - 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
 - 可选同步/异步诊断回调，以及脱敏的装配/生命周期记录；
-- 宿主拥有 Store、Backend、Checkpointer、MCP Session、沙箱和业务工具；
+- 宿主拥有 Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend；
 - 独立 wheel/sdist、`py.typed`、包级测试、质量 profile 和 CI 矩阵。
 
 ## 安装
@@ -108,7 +108,7 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/gove
 | 用途 | 规则 |
 |---|---|
 | `SUPERVISOR` | 必须直接绑定；不能继承 |
-| `WORKER` | 声明式子代理使用；可显式 `inherit_from` |
+| `WORKER` | 声明式子代理和默认受控的 `general-purpose` 使用；可显式 `inherit_from`；默认需要绑定 |
 | `SUMMARIZATION` | 默认必须绑定；可显式 `inherit_from` |
 
 - 不允许隐式回退到 supervisor、Catalog 默认模型或另一个用途；
@@ -126,6 +126,12 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/gove
 - `CompiledSubAgentDefinition`：宿主提供的 runnable，保留自己的图、模型和内部中间件；
 - 名称在两种形态之间必须唯一；
 - `tools=None` 表示沿用上游工具继承，`tools=()` 表示显式不提供额外工具；
+- 默认情况下，如果没有声明 `general-purpose`，包会注入一个受控的 `general-purpose`：
+  使用 `WORKER` 模型和 `workers` middleware，并出现在装配报告中；
+- `SupervisorSpec(control_default_subagent=False)` 保留上游 supervisor-owned 的
+  `general-purpose`；报告将其标记为 `upstream_default`，并警告 `WORKER` 和 worker
+  middleware 不适用。若模型 harness profile 禁用了该默认子代理，报告条目表示上游默认约定，
+  最终以实际图为准；
 - `mode="fork"` 是 DeepAgents beta，只能通过
   `SupervisorSpec(allow_experimental_fork=True)` 显式开启，且不进入稳定兼容承诺。
 
@@ -141,8 +147,10 @@ middleware = MiddlewareConfiguration(
 )
 ```
 
-有效顺序：定义级 middleware、全局 worker middleware、命名 override、生成的
-summarization middleware。compiled 子代理不接收任何注入。
+请求顺序：定义级 middleware、全局 worker middleware、命名 override、生成的
+summarization middleware。DeepAgents 会按 `.name` 原位替换默认 summarization，因此最终
+base-stack 位置由上游决定；报告记录请求名称和 `replaced_defaults`，不声称 summarization 一定最后执行。
+compiled 子代理不接收任何注入。
 
 - 同一作用域内重复 `.name` 会被拒绝；
 - `"SummarizationMiddleware"` 和包内部 middleware 名称保留；
@@ -202,8 +210,10 @@ from spawn_join_agent_deepagents import RecoveryContext
 config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 ```
 
-- Store、Backend、Checkpointer、MCP Session、沙箱和业务工具由宿主创建、保持有效并关闭；
-- 本包只校验 `interrupt_on` 需要 checkpointer、`thread_id` 非空，并透传原生 LangGraph 语义；
+- Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend 由宿主创建、保持有效并关闭；
+- 宿主省略 `backend` 时，包会创建一个无外部关闭路径的内存 `StateBackend`，报告为 `default_state`；
+- 本包校验显式 `interrupt_on`、声明式子代理 `interrupt_on` 和
+  `FilesystemPermission(mode="interrupt")` 都需要 checkpointer，并透传原生 LangGraph 语义；
 - 恢复使用原生 `Command(resume=...)` 和同一 `thread_id`；
 - 本包不创建或关闭宿主资源，不承诺 exactly-once 副作用；
 - 调用方应使用 `to_graph_config()` 生成 native config，或自行提供等价的 `configurable.thread_id`。
@@ -214,7 +224,8 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 - `build_supervisor`、`SupervisorSpec`、`SupervisorAssembly`；
 - `ModelPurpose`、`ModelBinding`、`ModelBindings`、`ResolvedModelBindings`；
-- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`、`SubAgentMode`；
+- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`（含 `UPSTREAM_DEFAULT`）、
+  `SubAgentMode`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
 - `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、

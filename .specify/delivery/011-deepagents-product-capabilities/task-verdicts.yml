@@ -619,4 +619,16 @@ tasks:
         exit_code: 0
         result: pass
         detail: Only fake test values such as sk-secret-value and sk-live-secret-value; no real credentials.
-    notes: Residual risks are recorded in evidence.md (local Windows/Python 3.13 only, fake models, no remote CI, ADR Proposed).
+      - name: final-review-fix-attempt-1
+        command: independent outgoing-diff review then bounded repair
+        exit_code: 0
+        result: pass
+        detail: >-
+          F-01 permission-driven interrupt validation, F-02 default general-purpose control/reporting,
+          F-03 middleware-order documentation, F-04 targeted graph tests, and F-05 Backend-ownership
+          reconciliation were implemented. 114 package tests pass; package gate passes. Fresh six-dimension
+          re-review is required before closure.
+    notes: >-
+      Residual risks are recorded in evidence.md (local Windows/Python 3.13 only, fake models, no remote
+      CI, ADR Proposed). The 2026-11-04 review-fix attempt is on the same run; F-03 and F-04 are addressed
+      but should be re-checked by the fresh reviewer.

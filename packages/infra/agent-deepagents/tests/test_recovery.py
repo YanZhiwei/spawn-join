@@ -131,6 +131,7 @@ def test_native_interrupt_and_resume_with_host_checkpointer(
             tools=(approval_tool,),
             checkpointer=checkpointer,
             store=store,
+            control_default_subagent=False,
             name="coordinator",
         )
     )
@@ -190,6 +191,7 @@ def test_invalid_resume_surfaces_a_native_error(
             models=_bindings(supervisor),
             tools=(strict_approval_tool,),
             checkpointer=InMemorySaver(),
+            control_default_subagent=False,
             name="coordinator",
         )
     )

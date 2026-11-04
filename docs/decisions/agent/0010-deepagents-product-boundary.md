@@ -20,7 +20,7 @@ SpawnJoin 已有可独立分发的 Core、LLM 协议、LangChain 模型适配和
 3. Middleware 在主图、委派边界和子图中的作用范围；
 4. 子代理委派如何限制并发、排队、deadline 和取消，并区分钟类失败；
 5. 宿主如何解释“子代理未注册/未入选/未调用/调用失败”，同时不泄露密钥；
-6. Store、Backend、Checkpointer、MCP Session 和沙箱由谁创建、保持和关闭；
+6. Store、Backend、Checkpointer、MCP Session 和沙箱由谁创建、保持和关闭（省略 Backend 时允许包创建无外部关闭路径的内存默认）；
 7. 如何把中断/恢复、streaming 和原生 LangGraph 语义原样交给宿主。
 
 DeepAgents `0.7.32` 已提供模型—工具循环、子代理、Middleware、文件 Backend、Checkpoint、interrupt 和 streaming；0.7 还减少了隐式默认策略。SpawnJoin 不应复制这些机制，而应补上产品装配、校验、用途绑定、受控委派和诊断接缝。
@@ -83,6 +83,7 @@ Core、协议包和模型包不得反向依赖本包。本包不依赖 `spawn-jo
 - `SUPERVISOR`、`WORKER`、`SUMMARIZATION` 是稳定用途；
 - supervisor 必须直接绑定，不得继承；
 - worker/summarization 只能通过显式 `inherit_from` 继承；缺失时失败，不隐式回退到 supervisor 或 Catalog 默认模型；
+- 默认控制上游自动添加的 `general-purpose`：使用 `WORKER` 模型和 `workers` middleware；因此 `WORKER` 默认需要绑定。`control_default_subagent=False` 可显式保留上游 supervisor-owned 默认，但报告标记为 `upstream_default` 并警告 worker 作用域不适用；
 - `SUMMARIZATION` 默认必须显式绑定，因为 DeepAgents 默认栈始终包含 summarization；
 - 配置绑定通过 `ModelCatalog.create_chat_model` 创建，Agent 包不解析 YAML、不读取密钥、不选择 Provider SDK；
 - 保留原生 `BaseChatModel` 注入入口，支持宿主已有模型和离线测试；
@@ -92,9 +93,9 @@ Core、协议包和模型包不得反向依赖本包。本包不依赖 `spawn-jo
 
 - 稳定契约覆盖声明式 `SubAgent` 与 `CompiledSubAgent`；
 - 唯一名称和必填字段在调用上游前校验，上游仍是最终执行权威；
-- 声明式子代理接收显式 worker 模型、worker middleware 和生成的 summarization middleware；
+- 未声明 `general-purpose` 时，默认注入包控制的声明式版本；它接收显式 `WORKER` 模型、worker middleware 和生成的 summarization middleware，并出现在报告中；
 - compiled 子代理保留自己的图、模型、内部中间件和 approval 配置，本包不注入；
-- Middleware 分为 supervisor、workers、per-subagent override 三个作用域；同名替换遵循 DeepAgents 0.7 语义，本包不实现第二套 registry；
+- Middleware 分为 supervisor、workers、per-subagent override 三个作用域；同名替换遵循 DeepAgents 0.7 原位替换语义，最终 base-stack 位置由上游决定，本包不实现第二套 registry；
 - 用户不得占用保留的 `"SummarizationMiddleware"` 名称，summarization 模型只能通过用途绑定设置；
 - fork 子代理是 beta，只能通过显式 `allow_experimental_fork` 开启，且不进入稳定兼容承诺。
 
@@ -117,9 +118,10 @@ Core、协议包和模型包不得反向依赖本包。本包不依赖 `spawn-jo
 
 ### 资源与恢复
 
-- Store、Backend、Checkpointer、MCP Session、沙箱和业务工具由宿主创建、保持有效并关闭；
+- Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend 由宿主创建、保持有效并关闭；
+- 宿主省略 `backend` 时，包可创建一个无外部关闭路径的内存 `StateBackend`，报告为 `default_state`；
 - 包只校验必需资源/身份并透传，不创建或关闭宿主资源；
-- `interrupt_on` 需要 checkpointer；恢复使用原生 `thread_id`、`Command(resume=...)` 和 LangGraph 语义；
+- 显式 `interrupt_on`、声明式子代理 `interrupt_on` 和 `FilesystemPermission(mode="interrupt")` 都需要 checkpointer；恢复使用原生 `thread_id`、`Command(resume=...)` 和 LangGraph 语义；
 - 包不承诺 exactly-once 副作用，也不替代宿主的资源池、健康检查或持久化策略。
 
 ## Key design and diagrams
@@ -164,6 +166,7 @@ requested
 成本与限制：
 
 - 新增一个 Distribution、锁文件、质量 profile、CI 矩阵和文档维护面；
+- 默认控制 `general-purpose` 使 `WORKER` 默认需要绑定；不希望该默认子代理的宿主必须显式设置 `control_default_subagent=False`，并接受报告中记录的 upstream-owned 警告；
 - 运行时锁定 `deepagents<0.8`；0.8 兼容需要单独验证和决策；
 - governed delegation 仅异步；同步策略明确不支持；
 - fork 为 beta，不承诺长期兼容；

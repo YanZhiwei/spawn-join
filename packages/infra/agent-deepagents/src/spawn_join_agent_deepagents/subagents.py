@@ -31,11 +31,15 @@ ToolLike = BaseTool | Callable[..., Any] | dict[str, Any]
 ResponseFormatLike = ResponseFormat[Any] | type[Any] | dict[str, Any]
 
 
+DEFAULT_GENERAL_PURPOSE_NAME = "general-purpose"
+
+
 class SubAgentKind(StrEnum):
-    """Whether a subagent is declarative or host-compiled."""
+    """Whether a subagent is declarative, host-compiled, or upstream-owned."""
 
     DECLARATIVE = "declarative"
     COMPILED = "compiled"
+    UPSTREAM_DEFAULT = "upstream_default"
 
 
 class SubAgentMode(StrEnum):
