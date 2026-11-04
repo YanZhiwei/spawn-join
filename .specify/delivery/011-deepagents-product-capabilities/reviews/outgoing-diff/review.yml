@@ -1,0 +1,303 @@
+REVIEW_VERDICT: pass
+lane: feature
+scope: outgoing-diff
+independence: fresh-context
+degradation_approval: null
+
+snapshot:
+  base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+  head: 13692d7eed9664eb5910c93547d8c04a48a3783e
+  merge_base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+  content_fingerprint: "0efab4b74896f9b5b191e258a185340854cfaca67cd6e5dc1faa6089e4f0b4be; method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file, manifest '<git-mode>\\t<normalized-sha256>\\t<repo-relative-path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Independently recomputed at HEAD: exact match; 115 changed files and 115 manifest lines."
+  requirements_fingerprint: "e2453d0a5a1f6d127894857a76319b860eac615cf7164b5d33713a9c8f7a7a8c; method: same normalized per-file SHA-256, manifest '<normalized-sha256>\\t<path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Inputs: 17 approved requirement, design, and policy files. Independently recomputed: exact match."
+  bookkeeping_exclusions: []
+
+coverage:
+  reviewed:
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/__init__.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/diagnostics.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/errors.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/execution.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/middleware.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/models.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/recovery.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/subagents.py
+    - packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/supervisor.py
+    - packages/infra/agent-deepagents/tests/conftest.py
+    - packages/infra/agent-deepagents/tests/test_diagnostics.py
+    - packages/infra/agent-deepagents/tests/test_execution.py
+    - packages/infra/agent-deepagents/tests/test_middleware.py
+    - packages/infra/agent-deepagents/tests/test_models.py
+    - packages/infra/agent-deepagents/tests/test_package.py
+    - packages/infra/agent-deepagents/tests/test_public_api.py
+    - packages/infra/agent-deepagents/tests/test_recovery.py
+    - packages/infra/agent-deepagents/tests/test_subagents.py
+    - packages/infra/agent-deepagents/tests/test_supervisor.py
+    - packages/infra/agent-deepagents/tests/test_upstream_contract.py
+    - packages/infra/agent-deepagents/examples/basic_supervisor.py
+    - packages/infra/agent-deepagents/examples/governed_delegation.py
+    - packages/infra/agent-deepagents/examples/fake_model.py
+    - packages/infra/agent-deepagents/pyproject.toml
+    - packages/infra/agent-deepagents/README.md
+    - packages/infra/agent-deepagents/LICENSE
+    - scripts/quality.ps1
+    - scripts/test-quality.ps1
+    - .github/workflows/quality.yml
+    - .specify/extensions/quality/quality-config.yml
+    - .specify/extensions/delivery/delivery-config.yml
+    - .specify/extensions/review/templates/reviewer.md
+    - docs/architecture/package-boundaries.md
+    - docs/architecture/repository-map.md
+    - docs/development/quality-gates.md
+    - docs/decisions/agent/0010-deepagents-product-boundary.md
+    - docs/decisions/README.md
+    - AGENTS.md
+    - README.md
+    - specs/011-deepagents-product-capabilities/spec.md
+    - specs/011-deepagents-product-capabilities/plan.md
+    - specs/011-deepagents-product-capabilities/research.md
+    - specs/011-deepagents-product-capabilities/data-model.md
+    - specs/011-deepagents-product-capabilities/contracts/public-api.md
+    - specs/011-deepagents-product-capabilities/tasks.md
+    - specs/011-deepagents-product-capabilities/quickstart.md
+    - .specify/delivery/011-deepagents-product-capabilities/exploration.md
+    - .specify/delivery/011-deepagents-product-capabilities/decision-context.md
+    - .specify/delivery/011-deepagents-product-capabilities/slices.md
+    - .specify/delivery/011-deepagents-product-capabilities/simplifications.md
+    - "external contract source: installed deepagents 0.7.32 graph/subagent/summarization source and LangGraph ToolNode behavior"
+  partial:
+    - packages/infra/agent-deepagents/uv.lock
+    - .specify/delivery/011-deepagents-product-capabilities/evidence.md
+    - .specify/delivery/011-deepagents-product-capabilities/task-verdicts.yml
+    - .specify/delivery/011-deepagents-product-capabilities/slice-verdicts.yml
+    - docs/development/spec-kit-delivery.md
+    - docs/development/technical-diagrams.md
+    - harness/build-log.md
+    - harness/evidence/delivery-v032-upgrade.md
+    - harness/evidence/delivery-sd-shortcut.md
+    - .opencode/commands/sd.md
+  unreviewed: []
+  excluded:
+    - ".specify/bundle-catalogs.yml, .specify/bundle-records.json, .specify/extension-catalogs.yml, .specify/extensions/.registry, .specify/workflow-catalogs.yml, .specify/workflows/workflow-registry.json: installer-managed or generated Delivery v0.3.2 bundle records, not product runtime; key files were sampled."
+    - ".specify/extensions/*/commands/* and .opencode/commands/* copies: installer-managed vendor command copies; the project router sd.md, delivery config, workflows, and reviewer template were reviewed."
+    - "No production source, test, or changed requirement path was excluded."
+
+method_receipt:
+  status: builtin
+  provider: builtin
+  origin: not-applicable
+  revision: not-applicable
+  entrypoint: .specify/extensions/review/templates/reviewer.md
+  resources: []
+  fallback_reason: none
+  restrictions: host-enforced
+  input_identity: "builtin reviewer contract; content fingerprint 0efab4b74896f9b5b191e258a185340854cfaca67cd6e5dc1faa6089e4f0b4be; requirements fingerprint e2453d0a5a1f6d127894857a76319b860eac615cf7164b5d33713a9c8f7a7a8c; no external skill/method adapter selected"
+
+dimensions:
+  requirements:
+    verdict: pass
+    evidence:
+      - "F-01, F-02, and F-05 are verified resolved against the updated Spec, Plan, public contract, data model, ADR and tests."
+      - "spec.md FR-008 now explicitly permits the ephemeral StateBackend exception; FR-005/FR-006 and the review clarifications cover the controlled general-purpose, permission interrupts, and requested middleware scope/order."
+      - "F-06 remains a non-blocking explicit require_worker=False edge; it is not an unresolved requirement blocker."
+  code_quality:
+    verdict: pass
+    evidence:
+      - "Black, isort, Ruff, and Pyright strict all pass at this HEAD via scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check format/lint/type."
+      - "The new permission and general-purpose helpers are small, named, typed, and tested; no dead public accessor remains."
+      - "F-06 is a validation-message/configuration edge, not a readability or lifecycle defect."
+  architecture:
+    verdict: pass
+    evidence:
+      - "F-02 resolved: the default general-purpose subagent is package-controlled with WORKER model and workers middleware, excluded from the upstream hidden-default path, and reported; control_default_subagent=False preserves and reports the upstream default with an explicit warning."
+      - "F-03 resolved: contract, data model and README now describe requested order and upstream in-place replacement; the test was renamed to requested order."
+      - "F-05 resolved: the Plan, contract, data model and ADR explicitly allow an ephemeral in-memory StateBackend while host-provided resources remain host-owned and unclosed."
+      - "Dependency direction remains one-way; no Core/protocol/model-sync/observability reverse dependency."
+  correctness:
+    verdict: pass
+    evidence:
+      - "F-01 resolved: supervisor.py:200-225 detects permission-driven interrupts on the supervisor and declarative subagents, and supervisor.py:595-621 reports interrupt_configured/thread_id_required. tests/test_supervisor.py:590-685 cover missing-checkpointer rejection, real graph interrupt, and native resume with InMemorySaver."
+      - "Package pytest at this HEAD: 114 passed, including the new permission, general-purpose, upstream-default, and native-kwargs tests."
+      - "F-06 remains an open minor: explicit ModelBindings.require_worker=False with the default controlled general-purpose and no worker binding fails late at model resolution rather than at an explicit conflict check; it still fails before graph execution."
+  security_compatibility:
+    verdict: pass
+    evidence:
+      - "No secrets, private endpoints, prompts, or exception messages are added to reports/events; existing redaction tests and error-message tests remain green."
+      - "The controlled general-purpose now consumes the WORKER model and workers middleware instead of bypassing them; opt-out is explicit and warns that WORKER/workers middleware do not apply."
+      - "Permission interrupt validation and the ephemeral StateBackend exception are documented public behavior; no tenant/data boundary or host-resource close path was added."
+  test_effectiveness:
+    verdict: pass
+    evidence:
+      - "114 tests pass at this HEAD; new tests exercise a real permission interrupt/resume, a real controlled general-purpose delegation with worker model and middleware, the upstream-default report, and partial native kwargs for general-purpose/declarative subagents."
+      - "F-04 remains open but minor/non-blocking: there are still no graph-level queue-full, deadline, parent-cancellation, or worker-failure tests; fork has no execution test; native kwargs do not yet assert tools/interrupt_on; test_public_api still mirrors __all__."
+      - "The remaining F-04 gaps do not invalidate the verified F-01/F-02 repairs."
+
+findings:
+  - id: F-01
+    dimension: correctness
+    severity: important
+    state: resolved
+    certainty: confirmed
+    blocking: false
+    location: "packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/supervisor.py:200-225,595-621; packages/infra/agent-deepagents/tests/test_supervisor.py:590-711"
+    trigger: "FilesystemPermission(..., mode='interrupt') on the supervisor or a declarative subagent without a checkpointer, or with a checkpointer while inspecting the report flags."
+    defect: "Prior permission-driven interrupts bypassed checkpointer validation and left interrupt_configured/thread_id_required false."
+    impact: "Previously produced an unresumable approval flow; now must reject without a checkpointer and report the interrupt requirement when one is present."
+    evidence:
+      - "supervisor.py:200-225 scans spec.permissions and declarative effective permissions; supervisor.py:595-621 uses _interrupt_configured for both report flags."
+      - "tests/test_supervisor.py:590-621 asserts RecoveryConfigurationError without a checkpointer and true flags with InMemorySaver; 623-685 performs a real write permission interrupt and native Command(resume=...) with the same thread id; 688-711 covers subagent-level permission interrupt rejection."
+      - "Full package pytest: 114 passed at 13692d7e."
+    remediation: "None remaining for the identified trigger; keep the regression tests."
+    resolution_evidence: "Verified by current code, targeted source inspection, and the passing graph interrupt/resume tests at this HEAD."
+  - id: F-02
+    dimension: architecture
+    severity: important
+    state: resolved
+    certainty: confirmed
+    blocking: false
+    location: "packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/supervisor.py:86,134-138,228-252,397-456,511-587,606-623; tests/test_supervisor.py:449-496,521-587"
+    trigger: "Any assembly without an explicit subagent named general-purpose."
+    defect: "Prior upstream auto general-purpose used the supervisor model and bypassed WORKER purpose, worker middleware, and the assembly report."
+    impact: "A live default subagent could bypass worker-scoped safety/rate-limit middleware and was invisible to hosts."
+    evidence:
+      - "control_default_subagent defaults True; _uses_controlled_general_purpose injects a declarative general-purpose with WORKER model, workers middleware, and summarization; _worker_required makes WORKER required; _build_report lists it as declarative with model source purpose:worker."
+      - "control_default_subagent=False preserves and reports the upstream default as UPSTREAM_DEFAULT with model source upstream:supervisor and an explicit workers/WORKER warning."
+      - "tests/test_supervisor.py:521-565 verifies real delegation uses the worker model and executes a worker marker; 567-587 verifies the opt-out report; 449-496 verifies native general-purpose/declarative model, mode, middleware, and ordering."
+      - "Package pytest: 114 passed."
+    remediation: "None remaining for the primary defect. F-06 tracks the explicit require_worker=False edge separately."
+    resolution_evidence: "Verified by the current injection/report code and new real graph/report tests at this HEAD."
+  - id: F-03
+    dimension: code_quality
+    severity: minor
+    state: resolved
+    certainty: confirmed
+    blocking: false
+    location: "packages/infra/agent-deepagents/README.md:150-152; specs/011-deepagents-product-capabilities/contracts/public-api.md:211-213; specs/011-deepagents-product-capabilities/data-model.md:127; packages/infra/agent-deepagents/tests/test_middleware.py:271"
+    trigger: "Assembly with generated summarization and user middleware."
+    defect: "Prior documentation and report claimed a summary-last effective order although DeepAgents replaces the default in place."
+    impact: "Hosts could infer a false hook order."
+    evidence:
+      - "README, contract, data model and ADR now distinguish requested order from upstream final base-stack position and explicitly say the report does not claim the summarization is last."
+      - "The test is renamed to test_requested_worker_middleware_order_and_summarization_replacement and asserts requested names plus replaced_defaults."
+    remediation: "None remaining for the false-order claim; residual generic wording does not assert final order."
+    resolution_evidence: "Verified by current docs/contract and the renamed test at this HEAD."
+  - id: F-04
+    dimension: test_effectiveness
+    severity: minor
+    state: open
+    certainty: confirmed
+    blocking: false
+    location: "packages/infra/agent-deepagents/tests/test_execution.py; tests/test_supervisor.py:449-496; tests/test_upstream_contract.py; tests/test_public_api.py:51-92; specs/011-deepagents-product-capabilities/tasks.md T016/T030/T040/T041"
+    trigger: "A regression in graph-level queue/deadline/cancellation/worker-failure behavior, fork behavior, or exact native kwargs."
+    defect: "The repair adds real graph tests for permission interrupt/resume and the controlled general-purpose, and partial native-kwargs assertions, but still lacks graph-level queue-full, deadline, parent-cancellation and worker-failure tests; fork has no execution test; native kwargs do not assert tools/interrupt_on; test_public_api still mirrors the current __all__ rather than deriving the contract."
+    impact: "Remaining regression risk in native delegation failure paths and experimental fork behavior; not a blocker for the verified fixes."
+    evidence:
+      - "test_execution.py remains controller/middleware unit tests; test_diagnostics.py failure cases still compose middleware directly."
+      - "test_supervisor.py:449-496 asserts native general-purpose/researcher model, mode, middleware and ordering but not tools/interrupt_on."
+      - "No test executes a fork-mode subagent against deepagents 0.7.32."
+    remediation: "Add controlled async graph tests for queue-full, deadline, parent cancellation and worker failure; a fork execution test; exact native kwargs for tools/interrupt_on; and a contract-derived public API check."
+    resolution_evidence: "Partially addressed by the new permission/general-purpose/native-kwargs tests; remaining gaps are non-blocking."
+  - id: F-05
+    dimension: requirements
+    severity: minor
+    state: resolved
+    certainty: confirmed
+    blocking: false
+    location: "specs/011-deepagents-product-capabilities/spec.md:141; plan.md:17,296; contracts/public-api.md:70,324-325; data-model.md:225,242; docs/decisions/agent/0010-deepagents-product-boundary.md:122; packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/supervisor.py:140"
+    trigger: "Host omits SupervisorSpec.backend."
+    defect: "Prior FR-008 said the host must create Backend and the package must not create it, while the implementation created an ephemeral StateBackend."
+    impact: "Ownership wording and implementation disagreed."
+    evidence:
+      - "Spec FR-008 now explicitly permits the ephemeral in-memory StateBackend exception; Plan, contract, data model and ADR document no external close path and default_state reporting."
+      - "supervisor.py:140 still creates StateBackend only when spec.backend is None; report path remains default_state."
+    remediation: "None remaining; the exception is documented and bounded."
+    resolution_evidence: "Verified against current Spec/Plan/contract/data-model/ADR and implementation."
+  - id: F-06
+    dimension: correctness
+    severity: minor
+    state: open
+    certainty: confirmed
+    blocking: false
+    location: "packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/supervisor.py:134-138,244-252,321-328; packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/models.py:136-154"
+    trigger: "ModelBindings.require_worker=False with default control_default_subagent=True, no worker binding, and no explicit general-purpose subagent."
+    defect: "build_supervisor passes require_worker=False to resolve, then the injected controlled general-purpose still requests the WORKER purpose; _model_for_purpose raises ModelBindingError after model resolution rather than reporting an explicit conflict at validation time."
+    impact: "The package fails safely before graph execution, but the public require_worker=False choice is not honored or rejected with a clear conflict diagnostic."
+    evidence:
+      - "Read-only HEAD probe: ModelBindings(..., require_worker=False) plus default SupervisorSpec and no worker produced ModelBindingError 'models.worker: no resolved model for the subagent purpose'; build failed before create_deep_agent."
+      - "No test covers this explicit-false plus controlled-default combination."
+    remediation: "Reject the combination early with a clear AgentConfigurationError, or honor require_worker=False by not injecting the controlled general-purpose; add a regression test and document the precedence."
+    resolution_evidence: none (open)
+
+prior_findings_accounted_for:
+  - id: F-01
+    disposition: resolved
+    evidence: "supervisor.py:200-225; tests/test_supervisor.py:590-711; 114 package tests pass at HEAD."
+    note: "Permission interrupt validation and report flags verified; real interrupt/resume with InMemorySaver."
+  - id: F-02
+    disposition: resolved
+    evidence: "supervisor.py:86,134-138,228-252,397-456,511-587,606-623; tests/test_supervisor.py:449-496,521-587; 114 tests pass."
+    note: "Controlled general-purpose uses WORKER model + workers middleware and is reported; opt-out preserves/reports upstream default. F-06 is a separate edge."
+  - id: F-03
+    disposition: resolved
+    evidence: "README.md:150-152; contracts/public-api.md:211-213; data-model.md:127; tests/test_middleware.py:271."
+    note: "Docs now describe requested order and upstream in-place replacement; no summary-last claim."
+  - id: F-04
+    disposition: open
+    evidence: "New permission/general-purpose/native-kwargs tests added; test_execution.py still lacks graph-level queue/deadline/cancel/failure tests; fork still has no execution test; test_public_api still mirrors __all__."
+    note: "Non-blocking minor coverage gap; prior F-04 only partially closed."
+  - id: F-05
+    disposition: resolved
+    evidence: "spec.md:141; plan.md:17,296; contracts/public-api.md:70,324-325; data-model.md:225,242; ADR-0010:122; supervisor.py:140."
+    note: "Ephemeral StateBackend exception is documented across requirement, design, contract and ADR."
+  - id: F-06
+    disposition: open
+    evidence: "Read-only probe: explicit require_worker=False + default controlled general-purpose + no worker -> ModelBindingError at _model_for_purpose, before create_deep_agent."
+    note: "New non-blocking validation/API-precedence issue introduced by the default general-purpose path."
+  - id: S-01
+    disposition: resolved
+    evidence: "execution.py:170-202; test_slow_queue_callback_does_not_leak_a_slot; 114 tests pass."
+    note: "Slow on_queued cleanup and slot reuse verified."
+  - id: S-02
+    disposition: resolved
+    evidence: "__init__.py:3-12,45-59; test_public_api exact names."
+    note: "DiagnosticCallback and AsyncDiagnosticCallback are exported."
+  - id: S-03
+    disposition: resolved
+    evidence: "supervisor.py:185-198; recovery.py:19-48; tests/test_supervisor.py:329-387."
+    note: "Subagent interrupt_on and checkpointer=False are validated; permission interrupts are covered by F-01."
+  - id: S-04
+    disposition: resolved
+    evidence: "supervisor.py:134-138; tests/test_supervisor.py:424-446."
+    note: "Explicit require_worker=True is honored. F-06 separately covers explicit False with the controlled default."
+  - id: S-05
+    disposition: resolved
+    evidence: "subagents.py:82; middleware.py:35-63; tests/test_subagents.py:136-154."
+    note: "Definition-level duplicate and reserved middleware names are rejected."
+  - id: S-06
+    disposition: resolved
+    evidence: "pyproject.toml:18; tests/test_public_api.py:100-108."
+    note: "langgraph is a declared direct dependency."
+  - id: S-07
+    disposition: resolved
+    evidence: "__init__.py:34,69; README.md:216; tests/test_public_api.py."
+    note: "ResolvedModelBindings is exported and documented."
+  - id: S-08
+    disposition: resolved
+    evidence: "recovery.py:29-36; supervisor.py:185; tests/test_supervisor.py:409-421."
+    note: "checkpointer=True is rejected for the root graph."
+  - id: S-09
+    disposition: resolved
+    evidence: "README.md:255; docs/development/quality-gates.md:31."
+    note: "Node 22+ prerequisite is documented."
+
+limitations:
+  - "No blocking finding remains. F-04 and F-06 are open but non-blocking minor findings."
+  - "packages/infra/agent-deepagents/evidence.md still records the previous product HEAD (3280fdf) and was treated as stale bookkeeping per the repair instruction. This review verified 114 package tests and ran format, lint, type, docs, governance and static checks at 13692d7e; the full package build/isolated-install gate and remote CI were not independently rerun."
+  - "Tests and probes use deterministic fake models, structural catalog doubles and in-memory checkpointing. No real provider, network, MCP server, sandbox, durable Store or production observability backend was exercised."
+  - "Fork mode still has no runtime execution test; only the opt-in gate and upstream version/contract checks are covered."
+  - "With control_default_subagent=False, the upstream_default report lists the known default-slot middleware names; profile extras, skills and prompt-caching middleware are not enumerated. The report warning marks the subagent as upstream-owned, and the README notes that the actual graph remains authoritative if a harness profile disables the default."
+  - "ResourceReport.thread_id_required remains tied to interrupt configuration rather than checkpointer presence; its semantics for a checkpointer without interrupts are still only partially documented."
+  - "Installer-managed Delivery v0.3.2 commands, generated catalogs/records and generated registry files were sampled rather than fully reviewed; they are not product runtime."
+  - "test_public_api is hand-maintained and mirrors the current __all__; it does not automatically derive the approved contract."
+  - "ADR-0010 remains Proposed, as required by the Plan; it is not an accepted decision."
+  - "No edits, staging, commits, branches or reviewer calls were performed during this review."

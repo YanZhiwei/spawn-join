@@ -8,23 +8,24 @@
 - Design approval: user approved the Plan/public API contract/Proposed ADR-0010 baseline on 2026-11-04 ("批准进入 Tasks") against the unchanged Plan fingerprint `7f58094554c233cae2309d97ea984211ebabc8749a7d95218e604e33e1886f8e`.
 - Analysis approval: user approved the Specification Analysis Report on 2026-11-04 ("批准进入 Slice gate"); 0 critical/high/medium, 6 intentional low notes.
 - Slice plan revision: v2 on 2026-11-04 adds S0 (delivery/tooling baseline) after the user's explicit choice, because Ralph requires a clean worktree and the pending v0.3.2 upgrade must not be mixed into S1 product code. The previous 8-slice approval is superseded and must be re-approved.
+- Publication amendment: on 2026-11-04 the user explicitly chose one combined PR (`S8 → main`) instead of per-slice PRs after the final six-dimension review passed. S0–S8 remain the internal review/commit boundaries; only the publication grouping changes. This is recorded below and does not alter the task queue or slice receipts.
 - Artifact policy: ephemeral (`specs/` local-only; ADR and long-lived docs remain tracked).
 - Planning timestamp: 2026-11-04.
 
 ## Merge decision
 
-- PR slicing: `auto` (configured).
-- Merge mode: `stacked`.
+- PR slicing: `single` (user-authorized publication amendment; the configured `auto` default is not used for this publication).
+- Merge mode: `single`.
 - Target branch: `main`.
 - Integration branch: N/A.
-- Stack provider: `manual`.
-- Slice merge method: `squash`.
-- Final merge method: `squash` (configured stacked final; not an integration rollup).
-- Target sync method: `merge`.
+- Stack provider: N/A (single PR; manual stack still describes the review history).
+- Slice merge method: N/A (no per-slice PRs; one combined PR).
+- Final merge method: `squash` (required to preserve linear history).
+- Target sync method: N/A (single PR from the final branch).
 - Merge queue: `no`.
 - Delete branch after merge: `yes`.
 - Freeze integration before final review: `yes`.
-- Why this mode: every slice is classified `standalone`, so the configured `pr_slicing: auto` resolves to `stacked`; the repository uses a manual provider, linear history, and the configured squash/per-slice policy. No slice requires an integration branch or merge commit. S0 establishes the clean delivery/tooling baseline (v0.3.2 + Proposed ADR-0010 + 011 packet) before any product code; S8 is the release/documentation layer and is squashed last.
+- Why this mode: the original approved plan was stacked with per-slice PRs. On 2026-11-04 the user explicitly chose a single combined PR after the final review passed, because the final branch already contains S0–S8 and the repository requires linear history. S0–S8 remain review/commit boundaries and receipts; the PR body lists them, but publication is one squash PR. No integration branch or merge-commit rollup is used.
 
 ## Slice table
 
@@ -207,12 +208,12 @@
 
 ## Merge plan
 
-- Order: S0, S1, S2, S3, S4, S5, S6, S7, S8.
-- Per-slice merge: each slice is a separate PR against `main`, squash-merged after its predecessor; no PR is created or merged without separate user authorization.
-- Final rollup: S8 squash to `main` (configured stacked final); no merge commit.
-- Target sync: merge `main` into the next stacked branch as needed; strict required checks must be satisfied.
+- Order: S0, S1, S2, S3, S4, S5, S6, S7, S8 (commit/review order).
+- Publication: one combined PR from `ralph/011-deepagents-product-capabilities/S8` to `main`, squash-merged only after separate user authorization. The per-slice PR plan is superseded by the explicit 2026-11-04 publication amendment.
+- Final rollup: the combined PR is the final publication; no merge commit.
+- Target sync: N/A for the single PR; the branch must include current `main` and satisfy the strict required check.
 - Queue/freeze: no merge queue; freeze before final review; delete branches after merge.
-- Issue closure: use `Part of #<issue>` on S0–S7 and `Closes #<issue>` on S8 only if a real GitHub issue exists and the user authorizes tracker writes. No issue is created by this plan.
+- Issue closure: use `Closes #<issue>` only if a real GitHub issue exists and the user authorizes tracker writes. No issue is created by this plan.
 - Rollback per slice: revert that slice's governance/tooling/package/docs changes; no data migration. S0 rollback restores the pre-v0.3.2 install/tooling state; S1 rollback removes the package; S2–S7 rollback removes additive modules/wiring; S8 rollback removes docs/examples/contract tests.
 
 ## Approval record
@@ -247,3 +248,15 @@ S8	T041-T053	standalone
 - Choice / accepted risks: 批准修订后的 S0–S8；授权创建 `ralph/011-deepagents-product-capabilities/S0` baseline 提交与分支；接受 S0/S1/S2/S3/S5/S7/S8 的预算例外（生成 `uv.lock`、installer-managed 命令/模板/workflow 不计入产品行数启发式）。
 - Approved mode / snapshot: `stacked`; target `main`; provider `manual`; slice/final `squash`; S0–S8 mapping; fingerprint `e024df3836ca6cb00a56ee797d4373c4aeec99d265aee81a8e49c6bdb4387fba`.
 - Approved at: 2026-11-04T19:09:36.0740750+08:00
+
+### Publication amendment (effective after final review)
+
+- PUBLICATION_AMENDMENT_APPROVAL: approved by the user on 2026-11-04 (choice: "单个综合 PR"), after the final six-dimension review returned pass.
+- Effective PR slicing: `single`.
+- Effective merge mode: `single`.
+- Target: `main`; provider: N/A; final merge: `squash`.
+- Slice boundaries: S0–S8 remain commit/review boundaries and receipts; they are not separate PRs.
+- Task queue: unchanged; T001–T053 remain the only execution queue.
+- Approval authority: human repository maintainer; this amendment changes publication grouping only, not product behavior, task mapping, or slice evidence.
+- AMENDED_SLICE_PLAN_FINGERPRINT: `55407a450ad6a4cef146204a36577e120a14246cb85df651490787f5d6c3bb1d`.
+- Amended fingerprint method: SHA-256 over a UTF-8 manifest with plan/spec/tasks SHA-256, `merge_mode=single`, `target=main`, `provider=N/A`, `slice_method=N/A`, `final_method=squash`, and the unchanged S0–S8 task/trunk rows, final newline included.

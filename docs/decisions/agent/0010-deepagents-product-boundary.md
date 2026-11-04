@@ -1,13 +1,13 @@
 # ADR-0010: DeepAgents 产品增强包的边界与公共契约
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-04
 - Domain: agent
 - Classification: 本决策约束 DeepAgents 产品增强包的 Distribution 归属、模型用途与委派/资源公共契约、长期依赖方向和实验能力边界，属于 `agent` 领域。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者 / 2026-11-04
 - Depends on: [ADR-0006](../llm-provider/0006-langchain-first-llm-runtime.md)、[ADR-0008](../llm-provider/0008-model-file-and-env-boundary.md)
-- Related: [包边界](../../architecture/package-boundaries.md)、[仓库地图](../../architecture/repository-map.md)、[ADR-0009](../llm-provider/0009-model-metadata-and-sync.md)、Feature `011-deepagents-product-capabilities`
+- Related: [包边界](../../architecture/package-boundaries.md)、[仓库地图](../../architecture/repository-map.md)、[ADR-0009](../llm-provider/0009-model-metadata-and-sync.md)
 - Supersedes: 无
 - Superseded by: 无
 
@@ -184,19 +184,23 @@ requested
 
 ## Verification and implementation status
 
-本 ADR 为 **Proposed**，尚未批准，也不代表实现完成。设计依据和验证计划位于：
+本 ADR 已由仓库维护者于 2026-11-04 批准为 **Accepted**。实现位于
+[`packages/infra/agent-deepagents/`](../../../packages/infra/agent-deepagents/)，公共契约以该包的
+[`README.md`](../../../packages/infra/agent-deepagents/README.md) 和 `__init__.py` 为准；测试位于
+[`packages/infra/agent-deepagents/tests/`](../../../packages/infra/agent-deepagents/tests/)。质量入口和
+文档/治理边界见[质量门说明](../../development/quality-gates.md)和[包边界](../../architecture/package-boundaries.md)。
 
-- Feature Spec：`specs/011-deepagents-product-capabilities/spec.md`
-- Plan：`specs/011-deepagents-product-capabilities/plan.md`
-- 研究：`specs/011-deepagents-product-capabilities/research.md`
-- 数据模型/公共契约：`specs/011-deepagents-product-capabilities/data-model.md`、`contracts/public-api.md`
-- 探索包：`.specify/delivery/011-deepagents-product-capabilities/exploration.md`
-- 决策上下文：`.specify/delivery/011-deepagents-product-capabilities/decision-context.md`
+验证覆盖：模型用途/继承/缺失、声明式与 compiled 子代理、默认 `general-purpose` 控制与显式退出、
+Middleware 作用域与 summarization 替换、并发/队列/deadline/取消/失败、诊断脱敏与事件序列、
+Checkpoint/interrupt/resume、权限驱动的 interrupt、独立 wheel/sdist 与隔离安装、质量 profile/CI、
+文档/治理/静态检查。实际命令、退出码和残余风险记录在 Delivery evidence 中，不在本 ADR 复制。
 
-计划验证包括：模型用途/继承/缺失、子代理唯一性与两种形态、Middleware 作用域与 summarization 替换、并发/队列/deadline/取消/失败、诊断脱敏与事件序列、Checkpoint/interrupt/resume、独立 wheel/sdist 与隔离安装、质量 profile/CI、文档/治理/静态检查。实际命令、退出码和残余风险由 Delivery evidence 记录，不复制到本 ADR。
-
-在维护者批准、实现和独立评审完成前，不得将本 ADR 标记为 Accepted，也不得把 Plan 中的计划验证表述为已通过。
+本次接受时仍有两个非阻断的已知限制：图级队列/超时/取消/worker 失败测试和 fork 执行测试尚未覆盖；
+显式 `require_worker=False` 与默认受控 `general-purpose` 的组合会在模型解析阶段安全失败，而不是在
+配置校验阶段给出专用冲突错误。两类限制都不影响当前公共契约的安全失败语义，后续应以独立变更补齐。
 
 ## Revision history
 
 - 2026-11-04：提出 DeepAgents 产品增强包的 Distribution 边界、模型用途、委派、诊断和资源契约；状态为 Proposed。
+- 2026-11-04：实现和验证完成；补充默认 `general-purpose` 控制、权限 interrupt 和临时
+  `StateBackend` 例外；仓库维护者批准为 Accepted。
