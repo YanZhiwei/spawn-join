@@ -15,6 +15,12 @@ from spawn_join_agent_deepagents.errors import (
     ModelBindingError,
     RecoveryConfigurationError,
     SubagentConfigurationError,
+    UnsupportedSyncDelegationError,
+)
+from spawn_join_agent_deepagents.execution import (
+    DelegationConfiguration,
+    DelegationController,
+    DelegationPolicy,
 )
 from spawn_join_agent_deepagents.middleware import MiddlewareConfiguration
 from spawn_join_agent_deepagents.models import (
@@ -253,3 +259,87 @@ def test_compiled_subagent_has_no_injected_middleware(
     )
     assert compiled.middleware_names == ()
     assert assembly.report.middleware.per_subagent["compiled"] == ()
+
+
+def test_governed_delegation_report_and_controller_reuse(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    controller = DelegationController(DelegationPolicy(max_concurrency=1, max_queue=0))
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            delegation=DelegationConfiguration(
+                policy=controller.policy,
+                controller=controller,
+            ),
+            name="coordinator",
+        )
+    )
+
+    assert assembly.delegation_controller is controller
+    assert assembly.report.delegation is not None
+    assert assembly.report.delegation.max_concurrency == 1
+    assert assembly.report.delegation.max_queue == 0
+    assert assembly.report.delegation.controller_reused is True
+    assert assembly.report.delegation.execution_mode == "async"
+
+
+def test_offline_governed_delegation_uses_the_controller(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model(
+        [
+            _task_call("researcher", "Research", "call-researcher"),
+            AIMessage(content="final answer"),
+        ]
+    )
+    worker = make_sequence_model([AIMessage(content="researcher result")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            delegation=DelegationConfiguration(
+                policy=DelegationPolicy(max_concurrency=1, max_queue=0)
+            ),
+            name="coordinator",
+        )
+    )
+
+    result = cast(
+        dict[str, Any],
+        asyncio.run(
+            assembly.graph.ainvoke({"messages": [HumanMessage(content="Start")]})
+        ),
+    )
+    contents = [
+        str(getattr(message, "content", ""))
+        for message in cast(list[Any], result["messages"])
+    ]
+    assert any("researcher result" in content for content in contents)
+    assert assembly.delegation_controller is not None
+    assert assembly.delegation_controller.active_count == 0
+
+
+def test_sync_invocation_with_policy_is_rejected(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model(
+        [_task_call("researcher", "Research", "call-researcher")]
+    )
+    worker = make_sequence_model([AIMessage(content="researcher result")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            delegation=DelegationConfiguration(
+                policy=DelegationPolicy(max_concurrency=1, max_queue=0)
+            ),
+            name="coordinator",
+        )
+    )
+
+    with pytest.raises(UnsupportedSyncDelegationError, match="ainvoke"):
+        assembly.graph.invoke({"messages": [HumanMessage(content="Start")]})

@@ -19,6 +19,11 @@ from .errors import (
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
 )
+from .execution import (
+    DelegationConfiguration,
+    DelegationController,
+    DelegationPolicy,
+)
 from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
 from .models import ModelBinding, ModelBindings, ModelPurpose
 from .subagents import (
@@ -33,6 +38,9 @@ __all__ = [
     "AgentConfigurationError",
     "AssemblyReport",
     "CompiledSubAgentDefinition",
+    "DelegationConfiguration",
+    "DelegationController",
+    "DelegationPolicy",
     "DelegationQueueFullError",
     "DelegationReport",
     "DelegationTimeoutError",

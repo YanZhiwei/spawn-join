@@ -303,3 +303,61 @@ tasks:
         exit_code: 0
         result: pass
         detail: Real task delegation recorded supervisor, researcher, worker, and override markers; compiled marker was not injected.
+  - id: T025
+    status: pass
+    scope: Delegation controller correctness tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: 13 tests passed; concurrency ceiling, FIFO, queue-full, queue/execution deadlines, queued/running cancellation, failure, reuse, cross-loop, callbacks.
+  - id: T026
+    status: pass
+    scope: Policy middleware task-only interception
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: Sync task raises UnsupportedSyncDelegationError; non-task sync/async calls pass through; async task runs under the controller.
+  - id: T027
+    status: pass
+    scope: Explicit async delegation controller
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: Active/waiting counters return to zero; cancellation and timeouts clean up slots exactly once.
+  - id: T028
+    status: pass
+    scope: Delegation policy middleware
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Only task calls are governed; other tools and sync-without-policy behavior remain native.
+  - id: T029
+    status: pass
+    scope: Supervisor delegation wiring and report
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Controller reuse, policy equality, DelegationReport, async execution mode, and returned controller covered.
+  - id: T030
+    status: pass
+    scope: Full governed delegation integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 79 tests; format/lint/strict type/build/isolated install pass.

@@ -24,6 +24,7 @@ from langgraph.store.base import BaseStore
 
 from .diagnostics import (
     AssemblyReport,
+    DelegationReport,
     DiagnosticsConfig,
     ResourceReport,
     SubagentReport,
@@ -32,6 +33,11 @@ from .errors import (
     AgentConfigurationError,
     ModelBindingError,
     RecoveryConfigurationError,
+)
+from .execution import (
+    DelegationConfiguration,
+    DelegationController,
+    DelegationPolicyMiddleware,
 )
 from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
 from .models import (
@@ -70,6 +76,7 @@ class SupervisorSpec:
     system_prompt: str | SystemMessage | None = None
     subagents: Sequence[SubAgentDefinitionLike] = ()
     middleware: MiddlewareConfiguration = field(default_factory=MiddlewareConfiguration)
+    delegation: DelegationConfiguration | None = None
     diagnostics: DiagnosticsConfig | None = None
     allow_experimental_fork: bool = False
     backend: BackendProtocol | None = None
@@ -109,7 +116,7 @@ class SupervisorAssembly:
 
     graph: Any
     report: AssemblyReport
-    delegation_controller: Any | None = None
+    delegation_controller: DelegationController | None = None
 
 
 def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
@@ -124,7 +131,8 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
 
     backend = spec.backend if spec.backend is not None else StateBackend()
     summary = _summary_middleware(resolved, backend)
-    supervisor_middleware = _supervisor_middleware(spec, summary)
+    controller = _delegation_controller(spec)
+    supervisor_middleware = _supervisor_middleware(spec, summary, controller)
     native_subagents, subagent_reports, per_subagent = _native_subagents(
         spec,
         resolved,
@@ -145,7 +153,11 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
         supervisor_middleware,
         summary,
     )
-    return SupervisorAssembly(graph=graph, report=report)
+    return SupervisorAssembly(
+        graph=graph,
+        report=report,
+        delegation_controller=controller,
+    )
 
 
 def _validate_subagents(spec: SupervisorSpec) -> None:
@@ -188,13 +200,24 @@ def _summary_middleware(
     return create_summarization_middleware(resolved.summarization, backend)
 
 
+def _delegation_controller(
+    spec: SupervisorSpec,
+) -> DelegationController | None:
+    if spec.delegation is None:
+        return None
+    return spec.delegation.controller or DelegationController(spec.delegation.policy)
+
+
 def _supervisor_middleware(
     spec: SupervisorSpec,
     summary: MiddlewareType | None,
+    controller: DelegationController | None,
 ) -> list[MiddlewareType]:
     middleware: list[MiddlewareType] = list(spec.middleware.supervisor)
     if summary is not None:
         middleware.append(summary)
+    if controller is not None:
+        middleware.append(DelegationPolicyMiddleware(controller))
     return middleware
 
 
@@ -418,6 +441,16 @@ def _build_report(
         replaced_defaults=(("SummarizationMiddleware",) if summary is not None else ()),
         warnings=warnings,
     )
+    delegation = None
+    if spec.delegation is not None:
+        delegation = DelegationReport(
+            max_concurrency=spec.delegation.policy.max_concurrency,
+            max_queue=spec.delegation.policy.max_queue,
+            deadline_seconds=spec.delegation.policy.deadline_seconds,
+            controller_reused=spec.delegation.controller is not None,
+            execution_mode="async",
+            warnings=("governed delegation requires ainvoke/astream",),
+        )
     return AssemblyReport(
         package_version=version("spawn-join-agent-deepagents"),
         deepagents_version=deepagents.__version__,
@@ -425,6 +458,7 @@ def _build_report(
         models=_model_source_labels(spec.models),
         subagents=subagent_reports,
         middleware=middleware,
+        delegation=delegation,
         resources=ResourceReport(
             backend="host" if spec.backend is not None else "default_state",
             store="host" if spec.store is not None else "absent",
