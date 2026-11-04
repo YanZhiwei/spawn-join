@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage
 
 def test_package_metadata() -> None:
     assert version("spawn-join-agent-deepagents") == "0.1.0"
-    assert package.__doc__ is not None
+    assert "AgentConfigurationError" in package.__all__
 
 
 def test_py_typed_is_packaged() -> None:

@@ -60,3 +60,33 @@ tasks:
         exit_code: 0
         result: pass
         detail: 0 failing actionlint/PSScriptAnalyzer checks.
+  - id: T007
+    status: pass
+    scope: Error taxonomy and public error exports
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests -q
+        exit_code: 0
+        result: pass
+        detail: 11 tests passed, including hierarchy, safe message, cause-chain, package metadata, and fixture determinism.
+      - name: package-format
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check format
+        exit_code: 0
+        result: pass
+      - name: package-lint
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check lint
+        exit_code: 0
+        result: pass
+      - name: package-type
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check type
+        exit_code: 0
+        result: pass
+      - name: package-test
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check test
+        exit_code: 0
+        result: pass
+      - name: package-build
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check build
+        exit_code: 0
+        result: pass
+        detail: One wheel and one sdist; isolated install, pip check, and import pass.
