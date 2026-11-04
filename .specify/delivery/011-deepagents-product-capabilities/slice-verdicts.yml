@@ -1,0 +1,39 @@
+schema_version: "1.0"
+feature: 011-deepagents-product-capabilities
+mode: stacked
+target: main
+slices:
+  - id: S0
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 80721216d7051345f6fc50bc22edc0a9dc46af56
+    boundary_replay_head: 2029792482895eb1b309e564e4998576e1222d0b
+    task_ids: []
+    merge_mode: stacked
+    checks:
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 1 pre-existing warning for harness/evidence/delivery-v022-upgrade.md
+      - name: static
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check static
+        exit_code: 0
+        result: pass
+        detail: 0 failing checks
+      - name: targeted-docs
+        command: targeted Markdown link/whitespace check over the 10 changed docs
+        exit_code: 0
+        result: pass
+        detail: 10 files, 48 local links
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+      - name: full-docs
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+        result: blocked
+        detail: pre-existing historical broken link specs/007-llm-protocol-abstraction/plan.md -> ../../docs/decisions/llm-provider/0005-protocol-native-llm-contracts.md; not an S0 pass criterion, must be resolved or explicitly carried before final delivery
+    verdict: ready
+    slice_ready: S0
+    recorded_at: 2026-11-04T19:12:00+08:00
