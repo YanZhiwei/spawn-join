@@ -70,6 +70,7 @@ spawn-join-agent-deepagents
 ├── deepagents -> langchain -> langgraph
 ├── langchain
 ├── langchain-core
+├── langgraph
 └── spawn-join-llm-provider-langchain
     └── spawn-join-llm-provider
         └── spawn-join-core

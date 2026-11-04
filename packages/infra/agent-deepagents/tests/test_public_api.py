@@ -88,6 +88,8 @@ _CURRENT_PUBLIC_NAMES = {
 
 def test_public_all_matches_implemented_surface() -> None:
     assert set(package.__all__) == _CURRENT_PUBLIC_NAMES
+    for name in package.__all__:
+        assert hasattr(package, name), name
 
 
 def test_internal_modules_are_not_exported() -> None:
@@ -101,6 +103,7 @@ def test_direct_dependencies_are_declared_and_bounded() -> None:
 
     assert "deepagents" in lowered
     assert "langchain-core" in lowered
+    assert "langgraph" in lowered
     assert "spawn-join-llm-provider-langchain" in lowered
     assert "spawn-join-llm-model-sync" not in lowered
     assert "spawn-join-observability" not in lowered

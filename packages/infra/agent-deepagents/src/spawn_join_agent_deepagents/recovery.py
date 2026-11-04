@@ -19,7 +19,21 @@ from .errors import RecoveryConfigurationError
 def checkpointer_present(checkpointer: object | None) -> bool:
     """Return whether a host checkpointer is enabled."""
 
-    return checkpointer is not None and checkpointer is not False
+    return (
+        checkpointer is not None
+        and checkpointer is not False
+        and checkpointer is not True
+    )
+
+
+def validate_checkpointer_value(checkpointer: object | None) -> None:
+    """Reject the boolean checkpointer form unsupported by a root graph."""
+
+    if checkpointer is True:
+        raise RecoveryConfigurationError(
+            "recovery: checkpointer=True is not valid for a root graph; "
+            "provide a BaseCheckpointSaver"
+        )
 
 
 def validate_interrupt_checkpointer(

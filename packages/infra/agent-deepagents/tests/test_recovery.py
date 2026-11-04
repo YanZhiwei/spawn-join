@@ -21,6 +21,8 @@ from spawn_join_agent_deepagents.models import (
 )
 from spawn_join_agent_deepagents.recovery import (
     RecoveryContext,
+    checkpointer_present,
+    validate_checkpointer_value,
     validate_interrupt_checkpointer,
 )
 from spawn_join_agent_deepagents.supervisor import (
@@ -77,6 +79,17 @@ def test_recovery_context_builds_native_config() -> None:
 def test_blank_thread_id_is_rejected() -> None:
     with pytest.raises(RecoveryConfigurationError, match="thread_id"):
         RecoveryContext("   ")
+
+
+def test_boolean_true_checkpointer_is_rejected() -> None:
+    with pytest.raises(RecoveryConfigurationError, match="root graph"):
+        validate_checkpointer_value(True)
+
+    validate_checkpointer_value(None)
+    validate_checkpointer_value(False)
+    validate_checkpointer_value(object())
+    assert checkpointer_present(True) is False
+    assert checkpointer_present(False) is False
 
 
 def test_interrupt_requires_a_checkpointer() -> None:

@@ -45,6 +45,7 @@ from .models import (
 )
 from .recovery import (
     checkpointer_present,
+    validate_checkpointer_value,
     validate_interrupt_checkpointer,
 )
 from .subagents import (
@@ -181,6 +182,7 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
         declarative_names=declarative_names,
         compiled_names=compiled_names,
     )
+    validate_checkpointer_value(spec.checkpointer)
     validate_interrupt_checkpointer(
         spec.checkpointer,
         _interrupt_configured(spec),

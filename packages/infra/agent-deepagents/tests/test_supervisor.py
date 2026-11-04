@@ -7,10 +7,12 @@ from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
+from deepagents.backends import StateBackend
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableLambda
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.store.memory import InMemoryStore
 from spawn_join_agent_deepagents.errors import (
     MiddlewareConfigurationError,
     ModelBindingError,
@@ -370,6 +372,21 @@ def test_false_checkpointer_is_treated_as_absent(
     assert assembly.report.resources.checkpointer == "absent"
 
 
+def test_true_checkpointer_is_rejected(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+
+    with pytest.raises(RecoveryConfigurationError, match="root graph"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor, worker),
+                checkpointer=True,
+            )
+        )
+
+
 def test_explicit_require_worker_is_honored(
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
 ) -> None:
@@ -397,6 +414,8 @@ def test_build_calls_create_deep_agent_once_and_preserves_resources(
     supervisor = make_sequence_model([AIMessage(content="unused")])
     worker = make_sequence_model([AIMessage(content="worker")])
     checkpointer = InMemorySaver()
+    store = InMemoryStore()
+    backend = StateBackend()
     calls: list[dict[str, Any]] = []
 
     def fake_create(**kwargs: Any) -> object:
@@ -412,6 +431,8 @@ def test_build_calls_create_deep_agent_once_and_preserves_resources(
             models=_bindings(supervisor, worker),
             subagents=(_researcher_definition(),),
             checkpointer=checkpointer,
+            store=store,
+            backend=backend,
             name="coordinator",
         )
     )
@@ -420,6 +441,8 @@ def test_build_calls_create_deep_agent_once_and_preserves_resources(
     assert len(calls) == 1
     assert calls[0]["model"] is supervisor
     assert calls[0]["checkpointer"] is checkpointer
+    assert calls[0]["store"] is store
+    assert calls[0]["backend"] is backend
     assert [item["name"] for item in calls[0]["subagents"]] == ["researcher"]
 
 
