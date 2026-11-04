@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import pytest
@@ -10,6 +10,7 @@ from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.tools import BaseTool
 
 
 class SequenceFakeChatModel(BaseChatModel):
@@ -37,6 +38,16 @@ class SequenceFakeChatModel(BaseChatModel):
         self.index += 1
         return ChatResult(generations=[ChatGeneration(message=response)])
 
+    def bind_tools(
+        self,
+        tools: Sequence[dict[str, Any] | type | Callable[..., Any] | BaseTool],
+        *,
+        tool_choice: Any | None = None,
+        **kwargs: Any,
+    ) -> BaseChatModel:
+        del tools, tool_choice, kwargs
+        return self
+
 
 @pytest.fixture
 def fake_chat_model() -> SequenceFakeChatModel:
@@ -53,5 +64,15 @@ def make_fake_model() -> Callable[[str], BaseChatModel]:
 
     def make(text: str) -> BaseChatModel:
         return SequenceFakeChatModel(responses=[AIMessage(content=text)])
+
+    return make
+
+
+@pytest.fixture
+def make_sequence_model() -> Callable[[list[AIMessage]], BaseChatModel]:
+    """Provide a factory for deterministic multi-response models."""
+
+    def make(responses: list[AIMessage]) -> BaseChatModel:
+        return SequenceFakeChatModel(responses=responses)
 
     return make

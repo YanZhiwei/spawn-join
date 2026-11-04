@@ -1,5 +1,14 @@
 """DeepAgents product assembly, model binding, delegation, and diagnostics."""
 
+from .diagnostics import (
+    AssemblyReport,
+    DelegationReport,
+    DiagnosticEvent,
+    DiagnosticEventType,
+    DiagnosticsConfig,
+    ResourceReport,
+    SubagentReport,
+)
 from .errors import (
     AgentConfigurationError,
     DelegationQueueFullError,
@@ -10,14 +19,42 @@ from .errors import (
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
 )
+from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
+from .models import ModelBinding, ModelBindings, ModelPurpose
+from .subagents import (
+    CompiledSubAgentDefinition,
+    SubAgentDefinition,
+    SubAgentKind,
+    SubAgentMode,
+)
+from .supervisor import SupervisorAssembly, SupervisorSpec, build_supervisor
 
 __all__ = [
     "AgentConfigurationError",
+    "AssemblyReport",
+    "CompiledSubAgentDefinition",
     "DelegationQueueFullError",
+    "DelegationReport",
     "DelegationTimeoutError",
+    "DiagnosticEvent",
+    "DiagnosticEventType",
+    "DiagnosticsConfig",
+    "MiddlewareConfiguration",
     "MiddlewareConfigurationError",
+    "MiddlewareScopeReport",
+    "ModelBinding",
     "ModelBindingError",
+    "ModelBindings",
+    "ModelPurpose",
     "RecoveryConfigurationError",
+    "ResourceReport",
+    "SubAgentDefinition",
+    "SubAgentKind",
+    "SubAgentMode",
     "SubagentConfigurationError",
+    "SubagentReport",
+    "SupervisorAssembly",
+    "SupervisorSpec",
     "UnsupportedSyncDelegationError",
+    "build_supervisor",
 ]

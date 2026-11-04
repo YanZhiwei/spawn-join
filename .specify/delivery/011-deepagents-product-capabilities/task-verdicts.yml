@@ -156,6 +156,86 @@ tasks:
         command: black --check and isort --check-only over src tests
         exit_code: 0
         result: pass
+  - id: T012
+    status: pass
+    scope: Supervisor assembly and negative contract tests
+    checks:
+      - name: red-evidence
+        command: pytest tests/test_supervisor.py tests/test_public_api.py -q before implementation
+        result: red
+        detail: ModuleNotFoundError for spawn_join_agent_deepagents.supervisor confirmed the missing implementation.
+      - name: pytest
+        command: pytest tests/test_supervisor.py tests/test_public_api.py -q after implementation
+        exit_code: 0
+        result: pass
+        detail: 19 tests passed; valid assembly plus duplicate/missing-model/middleware/recovery negatives.
+  - id: T013
+    status: pass
+    scope: Offline declarative and compiled delegation
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: The native graph delegated to researcher and compiled workers and returned the final native response.
+  - id: T014
+    status: pass
+    scope: Public export and dependency-boundary tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_public_api.py -q
+        exit_code: 0
+        result: pass
+        detail: Exact S3 __all__, no internal module exports, no model-sync/observability dependency.
+  - id: T015
+    status: pass
+    scope: Supervisor assembly entry point
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: create_deep_agent is called once; assembly does not execute the graph.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+  - id: T016
+    status: pass
+    scope: Native declarative and compiled subagent conversion
+    checks:
+      - name: pytest
+        command: pytest tests/test_subagents.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: tools None vs empty, compiled ownership, and native delegation behavior covered.
+  - id: T017
+    status: pass
+    scope: Immutable assembly report population
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Models/subagents/resources/middleware/experimental warnings populated safely.
+  - id: T018
+    status: pass
+    scope: Public surface and safe error wrapping
+    checks:
+      - name: pytest
+        command: pytest tests/test_public_api.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: S3 exports exactly match the implemented surface; upstream assembly errors have a safe package wrapper and cause.
+  - id: T019
+    status: pass
+    scope: Generated summarization replacement
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Report records SummarizationMiddleware replacement; declarative subagents receive the generated middleware.
   - id: T009
     status: pass
     scope: Declarative and compiled subagent contracts
