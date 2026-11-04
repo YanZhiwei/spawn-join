@@ -7,15 +7,18 @@
 - **feature_id**: `011-deepagents-product-capabilities`
 - **phase_id**: `s8-final-validation`
 - **base_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
-- **head_revision**: `d5afbd5ea1c019ff70a5deb96188590cbab67ce8`
+- **head_revision**: `78aa3399570d0b4a89084aaa899769b6aa2b1d43`
+- **original_pr_head**: `d5afbd5ea1c019ff70a5deb96188590cbab67ce8` (squash-merged as `78aa339`)
 - **merge_base**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-11-04
-- **status**: active
-- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created. CI run 41860603215 passed on `3196ab8`; a Python 3.11 deadline fix landed in `d5afbd5` and requires a fresh CI run.
+- **status**: delivered
+- **outcome_recorded_at**: 2026-11-05
+- **merged_revision**: `78aa3399570d0b4a89084aaa899769b6aa2b1d43`
+- **result**: pass for merged outcome; PR #32 merged as `78aa339` on 2026-11-04. Final CI run 41867163092 passed all package matrix jobs and required `Quality Gate`, including the Python 3.11 deadline fix in `d5afbd5`.
 - **pull_request**: 32 (https://github.com/YanZhiwei/spawn-join/pull/32)
 - **content_fingerprint**: `1a1f2fe9220240914d2e323302e89e99ed183507c3f84398f0fb08d0db06b71b`
-  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**`, `.specify/delivery/011-deepagents-product-capabilities/evidence.md`, the historical `.specify/delivery/010-model-metadata-sync/evidence.md`, and `harness/build-log.md` as declared review/receipt bookkeeping. 113 reviewed paths. The reviewed content includes the F-07 deadline fix at `d5afbd5`; later commits add only bookkeeping.
+  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**`, `.specify/delivery/011-deepagents-product-capabilities/evidence.md`, the historical `.specify/delivery/010-model-metadata-sync/evidence.md`, and `harness/build-log.md` as declared review/receipt bookkeeping. 113 reviewed paths. The reviewed PR content at `d5afbd5` (including F-07) was squash-merged as `78aa339`; later commits add only bookkeeping.
 - **requirements_fingerprint**: `1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd`
   Method: same normalized per-file SHA-256; manifest `<normalized-sha256>\t<path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Inputs: spec.md, plan.md, research.md, data-model.md, contracts/public-api.md, tasks.md, quickstart.md, exploration.md, decision-context.md, slices.md, constitution.md, AGENTS.md, package-boundaries.md, quality-gates.md, ADR-0010, delivery-config.yml, reviewer.md.
 - **method_identity**: `builtin` reviewer contract; no external method/config/resource selected
@@ -137,9 +140,9 @@ All commands were executed from the repository root unless noted.
 - v0.3.2 installer/tooling baseline commit `80721216d7051345f6fc50bc22edc0a9dc46af56`
   (separate S0 baseline; not product code)
 
-## Next required gates
+## Delivery outcome
 
-1. The final bookkeeping push must pass a fresh required `Quality Gate` on the resulting head.
-2. Squash-merge PR #32 under the user's explicit authorization; do not use a merge commit.
-3. After the PR is merged, run `speckit.delivery.close` with `outcome=merged` and the observed
-   merge revision, then update this record's final status/outcome.
+- PR #32 was squash-merged into `main` as `78aa3399570d0b4a89084aaa899769b6aa2b1d43`.
+- Final CI run 41867163092 passed all package matrix jobs and the required `Quality Gate`.
+- This record is `delivered`; no further delivery gates remain for this run. The close PR only
+  records this outcome in the tracked evidence history.
