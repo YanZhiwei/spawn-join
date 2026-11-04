@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -44,3 +45,13 @@ def fake_chat_model() -> SequenceFakeChatModel:
     return SequenceFakeChatModel(
         responses=[AIMessage(content="first"), AIMessage(content="second")]
     )
+
+
+@pytest.fixture
+def make_fake_model() -> Callable[[str], BaseChatModel]:
+    """Provide a factory for distinct deterministic model instances."""
+
+    def make(text: str) -> BaseChatModel:
+        return SequenceFakeChatModel(responses=[AIMessage(content=text)])
+
+    return make

@@ -90,3 +90,25 @@ tasks:
         exit_code: 0
         result: pass
         detail: One wheel and one sdist; isolated install, pip check, and import pass.
+  - id: T008
+    status: pass
+    scope: Explicit model-purpose binding and resolution
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_models.py tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: 16 tests passed; direct, catalog, explicit inheritance, cycle, missing, duplicate, self-inherit, and safe cause-chain cases.
+      - name: ruff
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents ruff check --config <root>/pyproject.toml src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
