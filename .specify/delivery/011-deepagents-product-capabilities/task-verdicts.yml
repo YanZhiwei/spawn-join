@@ -11,3 +11,12 @@ tasks:
         result: pass
         detail: One wheel and one sdist built; py.typed and LICENSE are present in the wheel.
     notes: The build ran in the S1 working tree; the cumulative S1 boundary re-verifies the committed tree.
+  - id: T002
+    status: pass
+    scope: Deterministic offline test helpers and package smoke tests
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: 3 tests passed; no network or credentials used.
