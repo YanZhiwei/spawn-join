@@ -48,7 +48,7 @@ def test_error_message_does_not_include_the_cause_text() -> None:
     assert isinstance(caught.value.__cause__, ValueError)
 
 
-_S3_PUBLIC_NAMES = {
+_CURRENT_PUBLIC_NAMES = {
     "AgentConfigurationError",
     "AssemblyReport",
     "CompiledSubAgentDefinition",
@@ -84,7 +84,7 @@ _S3_PUBLIC_NAMES = {
 
 
 def test_public_all_matches_implemented_surface() -> None:
-    assert set(package.__all__) == _S3_PUBLIC_NAMES
+    assert set(package.__all__) == _CURRENT_PUBLIC_NAMES
 
 
 def test_internal_modules_are_not_exported() -> None:

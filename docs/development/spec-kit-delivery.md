@@ -171,8 +171,8 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
   结果，不阻塞交付。
 - [Diagram](../../.specify/extensions/diagram/diagram-config.yml)：默认 `format: mermaid`、
   `renderer: auto`；未安装渲染器时保持 Mermaid，不自动下载或初始化任何工具。
-- [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、五包、自动化、
-  治理文档共八个 Profile。包级 `quality` 命令组合格式、lint、类型、测试和隔离构建；
+- [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、六包、自动化、
+  治理文档共九个 Profile。包级 `quality` 命令组合格式、lint、类型、测试和隔离构建；
   根 `pyproject.toml` 单独映射一次全量门禁，不创建根级 uv 环境。
 - [Decision](../../.specify/extensions/decision/decision-config.yml)：唯一 ADR 根 `docs/decisions/`。
 - [Ralph](../../.specify/extensions/ralph/ralph-config.yml)：Specs 为 ephemeral、单任务串行。
@@ -189,7 +189,7 @@ Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push�
 
 运行环境要求见 [质量门前置条件](quality-gates.md#prerequisites)。历史 v0.1.2 完整验证曾
 显式提供临时 PSScriptAnalyzer 1.25.0 模块路径；本次升级未沿用该环境或旧结果。本次会话
-中 PSScriptAnalyzer 可用，`quality.ps1 -Check static`、完整五包 `quality.ps1` 矩阵和
+中 PSScriptAnalyzer 可用，`quality.ps1 -Check static`、当时五包 `quality.ps1` 矩阵和
 `test-quality.ps1` 门禁回归均实际通过。Doctor 仍是 Agent Prompt，本次未独立运行；安装
 一致性、配置、命令闭包和 Handoff 契约通过直接检查确认，不把安装验证表述为完整交付循环
 通过。

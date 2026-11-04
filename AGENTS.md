@@ -128,16 +128,19 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 4. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向
    依赖它，同步工具只以显式路径读取 `model.yaml` 和快照，且运行时不得依赖 LangChain
    适配包。
-5. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
-6. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
-7. 当前没有 `spawn-join-database` 和 `spawn-join-agent`；除非出现明确需求并完成边界设计，不要提前创建它们。
+5. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
+   受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain、`langchain-core` 和模型适配包，
+   不得被 Core、协议包或模型包反向依赖。
+6. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
+7. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
+8. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
 
-当前配置基线（2026-11-02）：五包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+当前配置基线（2026-11-04）：六包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
 活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
-构建仍有缺少包级 README 的非阻塞警告；Release Delivery 组件与质量 Profile 已接入，
+新 agent 包已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
 不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
 发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
 以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：
@@ -312,6 +315,7 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 uv build packages/core/spawn-join-core --out-dir <temporary-output-dir>
 uv build packages/core/llm-provider --out-dir <temporary-output-dir>
 uv build packages/infra/llm-provider-langchain --out-dir <temporary-output-dir>
+uv build packages/infra/agent-deepagents --out-dir <temporary-output-dir>
 uv build packages/infra/spawn-join-observability --out-dir <temporary-output-dir>
 ```
 
@@ -321,11 +325,13 @@ uv build packages/infra/spawn-join-observability --out-dir <temporary-output-dir
 uv lock --check --directory packages/core/spawn-join-core
 uv lock --check --directory packages/core/llm-provider
 uv lock --check --directory packages/infra/llm-provider-langchain
+uv lock --check --directory packages/infra/agent-deepagents
 uv lock --check --directory packages/infra/spawn-join-observability
 
 uv sync --locked --directory packages/core/spawn-join-core
 uv sync --locked --directory packages/core/llm-provider
 uv sync --locked --directory packages/infra/llm-provider-langchain
+uv sync --locked --directory packages/infra/agent-deepagents
 uv sync --locked --directory packages/infra/spawn-join-observability
 ```
 

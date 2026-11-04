@@ -456,3 +456,127 @@ tasks:
         exit_code: 0
         result: pass
         detail: 93 tests; format/lint/strict type/build/isolated install pass.
+  - id: T041
+    status: pass
+    scope: Upstream DeepAgents contract tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_upstream_contract.py -q
+        exit_code: 0
+        result: pass
+        detail: 5 tests; version 0.7.32, native types, task schema, summarization name, create_deep_agent parameters.
+  - id: T042
+    status: pass
+    scope: Package README
+    checks:
+      - name: targeted-readme-links
+        command: Markdown link/whitespace check over packages/infra/agent-deepagents/README.md
+        exit_code: 0
+        result: pass
+        detail: 5 local links; install, public API, model purposes, middleware, delegation, diagnostics, resources, compatibility.
+  - id: T043
+    status: pass
+    scope: Offline examples
+    checks:
+      - name: basic-example
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
+        exit_code: 0
+        result: pass
+        detail: Native supervisor delegated to researcher and returned the final answer without network or credentials.
+      - name: governed-example
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+        exit_code: 0
+        result: pass
+        detail: Emitted selected/started/completed diagnostics with governed async delegation.
+  - id: T044
+    status: pass
+    scope: Architecture documentation
+    checks:
+      - name: docs
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+        exit_code: 0
+        result: pass
+        detail: Package boundaries and repository map updated; 101 files and 251 local targets.
+  - id: T045
+    status: pass
+    scope: AGENTS/root README/quality documentation
+    checks:
+      - name: docs-governance
+        command: docs and governance checks
+        exit_code: 0
+        result: pass
+        detail: Six-package counts, dependency rule, build/sync commands, CI matrix and ADR links updated.
+  - id: T046
+    status: pass
+    scope: Package quality gate
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 98 tests; format/lint/strict type/build/isolated install/pip check/import pass.
+  - id: T047
+    status: pass
+    scope: Full repository gates
+    checks:
+      - name: full-quality
+        command: pwsh -NoProfile -File scripts/quality.ps1
+        exit_code: 0
+        result: pass
+        detail: All six Distributions, docs, governance and static checks pass.
+      - name: governance-regression
+        command: pwsh -NoProfile -File scripts/test-governance.ps1
+        exit_code: 0
+        result: pass
+        detail: 23 scenarios.
+      - name: static-regression
+        command: pwsh -NoProfile -File scripts/test-static.ps1
+        exit_code: 0
+        result: pass
+        detail: 3 scenarios.
+  - id: T048
+    status: pass
+    scope: Gate regression and wheel contents
+    checks:
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios; no root project artifacts.
+      - name: wheel-contents
+        command: built wheel inspected with zipfile
+        exit_code: 0
+        result: pass
+        detail: All modules, py.typed, LICENSE and METADATA present; one wheel and one sdist.
+  - id: T049
+    status: pass
+    scope: Quickstart scenario execution
+    checks:
+      - name: offline-scenarios
+        command: package tests and examples
+        exit_code: 0
+        result: pass
+        detail: Model binding, declarative delegation, middleware scopes, governed delegation and diagnostics exercised offline.
+  - id: T050
+    status: pass
+    scope: Final public surface and package metadata
+    checks:
+      - name: public-api
+        command: pytest tests/test_public_api.py tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: Exact __all__, no internal module leakage, py.typed, direct dependency bounds, no model-sync/observability dependency.
+      - name: direct-requirements
+        command: importlib.metadata.requires inspection
+        exit_code: 0
+        result: pass
+        detail: deepagents/langchain/langchain-core/model adapter only.
+  - id: T051
+    status: pass
+    scope: Final documentation link checks
+    checks:
+      - name: targeted-docs
+        command: root/package/architecture link checks
+        exit_code: 0
+        result: pass
+        detail: Root docs 251 targets, package README 5 links; no broken local targets.
