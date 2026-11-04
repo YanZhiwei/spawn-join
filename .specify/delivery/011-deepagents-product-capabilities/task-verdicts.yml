@@ -112,3 +112,25 @@ tasks:
         command: black --check and isort --check-only over src tests
         exit_code: 0
         result: pass
+  - id: T009
+    status: pass
+    scope: Declarative and compiled subagent contracts
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_subagents.py tests/test_models.py -q
+        exit_code: 0
+        result: pass
+        detail: 22 tests passed; names, descriptions, tools None vs empty, duplicate names, fork opt-in, fork+skills, and compiled ownership.
+      - name: ruff
+        command: ruff check over src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
