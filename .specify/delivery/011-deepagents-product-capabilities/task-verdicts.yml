@@ -1,0 +1,13 @@
+schema_version: "1.0"
+feature: 011-deepagents-product-capabilities
+tasks:
+  - id: T001
+    status: pass
+    scope: Package skeleton and build metadata
+    checks:
+      - name: build
+        command: uv build --no-sources packages/infra/agent-deepagents --out-dir <temporary-output-dir>
+        exit_code: 0
+        result: pass
+        detail: One wheel and one sdist built; py.typed and LICENSE are present in the wheel.
+    notes: The build ran in the S1 working tree; the cumulative S1 boundary re-verifies the committed tree.
