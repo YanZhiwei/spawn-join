@@ -7,15 +7,15 @@
 - **feature_id**: `011-deepagents-product-capabilities`
 - **phase_id**: `s8-final-validation`
 - **base_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
-- **head_revision**: `ff91d9885d86aa5ccb77158e3e961d05eff3ddae`
+- **head_revision**: `6503158bc3eec48f67cbc7683259bc1ef5813839`
 - **merge_base**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-11-04
 - **status**: active
 - **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff preparation; PR not yet created
 - **pull_request**: pending (authorized; not yet created)
-- **content_fingerprint**: `1f89148504eb03d8afde84a922dd6353431f4f4cf81ed45d805d76df4aa9d804`
-  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**` as declared review bookkeeping. 115 reviewed paths.
+- **content_fingerprint**: `34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb`
+  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**` and `evidence.md` as declared review/receipt bookkeeping. 114 reviewed paths. The reviewed product/requirements content is at `ff91d98`; `6503158` adds only evidence/review/build-log bookkeeping.
 - **requirements_fingerprint**: `1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd`
   Method: same normalized per-file SHA-256; manifest `<normalized-sha256>\t<path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Inputs: spec.md, plan.md, research.md, data-model.md, contracts/public-api.md, tasks.md, quickstart.md, exploration.md, decision-context.md, slices.md, constitution.md, AGENTS.md, package-boundaries.md, quality-gates.md, ADR-0010, delivery-config.yml, reviewer.md.
 - **method_identity**: `builtin` reviewer contract; no external method/config/resource selected
