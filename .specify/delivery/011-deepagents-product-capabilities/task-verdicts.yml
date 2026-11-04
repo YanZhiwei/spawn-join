@@ -134,6 +134,28 @@ tasks:
         command: black --check and isort --check-only over src tests
         exit_code: 0
         result: pass
+  - id: T011
+    status: pass
+    scope: Immutable assembly report and lifecycle event data contracts
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: 6 tests passed; event values, frozen records, read-only detail, safe report repr, callback fields, resource defaults.
+      - name: ruff
+        command: ruff check over src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
   - id: T009
     status: pass
     scope: Declarative and compiled subagent contracts
