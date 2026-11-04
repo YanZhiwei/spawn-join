@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spawn-join-agent-deepagents"
+version = "0.1.0"
+description = "DeepAgents product assembly, model binding, governed delegation, and diagnostics for SpawnJoin."
+readme = "README.md"
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
+authors = [{ name = "Yan Zhiwei" }]
+requires-python = ">=3.11"
+dependencies = [
+    "deepagents>=0.7.32,<0.8",
+    "langchain>=1.4.7,<2.0",
+    "langchain-core>=1.7.0,<2.0",
+    "langgraph>=1.2,<2",
+    "spawn-join-llm-provider-langchain>=0.1.0,<0.2.0",
+]
+
+[project.urls]
+Repository = "https://github.com/YanZhiwei/spawn-join"
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1,<27",
+    "isort>=9.0.2,<10",
+    "pyright>=1.1.414,<2",
+    "pytest>=9.1.1,<10",
+    "ruff>=0.17.2,<0.18",
+]
+
+[tool.uv.sources]
+spawn-join-llm-provider-langchain = { path = "../llm-provider-langchain", editable = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+spawn_join_agent_deepagents = ["py.typed"]

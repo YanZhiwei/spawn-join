@@ -918,3 +918,66 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 - Python 源码、公共 API、依赖、权限和运行时行为保持不变；不调用真实 Provider。
 
 验证记录：[原生思考参数文档 evidence](../.specify/delivery/lightweight-native-reasoning-docs/evidence.md)。
+
+## 2026-11-04 — OpenCode /sd 快捷入口
+
+**Status**: 记录创建时快捷命令已写入并被运行中的 OpenCode 自动发现；当时项目 Bundle 为 v0.3.1
+
+**Route**: Lightweight（安装入口配置修复，不创建 Feature 工件）
+
+**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` + 本次工作树
+
+- 补充项目级 `.opencode/commands/sd.md`，以请求为输入读取并执行本项目已安装的完整路由。
+- 完整路由、Bundle、配置与 Workflow 保持原安装状态，快捷文件不维护另一份生命周期。
+- 分发仓库另行准备 v0.3.3 原生 `sd` 别名，已通过 OpenCode/Codex 干净项目安装、重装、
+  卸载和配置保留验证；本项目等待正式发布后的正常升级。
+- 命令发现、文档和治理检查的实际结果及未执行项见
+  [快捷入口修复 evidence](evidence/delivery-sd-shortcut.md)。
+
+## 2026-11-04 — Delivery Bundle v0.3.2 upgrade
+
+**Status**: Bundle/catalog upgrade completed; project-owned docs and durable evidence updated.
+
+**Route**: Lightweight（安装/升级交付工具，不创建 Feature 工件）
+
+**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` + 本次工作树
+
+- Updated the three Delivery Catalog sources from v0.3.1 to v0.3.2 and ran
+  `specify bundle update speckit-delivery` successfully.
+- Registered 10 extensions and 3 Workflows at v0.3.2; Bug remains the CLI-bundled 1.0.1.
+- Preserved project-owned `/sd` shortcut and existing customizations; did not use
+  `specify integration upgrade --force`.
+- Governance passed with one historical freshness warning; docs check remains blocked by the
+  pre-existing missing ADR-0005 target in local ignored Spec 007.
+
+详细命令、退出码、改动边界和限制见
+[Delivery v0.3.2 evidence](evidence/delivery-v032-upgrade.md)。
+
+## 2026-11-04 — Feature 011 DeepAgents product package
+
+**Status**: Implemented; package/full local gates and remote `Quality Gate` pass; independent
+six-dimension review pass; ADR-0010 Accepted; PR #32 created, not merged.
+
+**Route**: Feature.
+
+**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` → PR head
+`3196ab8330425d9e4f4db80f1eafa3825e7774b0` (reviewed content at
+`ff91d9885d86aa5ccb77158e3e961d05eff3ddae` plus review/evidence bookkeeping).
+
+- Added the independent `spawn-join-agent-deepagents` Distribution with explicit model
+  purposes, declarative/compiled subagents, scoped middleware, governed async delegation,
+  redacted diagnostics, recovery validation, permission interrupt checks, and host-owned
+  resources; the default `general-purpose` is package-controlled with an explicit opt-out.
+- Ran package/full quality gates, docs/governance/static checks, gate regressions, offline
+  examples, wheel-content inspection, and the final six-dimension outgoing-diff review.
+- Review fixes closed permission-driven interrupt validation, default `general-purpose`
+  control, middleware-order wording, targeted graph tests, and Backend ownership.
+- ADR-0010 is accepted; the user authorized one combined S8→main squash PR instead of the
+  original per-slice PRs. PR #32 was created; remote CI run 41860603215 passed all package
+  matrix jobs and the required `Quality Gate`.
+- Historical `010-model-metadata-sync` was closed as delivered against PR #31 (merge commit
+  `5e8eb7e`) to clear the governance gate blocker; no product code was changed by that close.
+- Merge and release were not performed; they require separate authorization.
+
+Detailed commands, results, and limitations:
+[Feature 011 Delivery evidence](../.specify/delivery/011-deepagents-product-capabilities/evidence.md).

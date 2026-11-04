@@ -1,0 +1,292 @@
+schema_version: "1.0"
+feature: 011-deepagents-product-capabilities
+mode: stacked
+target: main
+slices:
+  - id: S0
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 80721216d7051345f6fc50bc22edc0a9dc46af56
+    boundary_replay_head: 2029792482895eb1b309e564e4998576e1222d0b
+    task_ids: []
+    merge_mode: stacked
+    checks:
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 1 pre-existing warning for harness/evidence/delivery-v022-upgrade.md
+      - name: static
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check static
+        exit_code: 0
+        result: pass
+        detail: 0 failing checks
+      - name: targeted-docs
+        command: targeted Markdown link/whitespace check over the 10 changed docs
+        exit_code: 0
+        result: pass
+        detail: 10 files, 48 local links
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+      - name: full-docs
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+        result: blocked
+        detail: pre-existing historical broken link specs/007-llm-protocol-abstraction/plan.md -> ../../docs/decisions/llm-provider/0005-protocol-native-llm-contracts.md; not an S0 pass criterion, must be resolved or explicitly carried before final delivery
+    verdict: ready
+    slice_ready: S0
+    recorded_at: 2026-11-04T19:12:00+08:00
+  - id: S1
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 5b0f6b42093e6c396b2534021cbebc23f7ac864e
+    boundary_replay_head: 86892ba6ebf22d3d0764f31648e53579d6dcddc3
+    tree: 0d634bc7efa84c7939b73e543b897b81e794e489
+    task_ids: [T001, T002, T003, T004, T005, T006, T007]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: format/lint/strict type/test/build; four local wheels; isolated install, pip check, and isolated import
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios; no root project artifacts
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: docs
+        command: package gate includes Test-Documentation
+        exit_code: 0
+        result: pass
+        detail: 101 files and 249 local targets; the local-only specs/007 plan link was repaired (not a tracked change)
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S1
+    recorded_at: 2026-11-04T19:27:00+08:00
+  - id: S2
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: ba5df345e21eaadfde56bb5fa3af289a80f28f1e
+    boundary_replay_head: 734647aaa393f43da20c9a13a1d2a354126e3bda
+    tree: 0bc0506c9b14b60416c5e162064529190bfbef28
+    task_ids: [T008, T009, T010, T011]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: format/lint/strict type/test/build and isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S2
+    recorded_at: 2026-11-04T19:38:00+08:00
+  - id: S3
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 2aae569c94c276ee96b333880211d3e65f896cb6
+    boundary_replay_head: 71ed00c2eed543b316ab6f95cf992270e19711b7
+    tree: 17dc6de97a2453c1e2898537d82e5b375757ef41
+    task_ids: [T012, T013, T014, T015, T016, T017, T018, T019]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: format/lint/strict type/test/build and isolated install pass; 61 tests
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S3
+    recorded_at: 2026-11-04T19:52:00+08:00
+  - id: S4
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: a601497107b7c8576d9043db9474723fa5293dd6
+    boundary_replay_head: a569d2cc27095ee5d820b16d5ec4ac706768980d
+    tree: 0c12046229fbb2d3960d0fe1b4859f558733c92b
+    task_ids: [T020, T021, T022, T023, T024]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 63 tests; format/lint/strict type/build/isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S4
+    recorded_at: 2026-11-04T20:04:00+08:00
+  - id: S5
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: b65998abe451133c44074dc1e52170f5ebb1f02c
+    boundary_replay_head: a69c3309d54a37a14e7626081d9a2ea0b610b6ac
+    tree: de5c52f8d424df4ea61882eb4d3616d1a5638e7f
+    task_ids: [T025, T026, T027, T028, T029, T030]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 79 tests; format/lint/strict type/build/isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S5
+    recorded_at: 2026-11-04T20:12:00+08:00
+  - id: S6
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 025f016cdd8d9d79361753739a2ed54fdb6bb05b
+    boundary_replay_head: 8de21097cfafd37552a1cde161f0ddf795b8589c
+    tree: 8723275ba122385c07ab29774c123148fd9b42cc
+    task_ids: [T031, T032, T033, T034, T035]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 84 tests; format/lint/strict type/build/isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S6
+    recorded_at: 2026-11-04T20:22:00+08:00
+  - id: S7
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 835907cf5eb66a446e641b887a319824bf7595a5
+    boundary_replay_head: 1752f198fbc2cf4423253066d78abddb300e1249
+    tree: 86e6d49a5dbbf663b0d30e7346cd466b5dfd95a2
+    task_ids: [T036, T037, T038, T039, T040]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 93 tests; format/lint/strict type/build/isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S7
+    recorded_at: 2026-11-04T20:32:00+08:00
+  - id: S8
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: 6c41bdb3c8474d0a51d39838db93cabea93c8a5d
+    boundary_replay_head: 0ca6f94775e733927a47cc7676c3f38698b634e4
+    tree: 8847e3f348f2ec62d8a323f963d627d11b6cd07f
+    task_ids: [T041, T042, T043, T044, T045, T046, T047, T048, T049, T050, T051, T052, T053]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 108 tests; format/lint/strict type/build/isolated install/pip check/import pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S8
+    recorded_at: 2026-11-04T20:55:00+08:00

@@ -1,0 +1,634 @@
+schema_version: "1.0"
+feature: 011-deepagents-product-capabilities
+tasks:
+  - id: T001
+    status: pass
+    scope: Package skeleton and build metadata
+    checks:
+      - name: build
+        command: uv build --no-sources packages/infra/agent-deepagents --out-dir <temporary-output-dir>
+        exit_code: 0
+        result: pass
+        detail: One wheel and one sdist built; py.typed and LICENSE are present in the wheel.
+    notes: The build ran in the S1 working tree; the cumulative S1 boundary re-verifies the committed tree.
+  - id: T002
+    status: pass
+    scope: Deterministic offline test helpers and package smoke tests
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: 3 tests passed; no network or credentials used.
+  - id: T003
+    status: pass
+    scope: Package-local lock and environment
+    checks:
+      - name: lock-check
+        command: uv lock --check --directory packages/infra/agent-deepagents
+        exit_code: 0
+        result: pass
+      - name: sync
+        command: uv sync --locked --directory packages/infra/agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 81 packages resolved, 80 audited; deepagents 0.7.32 and the new package are installed in the package-local environment.
+  - id: T004
+    status: pass
+    scope: Quality-script registration for the new Distribution
+    checks:
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios passed, including registration of spawn-join-agent-deepagents and isolated wheel install.
+  - id: T005
+    status: pass
+    scope: Quality profile for the new Distribution
+    checks:
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing warning for harness/evidence/delivery-v022-upgrade.md.
+  - id: T006
+    status: pass
+    scope: CI matrix registration for the new Distribution
+    checks:
+      - name: static
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check static
+        exit_code: 0
+        result: pass
+        detail: 0 failing actionlint/PSScriptAnalyzer checks.
+  - id: T007
+    status: pass
+    scope: Error taxonomy and public error exports
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests -q
+        exit_code: 0
+        result: pass
+        detail: 11 tests passed, including hierarchy, safe message, cause-chain, package metadata, and fixture determinism.
+      - name: package-format
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check format
+        exit_code: 0
+        result: pass
+      - name: package-lint
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check lint
+        exit_code: 0
+        result: pass
+      - name: package-type
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check type
+        exit_code: 0
+        result: pass
+      - name: package-test
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check test
+        exit_code: 0
+        result: pass
+      - name: package-build
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents -Check build
+        exit_code: 0
+        result: pass
+        detail: One wheel and one sdist; isolated install, pip check, and import pass.
+  - id: T008
+    status: pass
+    scope: Explicit model-purpose binding and resolution
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_models.py tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: 16 tests passed; direct, catalog, explicit inheritance, cycle, missing, duplicate, self-inherit, and safe cause-chain cases.
+      - name: ruff
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents ruff check --config <root>/pyproject.toml src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
+  - id: T010
+    status: pass
+    scope: Product middleware scopes and immutable scope report
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: 11 tests passed; valid three-scope config, duplicates, reserved names, unknown/compiled overrides, blank names, immutable report.
+      - name: ruff
+        command: ruff check over src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
+  - id: T011
+    status: pass
+    scope: Immutable assembly report and lifecycle event data contracts
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: 6 tests passed; event values, frozen records, read-only detail, safe report repr, callback fields, resource defaults.
+      - name: ruff
+        command: ruff check over src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
+  - id: T012
+    status: pass
+    scope: Supervisor assembly and negative contract tests
+    checks:
+      - name: red-evidence
+        command: pytest tests/test_supervisor.py tests/test_public_api.py -q before implementation
+        result: red
+        detail: ModuleNotFoundError for spawn_join_agent_deepagents.supervisor confirmed the missing implementation.
+      - name: pytest
+        command: pytest tests/test_supervisor.py tests/test_public_api.py -q after implementation
+        exit_code: 0
+        result: pass
+        detail: 19 tests passed; valid assembly plus duplicate/missing-model/middleware/recovery negatives.
+  - id: T013
+    status: pass
+    scope: Offline declarative and compiled delegation
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: The native graph delegated to researcher and compiled workers and returned the final native response.
+  - id: T014
+    status: pass
+    scope: Public export and dependency-boundary tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_public_api.py -q
+        exit_code: 0
+        result: pass
+        detail: Exact S3 __all__, no internal module exports, no model-sync/observability dependency.
+  - id: T015
+    status: pass
+    scope: Supervisor assembly entry point
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: create_deep_agent is called once; assembly does not execute the graph.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+  - id: T016
+    status: pass
+    scope: Native declarative and compiled subagent conversion
+    checks:
+      - name: pytest
+        command: pytest tests/test_subagents.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: tools None vs empty, compiled ownership, and native delegation behavior covered.
+  - id: T017
+    status: pass
+    scope: Immutable assembly report population
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Models/subagents/resources/middleware/experimental warnings populated safely.
+  - id: T018
+    status: pass
+    scope: Public surface and safe error wrapping
+    checks:
+      - name: pytest
+        command: pytest tests/test_public_api.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: S3 exports exactly match the implemented surface; upstream assembly errors have a safe package wrapper and cause.
+  - id: T019
+    status: pass
+    scope: Generated summarization replacement
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Report records SummarizationMiddleware replacement; declarative subagents receive the generated middleware.
+  - id: T009
+    status: pass
+    scope: Declarative and compiled subagent contracts
+    checks:
+      - name: pytest
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents pytest -c <root>/pyproject.toml tests/test_subagents.py tests/test_models.py -q
+        exit_code: 0
+        result: pass
+        detail: 22 tests passed; names, descriptions, tools None vs empty, duplicate names, fork opt-in, fork+skills, and compiled ownership.
+      - name: ruff
+        command: ruff check over src tests
+        exit_code: 0
+        result: pass
+      - name: pyright-strict
+        command: pyright --project <root>/pyproject.toml --pythonpath <package-python> src tests
+        exit_code: 0
+        result: pass
+        detail: 0 errors, 0 warnings.
+      - name: black-isort
+        command: black --check and isort --check-only over src tests
+        exit_code: 0
+        result: pass
+  - id: T020
+    status: pass
+    scope: Middleware scope behavior
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: 13 tests passed; supervisor/worker/per-name markers execute only in their scopes and compiled stays untouched.
+  - id: T021
+    status: pass
+    scope: Middleware validation and reserved names
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Duplicate, reserved, blank, unknown, and compiled override cases are rejected before graph assembly.
+  - id: T022
+    status: pass
+    scope: Effective supervisor/worker/override merging
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Effective order is definition, workers, per-name override, then generated summarization; implemented and verified in the assembly path.
+  - id: T023
+    status: pass
+    scope: Declarative worker application and compiled isolation
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Worker middleware applies only to declarative definitions; compiled report remains empty and warns when workers are present.
+  - id: T024
+    status: pass
+    scope: Offline middleware integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Real task delegation recorded supervisor, researcher, worker, and override markers; compiled marker was not injected.
+  - id: T025
+    status: pass
+    scope: Delegation controller correctness tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: 13 tests passed; concurrency ceiling, FIFO, queue-full, queue/execution deadlines, queued/running cancellation, failure, reuse, cross-loop, callbacks.
+  - id: T026
+    status: pass
+    scope: Policy middleware task-only interception
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: Sync task raises UnsupportedSyncDelegationError; non-task sync/async calls pass through; async task runs under the controller.
+  - id: T027
+    status: pass
+    scope: Explicit async delegation controller
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py -q
+        exit_code: 0
+        result: pass
+        detail: Active/waiting counters return to zero; cancellation and timeouts clean up slots exactly once.
+  - id: T028
+    status: pass
+    scope: Delegation policy middleware
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Only task calls are governed; other tools and sync-without-policy behavior remain native.
+  - id: T029
+    status: pass
+    scope: Supervisor delegation wiring and report
+    checks:
+      - name: pytest
+        command: pytest tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+        detail: Controller reuse, policy equality, DelegationReport, async execution mode, and returned controller covered.
+  - id: T030
+    status: pass
+    scope: Full governed delegation integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_execution.py tests/test_supervisor.py -q
+        exit_code: 0
+        result: pass
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 79 tests; format/lint/strict type/build/isolated install pass.
+  - id: T031
+    status: pass
+    scope: Recovery context and interrupt/checkpointer validation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Native thread config merge, blank identity rejection, missing checkpointer rejection, and valid pass-through.
+  - id: T032
+    status: pass
+    scope: Native interrupt/resume with host checkpointer
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: InMemorySaver + interruptible tool + Command(resume="yes") completed and the checkpointer remained usable.
+  - id: T033
+    status: pass
+    scope: RecoveryContext implementation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: to_graph_config produces native configurable.thread_id without invoking the graph.
+  - id: T034
+    status: pass
+    scope: Host-owned resource pass-through and report
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Checkpointer/store report host ownership; no create/close lifecycle is added; MCP/sandbox remain host tools/backend.
+  - id: T035
+    status: pass
+    scope: Negative recovery and native error propagation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Missing checkpointer/blank thread id fail safely; an invalid resume value surfaces the tool's native ValueError without package conversion.
+  - id: T036
+    status: pass
+    scope: Lifecycle event sequence and redaction
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: 15 tests; selected/started/completed/failed/timed_out/cancelled/interrupted/rejected sequences and safe error categories.
+  - id: T037
+    status: pass
+    scope: Sync/async callback dispatch
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Sync callback then async callback; async-only sync execution does not fabricate a loop; callback exceptions propagate.
+  - id: T038
+    status: pass
+    scope: Diagnostic emitter and lifecycle middleware
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Failure events use the exception class name only; raw exception text is absent from event repr.
+  - id: T039
+    status: pass
+    scope: Runtime correlation and interruption
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: run_id/thread_id from Runtime.execution_info; thread_id is opt-in; GraphInterrupt is re-raised after recording.
+  - id: T040
+    status: pass
+    scope: Diagnostics wiring and integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Offline governed delegation emitted selected, started, and completed with the native tool call id; async callback warning recorded.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 93 tests; format/lint/strict type/build/isolated install pass.
+  - id: T041
+    status: pass
+    scope: Upstream DeepAgents contract tests
+    checks:
+      - name: pytest
+        command: pytest tests/test_upstream_contract.py -q
+        exit_code: 0
+        result: pass
+        detail: 5 tests; version 0.7.32, native types, task schema, summarization name, create_deep_agent parameters.
+  - id: T042
+    status: pass
+    scope: Package README
+    checks:
+      - name: targeted-readme-links
+        command: Markdown link/whitespace check over packages/infra/agent-deepagents/README.md
+        exit_code: 0
+        result: pass
+        detail: 5 local links; install, public API, model purposes, middleware, delegation, diagnostics, resources, compatibility.
+  - id: T043
+    status: pass
+    scope: Offline examples
+    checks:
+      - name: basic-example
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
+        exit_code: 0
+        result: pass
+        detail: Native supervisor delegated to researcher and returned the final answer without network or credentials.
+      - name: governed-example
+        command: uv run --locked --no-sync --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+        exit_code: 0
+        result: pass
+        detail: Emitted selected/started/completed diagnostics with governed async delegation.
+  - id: T044
+    status: pass
+    scope: Architecture documentation
+    checks:
+      - name: docs
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check docs
+        exit_code: 0
+        result: pass
+        detail: Package boundaries and repository map updated; 101 files and 251 local targets.
+  - id: T045
+    status: pass
+    scope: AGENTS/root README/quality documentation
+    checks:
+      - name: docs-governance
+        command: docs and governance checks
+        exit_code: 0
+        result: pass
+        detail: Six-package counts, dependency rule, build/sync commands, CI matrix and ADR links updated.
+  - id: T046
+    status: pass
+    scope: Package quality gate
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 98 tests; format/lint/strict type/build/isolated install/pip check/import pass.
+  - id: T047
+    status: pass
+    scope: Full repository gates
+    checks:
+      - name: full-quality
+        command: pwsh -NoProfile -File scripts/quality.ps1
+        exit_code: 0
+        result: pass
+        detail: All six Distributions, docs, governance and static checks pass.
+      - name: governance-regression
+        command: pwsh -NoProfile -File scripts/test-governance.ps1
+        exit_code: 0
+        result: pass
+        detail: 23 scenarios.
+      - name: static-regression
+        command: pwsh -NoProfile -File scripts/test-static.ps1
+        exit_code: 0
+        result: pass
+        detail: 3 scenarios.
+  - id: T048
+    status: pass
+    scope: Gate regression and wheel contents
+    checks:
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios; no root project artifacts.
+      - name: wheel-contents
+        command: built wheel inspected with zipfile
+        exit_code: 0
+        result: pass
+        detail: All modules, py.typed, LICENSE and METADATA present; one wheel and one sdist.
+  - id: T049
+    status: pass
+    scope: Quickstart scenario execution
+    checks:
+      - name: offline-scenarios
+        command: package tests and examples
+        exit_code: 0
+        result: pass
+        detail: Model binding, declarative delegation, middleware scopes, governed delegation and diagnostics exercised offline.
+  - id: T050
+    status: pass
+    scope: Final public surface and package metadata
+    checks:
+      - name: public-api
+        command: pytest tests/test_public_api.py tests/test_package.py -q
+        exit_code: 0
+        result: pass
+        detail: Exact __all__, no internal module leakage, py.typed, direct dependency bounds, no model-sync/observability dependency.
+      - name: direct-requirements
+        command: importlib.metadata.requires inspection
+        exit_code: 0
+        result: pass
+        detail: deepagents/langchain/langchain-core/model adapter only.
+  - id: T051
+    status: pass
+    scope: Final documentation link checks
+    checks:
+      - name: targeted-docs
+        command: root/package/architecture link checks
+        exit_code: 0
+        result: pass
+        detail: Root docs 251 targets, package README 5 links; no broken local targets.
+  - id: T052
+    status: pass
+    scope: Final package and full repository gate after docs
+    checks:
+      - name: full-quality
+        command: pwsh -NoProfile -File scripts/quality.ps1
+        exit_code: 0
+        result: pass
+        detail: All six Distributions, docs, governance and static checks passed on the final content.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: Included by the final package/full gate; 108 tests and isolated wheel install.
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios; no root project artifacts.
+    notes: The final product HEAD is 3280fdf4db7706b37360826d963eb0f2b4d7c200; this evidence commit is bookkeeping.
+  - id: T053
+    status: pass
+    scope: Outgoing diff and independent standards review
+    checks:
+      - name: diff-check
+        command: git diff --check main..HEAD
+        exit_code: 0
+        result: pass
+        detail: No whitespace errors; no build, dist, .venv, cache, or egg-info paths in the outgoing diff.
+      - name: independent-review
+        command: read-only Standards Review of the outgoing diff
+        exit_code: 0
+        result: pass-with-notes
+        detail: Initial blocker and high findings fixed; follow-up review returned pass-with-notes with no blocker/high finding. Boolean root checkpointer finding subsequently fixed and verified.
+      - name: secret-scan
+        command: manual scan of the product diff
+        exit_code: 0
+        result: pass
+        detail: Only fake test values such as sk-secret-value and sk-live-secret-value; no real credentials.
+      - name: final-review-fix-attempt-1
+        command: independent outgoing-diff review then bounded repair
+        exit_code: 0
+        result: pass
+        detail: >-
+          F-01 permission-driven interrupt validation, F-02 default general-purpose control/reporting,
+          F-03 middleware-order documentation, F-04 targeted graph tests, and F-05 Backend-ownership
+          reconciliation were implemented. 114 package tests pass; package gate passes. Fresh six-dimension
+          re-review is required before closure.
+    notes: >-
+      Residual risks are recorded in evidence.md (local Windows/Python 3.13 only, fake models, no remote
+      CI, ADR Proposed). The 2026-11-04 review-fix attempt is on the same run; F-03 and F-04 are addressed
+      but should be re-checked by the fresh reviewer.

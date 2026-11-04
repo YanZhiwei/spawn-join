@@ -60,6 +60,12 @@ try {
     $script:assertions++
     Write-Host 'PASS: new Distribution is registered in quality.ps1'
 
+    if ($qualityText -notmatch 'spawn-join-agent-deepagents') {
+        throw 'quality.ps1 does not register spawn-join-agent-deepagents.'
+    }
+    $script:assertions++
+    Write-Host 'PASS: DeepAgents Distribution is registered in quality.ps1'
+
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize fixture Git repository.' }
     Assert-GateResult 'clean full pipeline, including isolated wheel install' all $true ''

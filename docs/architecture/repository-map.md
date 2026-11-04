@@ -35,6 +35,7 @@ spawn-join/
 │   │   ├── spawn-join-core/          # 独立 uv project、环境和锁文件
 │   │   └── llm-provider/             # 独立 uv project、环境和锁文件
 │   └── infra/
+│       ├── agent-deepagents/           # 独立 uv project、环境和锁文件
 │       ├── llm-model-sync/            # 独立 uv project、环境和锁文件
 │       ├── llm-provider-langchain/    # 独立 uv project、环境和锁文件
 │       └── spawn-join-observability/  # 独立 uv project、环境和锁文件
@@ -82,7 +83,7 @@ spawn-join/
 - `.specify/` 维护 Spec Kit 自身的模板、脚本、集成和 workflow，不存放普通业务设计。
 - `.codegraph/` 是本机开发辅助数据，不是 Python 包，也不是业务源码。
 - 每个 Distribution 都是独立的 uv project，拥有自己的 `pyproject.toml`、`.venv` 和 `uv.lock`；仓库根目录不创建共享 uv workspace。
-- 根 `pyproject.toml` 只包含 tool 表；开发依赖仍由五个 Distribution 各自锁定。
+- 根 `pyproject.toml` 只包含 tool 表；开发依赖仍由六个 Distribution 各自锁定。
 - `scripts/` 只存放开发治理 PowerShell 脚本，不承载 Python 领域源码。
 - Python 构建产物不得进入版本控制，包括根目录或包目录下的 `build/`、`dist/`、`*.egg-info/`、缓存和临时报告；`harness/build/` 是应提交的治理文档目录。
 
