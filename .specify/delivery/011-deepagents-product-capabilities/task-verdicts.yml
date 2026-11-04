@@ -42,3 +42,12 @@ tasks:
         exit_code: 0
         result: pass
         detail: 11 scenarios passed, including registration of spawn-join-agent-deepagents and isolated wheel install.
+  - id: T005
+    status: pass
+    scope: Quality profile for the new Distribution
+    checks:
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing warning for harness/evidence/delivery-v022-upgrade.md.

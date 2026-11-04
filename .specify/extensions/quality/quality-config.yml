@@ -59,6 +59,13 @@ profiles:
       quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-model-sync"
     rules:
       complexity_max: 10
+  - id: spawn-join-agent-deepagents
+    match: ["packages/infra/agent-deepagents/**"]
+    discovery_files: [pyproject.toml, packages/infra/agent-deepagents/pyproject.toml, packages/infra/agent-deepagents/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents"
+    rules:
+      complexity_max: 10
   - id: spawn-join-observability
     match: ["packages/infra/spawn-join-observability/**"]
     discovery_files: [pyproject.toml, packages/infra/spawn-join-observability/pyproject.toml, packages/infra/spawn-join-observability/uv.lock]
