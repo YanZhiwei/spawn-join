@@ -3,14 +3,17 @@
 - **feature_id**: `010-model-metadata-sync`
 - **phase_id**: `implementation-working-tree`
 - **base_revision**: `f717f71b5360b1c4e8b421301359787b0e41db9e`
-- **head_revision**: `5f77e3606d974286d345a51719281658e918053d`
+- **head_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
+- **original_branch_head**: `5f77e3606d974286d345a51719281658e918053d` (squash-merged as `5e8eb7e`)
 - **working_directory**: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\tidy-canyon`
 - **recorded_at**: 2026-11-02
 - **pull_request**: 31
 - **pull_request_url**: https://github.com/YanZhiwei/spawn-join/pull/31
 - **github_actions_run**: 41437947965（success；15 package jobs + governance + `Quality Gate`）
-- **status**: active
-- **result**: pass for local implementation checks and remote PR CI; independent code review and final Delivery review pending
+- **status**: delivered
+- **outcome_recorded_at**: 2026-11-04
+- **merged_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
+- **result**: pass for merged outcome; PR #31 merged on 2026-11-03 as `5e8eb7e`; remote CI run 41437947965 succeeded. This close corrects the historical head to the squash merge commit; the independent review status is not retroactively re-verified here.
 
 ## Scope implemented in the working tree
 
