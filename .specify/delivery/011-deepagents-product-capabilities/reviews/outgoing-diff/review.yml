@@ -6,11 +6,13 @@ degradation_approval: null
 
 snapshot:
   base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
-  head: 13692d7eed9664eb5910c93547d8c04a48a3783e
+  head: ff91d9885d86aa5ccb77158e3e961d05eff3ddae
   merge_base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
-  content_fingerprint: "0efab4b74896f9b5b191e258a185340854cfaca67cd6e5dc1faa6089e4f0b4be; method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file, manifest '<git-mode>\\t<normalized-sha256>\\t<repo-relative-path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Independently recomputed at HEAD: exact match; 115 changed files and 115 manifest lines."
-  requirements_fingerprint: "e2453d0a5a1f6d127894857a76319b860eac615cf7164b5d33713a9c8f7a7a8c; method: same normalized per-file SHA-256, manifest '<normalized-sha256>\\t<path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Inputs: 17 approved requirement, design, and policy files. Independently recomputed: exact match."
-  bookkeeping_exclusions: []
+  content_fingerprint: "34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb; method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file, manifest '<git-mode>\\t<normalized-sha256>\\t<repo-relative-path>' with ordinal path sort, UTF-8 with final newline, SHA-256, excluding declared review/receipt bookkeeping. The reviewed content is at ff91d98; evidence/review bookkeeping commits follow. 115 changed paths minus 1 evidence receipt = 114 included files and 114 manifest lines."
+  requirements_fingerprint: "1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd; method: same normalized per-file SHA-256, manifest '<normalized-sha256>\\t<path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Inputs: 17 approved requirement, design, and policy files. Independently recomputed: exact match."
+  bookkeeping_exclusions:
+    - ".specify/delivery/011-deepagents-product-capabilities/reviews/**"
+    - ".specify/delivery/011-deepagents-product-capabilities/evidence.md"
 
 coverage:
   reviewed:
@@ -91,7 +93,7 @@ method_receipt:
   resources: []
   fallback_reason: none
   restrictions: host-enforced
-  input_identity: "builtin reviewer contract; content fingerprint 0efab4b74896f9b5b191e258a185340854cfaca67cd6e5dc1faa6089e4f0b4be; requirements fingerprint e2453d0a5a1f6d127894857a76319b860eac615cf7164b5d33713a9c8f7a7a8c; no external skill/method adapter selected"
+  input_identity: "builtin reviewer contract; content fingerprint 34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb; requirements fingerprint 1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd; bookkeeping exclusions reviews/** and evidence.md; no external skill/method adapter selected"
 
 dimensions:
   requirements:
@@ -100,6 +102,7 @@ dimensions:
       - "F-01, F-02, and F-05 are verified resolved against the updated Spec, Plan, public contract, data model, ADR and tests."
       - "spec.md FR-008 now explicitly permits the ephemeral StateBackend exception; FR-005/FR-006 and the review clarifications cover the controlled general-purpose, permission interrupts, and requested middleware scope/order."
       - "F-06 remains a non-blocking explicit require_worker=False edge; it is not an unresolved requirement blocker."
+      - "G-01 is resolved: current/effective slices text consistently describes one combined S8->main squash PR; the original stacked approval remains a historical, superseded receipt."
   code_quality:
     verdict: pass
     evidence:
@@ -146,7 +149,7 @@ findings:
     evidence:
       - "supervisor.py:200-225 scans spec.permissions and declarative effective permissions; supervisor.py:595-621 uses _interrupt_configured for both report flags."
       - "tests/test_supervisor.py:590-621 asserts RecoveryConfigurationError without a checkpointer and true flags with InMemorySaver; 623-685 performs a real write permission interrupt and native Command(resume=...) with the same thread id; 688-711 covers subagent-level permission interrupt rejection."
-      - "Full package pytest: 114 passed at 13692d7e."
+      - "Full package pytest: 114 passed; no product code changed after 13692d7e."
     remediation: "None remaining for the identified trigger; keep the regression tests."
     resolution_evidence: "Verified by current code, targeted source inspection, and the passing graph interrupt/resume tests at this HEAD."
   - id: F-02
@@ -227,6 +230,23 @@ findings:
       - "No test covers this explicit-false plus controlled-default combination."
     remediation: "Reject the combination early with a clear AgentConfigurationError, or honor require_worker=False by not injecting the controlled general-purpose; add a regression test and document the precedence."
     resolution_evidence: none (open)
+  - id: G-01
+    dimension: requirements
+    severity: minor
+    state: resolved
+    certainty: confirmed
+    blocking: false
+    location: ".specify/delivery/011-deepagents-product-capabilities/slices.md current publication sections and historical Approval record"
+    trigger: "A reader or automation uses slices.md to determine the publication/merge policy."
+    defect: "Current/effective text temporarily asserted stacked merge policy after the single combined-PR amendment."
+    impact: "Publication method was internally ambiguous; no product/code impact."
+    evidence:
+      - "Current sections say PR slicing single, merge mode single, one combined S8->main squash PR, no per-slice PRs/integration branch/merge rollup."
+      - "Table header is now 'Commit/review order'; dependency/policy/open-decision text says one combined publication."
+      - "Only the original Approval record retains stacked wording, clearly followed by the effective Publication amendment."
+      - "Amended slice-plan fingerprint and S0-S8 task mapping are unchanged."
+    remediation: "None remaining; historical approval wording is retained as a superseded receipt."
+    resolution_evidence: "Verified against current slices.md text and the 7e55497..ff91d988 diff."
 
 prior_findings_accounted_for:
   - id: F-01
@@ -253,6 +273,10 @@ prior_findings_accounted_for:
     disposition: open
     evidence: "Read-only probe: explicit require_worker=False + default controlled general-purpose + no worker -> ModelBindingError at _model_for_purpose, before create_deep_agent."
     note: "New non-blocking validation/API-precedence issue introduced by the default general-purpose path."
+  - id: G-01
+    disposition: resolved
+    evidence: "slices.md current sections consistently say single combined PR; historical stacked approval remains a superseded receipt."
+    note: "No current/effective text asserts stacked publication or per-slice PRs."
   - id: S-01
     disposition: resolved
     evidence: "execution.py:170-202; test_slow_queue_callback_does_not_leak_a_slot; 114 tests pass."
@@ -291,13 +315,14 @@ prior_findings_accounted_for:
     note: "Node 22+ prerequisite is documented."
 
 limitations:
-  - "No blocking finding remains. F-04 and F-06 are open but non-blocking minor findings."
-  - "packages/infra/agent-deepagents/evidence.md still records the previous product HEAD (3280fdf) and was treated as stale bookkeeping per the repair instruction. This review verified 114 package tests and ran format, lint, type, docs, governance and static checks at 13692d7e; the full package build/isolated-install gate and remote CI were not independently rerun."
+  - "No blocking finding remains. F-04 and F-06 are open but non-blocking minor findings; G-01 is resolved."
+  - "ADR-0010 is Accepted and indexed as Accepted; it is self-contained and consistent with current implementation."
+  - "No product source, test, package, ADR or index content changed after 13692d7e; the prior 114-test and format/lint/type evidence remains current. Docs/governance/static checks pass at ff91d98. Remote CI was not run."
   - "Tests and probes use deterministic fake models, structural catalog doubles and in-memory checkpointing. No real provider, network, MCP server, sandbox, durable Store or production observability backend was exercised."
   - "Fork mode still has no runtime execution test; only the opt-in gate and upstream version/contract checks are covered."
   - "With control_default_subagent=False, the upstream_default report lists the known default-slot middleware names; profile extras, skills and prompt-caching middleware are not enumerated. The report warning marks the subagent as upstream-owned, and the README notes that the actual graph remains authoritative if a harness profile disables the default."
   - "ResourceReport.thread_id_required remains tied to interrupt configuration rather than checkpointer presence; its semantics for a checkpointer without interrupts are still only partially documented."
   - "Installer-managed Delivery v0.3.2 commands, generated catalogs/records and generated registry files were sampled rather than fully reviewed; they are not product runtime."
   - "test_public_api is hand-maintained and mirrors the current __all__; it does not automatically derive the approved contract."
-  - "ADR-0010 remains Proposed, as required by the Plan; it is not an accepted decision."
+  - "ADR-0010 is Accepted; the original stacked approval in slices.md remains a historical, superseded receipt."
   - "No edits, staging, commits, branches or reviewer calls were performed during this review."
