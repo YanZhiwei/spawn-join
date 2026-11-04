@@ -317,7 +317,7 @@ prior_findings_accounted_for:
 limitations:
   - "No blocking finding remains. F-04 and F-06 are open but non-blocking minor findings; G-01 is resolved."
   - "ADR-0010 is Accepted and indexed as Accepted; it is self-contained and consistent with current implementation."
-  - "No product source, test, package, ADR or index content changed after 13692d7e; the prior 114-test and format/lint/type evidence remains current. Docs/governance/static checks pass at ff91d98. Remote CI was not run."
+  - "No product source, test, or package content changed after 13692d7e; the prior 114-test and format/lint/type evidence remains current. ADR-0010 and the ADR index were finalized at 7e55497, the slices single-PR wording was aligned at ff91d98, and only evidence/review/build-log bookkeeping followed 6503158. Docs/governance/static checks pass at ff91d98; remote CI was not run."
   - "Tests and probes use deterministic fake models, structural catalog doubles and in-memory checkpointing. No real provider, network, MCP server, sandbox, durable Store or production observability backend was exercised."
   - "Fork mode still has no runtime execution test; only the opt-in gate and upstream version/contract checks are covered."
   - "With control_default_subagent=False, the upstream_default report lists the known default-slot middleware names; profile extras, skills and prompt-caching middleware are not enumerated. The report warning marks the subagent as upstream-owned, and the README notes that the actual graph remains authoritative if a harness profile disables the default."
