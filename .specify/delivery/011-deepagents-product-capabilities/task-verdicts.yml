@@ -51,3 +51,12 @@ tasks:
         exit_code: 0
         result: pass
         detail: 0 errors; one pre-existing warning for harness/evidence/delivery-v022-upgrade.md.
+  - id: T006
+    status: pass
+    scope: CI matrix registration for the new Distribution
+    checks:
+      - name: static
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check static
+        exit_code: 0
+        result: pass
+        detail: 0 failing actionlint/PSScriptAnalyzer checks.
