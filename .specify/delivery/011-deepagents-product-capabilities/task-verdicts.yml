@@ -33,3 +33,12 @@ tasks:
         exit_code: 0
         result: pass
         detail: 81 packages resolved, 80 audited; deepagents 0.7.32 and the new package are installed in the package-local environment.
+  - id: T004
+    status: pass
+    scope: Quality-script registration for the new Distribution
+    checks:
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios passed, including registration of spawn-join-agent-deepagents and isolated wheel install.
