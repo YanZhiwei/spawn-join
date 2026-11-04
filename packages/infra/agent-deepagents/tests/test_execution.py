@@ -194,6 +194,27 @@ def test_parent_cancellation_while_queued_and_running() -> None:
     asyncio.run(scenario())
 
 
+def test_worker_timeout_error_is_not_converted() -> None:
+    async def scenario() -> None:
+        controller = DelegationController(
+            DelegationPolicy(
+                max_concurrency=1,
+                max_queue=0,
+                deadline_seconds=5,
+            )
+        )
+
+        async def worker_timeout() -> None:
+            raise TimeoutError("worker-owned timeout")
+
+        with pytest.raises(TimeoutError, match="worker-owned timeout"):
+            await controller.run(worker_timeout, subagent_name="worker")
+
+        assert controller.active_count == 0
+
+    asyncio.run(scenario())
+
+
 def test_worker_failure_propagates_and_releases_slot() -> None:
     async def scenario() -> None:
         controller = DelegationController(

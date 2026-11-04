@@ -116,11 +116,12 @@ class DelegationController:
             remaining = self._remaining(started_at, subagent_name)
             if remaining is None:
                 return await operation()
+            timeout = asyncio.timeout(remaining)
             try:
-                async with asyncio.timeout(remaining):
+                async with timeout:
                     return await operation()
             except TimeoutError as exc:
-                if self._deadline_expired(started_at):
+                if timeout.expired():
                     raise DelegationTimeoutError(
                         f"delegation.{subagent_name}: deadline exceeded"
                     ) from exc
@@ -173,17 +174,20 @@ class DelegationController:
         except BaseException:
             await self._remove_waiter_or_release(future)
             raise
+        timeout = asyncio.timeout(remaining) if remaining is not None else None
         try:
-            if remaining is None:
+            if timeout is None:
                 await future
             else:
-                async with asyncio.timeout(remaining):
+                async with timeout:
                     await future
         except TimeoutError as exc:
             await self._remove_waiter_or_release(future)
-            raise DelegationTimeoutError(
-                f"delegation.{subagent_name}: deadline exceeded while queued"
-            ) from exc
+            if timeout is not None and timeout.expired():
+                raise DelegationTimeoutError(
+                    f"delegation.{subagent_name}: deadline exceeded while queued"
+                ) from exc
+            raise
         except asyncio.CancelledError:
             await self._remove_waiter_or_release(future)
             raise
@@ -240,12 +244,6 @@ class DelegationController:
                 f"delegation.{subagent_name}: deadline exceeded"
             )
         return remaining
-
-    def _deadline_expired(self, started_at: float) -> bool:
-        deadline = self._policy.deadline_seconds
-        if deadline is None:
-            return False
-        return deadline - (asyncio.get_running_loop().time() - started_at) <= 0
 
 
 class DelegationPolicyMiddleware(AgentMiddleware[Any, Any, Any]):
