@@ -955,13 +955,14 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 ## 2026-11-04 — Feature 011 DeepAgents product package
 
-**Status**: Implemented locally; package and full quality gates pass; independent six-dimension
-review pass; ADR-0010 Accepted; single PR authorized, not yet created or merged.
+**Status**: Implemented; package/full local gates and remote `Quality Gate` pass; independent
+six-dimension review pass; ADR-0010 Accepted; PR #32 created, not merged.
 
 **Route**: Feature.
 
-**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` → reviewed HEAD
-`ff91d9885d86aa5ccb77158e3e961d05eff3ddae` plus review/evidence bookkeeping.
+**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` → PR head
+`3196ab8330425d9e4f4db80f1eafa3825e7774b0` (reviewed content at
+`ff91d9885d86aa5ccb77158e3e961d05eff3ddae` plus review/evidence bookkeeping).
 
 - Added the independent `spawn-join-agent-deepagents` Distribution with explicit model
   purposes, declarative/compiled subagents, scoped middleware, governed async delegation,
@@ -972,8 +973,11 @@ review pass; ADR-0010 Accepted; single PR authorized, not yet created or merged.
 - Review fixes closed permission-driven interrupt validation, default `general-purpose`
   control, middleware-order wording, targeted graph tests, and Backend ownership.
 - ADR-0010 is accepted; the user authorized one combined S8→main squash PR instead of the
-  original per-slice PRs. Remote CI, push, PR creation, merge, and release were not performed
-  when this entry was updated.
+  original per-slice PRs. PR #32 was created; remote CI run 41860603215 passed all package
+  matrix jobs and the required `Quality Gate`.
+- Historical `010-model-metadata-sync` was closed as delivered against PR #31 (merge commit
+  `5e8eb7e`) to clear the governance gate blocker; no product code was changed by that close.
+- Merge and release were not performed; they require separate authorization.
 
 Detailed commands, results, and limitations:
 [Feature 011 Delivery evidence](../.specify/delivery/011-deepagents-product-capabilities/evidence.md).

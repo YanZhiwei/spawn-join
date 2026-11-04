@@ -7,15 +7,15 @@
 - **feature_id**: `011-deepagents-product-capabilities`
 - **phase_id**: `s8-final-validation`
 - **base_revision**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
-- **head_revision**: `6503158bc3eec48f67cbc7683259bc1ef5813839`
+- **head_revision**: `3196ab8330425d9e4f4db80f1eafa3825e7774b0`
 - **merge_base**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82`
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-11-04
 - **status**: active
-- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created, remote CI pending
+- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created and remote CI run 41860603215 passed required `Quality Gate`
 - **pull_request**: 32 (https://github.com/YanZhiwei/spawn-join/pull/32)
-- **content_fingerprint**: `34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb`
-  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**` and `evidence.md` as declared review/receipt bookkeeping. 114 reviewed paths. The reviewed product/requirements content is at `ff91d98`; `6503158` adds only evidence/review/build-log bookkeeping.
+- **content_fingerprint**: `4ad4b52816f1458e03739aa9aed13197919d41e8f65de0108268a75d65e4cba4`
+  Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**`, `.specify/delivery/011-deepagents-product-capabilities/evidence.md`, the historical `.specify/delivery/010-model-metadata-sync/evidence.md`, and `harness/build-log.md` as declared review/receipt bookkeeping. 113 reviewed paths. The reviewed product/requirements content is at `ff91d98`; later commits add only evidence/review/build-log and historical 010 close bookkeeping.
 - **requirements_fingerprint**: `1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd`
   Method: same normalized per-file SHA-256; manifest `<normalized-sha256>\t<path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Inputs: spec.md, plan.md, research.md, data-model.md, contracts/public-api.md, tasks.md, quickstart.md, exploration.md, decision-context.md, slices.md, constitution.md, AGENTS.md, package-boundaries.md, quality-gates.md, ADR-0010, delivery-config.yml, reviewer.md.
 - **method_identity**: `builtin` reviewer contract; no external method/config/resource selected
@@ -106,15 +106,18 @@ All commands were executed from the repository root unless noted.
   loaded CI.
 - The historical `harness/evidence/delivery-v022-upgrade.md` freshness warning remains
   pre-existing and unmodified.
-- `.specify/delivery/010-model-metadata-sync/evidence.md` remains `status: active` although
-  PR #31 was merged; this is a pre-existing Delivery-history inconsistency, outside this run's
-  product scope. It is carried explicitly rather than silently rewritten.
+- `.specify/delivery/010-model-metadata-sync/evidence.md` was closed as `delivered` on
+  2026-11-04 against PR #31 (squash merge commit `5e8eb7e`) to resolve the pre-existing
+  governance blocker. The historical record is retained; the close corrects only its Delivery
+  status/metadata and is excluded from this Feature's content fingerprint as receipt bookkeeping.
 - The local-only `specs/007-llm-protocol-abstraction/plan.md` link was repaired locally to let
   the docs gate run; no tracked historical Spec was modified.
 - The single combined PR is an explicit user-authorized deviation from the original per-slice
   PR plan; S0–S8 review/commit boundaries and receipts remain intact.
-- No push, PR creation, merge, release, or remote CI run had been performed when this record
-  was refreshed; the PR is authorized and pending.
+- PR #32 was created; remote CI run 41860603215 passed all package matrix jobs and the required
+  `Quality Gate` on `3196ab8`. Merge and release were not performed when this record was
+  refreshed; the final bookkeeping push requires a fresh `Quality Gate` before the authorized
+  squash merge.
 
 ## Changed paths (main..HEAD, excluding review bookkeeping in the content fingerprint)
 
@@ -134,7 +137,7 @@ All commands were executed from the repository root unless noted.
 
 ## Next required gates
 
-1. Remote CI must pass the required `Quality Gate` check on the configured matrix.
-2. Review the PR diff and resolve any review comments; do not merge without separate authorization.
-3. After the PR is merged or closed, run `speckit.delivery.close` with the observed outcome and
-   update this record's final status/outcome.
+1. The final bookkeeping push must pass a fresh required `Quality Gate` on the resulting head.
+2. Squash-merge PR #32 under the user's explicit authorization; do not use a merge commit.
+3. After the PR is merged, run `speckit.delivery.close` with `outcome=merged` and the observed
+   merge revision, then update this record's final status/outcome.

@@ -8,11 +8,13 @@ snapshot:
   base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
   head: 6503158bc3eec48f67cbc7683259bc1ef5813839
   merge_base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
-  content_fingerprint: "34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb; method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file, manifest '<git-mode>\\t<normalized-sha256>\\t<repo-relative-path>' with ordinal path sort, UTF-8 with final newline, SHA-256, excluding declared review/receipt bookkeeping. The reviewed content is at ff91d98; evidence/review bookkeeping commits follow. 115 changed paths minus 1 evidence receipt = 114 included files and 114 manifest lines."
+  content_fingerprint: "4ad4b52816f1458e03739aa9aed13197919d41e8f65de0108268a75d65e4cba4; method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file, manifest '<git-mode>\\t<normalized-sha256>\\t<repo-relative-path>' with ordinal path sort, UTF-8 with final newline, SHA-256, excluding declared review/receipt bookkeeping. The reviewed content is at ff91d98; later commits add only evidence/review/build-log and historical 010 close bookkeeping. 113 included files and 113 manifest lines."
   requirements_fingerprint: "1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd; method: same normalized per-file SHA-256, manifest '<normalized-sha256>\\t<path>' with ordinal path sort, UTF-8 with final newline, SHA-256. Inputs: 17 approved requirement, design, and policy files. Independently recomputed: exact match."
   bookkeeping_exclusions:
     - ".specify/delivery/011-deepagents-product-capabilities/reviews/**"
     - ".specify/delivery/011-deepagents-product-capabilities/evidence.md"
+    - ".specify/delivery/010-model-metadata-sync/evidence.md"
+    - "harness/build-log.md"
 
 coverage:
   reviewed:
@@ -93,7 +95,7 @@ method_receipt:
   resources: []
   fallback_reason: none
   restrictions: host-enforced
-  input_identity: "builtin reviewer contract; content fingerprint 34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb; requirements fingerprint 1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd; bookkeeping exclusions reviews/** and evidence.md; no external skill/method adapter selected"
+  input_identity: "builtin reviewer contract; content fingerprint 4ad4b52816f1458e03739aa9aed13197919d41e8f65de0108268a75d65e4cba4; requirements fingerprint 1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd; bookkeeping exclusions reviews/**, 011 evidence.md, historical 010 evidence.md, and harness/build-log.md; no external skill/method adapter selected"
 
 dimensions:
   requirements:
@@ -317,7 +319,7 @@ prior_findings_accounted_for:
 limitations:
   - "No blocking finding remains. F-04 and F-06 are open but non-blocking minor findings; G-01 is resolved."
   - "ADR-0010 is Accepted and indexed as Accepted; it is self-contained and consistent with current implementation."
-  - "No product source, test, or package content changed after 13692d7e; the prior 114-test and format/lint/type evidence remains current. ADR-0010 and the ADR index were finalized at 7e55497, the slices single-PR wording was aligned at ff91d98, and only evidence/review/build-log bookkeeping followed 6503158. Docs/governance/static checks pass at ff91d98; remote CI was not run."
+  - "No product source, test, or package content changed after 13692d7e; the prior 114-test and format/lint/type evidence remains current. ADR-0010 and the ADR index were finalized at 7e55497, the slices single-PR wording was aligned at ff91d98, and only evidence/review/build-log and historical 010 close bookkeeping followed 6503158. Remote CI run 41860603215 on PR #32 passed all package matrix jobs and the required Quality Gate."
   - "Tests and probes use deterministic fake models, structural catalog doubles and in-memory checkpointing. No real provider, network, MCP server, sandbox, durable Store or production observability backend was exercised."
   - "Fork mode still has no runtime execution test; only the opt-in gate and upstream version/contract checks are covered."
   - "With control_default_subagent=False, the upstream_default report lists the known default-slot middleware names; profile extras, skills and prompt-caching middleware are not enumerated. The report warning marks the subagent as upstream-owned, and the README notes that the actual graph remains authoritative if a harness profile disables the default."
@@ -325,4 +327,5 @@ limitations:
   - "Installer-managed Delivery v0.3.2 commands, generated catalogs/records and generated registry files were sampled rather than fully reviewed; they are not product runtime."
   - "test_public_api is hand-maintained and mirrors the current __all__; it does not automatically derive the approved contract."
   - "ADR-0010 is Accepted; the original stacked approval in slices.md remains a historical, superseded receipt."
+  - "The historical 010-model-metadata-sync evidence was closed as delivered on 2026-11-04 against PR #31 (merge commit 5e8eb7e) to resolve the governance gate blocker; it is excluded from this Feature's content fingerprint as receipt bookkeeping. The build log is also excluded as an execution receipt."
   - "No edits, staging, commits, branches or reviewer calls were performed during this review."
