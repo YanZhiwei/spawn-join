@@ -135,3 +135,34 @@ slices:
     verdict: ready
     slice_ready: S3
     recorded_at: 2026-11-04T19:52:00+08:00
+  - id: S4
+    classification: standalone
+    base: 5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82
+    head: a601497107b7c8576d9043db9474723fa5293dd6
+    boundary_replay_head: a569d2cc27095ee5d820b16d5ec4ac706768980d
+    tree: 0c12046229fbb2d3960d0fe1b4859f558733c92b
+    task_ids: [T020, T021, T022, T023, T024]
+    merge_mode: stacked
+    checks:
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 63 tests; format/lint/strict type/build/isolated install pass
+      - name: test-quality
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 gate-regression scenarios
+      - name: governance
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Check governance
+        exit_code: 0
+        result: pass
+        detail: 0 errors; one pre-existing v0.2.2 freshness warning
+      - name: diff-check
+        command: git diff --check main..HEAD in the boundary replay worktree
+        exit_code: 0
+        result: pass
+    verdict: ready
+    slice_ready: S4
+    recorded_at: 2026-11-04T20:04:00+08:00
