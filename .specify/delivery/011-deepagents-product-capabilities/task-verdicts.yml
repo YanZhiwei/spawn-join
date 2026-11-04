@@ -406,3 +406,53 @@ tasks:
         exit_code: 0
         result: pass
         detail: Missing checkpointer/blank thread id fail safely; an invalid resume value surfaces the tool's native ValueError without package conversion.
+  - id: T036
+    status: pass
+    scope: Lifecycle event sequence and redaction
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: 15 tests; selected/started/completed/failed/timed_out/cancelled/interrupted/rejected sequences and safe error categories.
+  - id: T037
+    status: pass
+    scope: Sync/async callback dispatch
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Sync callback then async callback; async-only sync execution does not fabricate a loop; callback exceptions propagate.
+  - id: T038
+    status: pass
+    scope: Diagnostic emitter and lifecycle middleware
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Failure events use the exception class name only; raw exception text is absent from event repr.
+  - id: T039
+    status: pass
+    scope: Runtime correlation and interruption
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: run_id/thread_id from Runtime.execution_info; thread_id is opt-in; GraphInterrupt is re-raised after recording.
+  - id: T040
+    status: pass
+    scope: Diagnostics wiring and integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_diagnostics.py -q
+        exit_code: 0
+        result: pass
+        detail: Offline governed delegation emitted selected, started, and completed with the native tool call id; async callback warning recorded.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 93 tests; format/lint/strict type/build/isolated install pass.

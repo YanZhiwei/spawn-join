@@ -19,6 +19,12 @@ from langchain.tools.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
+from .diagnostics import (
+    DiagnosticEmitter,
+    DiagnosticEventType,
+    RequestContext,
+    request_context,
+)
 from .errors import (
     AgentConfigurationError,
     DelegationQueueFullError,
@@ -241,9 +247,14 @@ class DelegationController:
 class DelegationPolicyMiddleware(AgentMiddleware[Any, Any, Any]):
     """Intercept only the native ``task`` tool and apply the controller."""
 
-    def __init__(self, controller: DelegationController) -> None:
+    def __init__(
+        self,
+        controller: DelegationController,
+        emitter: DiagnosticEmitter | None = None,
+    ) -> None:
         super().__init__()
         self._controller = controller
+        self._emitter = emitter
 
     @property
     def name(self) -> str:
@@ -271,13 +282,61 @@ class DelegationPolicyMiddleware(AgentMiddleware[Any, Any, Any]):
     ) -> ToolResult:
         if request.tool_call["name"] != "task":
             return await handler(request)
-        args = request.tool_call.get("args", {})
-        subagent_name = str(args.get("subagent_type", ""))
+        context = request_context(request)
 
         async def operation() -> ToolResult:
             return await handler(request)
 
-        return await self._controller.run(
-            operation,
-            subagent_name=subagent_name,
+        return await self._run_governed(operation, context)
+
+    async def _run_governed(
+        self,
+        operation: Callable[[], Awaitable[ToolResult]],
+        context: RequestContext,
+    ) -> ToolResult:
+        try:
+            return await self._controller.run(
+                operation,
+                subagent_name=context.subagent_name,
+                on_queued=lambda: self._emit(
+                    DiagnosticEventType.DELEGATION_QUEUED,
+                    context,
+                ),
+                on_started=lambda: self._emit(
+                    DiagnosticEventType.DELEGATION_STARTED,
+                    context,
+                ),
+            )
+        except DelegationQueueFullError:
+            await self._emit(
+                DiagnosticEventType.DELEGATION_REJECTED,
+                context,
+                outcome="rejected",
+                error_category="delegation_queue_full",
+            )
+            raise
+        except DelegationTimeoutError:
+            await self._emit(
+                DiagnosticEventType.DELEGATION_TIMED_OUT,
+                context,
+                outcome="timed_out",
+                error_category="delegation_timeout",
+            )
+            raise
+
+    async def _emit(
+        self,
+        event_type: DiagnosticEventType,
+        context: RequestContext,
+        *,
+        outcome: str | None = None,
+        error_category: str | None = None,
+    ) -> None:
+        if self._emitter is None:
+            return
+        await self._emitter.aemit(
+            event_type,
+            context=context,
+            outcome=outcome,
+            error_category=error_category,
         )

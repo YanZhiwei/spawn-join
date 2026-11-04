@@ -24,7 +24,9 @@ from langgraph.store.base import BaseStore
 
 from .diagnostics import (
     AssemblyReport,
+    DelegationDiagnosticsMiddleware,
     DelegationReport,
+    DiagnosticEmitter,
     DiagnosticsConfig,
     ResourceReport,
     SubagentReport,
@@ -210,8 +212,15 @@ def _supervisor_middleware(
     middleware: list[MiddlewareType] = list(spec.middleware.supervisor)
     if summary is not None:
         middleware.append(summary)
+    emitter = (
+        DiagnosticEmitter(spec.diagnostics, spec.name)
+        if spec.diagnostics is not None
+        else None
+    )
+    if emitter is not None:
+        middleware.append(DelegationDiagnosticsMiddleware(emitter))
     if controller is not None:
-        middleware.append(DelegationPolicyMiddleware(controller))
+        middleware.append(DelegationPolicyMiddleware(controller, emitter))
     return middleware
 
 
@@ -416,6 +425,11 @@ def _report_warnings(
         )
     if spec.middleware.workers and declarative_count == 0:
         warnings.append("middleware.workers: no declarative subagents are registered")
+    if spec.diagnostics is not None and spec.diagnostics.async_callback is not None:
+        warnings.append(
+            "diagnostics: async callback is awaited only with ainvoke/astream; "
+            "sync execution uses the sync callback only"
+        )
     return tuple(warnings)
 
 

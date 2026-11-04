@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
+from typing import Any
 
-from .middleware import MiddlewareScopeReport
+from langchain.agents.middleware.types import AgentMiddleware
+from langchain.tools.tool_node import ToolCallRequest
+from langchain_core.messages import ToolMessage
+from langgraph.errors import GraphInterrupt
+from langgraph.types import Command
+
+from .errors import DelegationQueueFullError, DelegationTimeoutError
+from .middleware import DIAGNOSTICS_MIDDLEWARE_NAME, MiddlewareScopeReport
 from .models import ModelPurpose
 from .subagents import SubAgentKind, SubAgentMode
 
@@ -148,3 +157,216 @@ class AssemblyReport:
             "experimental_features",
             tuple(self.experimental_features),
         )
+
+
+ToolResult = ToolMessage | Command[Any]
+
+
+@dataclass(frozen=True, slots=True)
+class RequestContext:
+    """Safe correlation fields extracted from one task tool request."""
+
+    subagent_name: str
+    tool_call_id: str | None
+    run_id: str | None
+    thread_id: str | None
+
+
+def request_context(request: ToolCallRequest) -> RequestContext:
+    """Extract only safe identifiers from a task tool request."""
+
+    args = request.tool_call.get("args", {})
+    subagent_name = str(args.get("subagent_type", ""))
+    tool_call_id = request.tool_call.get("id")
+    runtime = getattr(request, "runtime", None)
+    execution_info = (
+        getattr(runtime, "execution_info", None) if runtime is not None else None
+    )
+    run_id = (
+        getattr(execution_info, "run_id", None) if execution_info is not None else None
+    )
+    thread_id = (
+        getattr(execution_info, "thread_id", None)
+        if execution_info is not None
+        else None
+    )
+    return RequestContext(
+        subagent_name=subagent_name,
+        tool_call_id=str(tool_call_id) if tool_call_id is not None else None,
+        run_id=str(run_id) if run_id is not None else None,
+        thread_id=str(thread_id) if thread_id is not None else None,
+    )
+
+
+class DiagnosticEmitter:
+    """Build redacted events and dispatch to the configured callbacks."""
+
+    def __init__(
+        self,
+        config: DiagnosticsConfig,
+        supervisor_name: str | None,
+    ) -> None:
+        self._config = config
+        self._supervisor_name = supervisor_name
+
+    def emit(
+        self,
+        event_type: DiagnosticEventType,
+        *,
+        context: RequestContext | None = None,
+        outcome: str | None = None,
+        error_category: str | None = None,
+        detail: Mapping[str, str] | None = None,
+    ) -> None:
+        event = self._event(
+            event_type,
+            context=context,
+            outcome=outcome,
+            error_category=error_category,
+            detail=detail,
+        )
+        if self._config.sync_callback is not None:
+            self._config.sync_callback(event)
+
+    async def aemit(
+        self,
+        event_type: DiagnosticEventType,
+        *,
+        context: RequestContext | None = None,
+        outcome: str | None = None,
+        error_category: str | None = None,
+        detail: Mapping[str, str] | None = None,
+    ) -> None:
+        event = self._event(
+            event_type,
+            context=context,
+            outcome=outcome,
+            error_category=error_category,
+            detail=detail,
+        )
+        if self._config.sync_callback is not None:
+            self._config.sync_callback(event)
+        if self._config.async_callback is not None:
+            await self._config.async_callback(event)
+
+    def _event(
+        self,
+        event_type: DiagnosticEventType,
+        *,
+        context: RequestContext | None,
+        outcome: str | None,
+        error_category: str | None,
+        detail: Mapping[str, str] | None,
+    ) -> DiagnosticEvent:
+        return DiagnosticEvent(
+            event_type=event_type,
+            occurred_at=datetime.now(UTC),
+            supervisor_name=self._supervisor_name,
+            subagent_name=(context.subagent_name if context is not None else None),
+            tool_call_id=(context.tool_call_id if context is not None else None),
+            run_id=context.run_id if context is not None else None,
+            thread_id=(
+                context.thread_id
+                if context is not None and self._config.include_thread_id
+                else None
+            ),
+            outcome=outcome,
+            error_category=error_category,
+            detail=detail,
+        )
+
+
+class DelegationDiagnosticsMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Emit redacted lifecycle records around native task calls."""
+
+    def __init__(self, emitter: DiagnosticEmitter) -> None:
+        super().__init__()
+        self._emitter = emitter
+
+    @property
+    def name(self) -> str:
+        return DIAGNOSTICS_MIDDLEWARE_NAME
+
+    def wrap_tool_call(
+        self,
+        request: ToolCallRequest,
+        handler: Callable[[ToolCallRequest], ToolResult],
+    ) -> ToolResult:
+        if request.tool_call["name"] != "task":
+            return handler(request)
+        context = request_context(request)
+        self._emitter.emit(
+            DiagnosticEventType.DELEGATION_SELECTED,
+            context=context,
+        )
+        try:
+            result = handler(request)
+        except GraphInterrupt:
+            self._emitter.emit(
+                DiagnosticEventType.DELEGATION_INTERRUPTED,
+                context=context,
+                outcome="interrupted",
+                error_category="interrupted",
+            )
+            raise
+        except Exception as exc:
+            self._emitter.emit(
+                DiagnosticEventType.DELEGATION_FAILED,
+                context=context,
+                outcome="failed",
+                error_category=type(exc).__name__,
+            )
+            raise
+        self._emitter.emit(
+            DiagnosticEventType.DELEGATION_COMPLETED,
+            context=context,
+            outcome="completed",
+        )
+        return result
+
+    async def awrap_tool_call(
+        self,
+        request: ToolCallRequest,
+        handler: Callable[[ToolCallRequest], Awaitable[ToolResult]],
+    ) -> ToolResult:
+        if request.tool_call["name"] != "task":
+            return await handler(request)
+        context = request_context(request)
+        await self._emitter.aemit(
+            DiagnosticEventType.DELEGATION_SELECTED,
+            context=context,
+        )
+        try:
+            result = await handler(request)
+        except asyncio.CancelledError:
+            await self._emitter.aemit(
+                DiagnosticEventType.DELEGATION_CANCELLED,
+                context=context,
+                outcome="cancelled",
+                error_category="cancelled",
+            )
+            raise
+        except GraphInterrupt:
+            await self._emitter.aemit(
+                DiagnosticEventType.DELEGATION_INTERRUPTED,
+                context=context,
+                outcome="interrupted",
+                error_category="interrupted",
+            )
+            raise
+        except Exception as exc:
+            if isinstance(exc, (DelegationQueueFullError, DelegationTimeoutError)):
+                raise
+            await self._emitter.aemit(
+                DiagnosticEventType.DELEGATION_FAILED,
+                context=context,
+                outcome="failed",
+                error_category=type(exc).__name__,
+            )
+            raise
+        await self._emitter.aemit(
+            DiagnosticEventType.DELEGATION_COMPLETED,
+            context=context,
+            outcome="completed",
+        )
+        return result
