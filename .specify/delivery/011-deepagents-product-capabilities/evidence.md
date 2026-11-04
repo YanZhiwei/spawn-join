@@ -12,8 +12,8 @@
 - **working_directory**: `D:\Repos\Github\spawn-join`
 - **recorded_at**: 2026-11-04
 - **status**: active
-- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff preparation; PR not yet created
-- **pull_request**: pending (authorized; not yet created)
+- **result**: pass for local implementation, package/full quality gates, independent six-dimension review, ADR finalization, and single-PR handoff; PR #32 created, remote CI pending
+- **pull_request**: 32 (https://github.com/YanZhiwei/spawn-join/pull/32)
 - **content_fingerprint**: `34a305d017ad307edfb590d24418d8782f1cb3a9213a0d8f4a99075697f8effb`
   Method: for each changed tracked regular file, current worktree bytes normalized CRLF->LF, SHA-256 per file; manifest `<git-mode>\t<normalized-sha256>\t<repo-relative-path>` with ordinal path sort; SHA-256 over the UTF-8 manifest with a final newline. Excludes `.specify/delivery/011-deepagents-product-capabilities/reviews/**` and `evidence.md` as declared review/receipt bookkeeping. 114 reviewed paths. The reviewed product/requirements content is at `ff91d98`; `6503158` adds only evidence/review/build-log bookkeeping.
 - **requirements_fingerprint**: `1cae8bd8a6c398adaa253edcf28d3ab25031ab3aba9554484cdd4a7e21f438bd`
@@ -134,8 +134,7 @@ All commands were executed from the repository root unless noted.
 
 ## Next required gates
 
-1. User has authorized the single combined PR; `pull-request.md` must be rendered first.
-2. Push `ralph/011-deepagents-product-capabilities/S8` and create the PR with
-   `gh pr create --body-file`; do not merge without separate authorization.
-3. After the PR exists, update the `pull_request` field and run remote CI on the configured
-   matrix. A PR merge or close requires `speckit.delivery.close` with the observed outcome.
+1. Remote CI must pass the required `Quality Gate` check on the configured matrix.
+2. Review the PR diff and resolve any review comments; do not merge without separate authorization.
+3. After the PR is merged or closed, run `speckit.delivery.close` with the observed outcome and
+   update this record's final status/outcome.
