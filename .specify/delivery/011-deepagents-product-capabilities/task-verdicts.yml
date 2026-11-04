@@ -580,3 +580,43 @@ tasks:
         exit_code: 0
         result: pass
         detail: Root docs 251 targets, package README 5 links; no broken local targets.
+  - id: T052
+    status: pass
+    scope: Final package and full repository gate after docs
+    checks:
+      - name: full-quality
+        command: pwsh -NoProfile -File scripts/quality.ps1
+        exit_code: 0
+        result: pass
+        detail: All six Distributions, docs, governance and static checks passed on the final content.
+      - name: package-gate
+        command: pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: Included by the final package/full gate; 108 tests and isolated wheel install.
+      - name: gate-regression
+        command: pwsh -NoProfile -File scripts/test-quality.ps1
+        exit_code: 0
+        result: pass
+        detail: 11 scenarios; no root project artifacts.
+    notes: The final product HEAD is 3280fdf4db7706b37360826d963eb0f2b4d7c200; this evidence commit is bookkeeping.
+  - id: T053
+    status: pass
+    scope: Outgoing diff and independent standards review
+    checks:
+      - name: diff-check
+        command: git diff --check main..HEAD
+        exit_code: 0
+        result: pass
+        detail: No whitespace errors; no build, dist, .venv, cache, or egg-info paths in the outgoing diff.
+      - name: independent-review
+        command: read-only Standards Review of the outgoing diff
+        exit_code: 0
+        result: pass-with-notes
+        detail: Initial blocker and high findings fixed; follow-up review returned pass-with-notes with no blocker/high finding. Boolean root checkpointer finding subsequently fixed and verified.
+      - name: secret-scan
+        command: manual scan of the product diff
+        exit_code: 0
+        result: pass
+        detail: Only fake test values such as sk-secret-value and sk-live-secret-value; no real credentials.
+    notes: Residual risks are recorded in evidence.md (local Windows/Python 3.13 only, fake models, no remote CI, ADR Proposed).

@@ -952,3 +952,25 @@ push `3b0aaf9` 与 `0e2b10e` 的 Quality 运行中，12 个 packages 任务全�
 
 详细命令、退出码、改动边界和限制见
 [Delivery v0.3.2 evidence](evidence/delivery-v032-upgrade.md)。
+
+## 2026-11-04 — Feature 011 DeepAgents product package
+
+**Status**: Implemented locally; package and full quality gates pass; independent review
+pass-with-notes; no push, PR, or merge.
+
+**Route**: Feature.
+
+**Base/head**: `5e8eb7e4029d5a2ae4835e59ef3759c2abc26d82` → product HEAD
+`3280fdf4db7706b37360826d963eb0f2b4d7c200` plus Delivery evidence bookkeeping.
+
+- Added the independent `spawn-join-agent-deepagents` Distribution with explicit model
+  purposes, declarative/compiled subagents, scoped middleware, governed async delegation,
+  redacted diagnostics, recovery validation, and host-owned resources.
+- Ran package/full quality gates, docs/governance/static checks, gate regressions, offline
+  examples, and wheel-content inspection.
+- The independent Standards Review found one blocker and several high/medium issues; they were
+  fixed and re-reviewed. `checkpointer=True` was also rejected for root graphs.
+- ADR-0010 remains Proposed. Remote CI, push, PR, merge, and release were not performed.
+
+Detailed commands, results, and limitations:
+[Feature 011 Delivery evidence](../.specify/delivery/011-deepagents-product-capabilities/evidence.md).
