@@ -258,3 +258,48 @@ tasks:
         command: black --check and isort --check-only over src tests
         exit_code: 0
         result: pass
+  - id: T020
+    status: pass
+    scope: Middleware scope behavior
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: 13 tests passed; supervisor/worker/per-name markers execute only in their scopes and compiled stays untouched.
+  - id: T021
+    status: pass
+    scope: Middleware validation and reserved names
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Duplicate, reserved, blank, unknown, and compiled override cases are rejected before graph assembly.
+  - id: T022
+    status: pass
+    scope: Effective supervisor/worker/override merging
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Effective order is definition, workers, per-name override, then generated summarization; implemented and verified in the assembly path.
+  - id: T023
+    status: pass
+    scope: Declarative worker application and compiled isolation
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Worker middleware applies only to declarative definitions; compiled report remains empty and warns when workers are present.
+  - id: T024
+    status: pass
+    scope: Offline middleware integration
+    checks:
+      - name: pytest
+        command: pytest tests/test_middleware.py -q
+        exit_code: 0
+        result: pass
+        detail: Real task delegation recorded supervisor, researcher, worker, and override markers; compiled marker was not injected.
