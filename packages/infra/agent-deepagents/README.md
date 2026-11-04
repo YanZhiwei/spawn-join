@@ -4,7 +4,11 @@
 Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、LangChain 和 LangGraph 的原生
 执行、Checkpoint、interrupt、resume 和 streaming 能力。
 
-包版本：`0.1.0`。当前仅支持仓库内本地开发，尚未发布到 PyPI 或私有 Registry。
+## 状态与兼容性
+
+- 版本与稳定性：`0.1.0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
+- 运行时：Python `>=3.11`；DeepAgents `0.7.x`；LangChain/LangGraph 1.x。
+- 发布状态：当前仅支持仓库内本地开发，尚未发布到 PyPI 或私有 Registry。
 
 ## 提供的能力
 
@@ -220,6 +224,15 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 内部模块不会因为可导入就自动成为公共契约。
 
+## 错误与失败行为
+
+- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复和委派
+  各有稳定子类，便于调用方区分失败类别。
+- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配异常保留 `__cause__`。
+- 委派队列满、deadline、父级取消、worker 失败和中断具有可区分语义；worker 原始异常
+  不会被转换为成功结果。
+- 诊断回调异常会传播，不会被静默吞掉；异步回调只在异步执行中 await。
+
 ## 兼容性与限制
 
 - Python `>=3.11`；
@@ -229,11 +242,7 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - 不实现 MCP Server、数据库、沙箱、Web/SSE、生产观测后端、租户/授权/计费、产物台账或 UI；
 - 不提供自动 PR、发布或后台调度。
 
-长期边界和取舍见
-[ADR-0010](../../../docs/decisions/agent/0010-deepagents-product-boundary.md) 和
-[包边界](../../../docs/architecture/package-boundaries.md)。
-
-## 验证
+## 开发与验证
 
 ```powershell
 uv lock --check --directory packages/infra/agent-deepagents
@@ -241,8 +250,31 @@ uv sync --locked --directory packages/infra/agent-deepagents
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ```
 
-包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、隔离安装、
-`pip check` 和隔离导入。离线测试不读取真实密钥、不连接外部服务。
+- 布局：`src/spawn_join_agent_deepagents/` 是运行时源码，`tests/` 是离线测试，
+  `examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed` 和 `LICENSE`。
+- 必需工具：uv、PowerShell 7、包 dev group 中的 Black/isort/Ruff/Pyright/pytest。
+- 包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、隔离安装、
+  `pip check` 和隔离导入。离线测试不读取真实密钥、不连接外部服务。
+
+## 发布与版本
+
+本包使用独立版本号和独立 wheel/sdist，不随其他 Distribution 隐式发布。当前版本为
+`0.1.0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
+破坏性变更应更新版本、文档和兼容性说明，并重新运行包级与仓库级门禁。
+
+## 维护与贡献
+
+本包由 SpawnJoin 仓库维护者拥有；变更遵循 `AGENTS.md`、[包边界](../../../docs/architecture/package-boundaries.md)
+和 [ADR-0010](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)。新能力或公共
+契约变更走 Feature 交付路由；缺陷走 Bugfix；纯文档或机械改动走 Lightweight。提交前必须
+提供与当前 diff 绑定的质量、标准和评审证据。
+
+## 相关文档
+
+- [ADR-0010：DeepAgents 产品边界](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
+- [包边界](../../../docs/architecture/package-boundaries.md)
+- [仓库地图](../../../docs/architecture/repository-map.md)
+- [质量门说明](../../../docs/development/quality-gates.md)
 
 ## 许可证
 

@@ -264,10 +264,6 @@ class DelegationPolicyMiddleware(AgentMiddleware[Any, Any, Any]):
     def name(self) -> str:
         return DELEGATION_MIDDLEWARE_NAME
 
-    @property
-    def controller(self) -> DelegationController:
-        return self._controller
-
     def wrap_tool_call(
         self,
         request: ToolCallRequest,
