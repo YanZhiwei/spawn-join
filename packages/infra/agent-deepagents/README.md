@@ -252,7 +252,8 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 
 - 布局：`src/spawn_join_agent_deepagents/` 是运行时源码，`tests/` 是离线测试，
   `examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed` 和 `LICENSE`。
-- 必需工具：uv、PowerShell 7、包 dev group 中的 Black/isort/Ruff/Pyright/pytest。
+- 必需工具：uv `>=0.7.13`、PowerShell 7、Git、Node.js 22+（Pyright 包装器），以及包
+  dev group 中的 Black/isort/Ruff/Pyright/pytest。
 - 包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、隔离安装、
   `pip check` 和隔离导入。离线测试不读取真实密钥、不连接外部服务。
 
