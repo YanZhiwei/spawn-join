@@ -18,7 +18,7 @@
 - Merge mode: `single`.
 - Target branch: `main`.
 - Integration branch: N/A.
-- Stack provider: N/A (single PR; manual stack still describes the review history).
+- Stack provider: N/A (single combined PR; S0–S8 are review/commit history, not separate PR layers).
 - Slice merge method: N/A (no per-slice PRs; one combined PR).
 - Final merge method: `squash` (required to preserve linear history).
 - Target sync method: N/A (single PR from the final branch).
@@ -29,7 +29,7 @@
 
 ## Slice table
 
-| ID | Goal | Kind | Depends on | Task IDs | Paths | Trunk-safe | Flag | Merge order |
+| ID | Goal | Kind | Depends on | Task IDs | Paths | Trunk-safe | Flag | Commit/review order |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | S0 | Delivery/tooling baseline: Bundle v0.3.2, Proposed ADR-0010, and 011 Delivery packet | design | - | none (design/tooling baseline; no `tasks.md` task) | `.opencode/commands/`, `.specify/extensions/`, `.specify/workflows/`, `.specify/bundle-catalogs.yml`, `.specify/bundle-records.json`, `.specify/extension-catalogs.yml`, `.specify/extensions/.registry`, `AGENTS.md`, `docs/development/spec-kit-delivery.md`, `harness/build-log.md`, `harness/evidence/delivery-v032-upgrade.md`, `harness/evidence/delivery-sd-shortcut.md`, `docs/decisions/agent/0010-deepagents-product-boundary.md`, `docs/decisions/README.md`, `.specify/delivery/011-deepagents-product-capabilities/` | standalone | - | 1 |
 | S1 | New Distribution skeleton, locked environment, quality/CI registration, and error taxonomy | foundation | S0 | T001–T007 | `packages/infra/agent-deepagents/`, `scripts/quality.ps1`, `scripts/test-quality.ps1`, `.specify/extensions/quality/quality-config.yml`, `.github/workflows/quality.yml` | standalone | - | 2 |
@@ -201,10 +201,10 @@
   - SC-005 (checkpoint/interrupt/resume) → S6.
   - SC-006 (diagnostics) → S7.
   - SC-007 (quality/CI) → S1, S8.
-- Dependency order: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8. Acyclic and linear. S1 depends on S0; S7 depends on S5; S4/S5/S6 all depend on S3 but are ordered for a single stack.
+- Dependency order: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8. Acyclic and linear. S1 depends on S0; S7 depends on S5; S4/S5/S6 all depend on S3 but are ordered for one combined publication.
 - Budget exceptions: S0, S1, S2, S3, S5, S7, S8 are expected to exceed the 400-line heuristic because they introduce the delivery/tooling baseline, a new Distribution, contract families, the MVP assembly, concurrency correctness evidence, and release/docs. Generated `uv.lock` and installer-managed command/template/workflow files are excluded from the product line heuristic. These exceptions are presented for the slice gate; they are not silently accepted.
-- Policy compatibility: `main` requires PR, linear history, and the `Quality Gate` required check with strict sync; no merge queue; manual stacked squash preserves linear history. `merge_policy.final: squash` is valid for stacked mode; no integration rollup is used. Branch deletion is enabled after merge.
-- Open decisions: none. The only choices are the stacked linear order (S0→S8) and the explicit budget exceptions; both are presented for approval, not inferred.
+- Policy compatibility: `main` requires PR, linear history, and the `Quality Gate` required check with strict sync; no merge queue. The approved single combined squash PR preserves linear history; no per-slice PR, integration branch, or merge-commit rollup is used. Branch deletion is enabled after merge.
+- Open decisions: none. The only choices are the S0→S8 commit/review order inside one combined PR and the explicit budget exceptions; both were presented for approval, not inferred.
 
 ## Merge plan
 
