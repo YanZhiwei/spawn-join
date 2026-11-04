@@ -20,3 +20,16 @@ tasks:
         exit_code: 0
         result: pass
         detail: 3 tests passed; no network or credentials used.
+  - id: T003
+    status: pass
+    scope: Package-local lock and environment
+    checks:
+      - name: lock-check
+        command: uv lock --check --directory packages/infra/agent-deepagents
+        exit_code: 0
+        result: pass
+      - name: sync
+        command: uv sync --locked --directory packages/infra/agent-deepagents
+        exit_code: 0
+        result: pass
+        detail: 81 packages resolved, 80 audited; deepagents 0.7.32 and the new package are installed in the package-local environment.
