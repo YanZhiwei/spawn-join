@@ -26,6 +26,7 @@ from .execution import (
 )
 from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
 from .models import ModelBinding, ModelBindings, ModelPurpose
+from .recovery import RecoveryContext
 from .subagents import (
     CompiledSubAgentDefinition,
     SubAgentDefinition,
@@ -55,6 +56,7 @@ __all__ = [
     "ModelBindings",
     "ModelPurpose",
     "RecoveryConfigurationError",
+    "RecoveryContext",
     "ResourceReport",
     "SubAgentDefinition",
     "SubAgentKind",

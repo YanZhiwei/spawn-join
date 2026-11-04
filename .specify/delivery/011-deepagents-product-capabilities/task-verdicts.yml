@@ -361,3 +361,48 @@ tasks:
         exit_code: 0
         result: pass
         detail: 79 tests; format/lint/strict type/build/isolated install pass.
+  - id: T031
+    status: pass
+    scope: Recovery context and interrupt/checkpointer validation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Native thread config merge, blank identity rejection, missing checkpointer rejection, and valid pass-through.
+  - id: T032
+    status: pass
+    scope: Native interrupt/resume with host checkpointer
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: InMemorySaver + interruptible tool + Command(resume="yes") completed and the checkpointer remained usable.
+  - id: T033
+    status: pass
+    scope: RecoveryContext implementation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: to_graph_config produces native configurable.thread_id without invoking the graph.
+  - id: T034
+    status: pass
+    scope: Host-owned resource pass-through and report
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Checkpointer/store report host ownership; no create/close lifecycle is added; MCP/sandbox remain host tools/backend.
+  - id: T035
+    status: pass
+    scope: Negative recovery and native error propagation
+    checks:
+      - name: pytest
+        command: pytest tests/test_recovery.py -q
+        exit_code: 0
+        result: pass
+        detail: Missing checkpointer/blank thread id fail safely; an invalid resume value surfaces the tool's native ValueError without package conversion.

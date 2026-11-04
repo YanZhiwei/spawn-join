@@ -29,11 +29,7 @@ from .diagnostics import (
     ResourceReport,
     SubagentReport,
 )
-from .errors import (
-    AgentConfigurationError,
-    ModelBindingError,
-    RecoveryConfigurationError,
-)
+from .errors import AgentConfigurationError, ModelBindingError
 from .execution import (
     DelegationConfiguration,
     DelegationController,
@@ -45,6 +41,7 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
+from .recovery import validate_interrupt_checkpointer
 from .subagents import (
     CompiledSubAgentDefinition,
     ResponseFormatLike,
@@ -124,10 +121,7 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
 
     _validate_subagents(spec)
     resolved = spec.models.resolve(require_worker=_worker_required(spec.subagents))
-    if spec.interrupt_on and spec.checkpointer is None:
-        raise RecoveryConfigurationError(
-            "recovery: interrupt_on requires a host-provided checkpointer"
-        )
+    validate_interrupt_checkpointer(spec.checkpointer, spec.interrupt_on)
 
     backend = spec.backend if spec.backend is not None else StateBackend()
     summary = _summary_middleware(resolved, backend)

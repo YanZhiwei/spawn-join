@@ -69,6 +69,7 @@ _S3_PUBLIC_NAMES = {
     "ModelBindings",
     "ModelPurpose",
     "RecoveryConfigurationError",
+    "RecoveryContext",
     "ResourceReport",
     "SubAgentDefinition",
     "SubAgentKind",
