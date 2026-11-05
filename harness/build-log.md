@@ -1004,3 +1004,26 @@ Detailed commands, results, and limitations:
 
 Detailed commands, results, and limitations:
 [Delivery v0.4.1 evidence](evidence/delivery-v041-upgrade.md).
+
+## 2026-11-05 — Delivery Bundle v0.4.2 upgrade
+
+**Status**: Bundle/catalog upgrade completed; project-owned documentation and durable evidence updated.
+
+**Route**: Lightweight（安装/升级交付工具，不创建 Feature 工件）
+
+**Base/head**: `1ced9fe00ff9fb609642f54d989ede3876389a95` + 本次工作树
+
+- Updated the extension, workflow, and Bundle Catalog sources from v0.4.1 to v0.4.2 and ran
+  `specify bundle update speckit-delivery` successfully.
+- Registered 10 extensions and 3 Workflows at v0.4.2; Bug remains the CLI-bundled 1.0.1.
+- Verified the v0.4.2 task-close transport, Close outcome writer, publication-group slice contract,
+  and installed `/sd` runtime behavior changes; project configs and `tasks-template.md` retained
+  byte-for-byte.
+- Updated the durable installation guide, ADR-0004 status, AGENTS baseline, and this log; the
+  pre-existing Feature 011 PR body remains untracked and untouched.
+- Did not run `specify integration upgrade --force`; expected managed-file customization warnings
+  remain. No package source, dependency, remote, push, merge, or Delivery workflow execution was
+  performed during installation.
+
+Detailed commands, results, and limitations:
+[Delivery v0.4.2 evidence](evidence/delivery-v042-upgrade.md).
