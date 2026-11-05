@@ -12,7 +12,6 @@ known_first_party = [
     "spawn_join_core",
     "spawn_join_llm_provider",
     "spawn_join_llm_provider_langchain",
-    "spawn_join_observability",
 ]
 
 [tool.ruff]

@@ -7,7 +7,7 @@ Run read-only quality checks using each Distribution's locked environment.
 param(
     [ValidateSet('spawn-join-core', 'spawn-join-llm-provider',
         'spawn-join-llm-provider-langchain', 'spawn-join-llm-model-sync',
-        'spawn-join-agent-deepagents', 'spawn-join-observability')]
+        'spawn-join-agent-deepagents')]
     [string]$Package,
 
     [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs', 'governance', 'static')]
@@ -47,11 +47,6 @@ $packages = [ordered]@{
         Import = 'spawn_join_agent_deepagents'
         Build = @('spawn-join-core', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain', 'spawn-join-agent-deepagents')
-    }
-    'spawn-join-observability' = @{
-        Path = 'packages/infra/spawn-join-observability'
-        Import = 'spawn_join_observability'
-        Build = @('spawn-join-core', 'spawn-join-observability')
     }
 }
 
