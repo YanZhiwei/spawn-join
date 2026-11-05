@@ -11,33 +11,33 @@
     },
     "feature-delivery": {
       "name": "Spec Kit Feature Delivery",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "description": "Evidence-first feature delivery with code/history/reference exploration, scope and design approval, slice planning, guarded execution, convergence, quality, review, and handoff.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.1/workflows/feature-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.2/workflows/feature-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.214200+00:00",
-      "updated_at": "2026-11-05T12:52:12.296521+00:00"
+      "updated_at": "2026-11-05T14:19:20.416848+00:00"
     },
     "bugfix-delivery": {
       "name": "Spec Kit Bugfix Delivery",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "description": "Evidence-first structure/history exploration, bug assessment and scope approval, guarded repair, regression validation, quality, review, and handoff.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.1/workflows/bugfix-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.2/workflows/bugfix-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.410331+00:00",
-      "updated_at": "2026-11-05T12:52:12.957606+00:00"
+      "updated_at": "2026-11-05T14:19:21.117875+00:00"
     },
     "lightweight-delivery": {
       "name": "Spec Kit Lightweight Delivery",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "description": "Proportional delivery for mechanical, documentation-only, or behavior-preserving changes with guarded quality and review dispatch.",
       "source": "catalog",
       "catalog_name": "speckit-delivery",
-      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.1/workflows/lightweight-delivery/workflow.yml",
+      "url": "https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.2/workflows/lightweight-delivery/workflow.yml",
       "installed_at": "2026-10-28T09:50:51.606350+00:00",
-      "updated_at": "2026-11-05T12:52:13.564305+00:00"
+      "updated_at": "2026-11-05T14:19:21.911318+00:00"
     }
   }
 }
