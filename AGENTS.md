@@ -6,10 +6,11 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.3.2。当前默认
-OpenCode，可用 `/sd` 快捷入口；项目文件 `.opencode/commands/sd.md` 读取并执行安装器
-管理的 `.opencode/commands/speckit.delivery.route.md`（`/speckit.delivery.route`）。保留
-Codex 核心技能。旧项目 sd/speckit-delivery 技能拷贝门面已移除；不转发到用户级旧技能。
+本仓库已完成 Spec Kit 初始化，并通过固定 Release 安装 Delivery Bundle v0.4.1。当前默认
+OpenCode，可用 `/sd` 快捷入口；v0.4.1 的 Delivery manifest 正式声明 `sd` alias，
+`.opencode/commands/sd.md` 由安装器与 `speckit.delivery.route` 保持同源
+（`/speckit.delivery.route`）。保留 Codex 核心技能。旧项目 sd/speckit-delivery 技能拷贝
+门面已移除；不转发到用户级旧技能。
 安装与升级以 [`Delivery 安装说明`](docs/development/spec-kit-delivery.md) 为准。
 安装文件存在不表示任何 Feature 的 Spec、Plan、Tasks、ADR 或 Evidence 已执行。
 
@@ -17,12 +18,14 @@ Codex 核心技能。旧项目 sd/speckit-delivery 技能拷贝门面已移除�
 Constitution 已批准为 `v1.0.0`。已有 Harness Foundation 和 Python Quality Gates Feature，
 质量工具及 GitHub Actions 配置已加入；`.specify/extensions.yml` 已登记扩展，但
 `auto_execute_hooks: false`、`hooks: {}`，没有可执行 hook。Delivery、Quality 等配置已接入；
-v0.3.2 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
+v0.4.1 Bundle 已安装并拥有 13 个组件，项目配置和核心任务定制保留。Feature 的 Slice
 计划/门禁和 Handoff 正文路径已接入，PR 模板默认使用随包中文模板及其
 `.github/pull_request_template.md` 静态副本；v0.3.0 新增 `speckit.delivery.close`，按 PR
 结果把运行标记为 `delivered`/`abandoned`/`superseded`，并把持久 `evidence.md` 与本地运行
 工作区分开；v0.3.1 新增 `speckit.docs-sync.package-readme`，v0.3.2 新增方法适配、
-Plan/Slice/Evidence 上下文传递和更严格的证据刷新契约；项目选择
+Plan/Slice/Evidence 上下文传递和更严格的证据刷新契约；v0.4.1 新增 portable runtime
+coordinator、`delivery_run` 的恢复/检查点契约和条件式 owner dispatch，并修复无候选
+Simplify 扫描对 Quality/Standards 回执的无效刷新；项目选择
 `package_readme: auto`，并默认启用 `pr_slicing: "auto"` 的 Slice 路径，所有切片为
 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`，`tasks.md` 仍是唯一执行队列。
 Bundle 安装不等于 Ralph 已执行，也不授权自动 push/merge/发布。
