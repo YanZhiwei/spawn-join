@@ -1,9 +1,13 @@
 # Delivery Evidence and Run Workspace
 
+[简体中文](#中文) | [English](#english)
+
+## 中文
+
 本目录保存 Delivery 运行的持久证据与按策略保留的运行工作区；配置在
 [`../extensions/delivery/delivery-config.yml`](../extensions/delivery/delivery-config.yml)。
 
-## 边界
+### 边界
 
 - Spec 工件按 ADR-0002 保持本地（`specs/` 忽略）；这里的证据必须自包含，不依赖
   本地 Spec 才能理解。
@@ -20,10 +24,10 @@
   [`harness/evidence/`](../../harness/evidence/)，不在本目录维护第二份副本。
 - 每个通过 gate 的任务写一个 receipt：`receipts/<task-id>.md`。
 - 不自动 push、merge、发布或修改远端设置；这些动作仍需用户明确授权。
-- `RALPH_TASK_GATE: PASS` 只有在验收证据、允许路径、当前 `HEAD`、Quality Gate 和
-  Standards Review 全部有效时才能写入。
+- `RALPH_TASK_GATE: PASS` 只有在验收证据、允许路径、当前 `HEAD`、Quality Gate、Standards
+  Review 和独立六维 Review 全部有效时才能写入。
 
-## Receipt Template
+### Receipt Template
 
 ```text
 # <TASK-ID> — <title>
@@ -35,14 +39,65 @@
 - commands: <commands and exit codes>
 - quality_verdict: QUALITY_VERDICT: pass
 - standards_verdict: STANDARDS_VERDICT: pass
+- independent_review_verdict: REVIEW_VERDICT: pass
 - ralph_task_gate: RALPH_TASK_GATE: PASS
 - residual_risks: <none or list>
 - recorded_at: <YYYY-MM-DD>
 ```
 
-## Evidence Template
+### Evidence Template
 
 `evidence.md` 使用 `harness/evidence` 的必填字段（`feature_id`、`phase_id`、
 `base_revision`、`head_revision`、`working_directory`、`recorded_at`、`result`、
 limitations），并链接实际 PR、CI 运行和 ADR。Completion 只描述当前 `HEAD` 能支持的结论；
 PR 结果必须写入 `status` 字段，缺少或矛盾的结果不算收口。
+
+许可证见 [LICENSE](../../LICENSE)。
+
+## English
+
+This directory stores durable Delivery run evidence and the run workspace retained according to
+policy; configuration lives in
+[`../extensions/delivery/delivery-config.yml`](../extensions/delivery/delivery-config.yml).
+
+### Boundaries
+
+- Spec artifacts stay local under ADR-0002 (`specs/` is ignored); evidence here must be self-contained and understandable without local Specs.
+- Each run uses `.specify/delivery/<delivery_run>/`.
+- `evidence.md` is always the durable record: `feature_id`, `phase_id`, `base_revision`, `head_revision`, `working_directory`, `recorded_at`, `result`, limitations, and after the PR outcome is known, `speckit.delivery.close` writes `status`, `pull_request`, `outcome_recorded_at`, and `merged_revision` (`delivered`), or `superseded_by` and `reason` (`superseded`).
+- The run workspace (`exploration.md`, `decision-context.md`, `slices.md`, `task-verdicts.yml`, `receipts/`, `reviews/`, `pull-request*.md`) follows `artifact_policy`; this project uses `ephemeral`, so the workspace is not the long-term authority. `merged` runs do not delete delivered evidence; `abandoned` and `superseded` runs retain only `evidence.md` per the close contract.
+- Installation, upgrade, bootstrap, or manual governance records are not delivery runs; the authoritative record belongs in [`harness/evidence/`](../../harness/evidence/), with no second copy here.
+- Every gated task writes one receipt: `receipts/<task-id>.md`.
+- Never automatically push, merge, publish, or change remote settings; those actions still require explicit user authorization.
+- `RALPH_TASK_GATE: PASS` may be written only when acceptance evidence, allowed paths, current `HEAD`, Quality Gate, and Standards Review are all valid.
+
+### Receipt template
+
+```text
+# <TASK-ID> — <title>
+
+- feature: <feature-id>
+- base_revision: <sha>
+- head_revision: <sha>
+- changed_paths: <paths>
+- commands: <commands and exit codes>
+- quality_verdict: QUALITY_VERDICT: pass
+- standards_verdict: STANDARDS_VERDICT: pass
+- independent_review_verdict: REVIEW_VERDICT: pass
+- ralph_task_gate: RALPH_TASK_GATE: PASS
+- residual_risks: <none or list>
+- recorded_at: <YYYY-MM-DD>
+```
+
+Task closure requires current Quality, Standards, and independent six-dimensional Review evidence;
+the Review receipt must bind the exact current Quality and Standards results. A stale or blocked
+result cannot close a task.
+
+### Evidence template
+
+`evidence.md` uses the required `harness/evidence` fields (`feature_id`, `phase_id`, `base_revision`,
+`head_revision`, `working_directory`, `recorded_at`, `result`, limitations) and links the actual PR,
+CI runs, and ADRs. Completion describes only conclusions supported by the current `HEAD`; the PR
+outcome must be written into `status`, and a missing or contradictory result does not count as closed.
+
+See the repository [LICENSE](../../LICENSE).
