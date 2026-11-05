@@ -140,7 +140,7 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 7. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 8. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
 
-当前配置基线（2026-11-04）：六包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+当前配置基线（2026-11-05）：五个保留包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
@@ -320,8 +320,8 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 uv build packages/core/spawn-join-core --out-dir <temporary-output-dir>
 uv build packages/core/llm-provider --out-dir <temporary-output-dir>
 uv build packages/infra/llm-provider-langchain --out-dir <temporary-output-dir>
+uv build packages/infra/llm-model-sync --out-dir <temporary-output-dir>
 uv build packages/infra/agent-deepagents --out-dir <temporary-output-dir>
-uv build packages/infra/spawn-join-observability --out-dir <temporary-output-dir>
 ```
 
 每个 Distribution 的 uv 环境和锁文件也必须独立验证：
@@ -330,14 +330,14 @@ uv build packages/infra/spawn-join-observability --out-dir <temporary-output-dir
 uv lock --check --directory packages/core/spawn-join-core
 uv lock --check --directory packages/core/llm-provider
 uv lock --check --directory packages/infra/llm-provider-langchain
+uv lock --check --directory packages/infra/llm-model-sync
 uv lock --check --directory packages/infra/agent-deepagents
-uv lock --check --directory packages/infra/spawn-join-observability
 
 uv sync --locked --directory packages/core/spawn-join-core
 uv sync --locked --directory packages/core/llm-provider
 uv sync --locked --directory packages/infra/llm-provider-langchain
+uv sync --locked --directory packages/infra/llm-model-sync
 uv sync --locked --directory packages/infra/agent-deepagents
-uv sync --locked --directory packages/infra/spawn-join-observability
 ```
 
 这些命令应从仓库根目录执行；它们分别使用各包目录下的 `pyproject.toml`、`uv.lock`

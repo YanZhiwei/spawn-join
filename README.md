@@ -27,13 +27,13 @@ SpawnJoin 是一个面向多个私有 Python 项目的基础设施组件单仓�
 - **公共 API 显式导出**：源码使用 `src/` layout，通过各包 `__init__.py` 定义公共入口。
 
 `packages/core` 和 `packages/infra` 是架构分组，不是额外的 Distribution。Distribution
-名称使用连字符，Python import package 使用下划线。六包职责和依赖方向以
+名称使用连字符，Python import package 使用下划线。五个保留包的职责和依赖方向以
 [包边界说明](docs/architecture/package-boundaries.md)为准，实际元数据以各包的
 `pyproject.toml` 为准。
 
 完整目录结构只维护在[仓库地图](docs/architecture/repository-map.md)，首页不复制完整树。
 当前已实现 LLM channel/options 契约、LangChain 模型工厂和 DeepAgents 产品装配；
-observability 仍为骨架，尚不包含 `spawn-join-database`。
+Core 仍为骨架，尚不包含 `spawn-join-database`。
 
 ## SDD 与 Harness 工程治理
 
@@ -143,7 +143,6 @@ uv sync --directory packages/core/llm-provider
 uv sync --directory packages/infra/llm-provider-langchain
 uv sync --directory packages/infra/llm-model-sync
 uv sync --directory packages/infra/agent-deepagents
-uv sync --directory packages/infra/spawn-join-observability
 ```
 
 每条命令只管理对应 Distribution 的环境：
@@ -180,7 +179,7 @@ Pyright 做严格类型检查，pytest 验证包契约，另外执行文档、�
 命令、修复格式、CI 矩阵和分支保护说明见
 [`docs/development/quality-gates.md`](docs/development/quality-gates.md)。
 
-GitHub Actions 配置见 [quality.yml](.github/workflows/quality.yml)，覆盖六包和跨平台矩阵，
+GitHub Actions 配置见 [quality.yml](.github/workflows/quality.yml)，覆盖五个保留包和跨平台矩阵，
 并设置 `Quality Gate` 汇总检查。Ruleset `main` 已启用 PR、线性历史和 required `Quality Gate`；
 失败 PR 的实际拦截已用临时 PR 验证。
 
@@ -217,7 +216,7 @@ codegraph sync
 
 Fireworks 从描述生成 SVG 技术图，可按需导出 PNG，不需要图像模型 API Key。
 SVG 是可维护主产物；图中必须区分当前实现与目标设计，并核对箭头关系、事实来源和最终视觉效果。
-辅助脚本与六包环境隔离；安装技能不代表渲染依赖齐全，也不授权付费 API、发布或外传源码。
+辅助脚本与各保留包环境隔离；安装技能不代表渲染依赖齐全，也不授权付费 API、发布或外传源码。
 使用方式、Windows 命令和环境限制见[技术图说明](docs/development/technical-diagrams.md)。
 
 ## 包分发与演进
@@ -260,7 +259,7 @@ dependencies = [
 
 | 类别 | 当前边界 |
 |---|---|
-| 领域包 | 六个独立 Distribution；LLM 包已实现 channel/options 契约、LangChain 模型工厂、手动元数据同步和 DeepAgents 产品装配；observability 仍为骨架 |
+| 领域包 | 五个保留的独立 Distribution；LLM 包已实现 channel/options 契约、LangChain 模型工厂、手动元数据同步和 DeepAgents 产品装配；Core 仍为骨架 |
 | SDD 基础 | 已有 Constitution、Spec Kit 模板/脚本和 Bundle v0.3.2 管理的 Delivery 原生命令（含 close/evidence 收口与包 README 节点）；Feature 工件本地化 |
 | Harness 治理 | 已有阶段计划、上下文、评审、证据与执行日志约定，以及结构/索引门禁；不是自动执行引擎 |
 | 开发质量 | 已配置 Black/isort、Ruff、Pyright、pytest、actionlint、PSScriptAnalyzer、构建/安装验证和 GitHub Actions |
@@ -269,7 +268,7 @@ dependencies = [
 
 ## 许可证
 
-本仓库及其六个 Distribution 为专有软件，保留所有权利。未经版权持有人书面许可，不得使用、
+本仓库及其五个保留 Distribution 为专有软件，保留所有权利。未经版权持有人书面许可，不得使用、
 复制、修改、发布、分发、再许可或销售。详见 [LICENSE](LICENSE)。
 
 实际命令、环境和验证限制以 [Harness evidence](harness/evidence/README.md) 中对应记录为准；
