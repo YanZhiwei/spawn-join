@@ -1027,3 +1027,33 @@ Detailed commands, results, and limitations:
 
 Detailed commands, results, and limitations:
 [Delivery v0.4.2 evidence](evidence/delivery-v042-upgrade.md).
+
+## 2026-11-06 — Delivery Bundle v0.4.3 upgrade
+
+**Status**: Bundle/catalog upgrade completed; project-owned documentation and durable evidence updated.
+
+**Route**: Lightweight（安装/升级交付工具，不创建 Feature 工件）
+
+**Base/head**: `02c14ccc1b35bdb9d92d4ad6890ebdf325170e0a` + 本次工作树
+
+- Updated the extension, workflow, and Bundle Catalog sources from v0.4.2 to v0.4.3 and ran
+  `specify bundle update speckit-delivery` successfully.
+- Registered 10 extensions and 3 Workflows at v0.4.3; Bug remains the CLI-bundled 1.0.1.
+- Verified the v0.4.3 `owner-result` runtime entry and Feature Workflow Brief change; project
+  configs and `tasks-template.md` retained byte-for-byte.
+- Documentation/static checks and all three regression suites passed; the actual governance check
+  remains blocked by the pre-existing untracked evidence record missing `head_revision`.
+- Updated the durable installation guide, ADR-0004 status, AGENTS baseline, and this log; the
+  pre-existing untracked Delivery record remains untouched.
+- Did not run `specify integration upgrade --force`; expected managed-file customization warnings
+  remain. No package source, dependency, remote, push, merge, or Delivery workflow execution was
+  performed during installation.
+
+Detailed commands, results, and limitations:
+[Delivery v0.4.3 evidence](evidence/delivery-v043-upgrade.md).
+
+PR preparation (separately authorized on 2026-11-06): the isolated outgoing-content worktree passed
+docs/governance/static checks without modifying the unrelated local record. Upstream v0.4.3 runtime
+(37 tests) and distribution (62 tests) regressions passed; installed helpers/Workflows matched the tag.
+The release asset count was corrected to ten. Publication is a draft PR pending independent human
+review and remote CI, not a claim of completed Delivery or authorization to merge.
