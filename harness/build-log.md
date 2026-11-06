@@ -1057,3 +1057,13 @@ docs/governance/static checks without modifying the unrelated local record. Upst
 (37 tests) and distribution (62 tests) regressions passed; installed helpers/Workflows matched the tag.
 The release asset count was corrected to ten. Publication is a draft PR pending independent human
 review and remote CI, not a claim of completed Delivery or authorization to merge.
+
+### 2026-11-06 — v0.4.3 operational upgrade merged
+
+After separate user merge authorization, PR [#39](https://github.com/YanZhiwei/spawn-join/pull/39)
+was squash-merged as `a38f9a795e1bf16e8c463c1c3bfcbea54b31b4b9` at `2026-11-06T03:35:01Z`.
+Its 17 CI jobs, including `Quality Gate`, succeeded. The original PR head
+`e2ba0537c4dfaf1f8baeaaa7c56cfed90c2c087f` and squash commit have identical complete Git trees.
+The original PR/author-review identity remains historical; no independent review receipt is claimed.
+The operational outcome is recorded in [the upgrade evidence](evidence/delivery-v043-upgrade.md),
+not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user work was preserved.

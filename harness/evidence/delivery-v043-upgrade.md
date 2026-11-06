@@ -1,5 +1,45 @@
 # Evidence — Delivery Bundle v0.4.3 upgrade
 
+## Current operational outcome — 2026-11-06
+
+- **status**: delivered (operational upgrade; not a native Delivery run)
+- **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/39
+- **outcome**: merged
+- **reviewed_head**: `e2ba0537c4dfaf1f8baeaaa7c56cfed90c2c087f` (author self-review, not an independent native receipt)
+- **original_pr_head**: `e2ba0537c4dfaf1f8baeaaa7c56cfed90c2c087f`
+- **merge_base_revision**: `02c14ccc1b35bdb9d92d4ad6890ebdf325170e0a`
+- **merged_revision**: `a38f9a795e1bf16e8c463c1c3bfcbea54b31b4b9`
+- **merged_at**: `2026-11-06T03:35:01Z`
+- **observed_at**: `2026-11-06T03:35:24.2048484Z`
+- **merge_proof**: full PR-head and squash-merge trees both equal `db08ed446e07f2a2345a76a799832012dde78ae6`; merged commit reachable from `origin/main`
+- **remote_ci**: [Quality run 42156804491](https://github.com/YanZhiwei/spawn-join/actions/runs/42156804491), all 17 jobs successful for the PR, including required `Quality Gate`
+
+The user explicitly authorized merge and wrap-up after the draft PR was published. GitHub reported
+no submitted reviews; the already-disclosed author self-review limitation is retained, not replaced
+with an invented independent pass. Repository Ruleset requires PR, linear history, and `Quality Gate`,
+with zero required approving reviews. The merge used ordinary `gh pr merge --squash
+--match-head-commit e2ba0537c4dfaf1f8baeaaa7c56cfed90c2c087f`; no admin bypass or policy change.
+
+Commands from `D:\Repos\Github\spawn-join`, all exit 0: `gh pr checks 39`, Ruleset inspection,
+`gh pr ready 39`, guarded squash merge, tracker re-observation, `git fetch origin main`, merge
+reachability and complete tree equality checks, then `git switch main` and `git merge --ff-only
+origin/main`. A separate classic branch-protection API probe returned 404; the effective Ruleset was
+then verified via `repos/YanZhiwei/spawn-join/rules/branches/main`, not assumed absent.
+
+This outcome is kept in Harness, the authoritative home for one-off installation records. No
+`.specify/delivery/` run or native Close state was created, and no Ralph execution is claimed.
+The unrelated pre-existing untracked Delivery record remains untouched. The sections below are
+historical snapshots: their draft/pending/no-merge statements describe those earlier observations,
+not the current outcome. This docs-only closure does not relabel the historical PR head as the
+effective merge revision or change any installed component.
+
+Closure-document verification at base `a38f9a795e1bf16e8c463c1c3bfcbea54b31b4b9` ran in the
+isolated verification worktree named below: `quality.ps1 -Check docs` (exit 0, 53 files/268 local
+targets), `quality.ps1 -Check governance` (exit 0, 0 errors/1 historical warning), and
+`git diff --check` (exit 0). The outgoing closure scope is exactly this evidence and
+`harness/build-log.md`; no package or installer file changed. Future docs-closure CI is separate
+from the already verified upgrade PR CI above.
+
 ## Identity and scope
 
 - **feature_id**: `delivery-v043-upgrade` (operational Lightweight run label; no Feature created)
