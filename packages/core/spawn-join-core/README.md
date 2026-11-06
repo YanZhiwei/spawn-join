@@ -36,6 +36,14 @@ import spawn_join_core
 print(spawn_join_core.__version__)
 ```
 
+Alternatively, run directly from the repository root without creating a script:
+
+```powershell
+uv run --locked --directory packages/core/spawn-join-core python -c "import spawn_join_core; print(spawn_join_core.__version__)"
+```
+
+Expected output: `0.1.0`. No credentials or network requests are needed.
+
 There is no callable public API, CLI, or configuration surface; do not infer runtime
 capabilities that are not implemented.
 

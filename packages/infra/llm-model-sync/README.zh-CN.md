@@ -35,6 +35,16 @@ SpawnJoin 的手动模型元数据同步工具。
 uv sync --locked --directory packages/infra/llm-model-sync
 ```
 
+先从仓库根目录验证 CLI（不联网）：
+
+```powershell
+uv run --locked --directory packages/infra/llm-model-sync spawn-join-model-sync --help
+uv run --locked --directory packages/infra/llm-model-sync spawn-join-model-sync sources
+```
+
+两条命令成功退出（`0`）；`sources` 包含内置的 `models.dev`。以下 `sync` 命令才会访问
+所选元数据源；内置公开源不需要 `OPENAI_API_KEY`，模型文件中的变量名供推理应用使用。
+
 在 `model.yaml` 中显式声明共享模型和源坐标：
 
 ```yaml
@@ -78,18 +88,25 @@ uv run --project <repo>/packages/infra/llm-model-sync spawn-join-model-sync sync
 | `2` | 检测到漂移（dry-run 或 `--check`），或快照不存在 |
 | `3` | 网络、上游结构、空/缩水响应、快照校验失败 |
 
-运行时读取必须显式传快照路径；库不会搜索用户目录或发起网络请求：
+完成 `--apply` 后，将下面代码保存为 `model.yaml` 同目录的 `read_snapshot.py`，在该目录
+运行 `uv run --locked --project <repo>/packages/infra/llm-model-sync python read_snapshot.py`。
+它使用同步包已有的协议依赖读取快照，无需额外安装 LangChain、配置推理密钥或联网。
+预期打印快照中的模型键、显示名与上下文长度（未知长度为 `None`）：
 
 ```python
-from spawn_join_llm_provider_langchain import ModelCatalog
+from pathlib import Path
 
-catalog = ModelCatalog.from_file(
-    "model.yaml",
-    metadata_file="model-metadata.json",
+from spawn_join_llm_provider import decode_metadata_document
+
+document = decode_metadata_document(
+    Path("model-metadata.json").read_text(encoding="utf-8")
 )
-for summary in catalog.models:
-    print(summary.name, summary.metadata_ref, summary.metadata)
+for key, metadata in document.models.items():
+    print(key, metadata.name, metadata.limits.context)
 ```
+
+需要与模型调用配置合并时，在[LangChain 适配包环境](../llm-provider-langchain/README.zh-CN.md#模型元数据快照)
+使用 `ModelCatalog.from_file(..., metadata_file=...)`；该环境及其凭据配置由应用负责。
 
 ### 失败保护与回滚
 
@@ -137,29 +154,84 @@ catalog.json
 
 ### 添加同步源
 
-实现 `MetadataSource`，只负责 `fetch` 和 `translate`：
+实现 `MetadataSource`，只负责 `fetch` 和 `translate`。下面是完整的离线源示例，保存为
+仓库根目录的 `source_demo.py`，执行
+`uv run --locked --project packages/infra/llm-model-sync python source_demo.py`。
+它使用固定字节演示源注册、获取与类型化投影，不联网、不写快照，临时目录自动清理；
+真实源应获取并解析自己的载荷，不能直接使用此固定响应。
 
 ```python
-from spawn_join_llm_model_sync import MetadataSource, SourceInfo, SourceRegistry
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-class MySource:
+from spawn_join_llm_model_sync import (
+    SourceCatalog,
+    SourceInfo,
+    SourceRegistry,
+    SourceRequest,
+    SyncContext,
+    SyncError,
+)
+from spawn_join_llm_provider import Modality, ModelMetadata, ModelModalities, ModelType
+
+
+class DemoSource:
     info = SourceInfo(
-        id="my-source",
-        display_name="My Source",
+        id="demo",
+        display_name="Offline Demo",
         homepage="https://example.com",
-        license="MIT",
+        license="Example data only",
         default_url="https://example.com/catalog.json",
     )
 
-    def fetch(self, context):
-        ...
+    def fetch(self, context: SyncContext) -> bytes:
+        return b"demo/chat"
 
-    def translate(self, payload, request):
-        ...
+    def translate(self, payload: bytes, request: SourceRequest) -> SourceCatalog:
+        if payload != b"demo/chat" or request.hosts:
+            raise SyncError("DemoSource supports only its fixed model payload")
+        model = ModelMetadata(
+            key="demo/chat",
+            name="Demo Chat",
+            type=ModelType.CHAT,
+            modalities=ModelModalities(input=(Modality.TEXT,), output=(Modality.TEXT,)),
+        )
+        selected = model.key in request.refs
+        return SourceCatalog(
+            models={model.key: model} if selected else {},
+            hosts={},
+            total_models=1,
+            total_providers=1,
+            unreferenced_models=() if selected else (model.key,),
+        )
 
-registry = SourceRegistry.with_builtins()
-registry.register(MySource())
+
+def main() -> None:
+    registry = SourceRegistry.with_builtins()
+    registry.register(DemoSource())
+    source = registry.get("demo")
+    with TemporaryDirectory() as directory:
+        payload = source.fetch(SyncContext(cache_dir=Path(directory)))
+        catalog = source.translate(payload, SourceRequest(refs=("demo/chat",)))
+    print("source registered:", source.info.id)
+    for key, model in catalog.models.items():
+        print(key, model.name)
+
+
+if __name__ == "__main__":
+    main()
 ```
+
+预期输出：
+
+```text
+source registered: demo
+demo/chat Demo Chat
+```
+
+注册只影响当前 `SourceRegistry` 实例，不会让另一个 CLI 进程自动发现该源。
+需要写入快照时，由宿主把这个 registry 传给其 `sync()` 方法，并提供显式的模型文件、
+输出路径、`SourceConfig` 与 `SyncContext`。
 
 转换结果必须是统一类型，不是裸字典：
 

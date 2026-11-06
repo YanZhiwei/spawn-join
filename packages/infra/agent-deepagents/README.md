@@ -71,12 +71,51 @@ by [`spawn-join-llm-provider-langchain`](../llm-provider-langchain/README.md).
 
 ## Quick start
 
-The host can inject an existing `BaseChatModel` directly or pass a `ModelCatalog`.
-This integration snippet runs inside an async function and requires a `model.yaml`
-with `coordinator` and `worker` entries and their environment credentials. For a
-standalone, key-free first run, use the offline examples linked below.
+### 1. Run the complete offline examples first
+
+Run from the repository root; no model file or credentials are needed:
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+```
+
+Complete source: [basic supervisor](examples/basic_supervisor.py) and
+[governed delegation](examples/governed_delegation.py). Both use the adjacent
+[`fake_model.py`](examples/fake_model.py) for deterministic offline responses; run them in the
+repository rather than copying just one file. The first prints an assembly report, the worker's
+`research result` and `The supervisor's final answer.`; the second also prints an `Events:`
+lifecycle list. The full report repr is not a stable output contract.
+
+### 2. Connect your own model service
+
+The host can inject an existing `BaseChatModel` or pass a `ModelCatalog`. For this complete
+Catalog example, save `model.yaml` at the repository root, replace the endpoint/model placeholders
+with your service's values, and set `LLM_API_KEY` in the process environment (shared by both purposes):
+
+```yaml
+schema_version: 1
+default: coordinator
+models:
+  coordinator:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-supervisor-model
+    api_key_env: LLM_API_KEY
+  worker:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-worker-model
+    api_key_env: LLM_API_KEY
+```
+
+The models must support tool calling. Save the following as `supervisor_demo.py` at the repository
+root and run `uv run --locked --project packages/infra/agent-deepagents python supervisor_demo.py`.
+Executing the graph sends prompts to the configured service; response content depends on that service.
 
 ```python
+import asyncio
+
 from langchain_core.messages import HumanMessage
 from spawn_join_llm_provider_langchain import ModelCatalog
 
@@ -89,52 +128,50 @@ from spawn_join_agent_deepagents import (
     build_supervisor,
 )
 
-catalog = ModelCatalog.from_file("model.yaml")
-models = ModelBindings(
-    catalog=catalog,
-    bindings=(
-        ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
-        ModelBinding(ModelPurpose.WORKER, catalog="worker"),
-        ModelBinding(
-            ModelPurpose.SUMMARIZATION,
-            inherit_from=ModelPurpose.SUPERVISOR,
-        ),
-    ),
-)
-
-assembly = build_supervisor(
-    SupervisorSpec(
-        models=models,
-        name="coordinator",
-        subagents=(
-            SubAgentDefinition(
-                name="researcher",
-                description="Research a bounded question and return findings.",
-                system_prompt="Return a concise, source-grounded result.",
+async def main() -> None:
+    catalog = ModelCatalog.from_file("model.yaml", env_file=None)
+    models = ModelBindings(
+        catalog=catalog,
+        bindings=(
+            ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
+            ModelBinding(ModelPurpose.WORKER, catalog="worker"),
+            ModelBinding(
+                ModelPurpose.SUMMARIZATION,
+                inherit_from=ModelPurpose.SUPERVISOR,
             ),
         ),
     )
-)
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=models,
+            name="coordinator",
+            subagents=(
+                SubAgentDefinition(
+                    name="researcher",
+                    description="Research a bounded question and return findings.",
+                    system_prompt="Return a concise, source-grounded result.",
+                ),
+            ),
+        )
+    )
+    result = await assembly.graph.ainvoke(
+        {"messages": [HumanMessage(content="Research the topic.")]}
+    )
+    print(assembly.report)
+    print(result["messages"][-1].content)
 
-result = await assembly.graph.ainvoke(
-    {"messages": [HumanMessage(content="Research the topic.")]}
-)
-print(assembly.report)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 Assembly only reads configuration and creates a graph; it does not execute the graph, open external
 connections, or close host resources. Running `ainvoke`/`astream` uses the host's own models, tools,
 Store, Checkpointer, and business resources.
 
-Complete offline, key-free examples:
-
-- [`examples/basic_supervisor.py`](examples/basic_supervisor.py)
-- [`examples/governed_delegation.py`](examples/governed_delegation.py)
-
-```powershell
-uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
-uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
-```
+Configuration snippets below are composed into `SupervisorSpec`, not standalone programs.
+The complete governed-delegation example above shows how delegation and diagnostics are wired
+into assembly and execution.
 
 ## Model purposes
 
@@ -172,6 +209,9 @@ than appending a duplicate.
   `SupervisorSpec(allow_experimental_fork=True)`; it is outside the stable compatibility promise.
 
 ## Middleware scopes
+
+Here `supervisor_audit`, `worker_rate_limit` and `research_trace` are host-provided LangChain
+middleware instances. Pass the resulting configuration as `SupervisorSpec(middleware=middleware, ...)`.
 
 ```python
 from spawn_join_agent_deepagents import MiddlewareConfiguration
@@ -227,9 +267,9 @@ delegation = DelegationConfiguration(
 ## Diagnostics
 
 ```python
-from spawn_join_agent_deepagents import DiagnosticsConfig
+from spawn_join_agent_deepagents import DiagnosticEvent, DiagnosticsConfig
 
-def on_event(event):
+def on_event(event: DiagnosticEvent) -> None:
     print(event.event_type, event.subagent_name, event.outcome)
 
 diagnostics = DiagnosticsConfig(sync_callback=on_event)

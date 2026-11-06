@@ -58,6 +58,99 @@ import spawn_join_llm_provider
 
 ## 快速开始
 
+### 完整示例：配置、渠道检查与模型列表
+
+将下面整段保存到仓库根目录的 `channel_demo.py`，从仓库根目录执行：
+
+```powershell
+uv run --locked --project packages/core/llm-provider python channel_demo.py
+```
+
+`DemoChannel` 是示例自带的内存实现：返回固定结果，不访问示例 endpoint，也不读取密钥。
+它演示如何实现与消费 `Channel`；真实 HTTP 连接检查需要应用提供自己的实现。
+
+```python
+import asyncio
+from dataclasses import replace
+
+from spawn_join_llm_provider import (
+    Channel,
+    ChannelConfig,
+    ChannelStatus,
+    ChatCompletionsOptions,
+    ConfigurationError,
+    ModelInfo,
+    ModelPage,
+    PingResult,
+    ProtocolKind,
+    UnsupportedChannelOperationError,
+)
+
+
+class DemoChannel:
+    """An offline, single-page implementation for this example."""
+
+    def __init__(self, config: ChannelConfig) -> None:
+        self._config = config
+
+    @property
+    def config(self) -> ChannelConfig:
+        return self._config
+
+    async def ping(self) -> PingResult:
+        return PingResult(status=ChannelStatus.OK)
+
+    async def list_models(
+        self, *, cursor: str | None = None, limit: int | None = None
+    ) -> ModelPage:
+        if cursor is not None:
+            raise UnsupportedChannelOperationError("DemoChannel has only one page")
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be positive")
+        return ModelPage(models=(ModelInfo(id="demo-model"),))
+
+
+async def main() -> None:
+    config = ChannelConfig(
+        name="demo",
+        credential_ref="demo-key-reference",
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        timeout_seconds=30.0,
+    )
+    options = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
+    channel: Channel = DemoChannel(config)
+    health = await channel.ping()
+    print(f"{channel.config.name}: {health.status.value}")
+    if not health.ok:
+        return
+    page = await channel.list_models(limit=1)
+    print("models:", ", ".join(model.id for model in page.models))
+    print("max_output_tokens:", options.max_output_tokens)
+
+    try:
+        replace(config, timeout_seconds=0.0)
+    except ConfigurationError:
+        print("invalid timeout: rejected")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+预期输出：
+
+```text
+demo: ok
+models: demo-model
+max_output_tokens: 1024
+invalid timeout: rejected
+```
+
+`credential_ref` 是引用名称，`options` 是独立的推理配置；渠道连通性检查不消费推理选项。
+需要实际调用模型时，使用[适配包的完整快速开始](../../infra/llm-provider-langchain/README.zh-CN.md#快速开始)。
+下面进一步说明各个配置类型。
+
 ### 1. 描述一个 endpoint
 
 `EndpointConfig` 是共享的扁平配置，只包含协议、endpoint 和 timeout：
@@ -160,21 +253,8 @@ response = await model.ainvoke(
 
 ### Channel 契约
 
-```python
-from spawn_join_llm_provider import Channel
-
-class MyChannel:
-    @property
-    def config(self) -> ChannelConfig: ...
-
-    async def ping(self) -> PingResult: ...
-
-    async def list_models(
-        self, *, cursor: str | None = None, limit: int | None = None
-    ) -> ModelPage: ...
-```
-
-`Channel` 是 `Protocol`，实现不需要继承基类。
+`Channel` 是 `Protocol`，实现不需要继承基类。上方完整示例中的 `DemoChannel`
+展示了全部三个成员：只读 `config` 属性、异步 `ping()` 与 `list_models()`。
 
 `ping()` 只检查连通性和认证，不执行生成请求。`PingResult` 的 `ChannelStatus`：
 
@@ -242,6 +322,78 @@ Pydantic 是通用校验依赖，不引入 LangChain、Provider SDK 或网络/�
 
 长期边界见
 [ADR-0009](../../../docs/decisions/llm-provider/0009-model-metadata-and-sync.md)。
+
+### 完整示例：解析快照与覆盖元数据
+
+将以下代码保存为仓库根目录的 `metadata_demo.py`，执行：
+
+```powershell
+uv run --locked --project packages/core/llm-provider python metadata_demo.py
+```
+
+模型、来源与哈希均为演示数据，不代表真实服务的能力或采集结果。所有操作在内存中完成。
+
+```python
+import json
+
+from spawn_join_llm_provider import (
+    ConfigurationError,
+    apply_metadata_override,
+    decode_metadata_document,
+    parse_model_metadata_override,
+)
+
+
+def main() -> None:
+    snapshot = {
+        "schema_version": 1,
+        "sources": {
+            "demo": {
+                "url": "https://example.com/catalog.json",
+                "revision": "sha256:" + "0" * 64,
+                "fetched_at": "2026-01-01T00:00:00Z",
+                "license": "Example data only",
+            }
+        },
+        "models": {
+            "demo/chat": {
+                "name": "Demo Chat",
+                "type": "chat",
+                "modalities": {"input": ["text"], "output": ["text"]},
+                "limits": {"context": 8192, "output": 1024},
+            }
+        },
+        "channels": {},
+    }
+    document = decode_metadata_document(json.dumps(snapshot))
+    base = document.models["demo/chat"]
+    override = parse_model_metadata_override({"limits": {"output": 512}})
+    effective = apply_metadata_override(base, override)
+    print("model:", base.key)
+    print("base limits:", base.limits.context, base.limits.output)
+    print("effective limits:", effective.limits.context, effective.limits.output)
+
+    try:
+        decode_metadata_document('{"schema_version": 1, "schema_version": 1}')
+    except ConfigurationError:
+        print("duplicate key: rejected")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+预期输出：
+
+```text
+model: demo/chat
+base limits: 8192 1024
+effective limits: None 512
+duplicate key: rejected
+```
+
+`limits` 整段替换，因此未在覆盖中声明的 `context` 变为 `None`（未知），原模型保持不变。
+这里用标准库 `json.dumps` 编码输入字典；快照文件的生成和写入由同步工具负责。
 
 ## 设计边界
 

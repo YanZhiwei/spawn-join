@@ -71,6 +71,30 @@ uv sync --locked --directory packages/infra/llm-provider-langchain
 
 ## 快速开始
 
+### 离线构造：无需密钥或服务
+
+将下面代码保存为仓库根目录的 `construct_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python construct_demo.py`。
+它只构造并校验模型，不发请求；假密钥不能用于真实调用。预期输出为 `ChatOpenAI demo-model`。
+
+```python
+from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
+from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
+
+model = create_chat_model(
+    ChatModelConfig(
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        model="demo-model",
+    ),
+    api_key="offline-demo-not-a-real-key",
+    options=ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024),
+)
+print(type(model).__name__, model.model_name)
+```
+
+### 完整异步调用：连接自己的服务
+
 将示例保存为仓库根目录的 `quickstart.py`，按实际服务设置 `LLM_API_KEY`、`LLM_BASE_URL`
 和 `LLM_MODEL`，再执行
 `uv run --locked --project packages/infra/llm-provider-langchain python quickstart.py`。
@@ -80,28 +104,37 @@ uv sync --locked --directory packages/infra/llm-provider-langchain
 import asyncio
 import os
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
 from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
 
-async def main() -> None:
+def build_model() -> BaseChatModel:
     config = ChatModelConfig(
         protocol=ProtocolKind.CHAT_COMPLETIONS,
         endpoint=os.environ["LLM_BASE_URL"],
         model=os.environ["LLM_MODEL"],
         timeout_seconds=60.0,
     )
-    model = create_chat_model(
+    return create_chat_model(
         config,
         api_key=os.environ["LLM_API_KEY"],
         options=ChatCompletionsOptions(temperature=0.2),
     )
+
+
+async def main() -> None:
+    model = build_model()
     response = await model.ainvoke([HumanMessage(content="Hello")])
     print(response.content)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+预期打印服务返回的回复正文；具体文字不固定。后续工具与流式示例复用此文件的
+`build_model()`，导入时不会触发 `main()` 或发送请求。
 
 `api_key` 只在调用时传入，并立即包装为 `pydantic.SecretStr`；不会进入配置对象、repr 或日志。
 
@@ -137,6 +170,11 @@ models:
         mode: budget
         budget_tokens: 2048
 ```
+
+将上述 YAML 保存为仓库根目录的 `model.yaml`，并设置 `OPENAI_API_KEY` 与
+`ANTHROPIC_API_KEY`（或使用下方 `.env`）。将下面代码保存为 `catalog_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python catalog_demo.py`。
+这里只构造模型，预期列出 `fast` 和 `claude` 两个条目；示例模型名是占位值，真实调用前需替换。
 
 ```python
 from spawn_join_llm_provider_langchain import ModelCatalog
@@ -174,6 +212,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 `schema_version: 2` 的条目可以选择性声明元数据：
 
 ```yaml
+schema_version: 2
+default: fast
 models:
   fast:
     protocol: chat_completions
@@ -195,7 +235,13 @@ models:
             amount: 1.25
 ```
 
+上面的 v2 YAML 是独立的模型文件示例。先按[同步工具说明](../llm-model-sync/README.zh-CN.md#使用者安装与日常操作)
+生成 `model-metadata.json`，再保存下面代码为 `metadata_catalog_demo.py`，使用同一个适配包环境
+运行；两个数据文件都位于当前目录，且 `OPENAI_API_KEY` 已配置。
+
 ```python
+from spawn_join_llm_provider_langchain import ModelCatalog
+
 catalog = ModelCatalog.from_file(
     "model.yaml",
     metadata_file="model-metadata.json",
@@ -386,20 +432,43 @@ response = await model.ainvoke(
 
 ## 工具调用
 
-工具定义和工具选择使用 LangChain 原生 API：
+先保存完整的 `quickstart.py` 并配置同样的三个环境变量；将下面代码保存为同目录的
+`tools_demo.py`，执行 `uv run --locked --project packages/infra/llm-provider-langchain python tools_demo.py`。
+模型必须支持工具调用；示例完成一轮工具请求、应用执行、结果回传与最终回复。
 
 ```python
+import asyncio
+
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
+from quickstart import build_model
+
 
 @tool
 def lookup(order_id: str) -> str:
-    """Look up an order."""
-    return "shipped"
+    """Look up the shipping status of a demo order."""
+    return "shipped" if order_id == "A-100" else "unknown order"
 
-model_with_tools = model.bind_tools([lookup])
-response = await model_with_tools.ainvoke(
-    [HumanMessage(content="Where is order A-100?")]
-)
+
+async def main() -> None:
+    model = build_model()
+    messages: list[BaseMessage] = [HumanMessage(content="Where is order A-100?")]
+    response = await model.bind_tools([lookup]).ainvoke(messages)
+    messages.append(response)
+    if not response.tool_calls:
+        print(response.content)
+        return
+    for call in response.tool_calls:
+        if call["name"] != lookup.name:
+            raise ValueError("Unexpected tool requested")
+        output = lookup.invoke(call["args"])
+        messages.append(ToolMessage(content=str(output), tool_call_id=call["id"]))
+    final = await model.ainvoke(messages)
+    print(final.content)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 `response.tool_calls` 是 LangChain 的 `AIMessage` 字段；应用把结果作为 `ToolMessage`
@@ -407,10 +476,27 @@ response = await model_with_tools.ainvoke(
 
 ## 流式输出
 
+同样复用 `quickstart.py` 和环境变量。将下面代码保存为 `stream_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python stream_demo.py`。
+预期随着服务返回逐块输出文本；确切文本和分块由服务决定。
+
 ```python
-async for chunk in model.astream([HumanMessage(content="Say hello.")]):
-    if chunk.content:
-        print(chunk.content, end="")
+import asyncio
+
+from langchain_core.messages import HumanMessage
+from quickstart import build_model
+
+
+async def main() -> None:
+    model = build_model()
+    async for chunk in model.astream([HumanMessage(content="Say hello.")]):
+        if chunk.text:
+            print(chunk.text, end="", flush=True)
+    print()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 `astream` 产生 LangChain `AIMessageChunk`；文本、工具参数和 usage 元数据都直接来自

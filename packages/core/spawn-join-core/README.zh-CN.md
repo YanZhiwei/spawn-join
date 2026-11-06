@@ -34,6 +34,14 @@ import spawn_join_core
 print(spawn_join_core.__version__)
 ```
 
+也可以不创建脚本，直接从仓库根目录运行：
+
+```powershell
+uv run --locked --directory packages/core/spawn-join-core python -c "import spawn_join_core; print(spawn_join_core.__version__)"
+```
+
+预期输出为 `0.1.0`，无需密钥或网络请求。
+
 不存在可调用的公共 API、CLI 或配置项；阅读本 README 后不应推断出尚未实现的运行时能力。
 
 ## 边界

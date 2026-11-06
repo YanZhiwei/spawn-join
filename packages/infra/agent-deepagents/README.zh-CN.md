@@ -65,11 +65,50 @@ uv sync --locked --directory packages/infra/agent-deepagents
 
 ## 快速开始
 
-宿主可以直接注入已有的 `BaseChatModel`，也可以传入 `ModelCatalog`。
-下面是放在异步函数内的集成片段，需要 `model.yaml` 包含 `coordinator` 与 `worker` 条目，
-并配置对应的环境凭据。首次体验可直接运行下方无需密钥的完整离线示例。
+### 1. 先运行完整离线示例
+
+从仓库根目录执行，无需模型文件或密钥：
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+```
+
+完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)。
+它们使用同目录的 [`fake_model.py`](examples/fake_model.py) 提供确定性离线响应；请在仓库中
+运行这些文件，而不是单独复制其中一个文件。第一个示例输出装配报告、worker 的
+`research result` 和最终的 `The supervisor's final answer.`；第二个还输出 `Events:`
+生命周期列表。报告的完整 repr 不是稳定输出契约。
+
+### 2. 连接自己的模型服务
+
+宿主可以直接注入已有的 `BaseChatModel`，也可以传入 `ModelCatalog`。下面是完整的
+Catalog 集成：在仓库根目录保存 `model.yaml`，把示例 endpoint 和 model 替换成服务实际值，
+并在进程环境中设置 `LLM_API_KEY`（两个用途共享该凭据）：
+
+```yaml
+schema_version: 1
+default: coordinator
+models:
+  coordinator:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-supervisor-model
+    api_key_env: LLM_API_KEY
+  worker:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-worker-model
+    api_key_env: LLM_API_KEY
+```
+
+模型需要支持工具调用。将下面代码保存为仓库根目录的 `supervisor_demo.py`，执行
+`uv run --locked --project packages/infra/agent-deepagents python supervisor_demo.py`。
+执行图会将提示词发送给所配置的服务；回复内容由服务决定。
 
 ```python
+import asyncio
+
 from langchain_core.messages import HumanMessage
 from spawn_join_llm_provider_langchain import ModelCatalog
 
@@ -82,51 +121,48 @@ from spawn_join_agent_deepagents import (
     build_supervisor,
 )
 
-catalog = ModelCatalog.from_file("model.yaml")
-models = ModelBindings(
-    catalog=catalog,
-    bindings=(
-        ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
-        ModelBinding(ModelPurpose.WORKER, catalog="worker"),
-        ModelBinding(
-            ModelPurpose.SUMMARIZATION,
-            inherit_from=ModelPurpose.SUPERVISOR,
-        ),
-    ),
-)
-
-assembly = build_supervisor(
-    SupervisorSpec(
-        models=models,
-        name="coordinator",
-        subagents=(
-            SubAgentDefinition(
-                name="researcher",
-                description="Research a bounded question and return findings.",
-                system_prompt="Return a concise, source-grounded result.",
+async def main() -> None:
+    catalog = ModelCatalog.from_file("model.yaml", env_file=None)
+    models = ModelBindings(
+        catalog=catalog,
+        bindings=(
+            ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
+            ModelBinding(ModelPurpose.WORKER, catalog="worker"),
+            ModelBinding(
+                ModelPurpose.SUMMARIZATION,
+                inherit_from=ModelPurpose.SUPERVISOR,
             ),
         ),
     )
-)
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=models,
+            name="coordinator",
+            subagents=(
+                SubAgentDefinition(
+                    name="researcher",
+                    description="Research a bounded question and return findings.",
+                    system_prompt="Return a concise, source-grounded result.",
+                ),
+            ),
+        )
+    )
+    result = await assembly.graph.ainvoke(
+        {"messages": [HumanMessage(content="Research the topic.")]}
+    )
+    print(assembly.report)
+    print(result["messages"][-1].content)
 
-result = await assembly.graph.ainvoke(
-    {"messages": [HumanMessage(content="Research the topic.")]}
-)
-print(assembly.report)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 装配只读取配置并创建图，不会执行图、打开外部连接或关闭宿主资源。运行 `ainvoke`/`astream`
 时，使用宿主自己的模型、工具、Store、Checkpointer 和业务资源。
 
-离线、无密钥的完整示例：
-
-- [`examples/basic_supervisor.py`](examples/basic_supervisor.py)
-- [`examples/governed_delegation.py`](examples/governed_delegation.py)
-
-```powershell
-uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
-uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
-```
+后续章节的配置片段用于组合到 `SupervisorSpec`，不是独立程序。
+委派与诊断如何接入装配和执行，见上面的完整受控委派示例。
 
 ## 模型用途
 
@@ -161,6 +197,9 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/gove
   `SupervisorSpec(allow_experimental_fork=True)` 显式开启，且不进入稳定兼容承诺。
 
 ## Middleware 作用域
+
+下面的 `supervisor_audit`、`worker_rate_limit`、`research_trace` 是宿主提供的
+LangChain middleware 实例；构造后通过 `SupervisorSpec(middleware=middleware, ...)` 接入。
 
 ```python
 from spawn_join_agent_deepagents import MiddlewareConfiguration
@@ -210,9 +249,9 @@ delegation = DelegationConfiguration(
 ## 诊断
 
 ```python
-from spawn_join_agent_deepagents import DiagnosticsConfig
+from spawn_join_agent_deepagents import DiagnosticEvent, DiagnosticsConfig
 
-def on_event(event):
+def on_event(event: DiagnosticEvent) -> None:
     print(event.event_type, event.subagent_name, event.outcome)
 
 diagnostics = DiagnosticsConfig(sync_callback=on_event)

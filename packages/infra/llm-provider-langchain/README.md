@@ -76,6 +76,31 @@ Runtime dependencies:
 
 ## Quick start
 
+### Offline construction: no credentials or service required
+
+Save this as `construct_demo.py` at the repository root and run
+`uv run --locked --project packages/infra/llm-provider-langchain python construct_demo.py`.
+It only constructs and validates a model; it sends no request. The fake key cannot be used for
+real calls. Expected output: `ChatOpenAI demo-model`.
+
+```python
+from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
+from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
+
+model = create_chat_model(
+    ChatModelConfig(
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        model="demo-model",
+    ),
+    api_key="offline-demo-not-a-real-key",
+    options=ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024),
+)
+print(type(model).__name__, model.model_name)
+```
+
+### Complete async invocation: connect your service
+
 Save this as `quickstart.py` in the repository root. Set `LLM_API_KEY`, `LLM_BASE_URL`,
 and `LLM_MODEL` for your service, then run
 `uv run --locked --project packages/infra/llm-provider-langchain python quickstart.py`.
@@ -85,28 +110,37 @@ The invocation sends a request to that service; construction alone does not.
 import asyncio
 import os
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
 from spawn_join_llm_provider_langchain import ChatModelConfig, create_chat_model
 
-async def main() -> None:
+def build_model() -> BaseChatModel:
     config = ChatModelConfig(
         protocol=ProtocolKind.CHAT_COMPLETIONS,
         endpoint=os.environ["LLM_BASE_URL"],
         model=os.environ["LLM_MODEL"],
         timeout_seconds=60.0,
     )
-    model = create_chat_model(
+    return create_chat_model(
         config,
         api_key=os.environ["LLM_API_KEY"],
         options=ChatCompletionsOptions(temperature=0.2),
     )
+
+
+async def main() -> None:
+    model = build_model()
     response = await model.ainvoke([HumanMessage(content="Hello")])
     print(response.content)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+This prints the service's response body; exact wording varies. The tool and streaming examples
+below reuse `build_model()` from this file; importing it does not run `main()` or send a request.
 
 `api_key` is passed only at call time and immediately wrapped as `pydantic.SecretStr`; it never
 enters the configuration object, repr, or logs.
@@ -144,6 +178,12 @@ models:
         mode: budget
         budget_tokens: 2048
 ```
+
+Save the YAML above as `model.yaml` at the repository root and set `OPENAI_API_KEY` and
+`ANTHROPIC_API_KEY` (or use `.env` below). Save this code as `catalog_demo.py` and run
+`uv run --locked --project packages/infra/llm-provider-langchain python catalog_demo.py`.
+It constructs models only and lists the `fast` and `claude` entries. The example model names are
+placeholders; replace them before making real calls.
 
 ```python
 from spawn_join_llm_provider_langchain import ModelCatalog
@@ -188,6 +228,8 @@ Rules:
 Entries with `schema_version: 2` may optionally declare metadata:
 
 ```yaml
+schema_version: 2
+default: fast
 models:
   fast:
     protocol: chat_completions
@@ -209,7 +251,14 @@ models:
             amount: 1.25
 ```
 
+The v2 YAML above is a standalone model-file example. First generate `model-metadata.json`
+following the [sync tool guide](../llm-model-sync/README.md#users-installation-and-daily-operations).
+Save this as `metadata_catalog_demo.py` and run in the same adapter environment, with both data
+files in the current directory and `OPENAI_API_KEY` configured.
+
 ```python
+from spawn_join_llm_provider_langchain import ModelCatalog
+
 catalog = ModelCatalog.from_file(
     "model.yaml",
     metadata_file="model-metadata.json",
@@ -409,20 +458,45 @@ References: [LangChain OpenAI integration](https://docs.langchain.com/oss/python
 
 ## Tool calling
 
-Tool definition and tool choice use native LangChain APIs:
+First save the complete `quickstart.py` and configure the same three environment variables.
+Save this alongside it as `tools_demo.py` and run
+`uv run --locked --project packages/infra/llm-provider-langchain python tools_demo.py`.
+The model must support tools; this demonstrates one round of tool requests, application execution,
+result messages and a final response.
 
 ```python
+import asyncio
+
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
+from quickstart import build_model
+
 
 @tool
 def lookup(order_id: str) -> str:
-    """Look up an order."""
-    return "shipped"
+    """Look up the shipping status of a demo order."""
+    return "shipped" if order_id == "A-100" else "unknown order"
 
-model_with_tools = model.bind_tools([lookup])
-response = await model_with_tools.ainvoke(
-    [HumanMessage(content="Where is order A-100?")]
-)
+
+async def main() -> None:
+    model = build_model()
+    messages: list[BaseMessage] = [HumanMessage(content="Where is order A-100?")]
+    response = await model.bind_tools([lookup]).ainvoke(messages)
+    messages.append(response)
+    if not response.tool_calls:
+        print(response.content)
+        return
+    for call in response.tool_calls:
+        if call["name"] != lookup.name:
+            raise ValueError("Unexpected tool requested")
+        output = lookup.invoke(call["args"])
+        messages.append(ToolMessage(content=str(output), tool_call_id=call["id"]))
+    final = await model.ainvoke(messages)
+    print(final.content)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 `response.tool_calls` is a LangChain `AIMessage` field; the application passes results back to the
@@ -430,10 +504,27 @@ model as `ToolMessage`, with no project conversion layer.
 
 ## Streaming
 
+Reuse `quickstart.py` and its environment variables. Save this as `stream_demo.py` and run
+`uv run --locked --project packages/infra/llm-provider-langchain python stream_demo.py`.
+It prints text incrementally; the service determines the exact text and chunk boundaries.
+
 ```python
-async for chunk in model.astream([HumanMessage(content="Say hello.")]):
-    if chunk.content:
-        print(chunk.content, end="")
+import asyncio
+
+from langchain_core.messages import HumanMessage
+from quickstart import build_model
+
+
+async def main() -> None:
+    model = build_model()
+    async for chunk in model.astream([HumanMessage(content="Say hello.")]):
+        if chunk.text:
+            print(chunk.text, end="", flush=True)
+    print()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 `astream` yields LangChain `AIMessageChunk`; text, tool arguments, and usage metadata all come

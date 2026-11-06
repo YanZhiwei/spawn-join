@@ -60,6 +60,101 @@ import spawn_join_llm_provider
 
 ## Quick start
 
+### Complete example: configuration, health and model discovery
+
+Save the entire block as `channel_demo.py` at the repository root, then run from that directory:
+
+```powershell
+uv run --locked --project packages/core/llm-provider python channel_demo.py
+```
+
+`DemoChannel` is an in-memory implementation included in the example: it returns fixed results,
+never contacts the example endpoint and reads no credentials. It demonstrates implementing and
+consuming `Channel`; an application supplies its own implementation for real HTTP checks.
+
+```python
+import asyncio
+from dataclasses import replace
+
+from spawn_join_llm_provider import (
+    Channel,
+    ChannelConfig,
+    ChannelStatus,
+    ChatCompletionsOptions,
+    ConfigurationError,
+    ModelInfo,
+    ModelPage,
+    PingResult,
+    ProtocolKind,
+    UnsupportedChannelOperationError,
+)
+
+
+class DemoChannel:
+    """An offline, single-page implementation for this example."""
+
+    def __init__(self, config: ChannelConfig) -> None:
+        self._config = config
+
+    @property
+    def config(self) -> ChannelConfig:
+        return self._config
+
+    async def ping(self) -> PingResult:
+        return PingResult(status=ChannelStatus.OK)
+
+    async def list_models(
+        self, *, cursor: str | None = None, limit: int | None = None
+    ) -> ModelPage:
+        if cursor is not None:
+            raise UnsupportedChannelOperationError("DemoChannel has only one page")
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be positive")
+        return ModelPage(models=(ModelInfo(id="demo-model"),))
+
+
+async def main() -> None:
+    config = ChannelConfig(
+        name="demo",
+        credential_ref="demo-key-reference",
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        timeout_seconds=30.0,
+    )
+    options = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
+    channel: Channel = DemoChannel(config)
+    health = await channel.ping()
+    print(f"{channel.config.name}: {health.status.value}")
+    if not health.ok:
+        return
+    page = await channel.list_models(limit=1)
+    print("models:", ", ".join(model.id for model in page.models))
+    print("max_output_tokens:", options.max_output_tokens)
+
+    try:
+        replace(config, timeout_seconds=0.0)
+    except ConfigurationError:
+        print("invalid timeout: rejected")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Expected output:
+
+```text
+demo: ok
+models: demo-model
+max_output_tokens: 1024
+invalid timeout: rejected
+```
+
+`credential_ref` is a reference name; `options` is separate inference configuration, not input to
+a connectivity check. For actual model calls, use the
+[adapter's complete quick start](../../infra/llm-provider-langchain/README.md#quick-start).
+The following sections explain the individual configuration types.
+
 ### 1. Describe an endpoint
 
 `EndpointConfig` is the shared flat configuration containing only protocol, endpoint, and timeout:
@@ -165,21 +260,9 @@ inference, strength-to-token-budget conversion, or automatic degradation.
 
 ### Channel contract
 
-```python
-from spawn_join_llm_provider import Channel
-
-class MyChannel:
-    @property
-    def config(self) -> ChannelConfig: ...
-
-    async def ping(self) -> PingResult: ...
-
-    async def list_models(
-        self, *, cursor: str | None = None, limit: int | None = None
-    ) -> ModelPage: ...
-```
-
-`Channel` is a `Protocol`; implementations do not need to inherit a base class.
+`Channel` is a `Protocol`; implementations do not need to inherit a base class. The complete
+`DemoChannel` above implements all three members: the read-only `config` property and async
+`ping()` / `list_models()` methods.
 
 `ping()` checks connectivity and authentication only and performs no generation request.
 `PingResult`'s `ChannelStatus` values:
@@ -251,6 +334,80 @@ Constraints:
 
 See [ADR-0009](../../../docs/decisions/llm-provider/0009-model-metadata-and-sync.md) for the
 long-term boundary.
+
+### Complete example: parse a snapshot and override metadata
+
+Save this block as `metadata_demo.py` at the repository root and run:
+
+```powershell
+uv run --locked --project packages/core/llm-provider python metadata_demo.py
+```
+
+The model, provenance and digest are illustrative data, not claims about a real service or fetch.
+All operations stay in memory.
+
+```python
+import json
+
+from spawn_join_llm_provider import (
+    ConfigurationError,
+    apply_metadata_override,
+    decode_metadata_document,
+    parse_model_metadata_override,
+)
+
+
+def main() -> None:
+    snapshot = {
+        "schema_version": 1,
+        "sources": {
+            "demo": {
+                "url": "https://example.com/catalog.json",
+                "revision": "sha256:" + "0" * 64,
+                "fetched_at": "2026-01-01T00:00:00Z",
+                "license": "Example data only",
+            }
+        },
+        "models": {
+            "demo/chat": {
+                "name": "Demo Chat",
+                "type": "chat",
+                "modalities": {"input": ["text"], "output": ["text"]},
+                "limits": {"context": 8192, "output": 1024},
+            }
+        },
+        "channels": {},
+    }
+    document = decode_metadata_document(json.dumps(snapshot))
+    base = document.models["demo/chat"]
+    override = parse_model_metadata_override({"limits": {"output": 512}})
+    effective = apply_metadata_override(base, override)
+    print("model:", base.key)
+    print("base limits:", base.limits.context, base.limits.output)
+    print("effective limits:", effective.limits.context, effective.limits.output)
+
+    try:
+        decode_metadata_document('{"schema_version": 1, "schema_version": 1}')
+    except ConfigurationError:
+        print("duplicate key: rejected")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Expected output:
+
+```text
+model: demo/chat
+base limits: 8192 1024
+effective limits: None 512
+duplicate key: rejected
+```
+
+`limits` is replaced as a whole: the omitted `context` becomes `None` (unknown), while the original
+model is unchanged. Standard-library `json.dumps` encodes the input dictionary here; snapshot
+generation and file writing belong to the sync tool.
 
 ## Design boundaries
 

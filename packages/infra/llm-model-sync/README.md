@@ -37,6 +37,17 @@ boundary.
 uv sync --locked --directory packages/infra/llm-model-sync
 ```
 
+First verify the CLI from the repository root without network access:
+
+```powershell
+uv run --locked --directory packages/infra/llm-model-sync spawn-join-model-sync --help
+uv run --locked --directory packages/infra/llm-model-sync spawn-join-model-sync sources
+```
+
+Both exit successfully (`0`); `sources` includes the built-in `models.dev`. The `sync` commands
+below contact the selected metadata source. The built-in public source needs no `OPENAI_API_KEY`;
+that variable name in the model file is for the inference application.
+
 Declare shared models and source coordinates explicitly in `model.yaml`:
 
 ```yaml
@@ -82,19 +93,27 @@ Exit codes:
 | `2` | drift detected (dry-run or `--check`), or snapshot missing |
 | `3` | network, upstream structure, empty/shrunken response, or snapshot validation failure |
 
-Runtime reads must pass the snapshot path explicitly; the library searches no user directory and
-performs no network request:
+After `--apply`, save this as `read_snapshot.py` beside `model.yaml` and run there:
+`uv run --locked --project <repo>/packages/infra/llm-model-sync python read_snapshot.py`.
+It uses the sync package's existing protocol dependency: no additional LangChain installation,
+inference credentials or network access. It prints each snapshot model's key, display name and
+context size (`None` when unknown):
 
 ```python
-from spawn_join_llm_provider_langchain import ModelCatalog
+from pathlib import Path
 
-catalog = ModelCatalog.from_file(
-    "model.yaml",
-    metadata_file="model-metadata.json",
+from spawn_join_llm_provider import decode_metadata_document
+
+document = decode_metadata_document(
+    Path("model-metadata.json").read_text(encoding="utf-8")
 )
-for summary in catalog.models:
-    print(summary.name, summary.metadata_ref, summary.metadata)
+for key, metadata in document.models.items():
+    print(key, metadata.name, metadata.limits.context)
 ```
+
+To merge metadata with inference configuration, use `ModelCatalog.from_file(..., metadata_file=...)`
+in the [LangChain adapter environment](../llm-provider-langchain/README.md#model-metadata-snapshot).
+The application owns that environment and its credential configuration.
 
 ### Failure protection and rollback
 
@@ -152,29 +171,85 @@ catalog.json
 
 ### Adding a sync source
 
-Implement `MetadataSource`, responsible only for `fetch` and `translate`:
+Implement `MetadataSource`, responsible only for `fetch` and `translate`. Save this complete offline
+example as `source_demo.py` at the repository root and run
+`uv run --locked --project packages/infra/llm-model-sync python source_demo.py`.
+Fixed bytes demonstrate registration, fetching and typed projection. It sends no requests, writes no
+snapshot and cleans up its temporary directory. A real source must fetch and parse its own payload
+instead of using this fixed response.
 
 ```python
-from spawn_join_llm_model_sync import MetadataSource, SourceInfo, SourceRegistry
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-class MySource:
+from spawn_join_llm_model_sync import (
+    SourceCatalog,
+    SourceInfo,
+    SourceRegistry,
+    SourceRequest,
+    SyncContext,
+    SyncError,
+)
+from spawn_join_llm_provider import Modality, ModelMetadata, ModelModalities, ModelType
+
+
+class DemoSource:
     info = SourceInfo(
-        id="my-source",
-        display_name="My Source",
+        id="demo",
+        display_name="Offline Demo",
         homepage="https://example.com",
-        license="MIT",
+        license="Example data only",
         default_url="https://example.com/catalog.json",
     )
 
-    def fetch(self, context):
-        ...
+    def fetch(self, context: SyncContext) -> bytes:
+        return b"demo/chat"
 
-    def translate(self, payload, request):
-        ...
+    def translate(self, payload: bytes, request: SourceRequest) -> SourceCatalog:
+        if payload != b"demo/chat" or request.hosts:
+            raise SyncError("DemoSource supports only its fixed model payload")
+        model = ModelMetadata(
+            key="demo/chat",
+            name="Demo Chat",
+            type=ModelType.CHAT,
+            modalities=ModelModalities(input=(Modality.TEXT,), output=(Modality.TEXT,)),
+        )
+        selected = model.key in request.refs
+        return SourceCatalog(
+            models={model.key: model} if selected else {},
+            hosts={},
+            total_models=1,
+            total_providers=1,
+            unreferenced_models=() if selected else (model.key,),
+        )
 
-registry = SourceRegistry.with_builtins()
-registry.register(MySource())
+
+def main() -> None:
+    registry = SourceRegistry.with_builtins()
+    registry.register(DemoSource())
+    source = registry.get("demo")
+    with TemporaryDirectory() as directory:
+        payload = source.fetch(SyncContext(cache_dir=Path(directory)))
+        catalog = source.translate(payload, SourceRequest(refs=("demo/chat",)))
+    print("source registered:", source.info.id)
+    for key, model in catalog.models.items():
+        print(key, model.name)
+
+
+if __name__ == "__main__":
+    main()
 ```
+
+Expected output:
+
+```text
+source registered: demo
+demo/chat Demo Chat
+```
+
+Registration affects only this `SourceRegistry` instance; another CLI process will not automatically
+discover it. To write a snapshot, the host calls this registry's `sync()` method with explicit
+model-file/output paths, `SourceConfig` and `SyncContext`.
 
 Translation results must be unified types, not raw dictionaries:
 
