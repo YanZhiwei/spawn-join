@@ -29,8 +29,8 @@
 
 ## Decision
 
-- 保留 Specify CLI 1.2.3，使用 v0.4.2 发布 Catalog；Bug 使用该 CLI 随附的 1.0.1。
-- 当前交付组件由 v0.4.2 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
+- 保留 Specify CLI 1.2.3，使用 v0.4.3 发布 Catalog；Bug 使用该 CLI 随附的 1.0.1。
+- 当前交付组件由 v0.4.3 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
 - OpenCode 作为当前默认集成，保留已安装 Codex 与项目任务模板/技能定制。
 - 删除本项目手工拷贝的 sd、speckit-delivery 门面；不删除用户级共享文件或 Fireworks。
 - 配置由项目拥有，组件与原生命令由安装器/Bundle 管理；升级须重查来源、差异和定制保留情况。
@@ -55,7 +55,9 @@
 flagged 切片使用 stacked，integration 仍需单独评审。v0.3.0–v0.3.2 增加 Close、Docs Sync、
 方法适配和更严格的证据上下文；v0.4.1 增加由 manifest 管理的 `sd` alias、便携式 runtime
 coordinator、恢复/检查点契约和条件式质量/标准刷新；v0.4.2 增加逐任务关闭 transport、
-Close outcome 的历史 head/merge proof 和内部 slice/远端 publication group 区分。不得用修改发布文件或降级全局 CLI 掩盖未来
+Close outcome 的历史 head/merge proof 和内部 slice/远端 publication group 区分；v0.4.3 增加
+`delivery_runtime.py owner-result` 的 native receipt/result 封装和证据哈希，并移除 Feature
+在 Ralph 前重复调度的全局 Quality Brief。不得用修改发布文件或降级全局 CLI 掩盖未来
 漂移。升级 Release 或改变宿主时重新执行隔离验证。用户级旧入口保留供其他项目使用，本项目使用 Bundle 管理的
 项目级命令。
 
@@ -87,7 +89,9 @@ v0.2.2 中文兜底及其 `.github` 静态副本。2026-10-31 由
 [v0.4.1 evidence](../../../harness/evidence/delivery-v041-upgrade.md)。v0.4.2 在隔离核对
 CLI 1.2.3、公开 Catalog、13 个组件和项目配置保留后完成升级，新增逐任务关闭 transport、
 Close outcome 证明与 publication group 规划。详细结果见
-[v0.4.2 evidence](../../../harness/evidence/delivery-v042-upgrade.md)。
+[v0.4.2 evidence](../../../harness/evidence/delivery-v042-upgrade.md)。v0.4.3 在确认公开
+Catalog、Bundle 组件注册和项目配置保留后完成升级，新增 `owner-result` 及 Feature Workflow
+的 Brief 调整。详细结果见 [v0.4.3 evidence](../../../harness/evidence/delivery-v043-upgrade.md)。
 本 ADR 的 Accepted 只表示决策获批；不声明真实 Ralph 循环已运行。
 
 ## Revision history
@@ -115,3 +119,5 @@ Close outcome 证明与 publication group 规划。详细结果见
   禁止自动远端写入的边界不变，新增 alias/runtime/条件式刷新能力记录在 v0.4.1 evidence。
 - 2026-11-05：按维护者要求升级固定 Release 至 v0.4.2；CLI、Bundle 来源、配置保留和
   禁止自动远端写入的边界不变，新增 task-close/outcome/publication 契约记录在 v0.4.2 evidence。
+- 2026-11-06：按维护者要求升级固定 Release 至 v0.4.3；CLI、Bundle 来源、配置保留和
+  禁止自动远端写入的边界不变，新增 owner-result/Feature Brief 调整记录在 v0.4.3 evidence。
