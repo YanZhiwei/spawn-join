@@ -119,7 +119,7 @@ function Test-Evidence {
     $required = @('feature_id', 'phase_id', 'base_revision', 'head_revision',
         'working_directory', 'recorded_at', 'result')
     $files = @(Get-ChildItem -LiteralPath $evidenceDir -File -Filter '*.md' |
-            Where-Object { $_.Name -notin @('README.md', 'README.zh-CN.md') })
+            Where-Object { $_.Name -notin @('README.md', 'README.en.md') })
 
     foreach ($file in $files) {
         $relative = Get-RelativePath $rootPath $file.FullName

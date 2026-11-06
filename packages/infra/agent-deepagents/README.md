@@ -1,64 +1,58 @@
 # spawn-join-agent-deepagents
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[简体中文](README.md) | [English](README.en.md)
 
-`spawn-join-agent-deepagents` is the DeepAgents product assembly package for SpawnJoin. It turns
-recurring Agent wiring problems in real products into testable public contracts while preserving
-native DeepAgents, LangChain, and LangGraph execution, checkpointing, interrupt, resume, and
-streaming capabilities.
+`spawn-join-agent-deepagents` 是 SpawnJoin 的 DeepAgents 产品装配包。它把实际产品中反复出现的
+Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、LangChain 和 LangGraph 的原生
+执行、Checkpoint、interrupt、resume 和 streaming 能力。
 
-**Contents**
+**目录**
 
-- [Status and compatibility](#status-and-compatibility)
-- [Capabilities](#capabilities)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [Model purposes](#model-purposes)
-- [Subagents](#subagents)
-- [Middleware scopes](#middleware-scopes)
-- [Delegation](#delegation)
-- [Diagnostics](#diagnostics)
-- [Resources and recovery](#resources-and-recovery)
-- [Public API](#public-api)
-- [Errors and failure behavior](#errors-and-failure-behavior)
-- [Compatibility and limitations](#compatibility-and-limitations)
-- [Development and verification](#development-and-verification)
-- [Release and versioning](#release-and-versioning)
-- [Maintenance and contribution](#maintenance-and-contribution)
-- [Related documentation](#related-documentation)
-- [License](#license)
+- [状态与兼容性](#状态与兼容性)
+- [提供的能力](#提供的能力)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [模型用途](#模型用途)
+- [子代理](#子代理)
+- [Middleware 作用域](#middleware-作用域)
+- [委派](#委派)
+- [诊断](#诊断)
+- [资源与恢复](#资源与恢复)
+- [公共 API](#公共-api)
+- [错误与失败行为](#错误与失败行为)
+- [兼容性与限制](#兼容性与限制)
+- [开发与验证](#开发与验证)
+- [发布与版本](#发布与版本)
+- [维护与贡献](#维护与贡献)
+- [相关文档](#相关文档)
+- [许可证](#许可证)
 
-## Status and compatibility
+## 状态与兼容性
 
-- Version and stability: `0.1.0`, preview; public API may still change in documented ways during
-  `0.x`.
-- Runtime: Python `>=3.11`; DeepAgents `0.7.x`; LangChain/LangGraph 1.x.
-- Publication: local repository development only; not published to PyPI or a private registry.
+- 版本与稳定性：`0.1.0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
+- 运行时：Python `>=3.11`；DeepAgents `0.7.x`；LangChain/LangGraph 1.x。
+- 发布状态：当前仅支持仓库内本地开发，尚未发布到 PyPI 或私有 Registry。
 
-## Capabilities
+## 提供的能力
 
-- build a supervisor from explicit model purposes, returning a native LangGraph graph and an
-  immutable assembly report;
-- declarative and compiled subagents; compiled subagents keep their own graph, model, and internal
-  middleware;
-- three middleware scopes: supervisor, workers, and per-subagent override;
-- an explicit async-first delegation controller: concurrency limit, bounded FIFO, deadline,
-  cancellation, and failure semantics;
-- optional sync/async diagnostic callbacks and redacted assembly/lifecycle records;
-- the host owns Store, Checkpointer, MCP Session, sandbox, business tools, and any host-provided
-  Backend;
-- independent wheel/sdist, `py.typed`, package tests, quality profile, and CI matrix.
+- 从显式模型用途构建 supervisor，返回原生 LangGraph 图和不可变装配报告；
+- 声明式与 compiled 子代理；compiled 子代理保留自己的图、模型和内部中间件；
+- supervisor、workers、per-subagent override 三种 Middleware 作用域；
+- 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
+- 可选同步/异步诊断回调，以及脱敏的装配/生命周期记录；
+- 宿主拥有 Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend；
+- 独立 wheel/sdist、`py.typed`、包级测试、质量 profile 和 CI 矩阵。
 
-## Installation
+## 安装
 
-From the repository root, use this Distribution's own environment:
+从仓库根目录使用该 Distribution 自己的环境：
 
 ```powershell
 uv lock --check --directory packages/infra/agent-deepagents
 uv sync --locked --directory packages/infra/agent-deepagents
 ```
 
-Runtime dependencies:
+运行时依赖：
 
 - `deepagents>=0.7.32,<0.8`
 - `langchain>=1.4.7,<2.0`
@@ -66,17 +60,55 @@ Runtime dependencies:
 - `langgraph>=1.2,<2`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 
-This package does not re-parse `model.yaml`, `.env`, or Provider SDKs; configured models are created
-by [`spawn-join-llm-provider-langchain`](../llm-provider-langchain/README.md).
+本包不重复解析 `model.yaml`、`.env` 或 Provider SDK；配置模型由
+[`spawn-join-llm-provider-langchain`](../llm-provider-langchain/README.md) 创建。
 
-## Quick start
+## 快速开始
 
-The host can inject an existing `BaseChatModel` directly or pass a `ModelCatalog`.
-This integration snippet runs inside an async function and requires a `model.yaml`
-with `coordinator` and `worker` entries and their environment credentials. For a
-standalone, key-free first run, use the offline examples linked below.
+### 1. 先运行完整离线示例
+
+从仓库根目录执行，无需模型文件或密钥：
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+```
+
+完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)。
+它们使用同目录的 [`fake_model.py`](examples/fake_model.py) 提供确定性离线响应；请在仓库中
+运行这些文件，而不是单独复制其中一个文件。第一个示例输出装配报告、worker 的
+`research result` 和最终的 `The supervisor's final answer.`；第二个还输出 `Events:`
+生命周期列表。报告的完整 repr 不是稳定输出契约。
+
+### 2. 连接自己的模型服务
+
+宿主可以直接注入已有的 `BaseChatModel`，也可以传入 `ModelCatalog`。下面是完整的
+Catalog 集成：在仓库根目录保存 `model.yaml`，把示例 endpoint 和 model 替换成服务实际值，
+并在进程环境中设置 `LLM_API_KEY`（两个用途共享该凭据）：
+
+```yaml
+schema_version: 1
+default: coordinator
+models:
+  coordinator:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-supervisor-model
+    api_key_env: LLM_API_KEY
+  worker:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: your-worker-model
+    api_key_env: LLM_API_KEY
+```
+
+模型需要支持工具调用。将下面代码保存为仓库根目录的 `supervisor_demo.py`，执行
+`uv run --locked --project packages/infra/agent-deepagents python supervisor_demo.py`。
+执行图会将提示词发送给所配置的服务；回复内容由服务决定。
 
 ```python
+import asyncio
+
 from langchain_core.messages import HumanMessage
 from spawn_join_llm_provider_langchain import ModelCatalog
 
@@ -89,89 +121,85 @@ from spawn_join_agent_deepagents import (
     build_supervisor,
 )
 
-catalog = ModelCatalog.from_file("model.yaml")
-models = ModelBindings(
-    catalog=catalog,
-    bindings=(
-        ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
-        ModelBinding(ModelPurpose.WORKER, catalog="worker"),
-        ModelBinding(
-            ModelPurpose.SUMMARIZATION,
-            inherit_from=ModelPurpose.SUPERVISOR,
-        ),
-    ),
-)
-
-assembly = build_supervisor(
-    SupervisorSpec(
-        models=models,
-        name="coordinator",
-        subagents=(
-            SubAgentDefinition(
-                name="researcher",
-                description="Research a bounded question and return findings.",
-                system_prompt="Return a concise, source-grounded result.",
+async def main() -> None:
+    catalog = ModelCatalog.from_file("model.yaml", env_file=None)
+    models = ModelBindings(
+        catalog=catalog,
+        bindings=(
+            ModelBinding(ModelPurpose.SUPERVISOR, catalog="coordinator"),
+            ModelBinding(ModelPurpose.WORKER, catalog="worker"),
+            ModelBinding(
+                ModelPurpose.SUMMARIZATION,
+                inherit_from=ModelPurpose.SUPERVISOR,
             ),
         ),
     )
-)
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=models,
+            name="coordinator",
+            subagents=(
+                SubAgentDefinition(
+                    name="researcher",
+                    description="Research a bounded question and return findings.",
+                    system_prompt="Return a concise, source-grounded result.",
+                ),
+            ),
+        )
+    )
+    result = await assembly.graph.ainvoke(
+        {"messages": [HumanMessage(content="Research the topic.")]}
+    )
+    print(assembly.report)
+    print(result["messages"][-1].content)
 
-result = await assembly.graph.ainvoke(
-    {"messages": [HumanMessage(content="Research the topic.")]}
-)
-print(assembly.report)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-Assembly only reads configuration and creates a graph; it does not execute the graph, open external
-connections, or close host resources. Running `ainvoke`/`astream` uses the host's own models, tools,
-Store, Checkpointer, and business resources.
+装配只读取配置并创建图，不会执行图、打开外部连接或关闭宿主资源。运行 `ainvoke`/`astream`
+时，使用宿主自己的模型、工具、Store、Checkpointer 和业务资源。
 
-Complete offline, key-free examples:
+后续章节的配置片段用于组合到 `SupervisorSpec`，不是独立程序。
+委派与诊断如何接入装配和执行，见上面的完整受控委派示例。
 
-- [`examples/basic_supervisor.py`](examples/basic_supervisor.py)
-- [`examples/governed_delegation.py`](examples/governed_delegation.py)
+## 模型用途
 
-```powershell
-uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
-uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
-```
-
-## Model purposes
-
-| Purpose | Rule |
+| 用途 | 规则 |
 |---|---|
-| `SUPERVISOR` | must be bound directly; cannot inherit |
-| `WORKER` | used by declarative subagents and the default controlled `general-purpose`; may explicitly `inherit_from`; binding required by default |
-| `SUMMARIZATION` | required by default; may explicitly `inherit_from` |
+| `SUPERVISOR` | 必须直接绑定；不能继承 |
+| `WORKER` | 声明式子代理和默认受控的 `general-purpose` 使用；可显式 `inherit_from`；默认需要绑定 |
+| `SUMMARIZATION` | 默认必须绑定；可显式 `inherit_from` |
 
-- No implicit fallback to the supervisor, the Catalog default, or another purpose.
-- One model instance is resolved per purpose and reused across all consumers.
-- Inheritance must be explicit; cycles, missing bindings, unknown Catalog entries, and creation
-  failures fail before assembly.
-- Compiled subagents own their models; this package neither inspects nor replaces them.
+- 不允许隐式回退到 supervisor、Catalog 默认模型或另一个用途；
+- 同一用途只解析一个模型实例，并在所有消费者中复用；
+- 继承必须显式声明；循环、缺失、未知 Catalog 条目和创建失败都会在装配前报错；
+- compiled 子代理拥有自己的模型，本包不检查或替换。
 
-`SUMMARIZATION` is required by default because the DeepAgents default stack always includes
-summarization. The generated `SummarizationMiddleware` replaces the default instance in place rather
-than appending a duplicate.
+`SUMMARIZATION` 默认必填，因为 DeepAgents 的默认栈始终包含 summarization。生成的
+`SummarizationMiddleware` 会原位替换默认实例，而不是追加重复实例。
 
-## Subagents
+## 子代理
 
-- `SubAgentDefinition`: declarative worker supporting `tools`, `middleware`, `interrupt_on`,
-  `response_format`, `skills`, `permissions`, and context schema;
-- `CompiledSubAgentDefinition`: a host-provided runnable that keeps its own graph, model, and
-  internal middleware;
-- names must be unique across both forms;
-- `tools=None` means inherit upstream tools; `tools=()` means explicitly provide no extra tools;
-- by default, if `general-purpose` is not declared, the package injects a controlled
-  `general-purpose` using the `WORKER` model and `workers` middleware, and reports it;
-- `SupervisorSpec(control_default_subagent=False)` preserves the upstream supervisor-owned
-  `general-purpose`; the report marks it `upstream_default` and warns that `WORKER` and worker
-  middleware do not apply. If a model harness profile disables that default subagent, the report
-  entry represents the upstream default contract and the actual graph is authoritative;
-- `mode="fork"` is DeepAgents beta and requires explicit
-  `SupervisorSpec(allow_experimental_fork=True)`; it is outside the stable compatibility promise.
+- `SubAgentDefinition`：声明式 worker，支持 `tools`、`middleware`、`interrupt_on`、
+  `response_format`、`skills`、`permissions` 和上下文模式；
+- `CompiledSubAgentDefinition`：宿主提供的 runnable，保留自己的图、模型和内部中间件；
+- 名称在两种形态之间必须唯一；
+- `tools=None` 表示沿用上游工具继承，`tools=()` 表示显式不提供额外工具；
+- 默认情况下，如果没有声明 `general-purpose`，包会注入一个受控的 `general-purpose`：
+  使用 `WORKER` 模型和 `workers` middleware，并出现在装配报告中；
+- `SupervisorSpec(control_default_subagent=False)` 保留上游 supervisor-owned 的
+  `general-purpose`；报告将其标记为 `upstream_default`，并警告 `WORKER` 和 worker
+  middleware 不适用。若模型 harness profile 禁用了该默认子代理，报告条目表示上游默认约定，
+  最终以实际图为准；
+- `mode="fork"` 是 DeepAgents beta，只能通过
+  `SupervisorSpec(allow_experimental_fork=True)` 显式开启，且不进入稳定兼容承诺。
 
-## Middleware scopes
+## Middleware 作用域
+
+下面的 `supervisor_audit`、`worker_rate_limit`、`research_trace` 是宿主提供的
+LangChain middleware 实例；构造后通过 `SupervisorSpec(middleware=middleware, ...)` 接入。
 
 ```python
 from spawn_join_agent_deepagents import MiddlewareConfiguration
@@ -183,18 +211,17 @@ middleware = MiddlewareConfiguration(
 )
 ```
 
-Requested order: definition-level middleware, global worker middleware, named override, generated
-summarization middleware. DeepAgents replaces the default summarization in place by `.name`, so the
-final base-stack position is upstream-determined; the report records requested names and
-`replaced_defaults` without claiming summarization always executes last. Compiled subagents receive
-no injection.
+请求顺序：定义级 middleware、全局 worker middleware、命名 override、生成的
+summarization middleware。DeepAgents 会按 `.name` 原位替换默认 summarization，因此最终
+base-stack 位置由上游决定；报告记录请求名称和 `replaced_defaults`，不声称 summarization 一定最后执行。
+compiled 子代理不接收任何注入。
 
-- Duplicate `.name` values within one scope are rejected;
-- `"SummarizationMiddleware"` and internal package middleware names are reserved;
-- upstream `.name` replacement semantics are preserved; the package implements no second registry;
-- the assembly report records effective names and scopes.
+- 同一作用域内重复 `.name` 会被拒绝；
+- `"SummarizationMiddleware"` 和包内部 middleware 名称保留；
+- 上游 `.name` 替换语义原样保留，包不实现第二套 registry；
+- assembly report 记录实际生效的名称和作用域。
 
-## Delegation
+## 委派
 
 ```python
 from spawn_join_agent_deepagents import (
@@ -211,42 +238,35 @@ delegation = DelegationConfiguration(
 )
 ```
 
-- The controller is injected by the host or created explicitly and can be reused across runs in the
-  same event loop; no process-global state.
-- Bounded FIFO queue; exceeding `max_queue` immediately raises `DelegationQueueFullError`.
-- `deadline_seconds` covers queueing and execution; expiry raises `DelegationTimeoutError` and frees
-  the slot.
-- Parent cancellation clears queued/active state and propagates `asyncio.CancelledError`.
-- Worker failures preserve the original exception; timeout, cancellation, and failure are
-  distinguishable in diagnostics.
-- **The delegation policy supports asynchronous execution only.** With a policy configured, using
-  `invoke`/`stream` explicitly raises `UnsupportedSyncDelegationError` at the `task` call rather than
-  pretending to offer a preemptible synchronous deadline. Without a policy, synchronous execution
-  keeps native behavior.
+- 控制器由宿主注入或显式创建，可跨同一事件循环内的运行复用，不使用进程全局状态；
+- 有界 FIFO 队列；超过 `max_queue` 立即返回 `DelegationQueueFullError`；
+- `deadline_seconds` 覆盖排队和执行；到期抛出 `DelegationTimeoutError` 并清理槽位；
+- 父任务取消会清理排队/活动状态并传播 `asyncio.CancelledError`；
+- worker 失败保留原始异常；超时、取消和失败在诊断中可区分；
+- **委派策略只支持异步执行**。配置策略后使用 `invoke`/`stream` 会在 `task` 调用明确抛出
+  `UnsupportedSyncDelegationError`，不会伪装可抢占的同步 deadline。未配置策略时同步执行保持原生行为。
 
-## Diagnostics
+## 诊断
 
 ```python
-from spawn_join_agent_deepagents import DiagnosticsConfig
+from spawn_join_agent_deepagents import DiagnosticEvent, DiagnosticsConfig
 
-def on_event(event):
+def on_event(event: DiagnosticEvent) -> None:
     print(event.event_type, event.subagent_name, event.outcome)
 
 diagnostics = DiagnosticsConfig(sync_callback=on_event)
 ```
 
-- The assembly report is immutable and contains safe labels only.
-- Lifecycle records distinguish selected, queued, started, completed, failed, timed_out, cancelled,
-  interrupted, and rejected.
-- Correlation comes from native `tool_call_id`, `run_id`, and optional `thread_id`.
-- Failures record only stable error categories/class names, never exception messages.
-- Synchronous execution calls the sync callback; asynchronous execution calls the sync callback then
-  awaits the async callback.
-- With only an async callback configured but synchronous execution used, no event loop is fabricated;
-  the assembly report records a warning.
-- Callback exceptions propagate; the host owns logging, tracing, UI, persistence, and backpressure.
+- 装配报告不可变且只包含安全标签；
+- 生命周期记录区分 selected、queued、started、completed、failed、timed_out、cancelled、
+  interrupted、rejected；
+- 相关性来自原生 `tool_call_id`、`run_id` 和可选的 `thread_id`；
+- 失败只记录稳定的错误类别/类名，不记录异常消息；
+- 同步执行调用同步回调；异步执行先调用同步回调，再 await 异步回调；
+- 只配置异步回调但使用同步执行时，不伪造事件循环，装配报告记录 warning；
+- 回调异常会传播；宿主负责日志、追踪、UI、持久化和背压。
 
-## Resources and recovery
+## 资源与恢复
 
 ```python
 from spawn_join_agent_deepagents import RecoveryContext
@@ -254,57 +274,50 @@ from spawn_join_agent_deepagents import RecoveryContext
 config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 ```
 
-- Store, Checkpointer, MCP Session, sandbox, business tools, and a host-provided Backend are created,
-  kept alive, and closed by the host.
-- When the host omits `backend`, the package creates an in-memory `StateBackend` with no external
-  close path, reported as `default_state`.
-- The package validates that explicit `interrupt_on`, declarative subagent `interrupt_on`, and
-  `FilesystemPermission(mode="interrupt")` require a checkpointer, and passes native LangGraph
-  semantics through.
-- Recovery uses native `Command(resume=...)` and the same `thread_id`.
-- The package does not create or close host resources and does not promise exactly-once side effects.
-- Callers should use `to_graph_config()` to generate native config or provide an equivalent
-  `configurable.thread_id` themselves.
+- Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend 由宿主创建、保持有效并关闭；
+- 宿主省略 `backend` 时，包会创建一个无外部关闭路径的内存 `StateBackend`，报告为 `default_state`；
+- 本包校验显式 `interrupt_on`、声明式子代理 `interrupt_on` 和
+  `FilesystemPermission(mode="interrupt")` 都需要 checkpointer，并透传原生 LangGraph 语义；
+- 恢复使用原生 `Command(resume=...)` 和同一 `thread_id`；
+- 本包不创建或关闭宿主资源，不承诺 exactly-once 副作用；
+- 调用方应使用 `to_graph_config()` 生成 native config，或自行提供等价的 `configurable.thread_id`。
 
-## Public API
+## 公共 API
 
-Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
+公共导出由 `spawn_join_agent_deepagents.__all__` 定义，主要包括：
 
-- `build_supervisor`, `SupervisorSpec`, `SupervisorAssembly`;
-- `ModelPurpose`, `ModelBinding`, `ModelBindings`, `ResolvedModelBindings`;
-- `SubAgentDefinition`, `CompiledSubAgentDefinition`, `SubAgentKind` (including `UPSTREAM_DEFAULT`),
-  `SubAgentMode`;
-- `MiddlewareConfiguration`, `MiddlewareScopeReport`;
-- `DelegationPolicy`, `DelegationController`, `DelegationConfiguration`;
-- `DiagnosticsConfig`, `DiagnosticCallback`, `AsyncDiagnosticCallback`, `DiagnosticEvent`,
-  `DiagnosticEventType`, `AssemblyReport`, `SubagentReport`, `DelegationReport`, `ResourceReport`;
-- `RecoveryContext`;
-- stable error types (`AgentConfigurationError` and subclasses).
+- `build_supervisor`、`SupervisorSpec`、`SupervisorAssembly`；
+- `ModelPurpose`、`ModelBinding`、`ModelBindings`、`ResolvedModelBindings`；
+- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`（含 `UPSTREAM_DEFAULT`）、
+  `SubAgentMode`；
+- `MiddlewareConfiguration`、`MiddlewareScopeReport`；
+- `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
+- `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、
+  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、`ResourceReport`；
+- `RecoveryContext`；
+- 稳定错误类型（`AgentConfigurationError` 及其子类）。
 
-Internal modules do not become public contracts merely because they are importable.
+内部模块不会因为可导入就自动成为公共契约。
 
-## Errors and failure behavior
+## 错误与失败行为
 
-- `AgentConfigurationError` is the assembly-time configuration error base; models, subagents,
-  middleware, recovery, and delegation have stable subclasses for callers to distinguish failures.
-- Configuration errors are raised before `create_deep_agent`, never returning a half-configured
-  graph; upstream assembly exceptions preserve `__cause__`.
-- Delegation queue-full, deadline, parent cancellation, worker failure, and interrupt have
-  distinguishable semantics; worker exceptions are never converted to success.
-- Diagnostic callback exceptions propagate and are never silently swallowed; async callbacks are
-  awaited only during async execution.
+- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复和委派
+  各有稳定子类，便于调用方区分失败类别。
+- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配异常保留 `__cause__`。
+- 委派队列满、deadline、父级取消、worker 失败和中断具有可区分语义；worker 原始异常
+  不会被转换为成功结果。
+- 诊断回调异常会传播，不会被静默吞掉；异步回调只在异步执行中 await。
 
-## Compatibility and limitations
+## 兼容性与限制
 
-- Python `>=3.11`;
-- DeepAgents `>=0.7.32,<0.8`; upgrading to 0.8 needs separate compatibility verification;
-- `fork` subagents are beta and outside the stable compatibility promise;
-- governed delegation is asynchronous only; synchronous policies explicitly error;
-- no MCP Server, database, sandbox, Web/SSE, production observability backend,
-  tenant/authorization/billing, artifact ledger, or UI;
-- no automatic PR, publication, or background scheduling.
+- Python `>=3.11`；
+- DeepAgents `>=0.7.32,<0.8`；升级到 0.8 需要单独的兼容验证；
+- `fork` 子代理是 beta，不包含在稳定兼容承诺中；
+- 受控委派仅异步；同步策略明确报错；
+- 不实现 MCP Server、数据库、沙箱、Web/SSE、生产观测后端、租户/授权/计费、产物台账或 UI；
+- 不提供自动 PR、发布或后台调度。
 
-## Development and verification
+## 开发与验证
 
 ```powershell
 uv lock --check --directory packages/infra/agent-deepagents
@@ -312,39 +325,33 @@ uv sync --locked --directory packages/infra/agent-deepagents
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ```
 
-- Layout: `src/spawn_join_agent_deepagents/` is runtime source, `tests/` holds offline tests, and
-  `examples/` contains executable examples; the package ships its own `uv.lock`, `py.typed`, and
-  `LICENSE`.
-- Required tools: uv `>=0.7.13`, PowerShell 7, Git, Node.js 22+ (Pyright wrapper), and the package
-  dev group's Black/isort/Ruff/Pyright/pytest.
-- The package quality gate runs Black/isort, Ruff, Pyright strict, pytest, wheel/sdist, isolated
-  installation, `pip check`, and isolated import. Offline tests use no real keys and connect to no
-  external service.
+- 布局：`src/spawn_join_agent_deepagents/` 是运行时源码，`tests/` 是离线测试，
+  `examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed` 和 `LICENSE`。
+- 必需工具：uv `>=0.7.13`、PowerShell 7、Git、Node.js 22+（Pyright 包装器），以及包
+  dev group 中的 Black/isort/Ruff/Pyright/pytest。
+- 包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、隔离安装、
+  `pip check` 和隔离导入。离线测试不读取真实密钥、不连接外部服务。
 
-## Release and versioning
+## 发布与版本
 
-This package uses an independent version and independent wheel/sdist; it is not implicitly released
-with other Distributions. The current version is `0.1.0` and is unpublished; publication requires the
-repository quality gates, independent review, and separate publication authorization. Breaking
-public API changes should update version, documentation, and compatibility notes and rerun package
-and repository gates.
+本包使用独立版本号和独立 wheel/sdist，不随其他 Distribution 隐式发布。当前版本为
+`0.1.0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
+破坏性变更应更新版本、文档和兼容性说明，并重新运行包级与仓库级门禁。
 
-## Maintenance and contribution
+## 维护与贡献
 
-This package is owned by the SpawnJoin repository maintainers; changes follow `AGENTS.md`,
-[package boundaries](../../../docs/architecture/package-boundaries.md), and
-[ADR-0010](../../../docs/decisions/agent/0010-deepagents-product-boundary.md). New capabilities or
-public-contract changes use the Feature delivery route; defects use Bugfix; pure documentation or
-mechanical changes use Lightweight. Before committing, provide quality, standards, and review evidence
-bound to the current diff.
+本包由 SpawnJoin 仓库维护者拥有；变更遵循 `AGENTS.md`、[包边界](../../../docs/architecture/package-boundaries.md)
+和 [ADR-0010](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)。新能力或公共
+契约变更走 Feature 交付路由；缺陷走 Bugfix；纯文档或机械改动走 Lightweight。提交前必须
+提供与当前 diff 绑定的质量、标准和评审证据。
 
-## Related documentation
+## 相关文档
 
-- [ADR-0010: DeepAgents product boundary](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
-- [Package boundaries](../../../docs/architecture/package-boundaries.md)
-- [Repository map](../../../docs/architecture/repository-map.md)
-- [Quality gates](../../../docs/development/quality-gates.md)
+- [ADR-0010：DeepAgents 产品边界](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
+- [包边界](../../../docs/architecture/package-boundaries.md)
+- [仓库地图](../../../docs/architecture/repository-map.md)
+- [质量门说明](../../../docs/development/quality-gates.md)
 
-## License
+## 许可证
 
-This package is proprietary software. All rights reserved. See [LICENSE](LICENSE).
+本包为专有软件，保留所有权利。详见 [LICENSE](LICENSE)。
