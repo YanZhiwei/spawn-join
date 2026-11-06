@@ -33,6 +33,41 @@ Each material record should link to its source where possible, such as a file, c
 review finding, user decision, or Spec/Plan/Tasks path. Never write credentials, tokens, secrets, or
 unnecessary personal information.
 
+## Investigation continuity
+
+- Keep investigation questions, relevant hypotheses, and evidence in the existing Explore packet
+  or Bug assessment. Context holds only material summaries and exact references, not another
+  investigation file, state machine, or queue.
+- For a material hypothesis, identify its trigger, source version/snapshot, a test or observation
+  distinguishing candidate explanations, support/rejection rationale, and remaining question/owner.
+  Without discriminating verification it remains unresolved, not a confirmed root cause.
+- Preserve rejected hypotheses and evidence; recheck version applicability on resume rather than
+  rediscovering old proposals. Multiple summaries of one upstream origin are one evidence source;
+  do not resolve conflicting evidence by vote.
+- Stop research when evidence supports the current decision and material conflicts are resolved
+  or explicitly blocking. Exhausting time/resources does not establish readiness. Return critical
+  gaps to their owner; handle non-critical limitations through the existing gate, not a new approval.
+
+## Phase handoff
+
+Use the [role navigation](../../docs/architecture/repository-map.md#role-based-reading) to locate
+sources. SD handoffs still use the installed
+[Phase handoff](../../.specify/extensions/delivery/templates/exploration.md#phase-handoff) and the
+receiving role's native packet, not a new receipt format. Lightweight work without an SD run needs
+only proportionate scope, sources, and verification; do not create a run or Feature to fill fields.
+
+A real handoff identifies the receiver/question, allowed operations/paths, exact approved sources
+and actual approval state, required paths/sections/symbols with authority and relevance, conditional
+reading triggers, existing input/requirements snapshot, expected evidence, and return conditions.
+Separate user requirements, agent interpretation, hypotheses, and open questions; do not reinterpret
+existing decisions by rewriting their summary.
+
+The receiver verifies required sources and identity before judging, then connects sources to its
+conclusion in its native output. Missing, stale, or conflicting critical inputs return an exact gap
+and recovery path. Authorized read-only investigation may continue, but the gap is not a pass.
+Routine dispatch references the approved snapshot; material changes follow the original owner's
+freshness/approval process rather than relabeling old hashes to fit new content.
+
 ## Source-of-truth boundaries
 
 - phase Build files own approved scope, non-goals, acceptance, and planned verification;

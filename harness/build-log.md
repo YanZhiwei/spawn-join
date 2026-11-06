@@ -1067,3 +1067,59 @@ Its 17 CI jobs, including `Quality Gate`, succeeded. The original PR head
 The original PR/author-review identity remains historical; no independent review receipt is claimed.
 The operational outcome is recorded in [the upgrade evidence](evidence/delivery-v043-upgrade.md),
 not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user work was preserved.
+
+## 2026-11-07 — Delivery Bundle v0.4.4 upgrade and governance reference review
+
+- Route: Lightweight; fixed Release installation and documentation/analysis, no new Feature.
+- Base/unchanged HEAD: `e292f0e3b746fec266e71dca142fc20356841978`; clean detached HEAD before work.
+- Working directory: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\mighty-harbor`.
+- Backed up installation/configuration files, rehearsed the fixed v0.4.4 catalog/Bundle update
+  in an isolated copy, then ran the same installer path in the current worktree.
+- Observed: 13 expected components; 164 protected project/template/skill hashes unchanged;
+  integration has no missing/invalid paths and reports the same 32 modified managed files as
+  the pre-upgrade backup. Automatic hooks and remote-write permissions are unchanged.
+- Pinned upstream validation: 37 runtime tests and 65 distribution tests passed; distribution
+  catalogs/manifests/workflows/Bundle are coherent. These are not model behavior eval results.
+- Targeted project docs, governance and static checks passed (one historical governance freshness
+  warning); quality/governance/static regression scripts passed 11/26/3 scenarios respectively.
+- Updated current installation references and saved
+  [Delivery/Harness reference analysis](../docs/development/delivery-harness-reference-review.md).
+  Recommendations remain unimplemented; no second task queue, knowledge store or approval was added.
+- Actual commands, subsequent project verification and limitations are recorded in
+  [v0.4.4 evidence](evidence/delivery-v044-upgrade.md).
+- No commit, push, PR, merge, publication, real SD/Ralph or independent Review was performed.
+
+## 2026-11-07 — Role-aware context and learning navigation
+
+- Route: Lightweight; user-authorized follow-up to the reference review, not a new Feature.
+- Base/unchanged HEAD: `e292f0e3b746fec266e71dca142fc20356841978`; detached worktree already contained
+  the preceding uncommitted v0.4.4 installation/analysis, which is retained separately.
+- Working directory: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\mighty-harbor`.
+- Captured 558 baseline file hashes and the outgoing diff outside the repository before edits.
+  Re-ran baseline docs/governance checks: pass, with the existing historical freshness warning.
+- Simplified AGENTS installation history; added role-based navigation to the repository map;
+  clarified hypothesis continuity, native handoffs, consumer checks and evidence-based learning
+  in the existing bilingual Context/Review guides. Updated the analysis adoption status.
+- Scope, post-edit verification and unexecuted work are recorded in
+  [optimization evidence](evidence/governance-context-optimization.md).
+- Post-edit docs/governance checks passed (62 files / 320 local targets; 0 governance errors /
+  1 historical warning), and all 26 governance regressions passed. The incremental audit verified
+  ten allowed paths, 549 baseline files unchanged, intact AGENTS sections 0.1 onward and 13 headings.
+- No new knowledge store, task queue, receipt, approval, runtime mechanism or automatic Hook;
+  no commit, push, PR, merge, actual SD/Ralph or model behavior eval.
+
+## 2026-11-07 — Delivery v0.4.5 升级与 PR 准备
+
+- Route: Lightweight。用户要求升级后创建 PR，包含此前已授权的治理文档优化；不合并 PR。
+- Base revision: `e292f0e3b746fec266e71dca142fc20356841978`。
+- Working directory: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\mighty-harbor`。
+- v0.4.5 在临时副本演练后通过原生 Bundle update 安装；保留项目配置和核心定制，显式同步
+  变化后的静态 PR 模板。安装内容、来源、失败尝试与实际结果见
+  [v0.4.5 evidence](evidence/delivery-v045-upgrade.md)。
+- 实际安装校验通过：73 个上游文件、13 个组件、39 个原生命令、sd alias 和模板一致；
+  164 个配置/模板/技能文件未变。上游 runtime 37 项、分发 67 项回归通过。
+- 延续 `delivery-v044-governance-context-20261107` run，不改名或重置状态；该名称保留首次
+  PR 请求的身份，当前范围包含 v0.4.5。此前独立 reviewer 调用中断，没有产生审查结果。
+- 在 `chore/delivery-v045-governance-context` 分支准备完整实际 diff；远端 main 仍为基准。
+  后续原生 Quality/Standards/Review 及 PR 身份记录在该 run 的 canonical evidence，
+  不把一次性安装的 Harness evidence 复制成第二份安装记录，不声明 Ralph 或模型 eval 通过。
