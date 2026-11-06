@@ -1,8 +1,6 @@
 # spawn-join-llm-provider
 
-[简体中文](#中文) | [English](#english)
-
-## 中文
+[简体中文](README.md) | [English](README.en.md)
 
 与框架无关的 LLM **channel 契约、协议选项和稳定错误**。
 
@@ -18,15 +16,27 @@
 [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md)
 负责；应用直接使用 LangChain 的 `BaseChatModel` 和消息类型。
 
-### 状态
+**目录**
 
-`0.1.0`。当前只交付契约和离线测试：
+- [状态](#状态)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [公共 API](#公共-api)
+- [模型元数据契约](#模型元数据契约)
+- [设计边界](#设计边界)
+- [开发与验证](#开发与验证)
+- [相关包](#相关包)
+- [维护与发布](#维护与发布)
+
+## 状态
+
+`0.1.0`，早期开发，要求 Python `>=3.11`。当前只交付契约和离线测试：
 
 - 没有真实 channel HTTP 实现；
 - 没有 `ChannelPool`、模型路由或健康选路；
 - 协议包只依赖 `spawn-join-core` 和通用校验库 Pydantic。
 
-### 安装
+## 安装
 
 这些包属于 SpawnJoin monorepo，尚未发布到 PyPI。每个 Distribution 都是独立 uv project：
 
@@ -34,15 +44,114 @@
 uv sync --locked --directory packages/core/llm-provider
 ```
 
-在仓库内直接导入：
+从仓库根目录，在本包环境中验证导入：
+
+```powershell
+uv run --locked --directory packages/core/llm-provider python -c "import spawn_join_llm_provider"
+```
+
+在使用该环境的脚本中：
 
 ```python
 import spawn_join_llm_provider
 ```
 
-### 快速开始
+## 快速开始
 
-#### 1. 描述一个 endpoint
+### 完整示例：配置、渠道检查与模型列表
+
+将下面整段保存到仓库根目录的 `channel_demo.py`，从仓库根目录执行：
+
+```powershell
+uv run --locked --project packages/core/llm-provider python channel_demo.py
+```
+
+`DemoChannel` 是示例自带的内存实现：返回固定结果，不访问示例 endpoint，也不读取密钥。
+它演示如何实现与消费 `Channel`；真实 HTTP 连接检查需要应用提供自己的实现。
+
+```python
+import asyncio
+from dataclasses import replace
+
+from spawn_join_llm_provider import (
+    Channel,
+    ChannelConfig,
+    ChannelStatus,
+    ChatCompletionsOptions,
+    ConfigurationError,
+    ModelInfo,
+    ModelPage,
+    PingResult,
+    ProtocolKind,
+    UnsupportedChannelOperationError,
+)
+
+
+class DemoChannel:
+    """An offline, single-page implementation for this example."""
+
+    def __init__(self, config: ChannelConfig) -> None:
+        self._config = config
+
+    @property
+    def config(self) -> ChannelConfig:
+        return self._config
+
+    async def ping(self) -> PingResult:
+        return PingResult(status=ChannelStatus.OK)
+
+    async def list_models(
+        self, *, cursor: str | None = None, limit: int | None = None
+    ) -> ModelPage:
+        if cursor is not None:
+            raise UnsupportedChannelOperationError("DemoChannel has only one page")
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be positive")
+        return ModelPage(models=(ModelInfo(id="demo-model"),))
+
+
+async def main() -> None:
+    config = ChannelConfig(
+        name="demo",
+        credential_ref="demo-key-reference",
+        protocol=ProtocolKind.CHAT_COMPLETIONS,
+        endpoint="https://api.example.com/v1",
+        timeout_seconds=30.0,
+    )
+    options = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
+    channel: Channel = DemoChannel(config)
+    health = await channel.ping()
+    print(f"{channel.config.name}: {health.status.value}")
+    if not health.ok:
+        return
+    page = await channel.list_models(limit=1)
+    print("models:", ", ".join(model.id for model in page.models))
+    print("max_output_tokens:", options.max_output_tokens)
+
+    try:
+        replace(config, timeout_seconds=0.0)
+    except ConfigurationError:
+        print("invalid timeout: rejected")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+预期输出：
+
+```text
+demo: ok
+models: demo-model
+max_output_tokens: 1024
+invalid timeout: rejected
+```
+
+`credential_ref` 是引用名称，`options` 是独立的推理配置；渠道连通性检查不消费推理选项。
+需要实际调用模型时，使用[适配包的完整快速开始](../../infra/llm-provider-langchain/README.md#快速开始)。
+下面进一步说明各个配置类型。
+
+### 1. 描述一个 endpoint
 
 `EndpointConfig` 是共享的扁平配置，只包含协议、endpoint 和 timeout：
 
@@ -56,7 +165,7 @@ endpoint = EndpointConfig(
 )
 ```
 
-#### 2. 描述一个渠道
+### 2. 描述一个渠道
 
 `ChannelConfig` 继承 `EndpointConfig`，增加渠道名称和凭据引用：
 
@@ -77,7 +186,7 @@ config = ChannelConfig(
 - `endpoint` 必须是绝对 `http(s)` URL，且不能内嵌用户名/密码。
 - 所有字段都是 keyword-only，非法值在构造时抛 `ConfigurationError`。
 
-#### 3. 使用协议选项
+### 3. 使用协议选项
 
 ```python
 from spawn_join_llm_provider import (
@@ -98,7 +207,7 @@ anthropic = AnthropicMessagesOptions(
 选项只表达协议原生参数，不包含工具定义或工具选择；工具调用使用 LangChain 的
 `bind_tools` / `tool_choice`。
 
-#### 思考参数：构造默认值与调用覆盖
+### 思考参数：构造默认值与调用覆盖
 
 这里的 `Options` 只覆盖模型**构造时的部分默认值**，不是 LangChain 调用能力的完整清单：
 
@@ -128,9 +237,9 @@ response = await model.ainvoke(
 [适配包的思考与思考强度](../../infra/llm-provider-langchain/README.md#思考与思考强度)。
 具体模型和服务端必须支持所传参数；本包不做能力推断、强度到 token 预算的换算或自动降级。
 
-### 公共 API
+## 公共 API
 
-#### 配置类型
+### 配置类型
 
 | 类型 | 用途 |
 |---|---|
@@ -142,23 +251,10 @@ response = await model.ainvoke(
 | `AnthropicMessagesOptions` | Anthropic Messages 原生选项 |
 | `ProtocolOptions` | 三种选项的联合类型 |
 
-#### Channel 契约
+### Channel 契约
 
-```python
-from spawn_join_llm_provider import Channel
-
-class MyChannel:
-    @property
-    def config(self) -> ChannelConfig: ...
-
-    async def ping(self) -> PingResult: ...
-
-    async def list_models(
-        self, *, cursor: str | None = None, limit: int | None = None
-    ) -> ModelPage: ...
-```
-
-`Channel` 是 `Protocol`，实现不需要继承基类。
+`Channel` 是 `Protocol`，实现不需要继承基类。上方完整示例中的 `DemoChannel`
+展示了全部三个成员：只读 `config` 属性、异步 `ping()` 与 `list_models()`。
 
 `ping()` 只检查连通性和认证，不执行生成请求。`PingResult` 的 `ChannelStatus`：
 
@@ -182,7 +278,7 @@ class MyChannel:
 
 空列表是合法的“没有模型”，不能用来表示失败或不支持。
 
-#### 错误
+### 错误
 
 ```text
 LLMProviderError
@@ -196,7 +292,7 @@ LLMProviderError
 配置非法、选项与协议不匹配、endpoint 无效、凭据引用为空或 timeout 非正数都会在构造时
 抛 `ConfigurationError`。
 
-### 模型元数据契约
+## 模型元数据契约
 
 `spawn_join_llm_provider.metadata` 提供只读、可校验的模型元数据类型：
 
@@ -227,7 +323,79 @@ Pydantic 是通用校验依赖，不引入 LangChain、Provider SDK 或网络/�
 长期边界见
 [ADR-0009](../../../docs/decisions/llm-provider/0009-model-metadata-and-sync.md)。
 
-### 设计边界
+### 完整示例：解析快照与覆盖元数据
+
+将以下代码保存为仓库根目录的 `metadata_demo.py`，执行：
+
+```powershell
+uv run --locked --project packages/core/llm-provider python metadata_demo.py
+```
+
+模型、来源与哈希均为演示数据，不代表真实服务的能力或采集结果。所有操作在内存中完成。
+
+```python
+import json
+
+from spawn_join_llm_provider import (
+    ConfigurationError,
+    apply_metadata_override,
+    decode_metadata_document,
+    parse_model_metadata_override,
+)
+
+
+def main() -> None:
+    snapshot = {
+        "schema_version": 1,
+        "sources": {
+            "demo": {
+                "url": "https://example.com/catalog.json",
+                "revision": "sha256:" + "0" * 64,
+                "fetched_at": "2026-01-01T00:00:00Z",
+                "license": "Example data only",
+            }
+        },
+        "models": {
+            "demo/chat": {
+                "name": "Demo Chat",
+                "type": "chat",
+                "modalities": {"input": ["text"], "output": ["text"]},
+                "limits": {"context": 8192, "output": 1024},
+            }
+        },
+        "channels": {},
+    }
+    document = decode_metadata_document(json.dumps(snapshot))
+    base = document.models["demo/chat"]
+    override = parse_model_metadata_override({"limits": {"output": 512}})
+    effective = apply_metadata_override(base, override)
+    print("model:", base.key)
+    print("base limits:", base.limits.context, base.limits.output)
+    print("effective limits:", effective.limits.context, effective.limits.output)
+
+    try:
+        decode_metadata_document('{"schema_version": 1, "schema_version": 1}')
+    except ConfigurationError:
+        print("duplicate key: rejected")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+预期输出：
+
+```text
+model: demo/chat
+base limits: 8192 1024
+effective limits: None 512
+duplicate key: rejected
+```
+
+`limits` 整段替换，因此未在覆盖中声明的 `context` 变为 `None`（未知），原模型保持不变。
+这里用标准库 `json.dumps` 编码输入字典；快照文件的生成和写入由同步工具负责。
+
+## 设计边界
 
 - 不定义 `Message`、内容块、工具、请求/响应、流式事件或 `LLMProvider`。
 - 不依赖 LangChain、OpenAI/Anthropic SDK 或 HTTP 客户端。
@@ -235,7 +403,7 @@ Pydantic 是通用校验依赖，不引入 LangChain、Provider SDK 或网络/�
 - `ChannelConfig` 只保证单个配置对象内的字段合法；跨配置唯一性由调用方或未来注册表负责。
 - 公开 API 由 `tests/test_public_api.py` 固定，新增或删除符号需要同步契约和评审。
 
-### 开发与验证
+## 开发与验证
 
 ```powershell
 uv lock --check --directory packages/core/llm-provider
@@ -257,7 +425,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
    [ADR-0006](../../../docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md)
    是否仍然一致。
 
-### 相关包
+## 相关包
 
 - [`spawn-join-core`](../spawn-join-core/README.md)：共享配置、异常和类型。
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md)：
@@ -266,276 +434,11 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
 
 许可证见 [LICENSE](LICENSE)。
 
-## English
-
-Framework-independent LLM **channel contracts, protocol options, and stable errors**.
-
-This package does not implement model calls and does not redefine LangChain messages, tools, or
-streaming types. It keeps only what LangChain does not provide but configuration and operations
-genuinely need:
-
-- one shared `EndpointConfig` (protocol, endpoint, timeout);
-- one `Channel` connection contract (`ping()`, `list_models()`);
-- typed options for three protocols;
-- a small set of stable configuration/channel errors.
-
-Model invocation belongs to
-[`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md); applications
-use LangChain `BaseChatModel` and message types directly.
-
-### Status
-
-`0.1.0`. This release delivers contracts and offline tests only:
-
-- no real channel HTTP implementation;
-- no `ChannelPool`, model routing, or health-based selection;
-- the protocol package depends only on `spawn-join-core` and the general validation library Pydantic.
-
-### Installation
-
-These packages belong to the SpawnJoin monorepo and are not published to PyPI. Each Distribution
-is an independent uv project:
-
-```powershell
-uv sync --locked --directory packages/core/llm-provider
-```
-
-Import directly inside the repository:
-
-```python
-import spawn_join_llm_provider
-```
-
-### Quick start
-
-#### 1. Describe an endpoint
-
-`EndpointConfig` is the shared flat configuration containing only protocol, endpoint, and timeout:
-
-```python
-from spawn_join_llm_provider import EndpointConfig, ProtocolKind
-
-endpoint = EndpointConfig(
-    protocol=ProtocolKind.CHAT_COMPLETIONS,
-    endpoint="https://api.example.com/v1",
-    timeout_seconds=30.0,
-)
-```
-
-#### 2. Describe a channel
-
-`ChannelConfig` extends `EndpointConfig` with a channel name and credential reference:
-
-```python
-from spawn_join_llm_provider import ChannelConfig, ProtocolKind
-
-config = ChannelConfig(
-    name="openai-primary",
-    credential_ref="openai-default",
-    protocol=ProtocolKind.CHAT_COMPLETIONS,
-    endpoint="https://api.example.com/v1",
-    timeout_seconds=30.0,
-)
-```
-
-- `name` is a non-sensitive, human-readable channel identifier used in logs and error locations.
-- `credential_ref` is only a secret reference, never plaintext.
-- `endpoint` must be an absolute `http(s)` URL without embedded username/password.
-- All fields are keyword-only; invalid values raise `ConfigurationError` at construction.
-
-#### 3. Use protocol options
-
-```python
-from spawn_join_llm_provider import (
-    AnthropicMessagesOptions,
-    AnthropicThinkingBudget,
-    ChatCompletionsOptions,
-    ResponsesOptions,
-)
-
-chat = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
-responses = ResponsesOptions(store=False, reasoning_effort="medium")
-anthropic = AnthropicMessagesOptions(
-    max_output_tokens=4096,
-    thinking=AnthropicThinkingBudget(budget_tokens=2048),
-)
-```
-
-Options express protocol-native parameters only; they do not contain tool definitions or tool
-choice. Use LangChain `bind_tools` / `tool_choice` for tool calls.
-
-#### Thinking parameters: construction defaults and per-call overrides
-
-These `Options` cover only some **construction-time defaults**, not the full set of LangChain call
-capabilities:
-
-| Option type | Thinking defaults configurable here |
-|---|---|
-| `ChatCompletionsOptions` | no thinking field yet |
-| `ResponsesOptions` | `reasoning_effort`: `low`, `medium`, `high` |
-| `AnthropicMessagesOptions` | `thinking`: fixed token budget or adaptive mode |
-
-**A missing Options field does not mean the model call cannot think.** The factory returns a
-native LangChain `BaseChatModel`; applications can pass `reasoning_effort`, Anthropic `thinking`,
-and other native parameters directly to `ainvoke()` without extending protocol options or
-converting requests themselves.
-
-For example, an already-created model can set per-call thinking strength:
-
-```python
-# Inside an async function; model was created by create_chat_model().
-response = await model.ainvoke(
-    [HumanMessage(content="Analyze the pros and cons of this proposal")],
-    reasoning_effort="high",
-    max_tokens=8192,
-)
-```
-
-`HumanMessage` comes from `langchain_core.messages`. For a complete construction example,
-Anthropic thinking modes, and compatibility notes, see
-[the adapter's thinking guide](../../infra/llm-provider-langchain/README.md#thinking-and-reasoning-effort).
-The actual model and server must support the parameters; this package performs no capability
-inference, strength-to-token-budget conversion, or automatic degradation.
-
-### Public API
-
-#### Configuration types
-
-| Type | Purpose |
-|---|---|
-| `EndpointConfig` | protocol + endpoint + timeout; shared base for `ChannelConfig` and `ChatModelConfig` |
-| `ChannelConfig` | `EndpointConfig` + `name` + `credential_ref` |
-| `ProtocolKind` | `chat_completions`, `responses`, `anthropic_messages` |
-| `ChatCompletionsOptions` | native Chat Completions options |
-| `ResponsesOptions` | native Responses options |
-| `AnthropicMessagesOptions` | native Anthropic Messages options |
-| `ProtocolOptions` | union of the three option types |
-
-#### Channel contract
-
-```python
-from spawn_join_llm_provider import Channel
-
-class MyChannel:
-    @property
-    def config(self) -> ChannelConfig: ...
-
-    async def ping(self) -> PingResult: ...
-
-    async def list_models(
-        self, *, cursor: str | None = None, limit: int | None = None
-    ) -> ModelPage: ...
-```
-
-`Channel` is a `Protocol`; implementations do not need to inherit a base class.
-
-`ping()` checks connectivity and authentication only and performs no generation request.
-`PingResult`'s `ChannelStatus` values:
-
-| Status | Meaning |
-|---|---|
-| `ok` | connectivity and authentication succeeded |
-| `authentication_failed` | invalid credential or insufficient permission |
-| `unreachable` | network/DNS/connection failure |
-| `timeout` | check timed out |
-| `invalid_response` | response could not be parsed or violated the contract |
-
-`list_models()` result semantics:
-
-| Situation | Representation |
-|---|---|
-| success with models | `ModelPage(models=(...))` |
-| success with no models | `ModelPage(models=())` |
-| operation unsupported | `UnsupportedChannelOperationError` |
-| network/auth/timeout failure | `ChannelUnavailableError` |
-| unparseable response | `ChannelResponseError` |
-
-An empty list is a legitimate "no models" result and must not represent failure or unsupported
-operation.
-
-#### Errors
-
-```text
-LLMProviderError
-├── ConfigurationError
-└── ChannelError
-    ├── ChannelUnavailableError
-    ├── UnsupportedChannelOperationError
-    └── ChannelResponseError
-```
-
-Invalid configuration, options that do not match the protocol, invalid endpoints, blank credential
-references, or non-positive timeouts raise `ConfigurationError` at construction.
-
-### Model metadata contract
-
-`spawn_join_llm_provider.metadata` provides read-only, validated model metadata types:
-
-- `ModelMetadata`, `ModelModalities`, `ModelCapabilitiesMetadata`, `ModelReasoning`,
-  `ModelLimits`, `ModelPricing`, `ModelPriceRate`, `ModelPriceTier`;
-- `ModelMetadataDocument`, `ModelSource`, `ModelChannel`, `ModelMetadataOverride`;
-- `parse_model_metadata_document`, `parse_model_metadata_override`,
-  `apply_metadata_override`, `decode_metadata_document`, `reject_duplicate_keys`.
-
-Implementation uses Pydantic dataclasses for boundary field validation, while public objects remain
-dataclasses supporting `dataclasses.replace`, `frozen`, `slots`, and `kw_only`. Unknown fields,
-type errors, and nested models are validated by Pydantic; business invariants such as duplicate
-rates, ordering, and cross-field references remain in `__post_init__`. Pydantic is a general
-validation dependency; no LangChain, Provider SDK, or network/file side effect is introduced.
-
-Constraints:
-
-- These types describe facts only; they do not participate in protocol selection, routing,
-  degradation, or capability negotiation. They are not the runtime `ModelCapabilities` abstraction
-  forbidden by ADR-0006.
-- Prices use rate lists with `modality`, `direction`, `unit`, and `amount`; amounts must be finite
-  and non-negative, units must be explicit, and optional long-context tiers are supported.
-- Snapshot documents accept `schema_version: 1` only; unknown fields, unknown enums, and duplicate
-  rates are rejected during parsing; top-level rates, tier rates, and tier thresholds are sorted.
-- Overrides replace whole blocks: `pricing`, `limits`, `capabilities`, `modalities`, `status`; no
-  field-level deep merge is performed.
-- This package reads no files and accesses no network; snapshot files and sync commands belong to
-  `spawn-join-llm-model-sync`.
-
-See [ADR-0009](../../../docs/decisions/llm-provider/0009-model-metadata-and-sync.md) for the
-long-term boundary.
-
-### Design boundaries
-
-- Does not define `Message`, content blocks, tools, requests/responses, streaming events, or
-  `LLMProvider`.
-- Does not depend on LangChain, OpenAI/Anthropic SDKs, or an HTTP client.
-- Does not implement real channel HTTP, pooling, routing, or health-based selection.
-- `ChannelConfig` guarantees validity only inside one configuration object; cross-config uniqueness
-  belongs to the caller or a future registry.
-- Public API is pinned by `tests/test_public_api.py`; adding or removing symbols requires a
-  synchronized contract and review.
-
-### Development and verification
-
-```powershell
-uv lock --check --directory packages/core/llm-provider
-uv sync --locked --directory packages/core/llm-provider
-pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
-```
-
-The quality command includes Black, isort, Ruff, Pyright strict, pytest, isolated build/install,
-and import checks. Tests use no network and no real credentials by default.
-
-When changing public API, maintainers must:
-
-1. update `src/spawn_join_llm_provider/` and the corresponding tests;
-2. synchronize exact exports in [`__init__.py`](src/spawn_join_llm_provider/__init__.py) and
-   [`test_public_api.py`](tests/test_public_api.py);
-3. check [package boundaries](../../../docs/architecture/package-boundaries.md) and
-   [ADR-0006](../../../docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md) for
-   consistency.
-
-### Related packages
-
-- [`spawn-join-core`](../spawn-join-core/README.md): shared configuration, exceptions, and types.
-- [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md): LangChain
-  model factory, protocol option mapping, and `model.yaml` / `.env` parsing. This package reads no
-  files or environment variables.
-
-See [LICENSE](LICENSE).
+## 维护与发布
+
+本包由 SpawnJoin 仓库维护者拥有，作者为 Yan Zhiwei。运行时源码位于
+`src/spawn_join_llm_provider/`，离线测试位于 `tests/`。质量门需要 PowerShell 7、uv 0.7.13+、
+Git 和 Node.js 22+，详见[质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。
+遵循[贡献规则](../../../AGENTS.md)，报告配置问题时提供最小复现。本包独立版本化，尚未
+发布；当前未配置自动发布或包级 changelog。公共契约变更需同步测试、两种语言 README、
+兼容性说明，并取得单独的发布授权。

@@ -113,6 +113,20 @@ None.
 
     Test-GovernanceResult 'valid structure' $true ''
 
+    $translatedReadme = Join-Path $fixture 'harness/evidence/README.en.md'
+    Write-FixtureFile $translatedReadme "# Evidence guide`n"
+    Test-GovernanceResult 'translated README is documentation, not evidence' $true ''
+    Write-FixtureFile $translatedReadme "[missing](missing-guide.md)`n"
+    Test-GovernanceResult 'translated README still checks links' $false `
+        'missing link target: missing-guide.md'
+    Remove-Item -LiteralPath $translatedReadme
+
+    $readmeNamedEvidence = Join-Path $fixture 'harness/evidence/README-audit.md'
+    Write-FixtureFile $readmeNamedEvidence "# Incomplete evidence`n"
+    Test-GovernanceResult 'other README-prefixed evidence is still validated' $false `
+        'missing field: feature_id'
+    Remove-Item -LiteralPath $readmeNamedEvidence
+
     $deliveryEvidence = Join-Path $fixture '.specify/delivery/fixture/evidence.md'
     $originalDeliveryEvidence = Get-Content -LiteralPath $deliveryEvidence -Raw
     Set-Content -LiteralPath $deliveryEvidence -Value ($originalDeliveryEvidence -replace
