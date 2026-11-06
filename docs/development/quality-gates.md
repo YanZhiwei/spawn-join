@@ -109,12 +109,14 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
 以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
-`scripts/test-governance.ps1` 用独立 fixture 覆盖 23 个治理场景（合法结构、缺字段、非法
+`scripts/test-governance.ps1` 用独立 fixture 覆盖 26 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
 evidence 抑制 freshness warning、缺失 superseded_by 目标、不安全 Delivery 配置、单双引号
 gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
-不安全 artifact policy 和自动 hook）。
+不安全 artifact policy 和自动 hook，以及中文 README 的证据豁免、链接检查和其他 README
+前缀文件仍需证据字段）。仅 `README.md` 与 `README.zh-CN.md` 作为 evidence 目录说明页豁免
+证据元数据检查；两者仍参与文档链接检查。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
