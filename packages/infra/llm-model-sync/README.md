@@ -8,6 +8,19 @@ It fetches a model catalog from an explicitly selected source, translates only t
 by `model.yaml`, validates the result, and writes a deterministic `model-metadata.json` snapshot. It
 never modifies `model.yaml`, never registers models automatically, and never runs on a schedule.
 
+**Contents**
+
+- [Status](#status)
+- [Installation and daily operations](#users-installation-and-daily-operations)
+  - [Failure protection and rollback](#failure-protection-and-rollback)
+  - [Storage](#storage)
+- [Architecture and extension](#maintainers-architecture-and-extension)
+  - [Package boundaries](#package-boundaries)
+  - [models.dev data flow](#modelsdev-data-flow)
+  - [Adding a sync source](#adding-a-sync-source)
+  - [Quality and maintenance](#quality-and-maintenance)
+- [Maintenance and releases](#maintenance-and-releases)
+
 ## Status
 
 Version `0.1.0`, early development; Python `>=3.11`. Runtime dependencies are
