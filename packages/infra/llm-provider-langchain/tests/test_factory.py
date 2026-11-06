@@ -1,6 +1,13 @@
 """Tests for the LangChain chat model factory."""
 
+import asyncio
+import inspect
+from typing import TypedDict, cast
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+from anthropic.resources.messages import Messages
+from anthropic.types import Message, TextBlock, Usage
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
@@ -186,3 +193,80 @@ def test_factory_rejects_negative_retries() -> None:
             model="example-model",
             max_retries=-1,
         )
+
+
+class _TokenOverride(TypedDict, total=False):
+    max_tokens: int
+
+
+@pytest.mark.parametrize("model_name", ["example-model", "claude-sonnet-4-5-20250929"])
+@pytest.mark.parametrize(
+    "options",
+    [
+        None,
+        AnthropicMessagesOptions(),
+        AnthropicMessagesOptions(max_output_tokens=2048),
+    ],
+)
+@pytest.mark.parametrize("override", [None, 512])
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_anthropic_budget_reaches_native_request(
+    model_name: str,
+    options: AnthropicMessagesOptions | None,
+    override: int | None,
+    asynchronous: bool,
+) -> None:
+    model = create_chat_model(
+        ChatModelConfig(
+            protocol=ProtocolKind.ANTHROPIC_MESSAGES,
+            endpoint="https://api.example.com",
+            model=model_name,
+        ),
+        api_key="sk-test-secret",
+        options=options,
+    )
+    native = ChatAnthropic(
+        model_name=model_name,
+        api_key=SecretStr("sk-test-secret"),
+        timeout=30.0,
+        stop=None,
+    )
+    expected = native.max_tokens
+    if options is not None and options.max_output_tokens is not None:
+        expected = options.max_output_tokens
+    if override is not None:
+        expected = override
+    assert expected is not None and expected > 0
+
+    raw_response = MagicMock()
+    raw_response.headers = {}
+    raw_response.parse.return_value = Message(
+        id="msg_test",
+        content=[TextBlock(type="text", text="offline response")],
+        model=model_name,
+        role="assistant",
+        stop_reason="end_turn",
+        stop_sequence=None,
+        type="message",
+        usage=Usage(input_tokens=2, output_tokens=1),
+    )
+    request = (
+        AsyncMock(return_value=raw_response)
+        if asynchronous
+        else MagicMock(return_value=raw_response)
+    )
+    method = "_acreate" if asynchronous else "_create"
+    kwargs: _TokenOverride = {} if override is None else {"max_tokens": override}
+    with patch.object(model, method, request):
+        response = (
+            asyncio.run(model.ainvoke("offline request", **kwargs))
+            if asynchronous
+            else model.invoke("offline request", **kwargs)
+        )
+
+    request.assert_called_once()
+    payload = cast(dict[str, object], request.call_args.args[0])
+    inspect.signature(Messages.create).bind(None, **payload)
+    assert payload["max_tokens"] == expected
+    assert payload["model"] == model_name
+    assert response.content == "offline response"

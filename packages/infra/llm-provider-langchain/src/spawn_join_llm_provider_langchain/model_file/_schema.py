@@ -10,6 +10,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Literal, cast
 
+from pydantic import ValidationError
+
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
     AnthropicThinking,
@@ -338,12 +340,22 @@ def _parse_metadata_source(
             optional=frozenset(),
             path=ref_path,
         )
+        provider = _as_str(ref_fields["provider"], f"{ref_path}.provider")
+        model = _as_str(ref_fields["model"], f"{ref_path}.model")
         try:
             result[source_id] = ModelSourceRef(
                 source_id=source_id,
-                provider=_as_str(ref_fields["provider"], f"{ref_path}.provider"),
-                model=_as_str(ref_fields["model"], f"{ref_path}.model"),
+                provider=provider,
+                model=model,
             )
+        except ValidationError as exc:
+            # Only schema-owned field names may enter the public error message.
+            locations = {error["loc"] for error in exc.errors(include_input=False)}
+            error_path = f"{path}.metadata_source"
+            if ("source_id",) not in locations:
+                field = "provider" if ("provider",) in locations else "model"
+                error_path = f"{ref_path}.{field}"
+            raise ConfigurationError(f"{error_path}: invalid source reference") from exc
         except ConfigurationError as exc:
             raise ConfigurationError(f"{ref_path}: {exc}") from exc
     return MappingProxyType(result)

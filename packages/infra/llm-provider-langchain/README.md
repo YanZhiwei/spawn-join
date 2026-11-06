@@ -189,6 +189,8 @@ print(summary.metadata_ref, summary.metadata)
   非法或 `base_model` 不匹配时抛 `ConfigurationError`。
 - 加载快照不发起网络请求，也不搜索 AppData；路径必须显式传入。
 - 元数据是只读描述，不驱动路由、降级或能力协商。
+- `metadata_source` 的坐标校验失败会转换为带字段路径的 `ConfigurationError`，公开消息
+  不回显非法值；原始异常保存在 `__cause__` 中，完整 traceback 可能包含原始输入。
 
 ### 协议与选项
 
@@ -199,6 +201,9 @@ print(summary.metadata_ref, summary.metadata)
 | `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking` |
 
 三种协议都显式设置 `max_retries`（默认 `0`）、endpoint 和 timeout。
+
+Anthropic 未配置 `max_output_tokens` 时沿用 LangChain 的模型默认输出预算；具体值由
+模型与已安装的 LangChain 版本决定。显式配置和原生调用时的 `max_tokens` 覆盖仍然有效。
 
 #### Chat Completions
 
@@ -456,7 +461,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langc
 ```
 
 质量命令包含 Black、isort、Ruff、Pyright strict、pytest、隔离构建/安装和导入检查。
-默认测试只构造模型，不访问网络，不使用真实凭据。
+默认测试覆盖模型构造、配置解析及离线请求转换，不访问网络，不使用真实凭据。
 
 维护者新增协议或选项时：
 
@@ -682,6 +687,9 @@ Rules:
 - Loading a snapshot performs no network request and searches no AppData; the path must be explicit.
 - Metadata is a read-only description and does not drive routing, degradation, or capability
   negotiation.
+- Invalid `metadata_source` coordinates raise `ConfigurationError` with a field path and no invalid
+  values in the public message. The original exception remains in `__cause__`; a full traceback may
+  include the original input.
 
 ### Protocols and options
 
@@ -692,6 +700,10 @@ Rules:
 | `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking` |
 
 All three protocols explicitly set `max_retries` (default `0`), endpoint, and timeout.
+
+When Anthropic `max_output_tokens` is omitted, the factory preserves LangChain's native
+model-specific output budget. Its value depends on the model and installed LangChain version.
+Explicit configuration and native call-time `max_tokens` overrides remain supported.
 
 #### Chat Completions
 
@@ -964,7 +976,8 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langc
 ```
 
 The quality command includes Black, isort, Ruff, Pyright strict, pytest, isolated build/install,
-and import checks. Default tests construct models only; they use no network and no real credentials.
+and import checks. Default tests cover model construction, configuration parsing, and offline request
+conversion; they use no network and no real credentials.
 
 When adding a protocol or option, maintainers must:
 
