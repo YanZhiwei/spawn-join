@@ -113,7 +113,7 @@ None.
 
     Test-GovernanceResult 'valid structure' $true ''
 
-    $translatedReadme = Join-Path $fixture 'harness/evidence/README.zh-CN.md'
+    $translatedReadme = Join-Path $fixture 'harness/evidence/README.en.md'
     Write-FixtureFile $translatedReadme "# Evidence guide`n"
     Test-GovernanceResult 'translated README is documentation, not evidence' $true ''
     Write-FixtureFile $translatedReadme "[missing](missing-guide.md)`n"

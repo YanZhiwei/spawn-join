@@ -1,70 +1,65 @@
 # spawn-join-llm-provider-langchain
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[简体中文](README.md) | [English](README.en.md)
 
-Turn **explicit protocol configuration** into a configured LangChain `BaseChatModel`.
+把**显式协议配置**转换成配置好的 LangChain `BaseChatModel`。
 
-Applications use LangChain messages, tools, streaming output, and callbacks directly; this package
-is responsible only for:
+应用直接使用 LangChain 的消息、工具、流式输出和回调；这个包只负责：
 
-- creating `ChatOpenAI` or `ChatAnthropic` from protocol / endpoint / model;
-- loading a set of models from an explicit `model.yaml` and creating one by `default` or name;
-- mapping typed options for three protocols into LangChain constructor arguments;
-- validating configuration and options before model creation;
-- wrapping the API key with `SecretStr`.
+- 根据 protocol / endpoint / model 创建 `ChatOpenAI` 或 `ChatAnthropic`；
+- 从显式 `model.yaml` 加载一组模型，按 `default` 或名字创建；
+- 把三种协议的类型化选项映射成 LangChain 构造参数；
+- 在创建模型前校验配置和选项；
+- 用 `SecretStr` 包装 API key。
 
-It does not redefine messages, content blocks, tools, requests/responses, streaming events, or
-`LLMProvider`.
+它不重新定义消息、内容块、工具、请求/响应、流式事件或 `LLMProvider`。
 
-**Contents**
+**目录**
 
-- [Why use this package](#why-use-this-package)
-- [Status](#status)
-- [Installation](#installation)
-- [Quick start](#quick-start)
-- [Model file and credentials](#model-file-and-credentials)
-- [Protocols and options](#protocols-and-options)
-- [Thinking and reasoning effort](#thinking-and-reasoning-effort)
-- [Tool calling](#tool-calling)
-- [Streaming](#streaming)
-- [Configuration and errors](#configuration-and-errors)
-- [Security](#security)
-- [Design boundaries](#design-boundaries)
-- [Development and verification](#development-and-verification)
-- [Related packages](#related-packages)
-- [Maintenance and releases](#maintenance-and-releases)
+- [为什么用这个包](#为什么用这个包)
+- [状态](#状态)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [模型文件与凭据](#模型文件与凭据)
+- [协议与选项](#协议与选项)
+- [思考与思考强度](#思考与思考强度)
+- [工具调用](#工具调用)
+- [流式输出](#流式输出)
+- [配置与错误](#配置与错误)
+- [安全](#安全)
+- [设计边界](#设计边界)
+- [开发与验证](#开发与验证)
+- [相关包](#相关包)
+- [维护与发布](#维护与发布)
 
-## Why use this package
+## 为什么用这个包
 
-If an application already runs on LangChain, using `ChatOpenAI` / `ChatAnthropic` directly is also
-valid. This package solves the **configuration boundary**:
+如果应用已经以 LangChain 为运行时，直接用 `ChatOpenAI` / `ChatAnthropic` 也可以。这个包
+解决的是**配置边界**：
 
-- protocol is decided by an explicit `ProtocolKind`, never guessed from a model name;
-- `ChatModelConfig` contains only fields required for inference and does not depend on
-  `ChannelConfig`;
-- options have typed and range validation instead of being silently forwarded through arbitrary
-  `**kwargs`;
-- channel/model configuration and LangChain construction details are centralized in one factory.
+- 协议由显式 `ProtocolKind` 决定，不根据模型名称猜测；
+- `ChatModelConfig` 只包含推理需要的字段，不依赖 `ChannelConfig`；
+- 选项有类型和范围校验，不通过任意 `**kwargs` 静默传递；
+- 渠道/模型配置和 LangChain 构造细节集中在一个工厂里。
 
-## Status
+## 状态
 
-`0.1.0`, early development; Python `>=3.11`. The factory performs offline construction
-and validation; the returned model can make real requests when invoked:
+`0.1.0`，早期开发，要求 Python `>=3.11`。工厂进行离线构造和校验；返回的模型可在调用时
+发起真实请求：
 
-- no real Provider requests;
-- no channel HTTP, `ChannelPool`, routing, or health-based selection;
-- `max_retries=0` by default, without hiding SDK retries.
+- 不发真实 Provider 请求；
+- 不实现 channel HTTP、`ChannelPool`、路由或健康选路；
+- 默认 `max_retries=0`，不隐藏 SDK 重试。
 
-## Installation
+## 安装
 
-These packages belong to the SpawnJoin monorepo and are not published to PyPI. Each Distribution is
-an independent uv project:
+这些包属于 SpawnJoin monorepo，尚未发布到 PyPI。每个 Distribution 都是独立 uv project：
 
 ```powershell
 uv sync --locked --directory packages/infra/llm-provider-langchain
 ```
 
-Runtime dependencies:
+运行时依赖：
 
 - `spawn-join-llm-provider`
 - `langchain-core`
@@ -74,14 +69,13 @@ Runtime dependencies:
 - `PyYAML`
 - `python-dotenv`
 
-## Quick start
+## 快速开始
 
-### Offline construction: no credentials or service required
+### 离线构造：无需密钥或服务
 
-Save this as `construct_demo.py` at the repository root and run
-`uv run --locked --project packages/infra/llm-provider-langchain python construct_demo.py`.
-It only constructs and validates a model; it sends no request. The fake key cannot be used for
-real calls. Expected output: `ChatOpenAI demo-model`.
+将下面代码保存为仓库根目录的 `construct_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python construct_demo.py`。
+它只构造并校验模型，不发请求；假密钥不能用于真实调用。预期输出为 `ChatOpenAI demo-model`。
 
 ```python
 from spawn_join_llm_provider import ChatCompletionsOptions, ProtocolKind
@@ -99,12 +93,12 @@ model = create_chat_model(
 print(type(model).__name__, model.model_name)
 ```
 
-### Complete async invocation: connect your service
+### 完整异步调用：连接自己的服务
 
-Save this as `quickstart.py` in the repository root. Set `LLM_API_KEY`, `LLM_BASE_URL`,
-and `LLM_MODEL` for your service, then run
-`uv run --locked --project packages/infra/llm-provider-langchain python quickstart.py`.
-The invocation sends a request to that service; construction alone does not.
+将示例保存为仓库根目录的 `quickstart.py`，按实际服务设置 `LLM_API_KEY`、`LLM_BASE_URL`
+和 `LLM_MODEL`，再执行
+`uv run --locked --project packages/infra/llm-provider-langchain python quickstart.py`。
+调用会向该服务发送请求；仅构造模型不会发送请求。
 
 ```python
 import asyncio
@@ -139,16 +133,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-This prints the service's response body; exact wording varies. The tool and streaming examples
-below reuse `build_model()` from this file; importing it does not run `main()` or send a request.
+预期打印服务返回的回复正文；具体文字不固定。后续工具与流式示例复用此文件的
+`build_model()`，导入时不会触发 `main()` 或发送请求。
 
-`api_key` is passed only at call time and immediately wrapped as `pydantic.SecretStr`; it never
-enters the configuration object, repr, or logs.
+`api_key` 只在调用时传入，并立即包装为 `pydantic.SecretStr`；不会进入配置对象、repr 或日志。
 
-## Model file and credentials
+## 模型文件与凭据
 
-Besides constructing configuration in code, a set of models can be loaded from an explicitly
-pathed `model.yaml`:
+除了代码构造配置，也可以从显式路径的 `model.yaml` 加载一组模型：
 
 ```yaml
 schema_version: 1
@@ -179,11 +171,10 @@ models:
         budget_tokens: 2048
 ```
 
-Save the YAML above as `model.yaml` at the repository root and set `OPENAI_API_KEY` and
-`ANTHROPIC_API_KEY` (or use `.env` below). Save this code as `catalog_demo.py` and run
-`uv run --locked --project packages/infra/llm-provider-langchain python catalog_demo.py`.
-It constructs models only and lists the `fast` and `claude` entries. The example model names are
-placeholders; replace them before making real calls.
+将上述 YAML 保存为仓库根目录的 `model.yaml`，并设置 `OPENAI_API_KEY` 与
+`ANTHROPIC_API_KEY`（或使用下方 `.env`）。将下面代码保存为 `catalog_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python catalog_demo.py`。
+这里只构造模型，预期列出 `fast` 和 `claude` 两个条目；示例模型名是占位值，真实调用前需替换。
 
 ```python
 from spawn_join_llm_provider_langchain import ModelCatalog
@@ -196,36 +187,29 @@ for item in catalog.models:
     print(item.name, item.model, item.display_name)
 ```
 
-`load_model_catalog("model.yaml", env_file=".env")` is the equivalent function entry point retained
-for compatibility. When `path` is omitted it reads `model.yaml` in the current working directory;
-`env_file` defaults to `"auto"`, reading `.env` in the current working directory when present, and
-`None` disables it.
+`load_model_catalog("model.yaml", env_file=".env")` 是等价的函数入口，保留用于兼容。省略 `path` 时默认读取当前工作目录的 `model.yaml`；`env_file` 默认 `"auto"`，读取当前工作目录的 `.env`（存在时），`None` 关闭。
 
-`.env` stores keys only; the model file stores variable names only:
+`.env` 只保存 key，模型文件只保存变量名：
 
 ```dotenv
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Rules:
+规则：
 
-- `.env` defaults to the current working directory's `.env` (missing file is skipped);
-  `env_file=None` disables it; no other path is searched.
-- Process environment (or a caller-provided `environ=`) takes precedence over `.env`.
-- A present but empty/blank process variable raises an error instead of falling back to `.env`.
-- `.env` uses `interpolate=False`; `${VAR}` is not expanded and process environment is not read.
-- Only variables referenced by `api_key_env` are snapshotted at load time; `os.environ` is never
-  modified.
-- No variable interpolation, inline `api_key`, multi-file merge, or hot reload.
-- All validation failures raise `ConfigurationError` with the YAML path; errors and `repr` contain
-  no secret values or file line contents.
-- A missing `display_name` falls back to the selection name; it participates in neither lookup,
-  `default`, nor protocol selection.
+- `.env` 默认读取当前工作目录的 `.env`（存在时，缺失跳过）；`env_file=None` 关闭；不搜索其他路径。
+- 进程环境（或调用方传入的 `environ=`）优先于 `.env`。
+- 进程环境存在但为空/空白时报错，不回退到 `.env`。
+- `.env` 使用 `interpolate=False`，`${VAR}` 不会被展开，也不会读取进程环境。
+- 加载时只快照 `api_key_env` 引用到的变量；不修改 `os.environ`。
+- 不实现变量插值、内联 `api_key`、多文件合并或热重载。
+- 所有校验失败抛 `ConfigurationError`，带 YAML 路径；错误和 `repr` 不含密钥或文件行内容。
+- `display_name` 缺省回退为选择名；它不参与查找、`default` 或协议选择。
 
-### Model metadata snapshot
+### 模型元数据快照
 
-Entries with `schema_version: 2` may optionally declare metadata:
+`schema_version: 2` 的条目可以选择性声明元数据：
 
 ```yaml
 schema_version: 2
@@ -251,10 +235,9 @@ models:
             amount: 1.25
 ```
 
-The v2 YAML above is a standalone model-file example. First generate `model-metadata.json`
-following the [sync tool guide](../llm-model-sync/README.md#users-installation-and-daily-operations).
-Save this as `metadata_catalog_demo.py` and run in the same adapter environment, with both data
-files in the current directory and `OPENAI_API_KEY` configured.
+上面的 v2 YAML 是独立的模型文件示例。先按[同步工具说明](../llm-model-sync/README.md#使用者安装与日常操作)
+生成 `model-metadata.json`，再保存下面代码为 `metadata_catalog_demo.py`，使用同一个适配包环境
+运行；两个数据文件都位于当前目录，且 `OPENAI_API_KEY` 已配置。
 
 ```python
 from spawn_join_llm_provider_langchain import ModelCatalog
@@ -267,28 +250,26 @@ summary = catalog.models[0]
 print(summary.metadata_ref, summary.metadata)
 ```
 
-Rules:
+规则：
 
-- `metadata_ref` uses explicit `<lab>/<model>` matching, never fuzzy name guessing.
-- `metadata_source` must exist together with `metadata_ref`; it is used only by sync tools to
-  resolve channel overrides, never for protocol selection or model creation.
-- Merge precedence: shared model facts → `channels.<entry-name>` → the entry's manual `metadata`
-  override.
-- `metadata_file=None` reads no snapshot and behaves exactly like v1; a provided path with a missing
-  file, invalid JSON, or mismatched `base_model` raises `ConfigurationError`.
-- Loading a snapshot performs no network request and searches no AppData; the path must be explicit.
-- Metadata is a read-only description and does not drive routing, degradation, or capability
-  negotiation.
+- `metadata_ref` 使用 `<lab>/<model>` 显式匹配，不做名称模糊猜测。
+- `metadata_source` 必须和 `metadata_ref` 同时存在；它只用于同步工具解析渠道覆盖，
+  不参与协议选择或模型创建。
+- 合并优先级：共享模型事实 → `channels.<条目名>` → 条目的 `metadata` 人工覆盖。
+- `metadata_file=None` 时不读取快照，行为与 v1 完全一致；提供路径但文件缺失、JSON
+  非法或 `base_model` 不匹配时抛 `ConfigurationError`。
+- 加载快照不发起网络请求，也不搜索 AppData；路径必须显式传入。
+- 元数据是只读描述，不驱动路由、降级或能力协商。
 
-## Protocols and options
+## 协议与选项
 
-| Protocol | Return type | Option mapping |
+| 协议 | 返回类型 | 选项映射 |
 |---|---|---|
-| `chat_completions` | `ChatOpenAI` (`use_responses_api=False`) | `temperature`, `max_completion_tokens`, `top_p`, `stop_sequences`, `seed` |
-| `responses` | `ChatOpenAI` (`use_responses_api=True`) | `temperature`, `max_completion_tokens`, `top_p`, `store`, `reasoning_effort`, `truncation` |
-| `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking` |
+| `chat_completions` | `ChatOpenAI`（`use_responses_api=False`） | `temperature`、`max_completion_tokens`、`top_p`、`stop_sequences`、`seed` |
+| `responses` | `ChatOpenAI`（`use_responses_api=True`） | `temperature`、`max_completion_tokens`、`top_p`、`store`、`reasoning_effort`、`truncation` |
+| `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking` |
 
-All three protocols explicitly set `max_retries` (default `0`), endpoint, and timeout.
+三种协议都显式设置 `max_retries`（默认 `0`）、endpoint 和 timeout。
 
 ### Chat Completions
 
@@ -336,20 +317,19 @@ options = AnthropicMessagesOptions(
 )
 ```
 
-`AnthropicThinkingAdaptive()` can be used for adaptive thinking. Budget mode requires
-`max_output_tokens` to exist and exceed `budget_tokens`.
+`AnthropicThinkingAdaptive()` 可用于自适应 thinking。budget 模式要求
+`max_output_tokens` 存在且大于 `budget_tokens`。
 
-## Thinking and reasoning effort
+## 思考与思考强度
 
-**Thinking can already be controlled through native LangChain call parameters, with no factory
-change or new Options field.** `create_chat_model()` returns a native `BaseChatModel`; protocol
-options are construction defaults, while per-call parameters go directly to LangChain and override
-defaults according to its rules.
+**当前就可以通过 LangChain 原生调用参数控制思考，无需修改工厂或新增 Options 字段。**
+`create_chat_model()` 返回原生 `BaseChatModel`；协议选项是构造默认值，单次调用参数直接
+交给 LangChain，并按其规则覆盖默认值。
 
-### Set effort for one call
+### 单次调用设置强度
 
-The following is a complete async example. `protocol` must match the server interface and can be
-`CHAT_COMPLETIONS`, `RESPONSES`, or `ANTHROPIC_MESSAGES`:
+以下是完整异步调用示例。`protocol` 必须与服务端接口匹配，可选择
+`CHAT_COMPLETIONS`、`RESPONSES` 或 `ANTHROPIC_MESSAGES`：
 
 ```python
 import asyncio
@@ -372,7 +352,7 @@ async def main() -> None:
     )
 
     response = await model.ainvoke(
-        [HumanMessage(content="Analyze the pros and cons of this proposal")],
+        [HumanMessage(content="分析这个方案的优缺点")],
         reasoning_effort="high",
         max_tokens=8192,
     )
@@ -382,87 +362,79 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-Set `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` before running. The URL should be the API base
-URL of the corresponding service; the model must support the selected protocol and parameters;
-actually executing `ainvoke()` sends a request to that service. The example explicitly sets
-`max_tokens` to satisfy Anthropic's required output budget; LangChain maps it to the corresponding
-token-limit parameter for OpenAI protocols. The budget must still satisfy the target model's
-limits.
+运行前设置 `LLM_BASE_URL`、`LLM_MODEL` 和 `LLM_API_KEY`。地址应使用对应服务的 API
+base URL，模型必须支持所选协议和参数；实际执行 `ainvoke()` 会向该服务发送请求。
+示例显式设置 `max_tokens`，以满足 Anthropic 的必填输出预算；LangChain 会为 OpenAI
+协议转换为相应的 token 上限参数。预算值仍需符合目标模型限制。
 
-LangChain maps the same `reasoning_effort` name per protocol:
+同一个 `reasoning_effort` 名称由 LangChain 按协议处理：
 
-| Protocol | Call parameter | Request mapping owned by LangChain |
+| 协议 | 调用参数 | LangChain 负责的请求映射 |
 |---|---|---|
 | `chat_completions` | `reasoning_effort="high"` | `reasoning_effort` |
 | `responses` | `reasoning_effort="high"` | `reasoning.effort` |
 | `anthropic_messages` | `reasoning_effort="high"` | `output_config.effort` |
 
-Applications need not assemble `reasoning` / `output_config` manually or convert effort into a
-token budget. Anthropic `effort` is an alias of LangChain `reasoning_effort`; usually pass only one.
+不需要在应用中手工组装 `reasoning` / `output_config`，也不需要把强度换算成 token
+预算。Anthropic 的 `effort` 是 LangChain `reasoning_effort` 的别名；通常只传一个即可。
 
-### Anthropic explicit thinking modes
+### Anthropic 显式思考模式
 
-The following snippets go inside an async function; `model` must be created with the
-`ANTHROPIC_MESSAGES` protocol and must use a model that supports the mode.
+以下片段放在异步函数内，`model` 必须由 `ANTHROPIC_MESSAGES` 协议创建，并使用支持
+相应模式的模型：
 
 ```python
-# Adaptive thinking with a specified effort.
+# 自适应思考，并指定投入强度。
 response = await model.ainvoke(
-    [HumanMessage(content="Analyze the pros and cons of this proposal")],
+    [HumanMessage(content="分析这个方案的优缺点")],
     thinking={"type": "adaptive"},
     reasoning_effort="high",
     max_tokens=8192,
 )
 ```
 
-For models that support a fixed budget or disabling thinking:
+对于支持固定预算或关闭思考的模型，也可以分别使用：
 
 ```python
-# Fixed budget: budget_tokens is at least 1024 and less than max_tokens.
+# 固定预算：budget_tokens 至少为 1024，且小于 max_tokens。
 response = await model.ainvoke(
-    [HumanMessage(content="Analyze the pros and cons of this proposal")],
+    [HumanMessage(content="分析这个方案的优缺点")],
     thinking={"type": "enabled", "budget_tokens": 2048},
     max_tokens=4096,
 )
 
-# Explicit disable: only for models that support disabled.
+# 显式关闭：仅适用于支持 disabled 的模型。
 response = await model.ainvoke(
-    [HumanMessage(content="Hello")],
+    [HumanMessage(content="你好")],
     thinking={"type": "disabled"},
     max_tokens=4096,
 )
 ```
 
-### Defaults, compatibility, and boundaries
+### 默认值、兼容性与边界
 
-- `ChatCompletionsOptions` has no `reasoning_effort` yet; `ResponsesOptions` supports
-  `low` / `medium` / `high`; `AnthropicMessagesOptions` supports fixed-budget and adaptive
-  `thinking`, but no `reasoning_effort`. This does not restrict native call parameters.
-- `None` in `Options` means "do not specify this default", not "explicitly disable thinking".
-  Without a per-call override, construction configuration and LangChain / server defaults apply.
-- Same-named fields do not mean every model supports the same levels, and not every model allows
-  disabling thinking. Effort is not a fixed token budget; behavior without `thinking` is determined
-  by LangChain and the target model.
-- The call shapes above were checked against `langchain-openai==1.7.3` and
-  `langchain-anthropic==1.7.7` from the repository `uv.lock`. The declared `>=1.0` lower bound alone
-  does not prove older versions support every example; use `uv sync --locked` in this repository and
-  verify the installed version elsewhere.
-- OpenAI-compatible services may not support the same thinking extensions. This package does not
-  guess model capabilities, switch protocols, or degrade parameters; unsupported-parameter errors
-  come from LangChain / the server and are the application's responsibility.
-- These examples document existing call entry points; they do not claim this project executed real
-  Provider integration verification.
+- 当前 `ChatCompletionsOptions` 没有 `reasoning_effort`；`ResponsesOptions` 已支持
+  `low` / `medium` / `high`；`AnthropicMessagesOptions` 已支持固定预算和自适应
+  `thinking`，但没有 `reasoning_effort`。这不限制原生调用参数入口。
+- `Options` 中的 `None` 表示不指定该默认值，不表示显式关闭思考。不传调用覆盖值时，
+  继续使用模型构造配置及 LangChain / 服务端默认行为。
+- 字段同名不代表各模型支持相同等级，也不保证所有模型都允许关闭思考。思考强度不等于
+  固定 token 预算；不指定 `thinking` 时的行为由 LangChain 和目标模型决定。
+- 上述调用形状对照了仓库 `uv.lock` 中的 `langchain-openai==1.7.3` 和
+  `langchain-anthropic==1.7.7`。不能仅凭包声明的 `>=1.0` 下限断言旧版本支持全部示例；
+  在仓库内请使用 `uv sync --locked`，其他环境应核对实际安装版本。
+- 兼容 OpenAI 的服务未必支持相同的思考扩展。本包不猜测模型能力、不自动切换协议或
+  降级参数；不支持参数时的异常由 LangChain / 服务端产生，应用负责处理。
+- 这些示例说明现有调用入口，不代表本项目已执行真实 Provider 集成验证。
 
-References: [LangChain OpenAI integration](https://docs.langchain.com/oss/python/integrations/chat/openai),
-[LangChain Anthropic reasoning_effort](https://reference.langchain.com/python/langchain-anthropic/chat_models/ChatAnthropic/reasoning_effort).
+参考：[LangChain OpenAI 集成](https://docs.langchain.com/oss/python/integrations/chat/openai)、
+[LangChain Anthropic reasoning_effort](https://reference.langchain.com/python/langchain-anthropic/chat_models/ChatAnthropic/reasoning_effort)。
 
-## Tool calling
+## 工具调用
 
-First save the complete `quickstart.py` and configure the same three environment variables.
-Save this alongside it as `tools_demo.py` and run
-`uv run --locked --project packages/infra/llm-provider-langchain python tools_demo.py`.
-The model must support tools; this demonstrates one round of tool requests, application execution,
-result messages and a final response.
+先保存完整的 `quickstart.py` 并配置同样的三个环境变量；将下面代码保存为同目录的
+`tools_demo.py`，执行 `uv run --locked --project packages/infra/llm-provider-langchain python tools_demo.py`。
+模型必须支持工具调用；示例完成一轮工具请求、应用执行、结果回传与最终回复。
 
 ```python
 import asyncio
@@ -499,14 +471,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-`response.tool_calls` is a LangChain `AIMessage` field; the application passes results back to the
-model as `ToolMessage`, with no project conversion layer.
+`response.tool_calls` 是 LangChain 的 `AIMessage` 字段；应用把结果作为 `ToolMessage`
+传回模型，不需要项目转换层。
 
-## Streaming
+## 流式输出
 
-Reuse `quickstart.py` and its environment variables. Save this as `stream_demo.py` and run
-`uv run --locked --project packages/infra/llm-provider-langchain python stream_demo.py`.
-It prints text incrementally; the service determines the exact text and chunk boundaries.
+同样复用 `quickstart.py` 和环境变量。将下面代码保存为 `stream_demo.py`，执行
+`uv run --locked --project packages/infra/llm-provider-langchain python stream_demo.py`。
+预期随着服务返回逐块输出文本；确切文本和分块由服务决定。
 
 ```python
 import asyncio
@@ -527,12 +499,12 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-`astream` yields LangChain `AIMessageChunk`; text, tool arguments, and usage metadata all come
-directly from LangChain.
+`astream` 产生 LangChain `AIMessageChunk`；文本、工具参数和 usage 元数据都直接来自
+LangChain。
 
-## Configuration and errors
+## 配置与错误
 
-`ChatModelConfig` extends the shared `EndpointConfig`; fields are flat:
+`ChatModelConfig` 继承共享 `EndpointConfig`，字段是扁平的：
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -541,60 +513,52 @@ class ChatModelConfig(EndpointConfig):
     max_retries: int = 0
 ```
 
-It **does not depend on `ChannelConfig`**. Calling a model requires neither a channel name nor a
-credential reference.
+它**不依赖 `ChannelConfig`**。只想调用模型时，不需要渠道名称或凭据引用。
 
-The following raise `ConfigurationError` before a model is constructed:
+以下情况在构造模型前抛 `ConfigurationError`：
 
-| Situation | Result |
+| 情况 | 结果 |
 |---|---|
-| `api_key` empty or whitespace only | `ConfigurationError` |
-| `model` empty or whitespace only | `ConfigurationError` |
+| `api_key` 为空或只有空白 | `ConfigurationError` |
+| `model` 为空或只有空白 | `ConfigurationError` |
 | `max_retries < 0` | `ConfigurationError` |
-| invalid protocol / endpoint / timeout | `ConfigurationError` (from `EndpointConfig`) |
-| option type does not match protocol | `ConfigurationError` |
-| invalid option value | `ConfigurationError` |
-| unknown protocol value | `ConfigurationError` |
-| model file missing, unreadable, or non-UTF-8 | `ConfigurationError` (with path) |
-| YAML syntax error or duplicate key | `ConfigurationError` (line/column, no file content) |
-| recursive YAML alias | `ConfigurationError` (recursive alias, no position) |
-| invalid `schema_version` / field / option | `ConfigurationError` (with YAML path) |
-| secret variable missing or empty | `ConfigurationError` (model and variable names) |
-| explicit `env_file` path missing | `ConfigurationError` (default `.env` missing is skipped) |
+| protocol / endpoint / timeout 非法 | `ConfigurationError`（继承自 `EndpointConfig`） |
+| 选项类型与协议不匹配 | `ConfigurationError` |
+| 选项值非法 | `ConfigurationError` |
+| 未知 protocol 值 | `ConfigurationError` |
+| 模型文件缺失、不可读或非 UTF-8 | `ConfigurationError`（含路径） |
+| YAML 语法错误、重复键 | `ConfigurationError`（含行列，不含文件内容） |
+| 递归 YAML 别名 | `ConfigurationError`（recursive alias，不含位置） |
+| `schema_version` / 字段 / 选项非法 | `ConfigurationError`（含 YAML 路径） |
+| 密钥变量缺失或为空 | `ConfigurationError`（含模型名与变量名） |
+| 显式 `env_file` 路径不存在 | `ConfigurationError`（默认 `.env` 缺失时跳过） |
 
-Exceptions during LangChain calls are handled by LangChain/the application; this package does not
-copy an inference exception hierarchy.
+LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一套推理异常层次。
 
-## Security
+## 安全
 
-- The API key is passed only at factory call time and wrapped as `SecretStr`.
-- `ChatModelConfig` stores no API key; `ModelCatalog` keeps only the `.env` snapshot referenced by
-  `api_key_env` for creation, exposes no public read, and hides it from `repr`.
-- `.env` defaults to the current working directory's `.env` (when present); `env_file=None`
-  disables it; `interpolate=False` means `${VAR}` is not expanded.
-- Process environment takes precedence; a present but empty process variable raises instead of
-  falling back to `.env`.
-- Only variables referenced by `api_key_env` are snapshotted; `os.environ` is not modified.
-- Endpoints reject embedded username/password, whitespace/control characters, and invalid
-  host/port.
-- Error messages do not concatenate YAML line contents or echo secret values.
-- Default `max_retries=0` does not hide SDK automatic retries.
+- API key 只在工厂调用时传入，并包装为 `SecretStr`。
+- `ChatModelConfig` 不保存 API key；`ModelCatalog` 只保留被 `api_key_env` 引用的
+  `.env` 快照用于创建，不提供公开读取，`repr` 不显示。
+- `.env` 默认读取当前工作目录的 `.env`（存在时）；`env_file=None` 关闭；`interpolate=False`，不会展开 `${VAR}`。
+- 进程环境优先；进程环境存在但为空时报错，不回退到 `.env`。
+- 加载时只快照被 `api_key_env` 引用的变量；不修改 `os.environ`。
+- endpoint 拒绝内嵌用户名/密码、空白/控制字符、非法 host/port。
+- 错误信息不拼接 YAML 行内容，不回显密钥值。
+- 默认 `max_retries=0`，不隐藏 SDK 的自动重试。
 
-## Design boundaries
+## 设计边界
 
-- Does not define `Message`, content blocks, tools, `ChatRequest`, `ChatResponse`, `StreamEvent`,
-  or `LLMProvider`.
-- Does not expose public dictionary channels such as `map_options()` / `bind_options()`; options are
-  mapped at construction.
-- Does not implement real channel HTTP, pooling, routing, health-based selection, or HTTP connection
-  pools.
-- Does not infer protocol from model names; protocol must be configured explicitly.
-- Model-file loading and environment parsing belong to this adapter; the protocol package remains
-  framework-independent and gains no dependency.
-- Public API is `ChatModelConfig`, `ModelCatalog`, `ModelSummary`, `create_chat_model`,
-  `load_model_catalog`, pinned by [`test_public_api.py`](tests/test_public_api.py).
+- 不定义 `Message`、内容块、工具、`ChatRequest`、`ChatResponse`、`StreamEvent` 或
+  `LLMProvider`。
+- 不提供 `map_options()` / `bind_options()` 之类的公共字典通道；选项在构造时映射。
+- 不实现真实 channel HTTP、pool、路由、健康选路或 HTTP 连接池。
+- 不根据模型名称推断协议；协议必须显式配置。
+- 模型文件加载与环境变量解析归本适配包；协议包保持框架无关且不新增依赖。
+- 公共 API 为 `ChatModelConfig`、`ModelCatalog`、`ModelSummary`、`create_chat_model`、
+  `load_model_catalog`，由 [`test_public_api.py`](tests/test_public_api.py) 固定。
 
-## Development and verification
+## 开发与验证
 
 ```powershell
 uv lock --check --directory packages/infra/llm-provider-langchain
@@ -602,36 +566,35 @@ uv sync --locked --directory packages/infra/llm-provider-langchain
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain
 ```
 
-The quality command includes Black, isort, Ruff, Pyright strict, pytest, isolated build/install,
-and import checks. Default tests construct models only; they use no network and no real credentials.
+质量命令包含 Black、isort、Ruff、Pyright strict、pytest、隔离构建/安装和导入检查。
+默认测试只构造模型，不访问网络，不使用真实凭据。
 
-When adding a protocol or option, maintainers must:
+维护者新增协议或选项时：
 
-1. add typed options and validation in the protocol package;
-2. add an explicit mapping branch in
-   [`factory.py`](src/spawn_join_llm_provider_langchain/factory.py);
-3. add regressions in [`test_factory.py`](tests/test_factory.py) and
-   [`test_public_api.py`](tests/test_public_api.py);
-4. check [package boundaries](../../../docs/architecture/package-boundaries.md),
-   [quality gates](../../../docs/development/quality-gates.md), and
-   [ADR-0006](../../../docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md) for
-   consistency.
+1. 在协议包增加类型化选项和校验；
+2. 在 [`factory.py`](src/spawn_join_llm_provider_langchain/factory.py) 增加显式映射分支；
+3. 在 [`test_factory.py`](tests/test_factory.py) 和
+   [`test_public_api.py`](tests/test_public_api.py) 增加回归；
+4. 检查
+   [包边界](../../../docs/architecture/package-boundaries.md)、
+   [质量门说明](../../../docs/development/quality-gates.md)
+   和
+   [ADR-0006](../../../docs/decisions/llm-provider/0006-langchain-first-llm-runtime.md)
+   是否仍然一致。
 
-## Related packages
+## 相关包
 
-- [`spawn-join-llm-provider`](../../core/llm-provider/README.md): endpoint, channel, protocol
-  options, and error contracts.
-- [`spawn-join-core`](../../core/spawn-join-core/README.md): shared configuration, exceptions, and
-  types.
+- [`spawn-join-llm-provider`](../../core/llm-provider/README.md)：endpoint、channel、
+  协议选项和错误契约。
+- [`spawn-join-core`](../../core/spawn-join-core/README.md)：共享配置、异常和类型。
 
-See [LICENSE](LICENSE).
+许可证见 [LICENSE](LICENSE)。
 
-## Maintenance and releases
+## 维护与发布
 
-Owned by the SpawnJoin repository maintainers (author: Yan Zhiwei). Source lives in
-`src/spawn_join_llm_provider_langchain/`; `tests/` contains offline contracts and fixtures.
-Use PowerShell 7, uv 0.7.13+, Git, and Node.js 22+ for the quality gate. Follow
-[contributor rules](../../../AGENTS.md); report issues with a minimal configuration without
-credentials. This package is versioned independently and is not published; release automation
-is not configured. Public API changes require synchronized tests, both README languages,
-compatibility notes, and explicit release authorization.
+本包由 SpawnJoin 仓库维护者拥有，作者为 Yan Zhiwei。源码位于
+`src/spawn_join_llm_provider_langchain/`，`tests/` 保存离线契约测试和 fixture。
+质量门需要 PowerShell 7、uv 0.7.13+、Git 和 Node.js 22+。遵循
+[贡献规则](../../../AGENTS.md)，报告问题时提供不含凭据的最小配置。本包独立版本化，尚未
+发布，也未配置自动发布。公共 API 变更需同步测试、两种语言 README、兼容性说明，并取得
+单独的发布授权。

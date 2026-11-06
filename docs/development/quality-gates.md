@@ -114,8 +114,8 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
 evidence 抑制 freshness warning、缺失 superseded_by 目标、不安全 Delivery 配置、单双引号
 gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
-不安全 artifact policy 和自动 hook，以及中文 README 的证据豁免、链接检查和其他 README
-前缀文件仍需证据字段）。仅 `README.md` 与 `README.zh-CN.md` 作为 evidence 目录说明页豁免
+不安全 artifact policy 和自动 hook，以及英文 README 的证据豁免、链接检查和其他 README
+前缀文件仍需证据字段）。仅 `README.md` 与 `README.en.md` 作为 evidence 目录说明页豁免
 证据元数据检查；两者仍参与文档链接检查。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
