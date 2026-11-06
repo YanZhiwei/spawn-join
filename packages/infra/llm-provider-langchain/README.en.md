@@ -601,6 +601,14 @@ copy an inference exception hierarchy.
 - Public API is `ChatModelConfig`, `ModelCatalog`, `ModelSummary`, `create_chat_model`,
   `load_model_catalog`, pinned by [`test_public_api.py`](tests/test_public_api.py).
 
+Internal file shapes are declared in `model_file/_input.py`. Typed helpers in `_validation.py`
+check shapes and strict value types, and `_schema.py` assembles the existing configuration objects.
+These are private adapter implementation details, not new public APIs. YAML duplicate-key checks,
+omitted versus explicit `null` values, domain-validation order, and safe error paths are preserved.
+When adding a field, update its input model, domain mapping, and regression tests instead of
+maintaining parallel allowed-key lists and per-field option readers. Entry-level fields are still
+read in the original domain-construction order to preserve the first error for multiple invalid inputs.
+
 ## Development and verification
 
 ```powershell

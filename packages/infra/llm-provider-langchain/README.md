@@ -563,6 +563,13 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 - 公共 API 为 `ChatModelConfig`、`ModelCatalog`、`ModelSummary`、`create_chat_model`、
   `load_model_catalog`，由 [`test_public_api.py`](tests/test_public_api.py) 固定。
 
+模型文件的内部字段结构集中声明在 `model_file/_input.py`，由 `_validation.py` 的有类型
+helper 统一检查结构和严格值类型，再由 `_schema.py` 组装现有配置对象。它们都是适配包的
+私有实现，不增加公共 API；YAML 重复键检查、缺省与显式 `null` 的区别、领域校验顺序及
+安全错误路径保持不变。新增字段时同步维护对应输入模型、领域映射和回归测试，不再重复
+维护允许字段集合与协议选项的逐字段读取代码。条目级字段仍按原领域构造顺序读取，以保持
+多处输入同时非法时的首个错误。
+
 ## 开发与验证
 
 ```powershell

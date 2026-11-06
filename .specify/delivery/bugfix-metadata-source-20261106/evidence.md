@@ -117,3 +117,47 @@ The unrelated historical record missing head_revision remains unmodified and not
 After commit, runtime/local-commit-association.json records the real SHA/tree and its association
 with the approved five-file content, without restamping the original independent review or
 claiming remote delivery. No terminal delivered outcome is recorded by this local operation.
+
+## PR #45 private schema maintenance — 2026-11-07
+
+Original repairs are in db099fb1e382831cc417d7276da671edc03af597; main integration and initial
+draft PR publication ended at 32e15c0f4350b843136e3867b305bd862df7ec1a, branch
+`fix/llm-langchain-boundaries`, base main e292f0e3b746fec266e71dca142fc20356841978.
+The user requested private-parser maintenance in the same [PR #45](https://github.com/YanZhiwei/spawn-join/pull/45).
+No merge was authorized or performed. Pre-refactor remote Quality Gate was observed successful;
+that result is not reused for this new snapshot.
+
+The follow-up is **Lightweight**, behavior-preserving refactoring within the adapter; the
+enclosing PR retains the two original Bugfixes. No new Feature queue is needed. Verification
+base/HEAD: 32e15c0f4350b843136e3867b305bd862df7ec1a plus the current uncommitted follow-up.
+Full blueprint, exact commands/results and six-file product SHA256 manifest are in the
+paired [Anthropic evidence follow-up](../bugfix-anthropic-budget-20261106/evidence.md#pr-45-private-schema-maintenance--2026-11-07).
+Those are shared same-snapshot checks, not separate executions for this paired record.
+
+Scope: adapter _schema.py, new private _validation.py/_input.py, new test_schema_validation.py,
+both package README files, and these two evidence records. Declarative input models derive key
+sets; typed helpers reuse FieldReader. Domain assembly/error order and metadata ModelSourceRef
+translation stay adapter-owned; protocol DTOs, public exports, factory, YAML format, _yaml.py,
+manifests/locks and other packages are unchanged by this follow-up. No shared helper Distribution,
+new dependency, privilege, credential, persistence, network or resource lifecycle.
+
+From D:\Repos\Github\spawn-join, Windows/Python 3.13.5 on 2026-11-07: before-refactor 171 tests
+passed; existing file/metadata 109 passed; final full adapter quality exit 0 with 240 passed
+(69 new), format/lint/type/build and isolated-install/pip-check/import success. Protocol full
+tests 154, Agent model consumer 13 and Sync projection 3 passed, each exit 0. Final old/new parser
+differential: 1536 cases, 0 differences in normalized return values, error messages/types and
+immediate cause types. CodeGraph sync and affected both exited 0, providing navigation only.
+The initial new-test Pyright failure was fixed by concrete model narrowing and is not a passing
+run; final full package success is fresh. Temporary builds used the approved OpenCode temp path.
+
+The current docs command exited 0 (124 files / 330 local targets, diff whitespace passed).
+The current governance command exited 1: the original unrelated untracked retirement evidence
+still lacks head_revision, with one historical freshness warning. That directory remains
+untouched and outside the PR; no whole-repository Quality Gate success is claimed.
+
+The separate Standards coordinator self-review found no scope findings (DRY, ownership, dependency
+direction, strict narrowing/error order, side effects, paired docs and boundary coverage). It is
+not independent Review and does not create a native receipt. Earlier report bytes/fingerprints
+and approval above remain historical; current outgoing-diff independent Review is pending.
+Keep PR draft. Do not infer new-head remote CI, real Provider or minimum-version validation;
+YAML reasoning defaults are still unimplemented and require baseline refresh before execution.

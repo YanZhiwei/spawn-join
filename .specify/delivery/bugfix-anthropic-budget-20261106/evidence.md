@@ -120,3 +120,86 @@ This metadata correction does not resolve or waive the unrelated historical gove
 The resulting commit/tree and unchanged reviewed-content association are recorded separately
 under runtime/local-commit-association.json after the local commit exists. Historical evidence
 is not relabeled as a fresh independent review or remote delivery of that later commit.
+
+## PR #45 private schema maintenance — 2026-11-07
+
+This section is the current follow-up, not a replacement of the historical review above.
+Original repairs were committed as db099fb1e382831cc417d7276da671edc03af597; authorized main
+integration produced d2874fee67c495797ff3b840542e932228693119 and
+32e15c0f4350b843136e3867b305bd862df7ec1a. The latter was pushed to
+`fix/llm-langchain-boundaries` in draft [PR #45](https://github.com/YanZhiwei/spawn-join/pull/45),
+base main e292f0e3b746fec266e71dca142fc20356841978. User requested this maintenance in the
+same PR; no merge is authorized or performed. Pre-refactor PR checks were observed successful
+(including required Quality Gate); those checks do not cover this new follow-up.
+
+Route for the follow-up: **Lightweight**, bounded behavior-preserving adapter-private refactor;
+no Feature Spec/Plan/Tasks needed. The enclosing PR still includes the two original Bugfixes.
+Verification base and HEAD: 32e15c0f4350b843136e3867b305bd862df7ec1a plus the uncommitted content
+manifest below. Working directory: D:\Repos\Github\spawn-join; Windows / Python 3.13.5, same
+locked dependency versions as above. Checks ran 2026-11-07, finalized around 01:15 +08:00.
+
+### Blueprint, scope and design
+
+Six product paths relative to `packages/infra/llm-provider-langchain/`: modified README.md,
+README.en.md and model_file/_schema.py; added model_file/_validation.py, model_file/_input.py
+(both under src/spawn_join_llm_provider_langchain/) and tests/test_schema_validation.py.
+The two paired evidence records are the only additional tracked follow-up changes.
+
+Private typed helpers reuse FieldReader for strict primitives and safe exception conversion;
+Pydantic input models own required/allowed fields and replace repeated protocol-option readers.
+_schema.py retains domain projection, metadata translation and cross-field rules. Entry values
+intentionally stay object until narrowed in the original construction order, preserving the first
+error when several values are invalid. No C#-style monkeypatch, global helpers module, public
+helper, Core abstraction or independent Distribution. Public Options/config/exports, YAML shape,
+_yaml.py, factory.py, manifests/locks and other packages are unchanged by this follow-up.
+No new dependency, credential, permission, network, persistence or lifecycle mechanism.
+
+### Executed verification
+
+All commands below ran from the working directory above. Logs, blueprint, differential script,
+and separate Standards self-review are retained locally in runtime/schema-refactor; they are
+not required to understand this durable summary and are not claimed as tracked deliverables.
+
+| Exact command | Exit | Actual result |
+|---|---:|---|
+| `uv run --locked --no-sync --project packages/infra/llm-provider-langchain pytest -c pyproject.toml packages/infra/llm-provider-langchain/tests -q --tb=short` | 0 | Before refactor: 171 passed |
+| `uv run --locked --no-sync --project packages/infra/llm-provider-langchain pytest -c pyproject.toml packages/infra/llm-provider-langchain/tests/test_model_file.py packages/infra/llm-provider-langchain/tests/test_model_metadata.py -q --tb=short` | 0 | Existing file/metadata regression: 109 passed |
+| `pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain` | 0 | Final source/test snapshot: 240 passed (69 new); lock/sync, Black/isort/Ruff, Pyright 0 errors/warnings, wheel/sdist, isolated install, pip check and import passed |
+| `uv run --locked --no-sync --project packages/core/llm-provider pytest -c pyproject.toml packages/core/llm-provider/tests -q --tb=short` | 0 | Protocol regression: 154 passed |
+| `uv run --locked --no-sync --project packages/infra/agent-deepagents pytest -c pyproject.toml packages/infra/agent-deepagents/tests/test_models.py -q --tb=short` | 0 | Agent catalog consumer: 13 passed |
+| `uv run --locked --no-sync --project packages/infra/llm-model-sync pytest -c pyproject.toml packages/infra/llm-model-sync/tests/test_model_file.py -q --tb=short` | 0 | Sync projection: 3 passed |
+| `uv run --locked --no-sync --project packages/infra/llm-provider-langchain python .specify/delivery/bugfix-anthropic-budget-20261106/runtime/schema-refactor/differential.py` | 0 | Final rerun: 1536 inputs, 0 mismatches in normalized values, exception messages/types and immediate cause types against original parser at verification base |
+| `codegraph sync` | 0 | Index up to date after source edits |
+| `codegraph affected packages/infra/llm-provider-langchain/src/spawn_join_llm_provider_langchain/model_file/_schema.py` | 0 | Navigation suggestions inspected; not a test or complete correctness proof |
+| `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` | 0 | Updated evidence and README scope: 124 files / 330 local targets; diff whitespace check passed |
+| `pwsh -NoProfile -File scripts/quality.ps1 -Check governance` | 1 | Unchanged unrelated retirement evidence missing head_revision; 1 error / 1 historical freshness warning. That untracked directory is excluded from the PR and untouched |
+
+The initial new-test type check failed with four BaseChatModel attribute diagnostics; the test
+now narrows to ChatOpenAI/ChatAnthropic. That failure is retained, not counted as a pass. Final
+full package verification above is successful. Temporary builds used
+SPAWN_JOIN_TEMP_DIR=C:\Users\YanZh\AppData\Local\Temp\opencode; no root uv project or build
+artifact was added. README-only clarification after the package run does not change tested code.
+
+Raw package quality log SHA256: 725369d004c047e8bbbcdf1ca8289e346fd6f4403982e66071cf9ac961021ba8.
+Differential result JSON SHA256: d667889b5e68bbb7ace4cef1da7e3bddf4cadd8b8ab79ccbf447feac593c4252.
+Final product raw UTF-8 SHA256 manifest (relative paths as above; local checkout bytes,
+including existing line endings, not Git-normalized blobs):
+
+| Path | SHA256 |
+|---|---|
+| README.md | d7459b63a18286fb0107bb9ad5760cc8a13753d7a124c36ab7e43f1a53bc7601 |
+| README.en.md | e5211460358e510faa9a566945e59f86177191c81cdc6c2e489ba441ebd093ed |
+| src/spawn_join_llm_provider_langchain/model_file/_schema.py | ca62b431cce18a13cab612f6b29af6f76af9897238e244ed63391f5b52e18e02 |
+| src/spawn_join_llm_provider_langchain/model_file/_input.py | c395fef4b7c3ef33dac6ecc6ad29273b7dafe0a63909fee6cdae43df2632e1cc |
+| src/spawn_join_llm_provider_langchain/model_file/_validation.py | 6275ef6abed0dc2c35da4d69d5eff59e4d85b84f98bd319f48034e60bed70a9a |
+| tests/test_schema_validation.py | 5d45a4928da0f752cad654581587a242d050bea6b33df2c834f95d6d6bd16bdb |
+
+Separate Standards self-review found no scope findings: adapter ownership and one-way dependency
+direction, one authoritative private key declaration, precise narrowing, preserved validation
+order/causes, unchanged side effects and public surface, paired documentation and boundary tests.
+This is coordinator self-review, NOT an independent Review or a refreshed native gate receipt.
+The original independent report/hash/approval remains historical and does not cover the refactor.
+Current outgoing-diff independent Review is still pending; keep PR draft and do not claim all
+merge gates passed. YAML reasoning-default Feature implementation remains excluded and its plan
+needs a fresh baseline before execution. No real Provider or minimum-runtime/dependency matrix
+was executed locally; new-head GitHub results must be checked separately after pushing.
