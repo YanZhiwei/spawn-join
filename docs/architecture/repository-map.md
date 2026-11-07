@@ -70,6 +70,29 @@ spawn-join/
 | Delivery 安装、配置和升级 | [`spec-kit-delivery.md`](../development/spec-kit-delivery.md) |
 | Python 源码关系和影响范围 | CodeGraph 索引 |
 
+## Role-based reading
+
+本节是按任务定位知识的导航，不替代适用的 Constitution、根/局部 AGENTS 或当前 run 的
+批准工件。先确认路由和真实 base/head；下表的角色是职责，不授权创建子 Agent 或并行写入。
+只读研究并行与实现并行仍受项目配置、宿主能力和已批准合作计划约束。
+
+| 角色 / 当前问题 | 最小相关阅读 | 触发后追加 | 返回给既有 owner 的内容 |
+|---|---|---|---|
+| 协调者：走哪条 Lane、交给谁？ | [AGENTS §0](../../AGENTS.md)、[Harness 权威边界](../../harness/README.md#source-of-truth-boundaries)、当前请求/批准范围 | 进入 SD 时读已安装的 [Route](../../.specify/extensions/delivery/commands/speckit.delivery.route.md) 与本 run runtime 契约；安装问题读 [安装说明](../development/spec-kit-delivery.md) | 路由、非目标、角色读写边界、实际审批/待确认项；补充解释不得悄悄变成用户要求 |
+| Explore / Bug assessor：现有行为是什么，哪个假设有证据？ | 目标包 README、当前实现/测试和相关历史、[Context 调查延续](../../harness/context/README.md#investigation-continuity) | 跨包时读 [包边界](package-boundaries.md) 的相关职责/依赖；涉及依赖缺陷或新机制时按 Explore 契约调研上游 | 支持/否定/未决结论、可区分假设的证据、来源版本、残余缺口；Bug assessment 仍拥有根因判断 |
+| Plan / Decision：如何设计、为什么这样取舍？ | 当前批准 Spec/Explore、[包边界](package-boundaries.md)、[ADR 索引](../decisions/README.md) 及适用 ADR | 跨组件长期取舍用既有 Decision 流程；技术图读 [固定技能说明](../development/technical-diagrams.md) | 设计响应、约束来源、验证拥有者/缺口、合作/上下文计划，写回既有 Plan/ADR |
+| Worker：本任务允许改什么、如何验证？ | 当前任务验收和允许路径、相关 Plan/Brief、目标源文件/测试、[质量命令](../development/quality-gates.md#local-entry-point) | SD Feature 还须按 [Ralph 前置条件](../../.specify/extensions/ralph/commands/speckit.ralph.run.md) 读取准确 checkpoint/task packet；接口变化追踪实际消费者 | 变更路径、精确命令/结果、限制和设计偏差；不自行扩大范围或关闭任务 |
+| Quality / Standards / Reviewer：检查什么，证据是否当前？ | 实际完整 diff/需求快照、适用规则、相关消费者、当前 receipts；[六维 Reviewer 契约](../../.specify/extensions/review/templates/reviewer.md) | 按具体风险追踪调用方、异常/取消/清理和兼容性；读前次未关闭 Finding ID | 各自负责的检查/结论及依据；缺输入不是 pass，测试绿不替代语义审查 |
+| 收口 / Docs Sync：哪些知识需要保留？ | 当前 findings/context、实际 evidence、受影响包文档；[经验回流](../../harness/code_review/README.md#closure-and-reusable-learning) | 改动生成物/发布边界时核对真实消费者；确有长期决策才进入 ADR | 文档更新或有依据的不更新、已验证经验/无适用经验、未验证环境；不创建第二队列 |
+
+同一角色不必每次重读全部历史。具体 run 的 coordinator 在既有 packet 中指定准确路径与
+章节/符号、权威性质、必读原因和条件阅读触发器；已批准后遵循既有快照刷新规则，不为
+例行派发改写批准工件。Context 保存材料性摘要/引用，不复制 owner 的原生报告。
+
+知识按用途查找：包 README/公开 API 说明回答“用哪个、怎么用”，架构说明回答“如何组合”，
+ADR 回答“为何做长期取舍”；实际成功或失败只在 evidence 中证明。角色应解释来源如何支持
+结论，不能把“文件存在/哈希相同”当成已经理解或正确实现。
+
 ## 路径语义
 
 - `packages/core` 和 `packages/infra` 是架构分组，不是 Python Distribution。
