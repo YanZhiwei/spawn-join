@@ -21,10 +21,10 @@ def test_py_typed_marker_is_packaged() -> None:
     assert (files("spawn_join_llm_provider") / "py.typed").is_file()
 
 
-def test_protocol_only_depends_on_core() -> None:
+def test_protocol_runtime_dependencies() -> None:
     requirements = metadata.requires("spawn-join-llm-provider") or []
     dependency_names = {
         re.split(r"[<>=!~;\[\s]", requirement, maxsplit=1)[0]
         for requirement in requirements
     }
-    assert dependency_names == {"spawn-join-core", "pydantic"}
+    assert dependency_names == {"spawn-join-core", "spawn-join-common", "pydantic"}

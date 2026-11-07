@@ -10,6 +10,7 @@ from types import MappingProxyType
 
 from spawn_join_llm_model_sync._snapshot import status_or_active
 
+from spawn_join_common import FieldReader
 from spawn_join_llm_provider import (
     DuplicateKeyError,
     Modality,
@@ -28,7 +29,6 @@ from spawn_join_llm_provider import (
     PriceUnit,
     reject_duplicate_keys,
 )
-from spawn_join_llm_provider.parsing import FieldReader
 
 from .._source import ModelHostMetadata, SyncError
 

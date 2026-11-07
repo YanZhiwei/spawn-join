@@ -79,10 +79,10 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 |---|---|---|---|
 | `spawn-join-core` | `packages/core/spawn-join-core/.venv/` | `packages/core/spawn-join-core/uv.lock` | 无 SpawnJoin 包依赖 |
 | `spawn-join-common` | `packages/core/common/.venv/` | `packages/core/common/uv.lock` | 无 SpawnJoin 包依赖；可选 `validation` |
-| `spawn-join-llm-provider` | `packages/core/llm-provider/.venv/` | `packages/core/llm-provider/uv.lock` | `spawn-join-core` 的相对路径源 |
-| `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider` 的相对路径源 |
-| `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-llm-provider-langchain` 的相对路径源 |
-| `spawn-join-agent-deepagents` | `packages/infra/agent-deepagents/.venv/` | `packages/infra/agent-deepagents/uv.lock` | `spawn-join-llm-provider-langchain` 的相对路径源 |
+| `spawn-join-llm-provider` | `packages/core/llm-provider/.venv/` | `packages/core/llm-provider/uv.lock` | `spawn-join-core`、`spawn-join-common` 的相对路径源 |
+| `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common` 的相对路径源 |
+| `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common`、`spawn-join-llm-provider-langchain` 的相对路径源（后者仅 dev） |
+| `spawn-join-agent-deepagents` | `packages/infra/agent-deepagents/.venv/` | `packages/infra/agent-deepagents/uv.lock` | `spawn-join-llm-provider-langchain` 的相对路径源；Common 仅传递解析 |
 
 包间的发布依赖仍然写在 `[project].dependencies` 中；仅开发期的本地路径解析写在对应
 `pyproject.toml` 的 `[tool.uv.sources]` 中。这样既保留 Distribution 的发布元数据，

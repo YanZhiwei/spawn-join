@@ -422,6 +422,30 @@ wheels = [
 ]
 
 [[package]]
+name = "spawn-join-common"
+version = "0.1.0"
+source = { editable = "../common" }
+
+[package.optional-dependencies]
+validation = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", marker = "extra == 'validation'", specifier = ">=2.0,<3.0" }]
+provides-extras = ["validation"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black", specifier = ">=26.10.1,<27" },
+    { name = "isort", specifier = ">=9.0.2,<10" },
+    { name = "pydantic", specifier = ">=2.0,<3.0" },
+    { name = "pyright", specifier = ">=1.1.414,<2" },
+    { name = "pytest", specifier = ">=9.1.1,<10" },
+    { name = "ruff", specifier = ">=0.17.2,<0.18" },
+]
+
+[[package]]
 name = "spawn-join-core"
 version = "0.1.0"
 source = { editable = "../spawn-join-core" }
@@ -443,6 +467,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "spawn-join-common", extra = ["validation"] },
     { name = "spawn-join-core" },
 ]
 
@@ -458,6 +483,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.0,<3.0" },
+    { name = "spawn-join-common", extras = ["validation"], editable = "../common" },
     { name = "spawn-join-core", editable = "../spawn-join-core" },
 ]
 

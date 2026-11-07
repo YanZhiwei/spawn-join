@@ -33,24 +33,24 @@ $packages = [ordered]@{
     'spawn-join-llm-provider' = @{
         Path = 'packages/core/llm-provider'
         Import = 'spawn_join_llm_provider'
-        Build = @('spawn-join-core', 'spawn-join-llm-provider')
+        Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider')
     }
     'spawn-join-llm-provider-langchain' = @{
         Path = 'packages/infra/llm-provider-langchain'
         Import = 'spawn_join_llm_provider_langchain'
-        Build = @('spawn-join-core', 'spawn-join-llm-provider',
+        Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain')
     }
     'spawn-join-llm-model-sync' = @{
         Path = 'packages/infra/llm-model-sync'
         Import = 'spawn_join_llm_model_sync'
-        Build = @('spawn-join-core', 'spawn-join-llm-provider',
+        Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
             'spawn-join-llm-model-sync')
     }
     'spawn-join-agent-deepagents' = @{
         Path = 'packages/infra/agent-deepagents'
         Import = 'spawn_join_agent_deepagents'
-        Build = @('spawn-join-core', 'spawn-join-llm-provider',
+        Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain', 'spawn-join-agent-deepagents')
     }
 }

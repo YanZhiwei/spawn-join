@@ -34,7 +34,7 @@
 
 - 没有真实 channel HTTP 实现；
 - 没有 `ChannelPool`、模型路由或健康选路；
-- 协议包只依赖 `spawn-join-core` 和通用校验库 Pydantic。
+- 协议包只依赖 `spawn-join-core`、`spawn-join-common[validation]` 和通用校验库 Pydantic。
 
 ## 安装
 
@@ -428,6 +428,8 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
 ## 相关包
 
 - [`spawn-join-core`](../spawn-join-core/README.md)：共享配置、异常和类型。
+- [`spawn-join-common`](../common/README.md)：共享严格字段读取与 Pydantic 异常转换；
+  本包的 `FieldReader` 保留原导入路径和默认 `ConfigurationError`。
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md)：
   LangChain 模型工厂、协议选项映射，以及 `model.yaml` / `.env` 解析。本包不读取
   文件或环境变量。

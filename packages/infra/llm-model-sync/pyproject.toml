@@ -13,6 +13,7 @@ authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
     "spawn-join-llm-provider>=0.1.0,<0.2.0",
+    "spawn-join-common>=0.1.0,<0.2.0",
     "platformdirs>=4.13.5,<5",
     "PyYAML>=6.0.3,<7",
 ]
@@ -34,6 +35,7 @@ dev = [
 ]
 
 [tool.uv.sources]
+spawn-join-common = { path = "../../core/common", editable = true }
 spawn-join-llm-provider = { path = "../../core/llm-provider", editable = true }
 spawn-join-llm-provider-langchain = { path = "../llm-provider-langchain", editable = true }
 
