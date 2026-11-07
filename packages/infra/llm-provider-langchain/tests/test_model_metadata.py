@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from spawn_join_llm_provider import ConfigurationError
 from spawn_join_llm_provider_langchain import ModelCatalog, load_model_catalog
@@ -143,6 +144,82 @@ def test_v2_exposes_references_without_snapshot(tmp_path: Path) -> None:
     assert fast.metadata_ref == "openai/gpt-5"
     assert fast.metadata is None
     assert fast.metadata_source["models.dev"].provider == "openai"
+    assert fast.metadata_source["models.dev"].model == "gpt-5"
+
+
+@pytest.mark.parametrize("use_loader", [False, True])
+@pytest.mark.parametrize(
+    ("source", "provider", "model", "field"),
+    [
+        ("BAD SOURCE", "openai", "gpt-5", ""),
+        ("", "openai", "gpt-5", ""),
+        ("models.dev", "", "gpt-5", ".models.dev.provider"),
+        ("models.dev", " private-provider ", "gpt-5", ".models.dev.provider"),
+        ("models.dev", "openai", "", ".models.dev.model"),
+        ("models.dev", "openai", " private-model ", ".models.dev.model"),
+    ],
+)
+def test_metadata_source_validation_has_safe_path_and_cause(
+    tmp_path: Path,
+    use_loader: bool,
+    source: str,
+    provider: str,
+    model: str,
+    field: str,
+) -> None:
+    text = _model_v2().replace("models.dev:", f"{source!r}:")
+    text = text.replace("provider: openai", f"provider: {provider!r}")
+    text = text.replace("        model: gpt-5\n", f"        model: {model!r}\n")
+    path = _write(tmp_path, text)
+    loader = load_model_catalog if use_loader else ModelCatalog.from_file
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        loader(path, env_file=None)
+
+    assert str(excinfo.value) == (
+        f"models.fast.metadata_source{field}: invalid source reference"
+    )
+    assert isinstance(excinfo.value.__cause__, ValidationError)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement", "field", "reason"),
+    [
+        ("provider: openai", "provider: 123", ".provider", "must be a string"),
+        (
+            "        model: gpt-5\n",
+            "        model: false\n",
+            ".model",
+            "must be a string",
+        ),
+        ("provider: openai", "provider: null", ".provider", "must be a string"),
+        ("        provider: openai\n", "", "", "missing"),
+        ("provider: openai", "unexpected: openai", "", "unknown"),
+    ],
+)
+def test_metadata_source_schema_errors_keep_single_path(
+    tmp_path: Path, original: str, replacement: str, field: str, reason: str
+) -> None:
+    path = _write(tmp_path, _model_v2().replace(original, replacement))
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        load_model_catalog(path, env_file=None)
+
+    message = str(excinfo.value)
+    assert message.startswith(f"models.fast.metadata_source.models.dev{field}:")
+    assert message.count("models.fast.metadata_source") == 1
+    assert reason in message
+
+
+def test_metadata_source_preserves_internal_whitespace(tmp_path: Path) -> None:
+    text = _model_v2().replace("provider: openai", "provider: example provider")
+    text = text.replace("        model: gpt-5\n", "        model: example model\n")
+
+    catalog = load_model_catalog(_write(tmp_path, text), env_file=None)
+
+    reference = catalog.models[0].metadata_source["models.dev"]
+    assert reference.provider == "example provider"
+    assert reference.model == "example model"
 
 
 def test_snapshot_resolves_shared_and_channel_metadata(tmp_path: Path) -> None:

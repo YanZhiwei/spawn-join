@@ -279,6 +279,9 @@ Rules:
 - Loading a snapshot performs no network request and searches no AppData; the path must be explicit.
 - Metadata is a read-only description and does not drive routing, degradation, or capability
   negotiation.
+- Invalid `metadata_source` coordinates raise `ConfigurationError` with a field path and no invalid
+  values in the public message. The original exception remains in `__cause__`; a full traceback may
+  include the original input.
 
 ## Protocols and options
 
@@ -289,6 +292,10 @@ Rules:
 | `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking` |
 
 All three protocols explicitly set `max_retries` (default `0`), endpoint, and timeout.
+
+When Anthropic `max_output_tokens` is omitted, the factory preserves LangChain's native
+model-specific output budget. Its value depends on the model and installed LangChain version.
+Explicit configuration and native call-time `max_tokens` overrides remain supported.
 
 ### Chat Completions
 
@@ -594,6 +601,14 @@ copy an inference exception hierarchy.
 - Public API is `ChatModelConfig`, `ModelCatalog`, `ModelSummary`, `create_chat_model`,
   `load_model_catalog`, pinned by [`test_public_api.py`](tests/test_public_api.py).
 
+Internal file shapes are declared in `model_file/_input.py`. Typed helpers in `_validation.py`
+check shapes and strict value types, and `_schema.py` assembles the existing configuration objects.
+These are private adapter implementation details, not new public APIs. YAML duplicate-key checks,
+omitted versus explicit `null` values, domain-validation order, and safe error paths are preserved.
+When adding a field, update its input model, domain mapping, and regression tests instead of
+maintaining parallel allowed-key lists and per-field option readers. Entry-level fields are still
+read in the original domain-construction order to preserve the first error for multiple invalid inputs.
+
 ## Development and verification
 
 ```powershell
@@ -603,7 +618,8 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langc
 ```
 
 The quality command includes Black, isort, Ruff, Pyright strict, pytest, isolated build/install,
-and import checks. Default tests construct models only; they use no network and no real credentials.
+and import checks. Default tests cover model construction, configuration parsing, and offline request
+conversion; they use no network and no real credentials.
 
 When adding a protocol or option, maintainers must:
 
