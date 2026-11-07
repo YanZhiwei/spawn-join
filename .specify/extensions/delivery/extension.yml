@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: delivery
   name: Spec Kit Delivery Core
-  version: "0.4.3"
-  description: "Explore and scope delivery work, select optional design/diagnosis/review methods, slice large changes into reviewable increments, initialize local policy, and render a durable pull-request handoff from final evidence."
+  version: "0.4.5"
+  description: "Bound delivery research, prepare role-aware context and cooperation plans, select methods, slice changes, and orchestrate evidence-backed handoff."
   category: process
   effect: read-write
   author: Yan Zhiwei
