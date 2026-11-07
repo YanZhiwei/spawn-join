@@ -5,7 +5,7 @@ Run read-only quality checks using each Distribution's locked environment.
 ##>
 [CmdletBinding()]
 param(
-    [ValidateSet('spawn-join-core', 'spawn-join-llm-provider',
+    [ValidateSet('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
         'spawn-join-llm-provider-langchain', 'spawn-join-llm-model-sync',
         'spawn-join-agent-deepagents')]
     [string]$Package,
@@ -24,6 +24,11 @@ $packages = [ordered]@{
         Path = 'packages/core/spawn-join-core'
         Import = 'spawn_join_core'
         Build = @('spawn-join-core')
+    }
+    'spawn-join-common' = @{
+        Path = 'packages/core/common'
+        Import = 'spawn_join_common'
+        Build = @('spawn-join-common')
     }
     'spawn-join-llm-provider' = @{
         Path = 'packages/core/llm-provider'
@@ -113,6 +118,67 @@ function Copy-BuildSource {
     }
 }
 
+function Test-CommonInstallVariants {
+    param([string]$Directory, [string]$Python, [string]$BasePython, [string]$Wheel)
+    $baseProbe = @'
+import importlib.util
+from importlib import metadata
+from importlib.resources import files
+from spawn_join_common import FieldReader
+assert importlib.util.find_spec("pydantic") is None, "common base installed Pydantic"
+assert not any(
+    item.metadata["Name"].startswith("spawn-join-")
+    and item.metadata["Name"] != "spawn-join-common"
+    for item in metadata.distributions()
+), "common base installed a domain package"
+assert (files("spawn_join_common") / "py.typed").is_file(), "base wheel lacks py.typed"
+assert FieldReader().as_int(3, "count") == 3
+try:
+    FieldReader().as_int(True, "count")
+except ValueError as exc:
+    assert str(exc) == "count: must be an integer"
+else:
+    raise AssertionError("common base accepted bool as int")
+'@
+    Invoke-Checked $BasePython @('-I', '-c', $baseProbe)
+
+    $requirements = Join-Path $Directory 'validation-requirements.txt'
+    Invoke-Checked 'uv' @('export', '--locked', '--directory', $packages['spawn-join-common'].Path,
+        '--extra', 'validation', '--no-dev', '--no-emit-project', '--no-emit-package',
+        'spawn-join-common', '--format', 'requirements-txt', '--output-file', $requirements)
+    $extraDirectory = Join-Path $Directory 'installed-validation'
+    Invoke-Checked 'uv' @('venv', '--python', $Python, $extraDirectory)
+    $extraPython = Get-VenvPython $extraDirectory
+    Invoke-Checked 'uv' @('pip', 'install', '--python', $extraPython,
+        '--no-deps', '-r', $requirements, "$Wheel[validation]")
+    Invoke-Checked 'uv' @('pip', 'check', '--python', $extraPython)
+    $extraProbe = @'
+from importlib import metadata
+from pydantic import TypeAdapter, ValidationError
+from spawn_join_common.validation import validate_with
+assert not any(
+    item.metadata["Name"].startswith("spawn-join-")
+    and item.metadata["Name"] != "spawn-join-common"
+    for item in metadata.distributions()
+), "validation extra installed a domain package"
+assert validate_with(
+    lambda: 3, error=RuntimeError, message=lambda exc: "unexpected"
+) == 3, "validation-extra-success-probe"
+def invalid_input():
+    return TypeAdapter(int).validate_python("invalid-install-probe")
+try:
+    validate_with(
+        invalid_input, error=RuntimeError, message=lambda exc: "count: invalid"
+    )
+except RuntimeError as exc:
+    assert str(exc) == "count: invalid"
+    assert isinstance(exc.__cause__, ValidationError)
+else:
+    raise AssertionError("validation extra did not convert the original error")
+'@
+    Invoke-Checked $extraPython @('-I', '-c', $extraProbe)
+}
+
 function Test-DistributionBuild {
     param([string]$Name, [string]$Python)
     $parent = if ($env:SPAWN_JOIN_TEMP_DIR) {
@@ -153,6 +219,10 @@ function Test-DistributionBuild {
         $importName = $packages[$Name].Import
         Invoke-Checked $installedPython @('-I', '-c',
             "import importlib; importlib.import_module('$importName')")
+        if ($Name -eq 'spawn-join-common') {
+            Test-CommonInstallVariants -Directory $temporary -Python $Python `
+                -BasePython $installedPython -Wheel $wheels[0]
+        }
     } finally {
         # This exact unique directory is created and owned by this invocation only.
         Remove-Item -LiteralPath $temporary -Recurse -Force

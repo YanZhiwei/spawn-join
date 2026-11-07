@@ -28,8 +28,8 @@ standards:
 profiles:
   # Temporary deletion-only ownership for the retired Distribution. Remove this
   # path match in a separate Lightweight change after the retirement is in the
-  # comparison base and this Delivery run has a closed outcome; it is not a
-  # sixth package profile and must not cover recreated content.
+  # comparison base and this Delivery run has a closed outcome; it is not an
+  # active package profile and must not cover recreated content.
   - id: shared-tool-policy
     match: ["pyproject.toml", "packages/infra/spawn-join-observability/**"]
     discovery_files: [pyproject.toml]
@@ -40,6 +40,13 @@ profiles:
     discovery_files: [pyproject.toml, packages/core/spawn-join-core/pyproject.toml, packages/core/spawn-join-core/uv.lock]
     commands:
       quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core"
+    rules:
+      complexity_max: 10
+  - id: spawn-join-common
+    match: ["packages/core/common/**"]
+    discovery_files: [pyproject.toml, packages/core/common/pyproject.toml, packages/core/common/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-common"
     rules:
       complexity_max: 10
   - id: spawn-join-llm-provider

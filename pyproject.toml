@@ -10,6 +10,7 @@ line_length = 88
 py_version = 311
 known_first_party = [
     "spawn_join_core",
+    "spawn_join_common",
     "spawn_join_llm_provider",
     "spawn_join_llm_provider_langchain",
 ]

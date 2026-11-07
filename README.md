@@ -4,8 +4,8 @@
 
 **面向 LLM 应用与 DeepAgents 产品的可组合 Python 基础设施。**
 
-SpawnJoin 将类型化模型配置、LangChain 模型构造、模型元数据同步和受控 Agent 装配放在
-同一个 monorepo 中。按需选择包，每个包独立管理依赖、锁文件、测试和构建边界。
+SpawnJoin 将公共输入读取与校验、类型化模型配置、LangChain 模型构造、模型元数据同步和
+受控 Agent 装配放在同一个 monorepo 中。按需选择包，每个包独立管理依赖、锁文件、测试和构建边界。
 
 **状态：**早期开发（`0.1.0`） · **Python：**3.11+ · **许可证：**专有软件
 （[条款](LICENSE)）。这些包面向获授权的私有项目，尚未发布到 PyPI；Core 当前为骨架。
@@ -28,6 +28,7 @@ SpawnJoin 将类型化模型配置、LangChain 模型构造、模型元数据同
 
 | 包 | 适用场景 | 主要入口 |
 | --- | --- | --- |
+| [spawn-join-common](packages/core/common/README.md) | 跨领域公共辅助能力；默认零依赖，Pydantic 校验为可选能力 | `FieldReader`、`validation.validate_with` |
 | [spawn-join-llm-provider](packages/core/llm-provider/README.md) | 框架无关的 endpoint/channel 契约、协议选项、元数据与错误 | `EndpointConfig`、`ProtocolKind` |
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.md) | 经校验的 LangChain 模型构造与命名模型目录 | `create_chat_model`、`ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.md) | 从 models.dev 等数据源手动同步元数据 | `spawn-join-model-sync` |
@@ -99,6 +100,7 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/basi
 
 | 我想要…… | 阅读入口 |
 | --- | --- |
+| 复用严格字段读取与校验 | [公共辅助能力](packages/core/common/README.md) |
 | 加载命名模型与凭据 | [模型文件与凭据](packages/infra/llm-provider-langchain/README.md#模型文件与凭据) |
 | 配置模型思考参数 | [思考与思考强度](packages/infra/llm-provider-langchain/README.md#思考与思考强度) |
 | 同步价格与能力元数据 | [模型元数据同步](packages/infra/llm-model-sync/README.md) |
@@ -151,6 +153,6 @@ SpawnJoin 由仓库维护者维护，包作者为 Yan Zhiwei。获授权的贡�
 
 ## 许可证
 
-SpawnJoin 及五个 Distribution 均为**专有软件**，保留所有权利。使用、复制、修改、发布、
+SpawnJoin 及六个 Distribution 均为**专有软件**，保留所有权利。使用、复制、修改、发布、
 分发、再许可与销售均须获得版权持有人的书面许可，详见 [LICENSE](LICENSE)。
 仓库内第三方工具保留各自的许可证与来源声明。

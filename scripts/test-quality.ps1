@@ -16,14 +16,16 @@ $parent = if ($env:SPAWN_JOIN_TEMP_DIR) {
 # Spaces deliberately exercise native argument handling on Windows and Linux.
 $fixture = Join-Path $parent ('spawn join gate fixture ' + [guid]::NewGuid().ToString('N'))
 $core = Join-Path $fixture 'packages/core/spawn-join-core'
+$commonFixture = Join-Path $fixture 'packages/core/common'
 $runner = Join-Path $fixture 'scripts/quality.ps1'
 $probe = Join-Path $core 'tests/test_probe.py'
 $assertions = 0
 
 function Assert-GateResult {
-    param([string]$Label, [string]$Check, [bool]$Success, [string]$Diagnostic)
+    param([string]$Label, [string]$Check, [bool]$Success, [string]$Diagnostic,
+        [string]$Distribution = 'spawn-join-core')
     $before = if (Test-Path -LiteralPath $probe) { (Get-FileHash -LiteralPath $probe).Hash }
-    $output = & pwsh -NoProfile -File $runner -Package spawn-join-core -Check $Check 2>&1
+    $output = & pwsh -NoProfile -File $runner -Package $Distribution -Check $Check 2>&1
     $code = $LASTEXITCODE
     $text = $output -join [Environment]::NewLine
     if (($Success -and $code -ne 0) -or (-not $Success -and $code -ne 1) -or
@@ -50,6 +52,14 @@ try {
     }
     Copy-Item -LiteralPath "$originalCore/src/spawn_join_core" -Destination "$core/src" -Recurse
     Copy-Item -LiteralPath "$originalCore/tests/test_package.py" -Destination "$core/tests"
+    $originalCommon = Join-Path $root 'packages/core/common'
+    New-Item -ItemType Directory -Path "$commonFixture/src", "$commonFixture/tests" -Force | Out-Null
+    foreach ($name in @('pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
+        Copy-Item -LiteralPath (Join-Path $originalCommon $name) -Destination $commonFixture
+    }
+    Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common" -Destination "$commonFixture/src" -Recurse
+    Get-ChildItem -LiteralPath "$originalCommon/tests" -Filter '*.py' |
+        Copy-Item -Destination "$commonFixture/tests"
     foreach ($file in @('README.md', 'AGENTS.md', '.specify/memory/constitution.md')) {
         Set-Content -LiteralPath (Join-Path $fixture $file) -Value '# Fixture'
     }
@@ -69,6 +79,22 @@ try {
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize fixture Git repository.' }
     Assert-GateResult 'clean full pipeline, including isolated wheel install' all $true ''
+    Assert-GateResult 'common base and optional validation install pipelines' all $true '' 'spawn-join-common'
+
+    $commonInit = Join-Path $commonFixture 'src/spawn_join_common/__init__.py'
+    Add-Content -LiteralPath $commonInit -Value 'import pydantic'
+    Assert-GateResult 'base wheel cannot import optional Pydantic' build $false `
+        "No module named 'pydantic'" 'spawn-join-common'
+    Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common/__init__.py" -Destination $commonInit
+
+    $commonValidation = Join-Path $commonFixture 'src/spawn_join_common/validation/__init__.py'
+    Set-Content -LiteralPath $commonValidation -Value "raise RuntimeError('validation-extra-probe')`n" -NoNewline
+    Assert-GateResult 'optional validation wheel import failure propagates' build $false `
+        'validation-extra-probe' 'spawn-join-common'
+    Set-Content -LiteralPath $commonValidation -Value "def validate_with(*args, **kwargs):`n    return None`n" -NoNewline
+    Assert-GateResult 'installed validation helper must execute its operation' build $false `
+        'validation-extra-success-probe' 'spawn-join-common'
+    Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common/validation/__init__.py" -Destination $commonValidation
 
     Set-Content -LiteralPath $probe -Value "value=1`n" -NoNewline
     Assert-GateResult 'Black rejects bad formatting without rewriting' format $false 'would reformat'

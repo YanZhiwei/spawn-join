@@ -128,8 +128,8 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 架构规则：
 
 1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
-2. `spawn-join-llm-provider` 可以依赖 Core 和通用校验库 Pydantic，但不得依赖 LangChain
-   或具体 Provider SDK。
+2. `spawn-join-llm-provider` 可以依赖 Core、Common 和通用校验库 Pydantic，但不得依赖
+   LangChain 或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包；应用层直接使用 LangChain 消息和 `BaseChatModel`。
 4. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向
@@ -141,8 +141,12 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 6. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
 7. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
 8. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
+9. `spawn-join-common` 承载按职责组织的跨领域公共辅助实现，不依赖其他 SpawnJoin 包；
+   默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
+   策略留在调用方，后续能力需有真实复用契约，不预建空模块。
 
-当前配置基线（2026-11-05）：五个保留包各自拥有 uv 本地开发源、锁文件、dev group 和 `tests/`；
+当前配置基线（2026-11-07）：六个保留包各自拥有独立 uv 锁文件、dev group 和 `tests/`，
+消费者通过本地开发源解析仓库依赖；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
@@ -227,7 +231,8 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 - 一个模块围绕一个稳定职责组织；配置、协议、异常、Provider 适配和观测不要无理由混在一起。
 - 领域抽象与具体实现分离：`abstractions/` 或协议模块描述契约，`providers/`、`implementations/` 承载实现。
 - 适配层负责转换外部 SDK 的请求、响应和错误；Core 与协议包只看稳定的内部契约。
-- 只有至少两个组件存在稳定、真实的复用需求时，才把能力提升到 Core。
+- 只有至少两个组件存在稳定、真实的复用需求时，才把契约提升到 Core，或把领域无关的
+  辅助实现提升到 Common。
 - 不用“大而全”的 `utils` 模块隐藏所有依赖；共享代码应有明确的拥有者和命名。
 - 公共导出要显式、少而稳定；内部模块不要因为位于可导入路径就自动成为公共契约。
 
@@ -324,6 +329,7 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 
 ```bash
 uv build packages/core/spawn-join-core --out-dir <temporary-output-dir>
+uv build packages/core/common --out-dir <temporary-output-dir>
 uv build packages/core/llm-provider --out-dir <temporary-output-dir>
 uv build packages/infra/llm-provider-langchain --out-dir <temporary-output-dir>
 uv build packages/infra/llm-model-sync --out-dir <temporary-output-dir>
@@ -334,12 +340,14 @@ uv build packages/infra/agent-deepagents --out-dir <temporary-output-dir>
 
 ```bash
 uv lock --check --directory packages/core/spawn-join-core
+uv lock --check --directory packages/core/common
 uv lock --check --directory packages/core/llm-provider
 uv lock --check --directory packages/infra/llm-provider-langchain
 uv lock --check --directory packages/infra/llm-model-sync
 uv lock --check --directory packages/infra/agent-deepagents
 
 uv sync --locked --directory packages/core/spawn-join-core
+uv sync --locked --directory packages/core/common
 uv sync --locked --directory packages/core/llm-provider
 uv sync --locked --directory packages/infra/llm-provider-langchain
 uv sync --locked --directory packages/infra/llm-model-sync

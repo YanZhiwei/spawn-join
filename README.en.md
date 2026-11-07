@@ -4,9 +4,9 @@
 
 **Composable Python infrastructure for LLM applications and DeepAgents products.**
 
-SpawnJoin brings typed model configuration, LangChain model construction, model metadata
-synchronization, and governed agent assembly into one monorepo. Use the package you need;
-each has its own dependencies, lockfile, tests, and build boundary.
+SpawnJoin brings shared input readers and validation, typed model configuration, LangChain model
+construction, model metadata synchronization, and governed agent assembly into one monorepo.
+Use the package you need; each has its own dependencies, lockfile, tests, and build boundary.
 
 **Status:** early development (`0.1.0`) · **Python:** 3.11+ · **License:** proprietary
 ([terms](LICENSE)). The packages are intended for authorized private projects and are not
@@ -31,6 +31,7 @@ published to PyPI. Core is currently a scaffold.
 
 | Package | Use it for | Main entry point |
 | --- | --- | --- |
+| [spawn-join-common](packages/core/common/README.en.md) | Shared helpers across domains; no default dependencies, optional Pydantic validation | `FieldReader`, `validation.validate_with` |
 | [spawn-join-llm-provider](packages/core/llm-provider/README.en.md) | Framework-independent endpoint/channel contracts, protocol options, metadata, and errors | `EndpointConfig`, `ProtocolKind` |
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
@@ -105,6 +106,7 @@ host-owned tools, persistence, and recovery.
 
 | I want to… | Read |
 | --- | --- |
+| Reuse strict field readers and validation | [Shared helpers](packages/core/common/README.en.md) |
 | Load named models and credentials | [Model file and credentials](packages/infra/llm-provider-langchain/README.en.md#model-file-and-credentials) |
 | Configure thinking parameters | [Thinking and reasoning effort](packages/infra/llm-provider-langchain/README.en.md#thinking-and-reasoning-effort) |
 | Synchronize pricing and capability metadata | [Model metadata synchronization](packages/infra/llm-model-sync/README.en.md) |
@@ -163,7 +165,7 @@ in [ADRs](docs/decisions/README.en.md); delivery records belong in [Harness](har
 
 ## License
 
-SpawnJoin and its five Distributions are **proprietary software**, with all rights reserved.
+SpawnJoin and its six Distributions are **proprietary software**, with all rights reserved.
 Use, copying, modification, publication, distribution, sublicensing, and sale require written
 permission from the copyright holder. See [LICENSE](LICENSE). Vendored tools retain their
 own licenses and provenance.

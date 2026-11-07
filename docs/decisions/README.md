@@ -89,6 +89,7 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0008 | llm-provider | [模型目录与凭据边界](llm-provider/0008-model-file-and-env-boundary.md) | Accepted |
 | ADR-0009 | llm-provider | [模型元数据与手动同步](llm-provider/0009-model-metadata-and-sync.md) | Proposed |
 | ADR-0010 | agent | [DeepAgents 产品边界与公共契约](agent/0010-deepagents-product-boundary.md) | Accepted |
+| ADR-0011 | engineering | [Common 公共辅助能力包](engineering/0011-common-helper-package.md) | Proposed |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。
 
