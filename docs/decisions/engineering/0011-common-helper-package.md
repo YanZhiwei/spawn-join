@@ -61,13 +61,17 @@ common 默认无第三方运行时依赖；root import 不导入 optional valida
 
 ## Verification and implementation status
 
-**尚未实现，尚未获设计批准；Proposed 不表示迁移或质量门已通过。**
+**实现已完成并通过独立审查；本 ADR 仍为 `Proposed`，等待决策 owner 正式接受。**
 
-2026-11-07 在当前基准重跑既有测试：协议 154、适配 240、Sync 55 全部 passed（各 exit 0），仅作为迁移前基线。
-计划验证 common 严格读取、异常转换、旧入口/default、两个隔离安装变体、消费者错误/cause/null/顺序、配置差分、六包质量与脚本回归。CI 需未来授权推送后另行观察。
+- 2026-11-07 提案时基线：协议 154、适配 240、Sync 55 全部 passed（各 exit 0），仅作为迁移前基线。
+- 2026-11-08 当前实现：`spawn-join-common` 与协议/适配/Sync 迁移已提交（T001 `8b1aaf6`、T002 `19930b2`）；公共包 18 项、协议 161 项、适配 240 项、Sync 58 项测试通过；1,536 项解析差分与 8 项 metadata 精确对照均为 0 差异。
+- 六个包的本地质量门、两种 Common 隔离安装、文档/治理/静态检查与三套门禁回归均通过；draft PR #47 的 18 个 CI 包任务、governance 和 `Quality Gate` 全部 success。
+- 任务级与最终集成 fresh-context 独立 Review 均通过。远端 CI 覆盖 Linux Python 3.11/3.14 与 Windows 3.11；真实 Provider 调用和发布未执行。
+- `spawn-join-common` 尚未发布到 Registry；消费者通过仓库本地路径源和锁文件解析。
 
-当前 Feature、任务与运行证据各由其工件拥有；本 ADR 不作第二套执行队列。接受状态需后续人类批准及实际评审/实现状态，不能由本次计划生成自行改变。
+当前 Feature、任务与运行证据各由其工件拥有；本 ADR 不作第二套执行队列。接受状态需决策 owner 批准，不能由实现或 CI 结果自行改变。
 
 ## Revision history
 
 - 2026-11-07：按用户公共辅助包定位提出候选方案；保留域内模型和格式化策略，首批公开 API 限定为真实复用的两项机制。
+- 2026-11-08：补充实现、独立审查与本地/远端 CI 验证状态；状态仍为 Proposed，等待决策 owner 接受。
