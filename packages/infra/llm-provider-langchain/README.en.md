@@ -41,8 +41,8 @@ If an application already runs on LangChain, using `ChatOpenAI` / `ChatAnthropic
 valid. This package solves the **configuration boundary**:
 
 - protocol is decided by an explicit `ProtocolKind`, never guessed from a model name;
-- `ChatModelConfig` contains only fields required for inference and does not depend on
-  `ChannelConfig`;
+- `ChatModelConfig` contains only fields required for inference and does not store
+  `ChannelConfig`; `from_channel()` is an optional conversion;
 - options have typed and range validation instead of being silently forwarded through arbitrary
   `**kwargs`;
 - channel/model configuration and LangChain construction details are centralized in one factory.
@@ -556,8 +556,9 @@ class ChatModelConfig(EndpointConfig):
     max_retries: int = 0
 ```
 
-It **does not depend on `ChannelConfig`**. Calling a model requires neither a channel name nor a
-credential reference.
+It **does not store `ChannelConfig`**. Calling a model requires neither a channel name nor a
+credential reference; when bridging, use `ChatModelConfig.from_channel()` as a one-time
+conversion.
 
 The following raise `ConfigurationError` before a model is constructed:
 
@@ -597,8 +598,9 @@ copy an inference exception hierarchy.
 
 ## Channel bridge and catalog inspection
 
-`ChannelConfig` and `ModelInfo` from `spawn-join-llm-channel` can be used here
-without network access or new YAML fields:
+`ChannelConfig` and `ModelInfo` from `spawn-join-llm-provider` can be used here;
+they are normally discovered by `spawn-join-llm-channel`, without network access
+or new YAML fields:
 
 ```python
 from spawn_join_llm_provider import ChannelConfig, ModelInfo, ProtocolKind

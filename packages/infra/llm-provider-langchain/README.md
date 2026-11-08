@@ -39,7 +39,7 @@
 解决的是**配置边界**：
 
 - 协议由显式 `ProtocolKind` 决定，不根据模型名称猜测；
-- `ChatModelConfig` 只包含推理需要的字段，不依赖 `ChannelConfig`；
+- `ChatModelConfig` 只包含推理需要的字段，不存储 `ChannelConfig`；`from_channel()` 只是可选转换；
 - 选项有类型和范围校验，不通过任意 `**kwargs` 静默传递；
 - 渠道/模型配置和 LangChain 构造细节集中在一个工厂里。
 
@@ -523,7 +523,8 @@ class ChatModelConfig(EndpointConfig):
     max_retries: int = 0
 ```
 
-它**不依赖 `ChannelConfig`**。只想调用模型时，不需要渠道名称或凭据引用。
+它**不存储 `ChannelConfig`**。只想调用模型时，不需要渠道名称或凭据引用；需要桥接时用
+`ChatModelConfig.from_channel()` 做一次性转换。
 
 以下情况在构造模型前抛 `ConfigurationError`：
 
@@ -559,8 +560,8 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 
 ## 渠道桥接与目录检视
 
-`spawn-join-llm-channel` 的 `ChannelConfig` 和 `ModelInfo` 可以直接接入本包，不需要
-网络或新的 YAML 字段：
+`spawn-join-llm-provider` 的 `ChannelConfig` 和 `ModelInfo` 可以直接接入本包；它们通常由
+`spawn-join-llm-channel` 发现，不需要网络或新的 YAML 字段：
 
 ```python
 from spawn_join_llm_provider import ChannelConfig, ModelInfo, ProtocolKind

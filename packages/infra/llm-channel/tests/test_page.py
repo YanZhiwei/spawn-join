@@ -51,3 +51,6 @@ def test_next_cursor_returns_last_id_only_when_more() -> None:
     assert next_cursor(SimpleNamespace(has_more=True, last_id="next")) == "next"
     assert next_cursor(SimpleNamespace(has_more=False, last_id="next")) is None
     assert next_cursor(SimpleNamespace(has_more=True, last_id=None)) is None
+    assert next_cursor(SimpleNamespace(has_more=True, last_id="")) is None
+    assert next_cursor(SimpleNamespace(has_more=True, last_id="   ")) is None
+    assert next_cursor(SimpleNamespace(has_more=None, last_id="next")) == "next"

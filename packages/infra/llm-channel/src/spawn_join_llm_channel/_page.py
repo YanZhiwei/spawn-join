@@ -37,4 +37,6 @@ def next_cursor(page: object) -> str | None:
         raise InvalidPageError("model page has an invalid has_more flag")
     if last_id is not None and not isinstance(last_id, str):
         raise InvalidPageError("model page has an invalid last_id")
-    return last_id if has_more else None
+    if has_more is False or not isinstance(last_id, str) or not last_id.strip():
+        return None
+    return last_id
