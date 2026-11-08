@@ -82,7 +82,7 @@ copying a task list.
 
 - Black/isort/Ruff/Pyright/pytest and CI configuration exist; remote CI has run, the Ruleset
   configures a required `Quality Gate`, and a temporary failing PR was verified as `BLOCKED`.
-- `.specify/extensions.yml` registers Bundle v0.4.5 components, but automatic hooks are disabled and
+- `.specify/extensions.yml` registers Bundle v0.4.6 components, but automatic hooks are disabled and
   no hook is registered; [Delivery installation](../docs/development/spec-kit-delivery.md) does not
   mean Ralph or the full delivery loop has executed.
 - `scripts/check-governance.ps1` validates Harness/Delivery evidence metadata, truncated revisions,

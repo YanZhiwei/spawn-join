@@ -1136,3 +1136,17 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 详细范围、验证与未执行项见
   [治理记录清理 evidence](evidence/governance-records-cleanup.md)。
 - 本次不改产品源码、manifest、锁、CI 或质量 Profile；不涉及提交后的 push、PR 或合并。
+
+## 2026-11-09 — Delivery v0.4.6 升级与 PR 准备
+
+- Route: Lightweight。用户要求安装 v0.4.6，完成后创建 PR，CI 成功后按 SD 流程完成合并。
+- Base revision: `02e3d913fd6fbc740a57ddaa23f34cde1048877f`（与 `origin/main` 一致）。
+- Working directory: `C:\Users\YanZh\.local\share\opencode\worktree\86e56b\quick-forest`。
+- v0.4.6 在临时副本演练后通过原生 Bundle update 安装；13 个组件、165 个保护路径和
+  随包 PR 模板保持预期，Docs Sync 显式选择 `project_readme: auto`。安装内容、来源、失败
+  尝试与实际结果见 [v0.4.6 evidence](evidence/delivery-v046-upgrade.md)。
+- 实际安装校验通过：75 个已安装扩展/Workflow 文件与固定 Tag 一致，39 个点号原生命令加
+  `sd` alias，0 missing/invalid manifest paths；上游 runtime 37 项、分发 73 项、README
+  结构 11 项回归通过。
+- 本项目根 README 结构守卫结果为 `README_STRUCTURE: pass`，项目检查、评审与远端 CI
+  在对应 PR run 中另行记录，不把安装验证写成 Ralph 或模型 eval 通过。
