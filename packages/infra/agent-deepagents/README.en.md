@@ -13,10 +13,17 @@ streaming capabilities.
 - [Capabilities](#capabilities)
 - [Installation](#installation)
 - [Quick start](#quick-start)
+  - [1. Run the complete offline examples first](#1-run-the-complete-offline-examples-first)
+  - [2. Connect your own model service](#2-connect-your-own-model-service)
 - [Model purposes](#model-purposes)
 - [Subagents](#subagents)
+  - [AsyncSubAgent (remote subagent)](#asyncsubagent-remote-subagent)
+  - [AsyncSubAgent field reference](#asyncsubagent-field-reference)
+  - [Remote execution flow](#remote-execution-flow)
+  - [Local vs remote subagents](#local-vs-remote-subagents)
 - [Middleware scopes](#middleware-scopes)
 - [Memory, skills, and profiles](#memory-skills-and-profiles)
+  - [Complete runnable example](#complete-runnable-example)
 - [Delegation](#delegation)
 - [Diagnostics](#diagnostics)
 - [Resources and recovery](#resources-and-recovery)
@@ -218,6 +225,91 @@ than appending a duplicate.
   entry represents the upstream default contract and the actual graph is authoritative;
 - `mode="fork"` is DeepAgents beta and requires explicit
   `SupervisorSpec(allow_experimental_fork=True)`; it is outside the stable compatibility promise.
+
+### AsyncSubAgent (remote subagent)
+
+`AsyncSubAgentDefinition` does not create another agent in this process. It registers a
+subagent that runs on a remote Agent Protocol service. That service owns its model, tools, and
+runtime; this package only validates the declaration, converts it to the native DeepAgents
+`AsyncSubAgent`, and reports it.
+
+#### What Agent Protocol is
+
+Agent Protocol is an HTTP contract for agent services: clients can look up
+assistants/graphs, create threads, start runs, and query status/results. LangGraph Platform
+implements it; a self-hosted FastAPI service can implement the same contract. DeepAgents'
+`AsyncSubAgentMiddleware` calls it through `langgraph_sdk`, so:
+
+- `url` is the remote service address;
+- `graph_id` is the agent/graph/assistant on that service.
+
+#### AsyncSubAgent field reference
+
+| Field | Required | Default | Plain meaning |
+| --- | --- | --- | --- |
+| `name` | yes | none | Local name the supervisor uses to select this remote worker |
+| `description` | yes | none | Tells the model what the worker is good at |
+| `graph_id` | yes | none | Graph/assistant ID on the remote service |
+| `url` | no | SDK default | Agent Protocol service URL; omit for the LangGraph SDK default or local ASGI transport |
+| `headers` | no | none | Extra HTTP headers, usually auth; never included in the report |
+| `webhook` | no | none | URL the remote service calls when a run finishes |
+| `update_strategy` | no | `"interrupt"` | Follow-up while running: `interrupt` stops the current run, `enqueue` waits behind it |
+| `notify_parent` | no | upstream `True` | Whether the worker may wake the parent when done; set `False` when the app delivers via webhook |
+| `mode` | no | `"isolated"` | `isolated` uses separate context; `fork` copies parent history (beta, remote config must match) |
+
+The minimal form needs only the first three fields:
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+)
+```
+
+A real deployment usually adds the URL and auth headers (keep secrets in the host environment):
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+    url="https://my-deployment.langsmith.dev",
+    headers={"Authorization": f"Bearer {token_from_host}"},
+    update_strategy="enqueue",
+    notify_parent=False,
+    webhook="https://my-app.example.com/agent-events",
+)
+```
+
+#### Remote execution flow
+
+1. `build_supervisor` validates and converts the declaration; it does **not** connect.
+2. `create_deep_agent` sees `graph_id` and installs `AsyncSubAgentMiddleware`.
+3. The supervisor model gains async tools: `start_async_task`, `check_async_task`,
+   `update_async_task`, `cancel_async_task`, `list_async_tasks`.
+4. The model calls `start_async_task`, receives a `task_id` immediately, and can continue.
+5. The remote service runs the actual agent in its own process.
+6. The model later checks status/results, or receives completion via webhook / `notify_parent`.
+7. This path requires `ainvoke` / `astream` and an Agent Protocol service.
+
+The key difference from a normal subagent: a normal subagent delegates and waits; an async
+subagent gets a ticket ID first and checks progress later.
+
+#### Local vs remote subagents
+
+| | `SubAgentDefinition` | `AsyncSubAgentDefinition` |
+| --- | --- | --- |
+| Model location | current process | remote service |
+| Result timing | wait | get `task_id`, check later |
+| Package injects middleware | yes | no |
+| Reported model source | `purpose:worker`, etc. | `remote:<graph_id>` |
+| Remote service needed | no | yes, Agent Protocol |
+| Beta switch | only for `fork` | `allow_experimental_async_subagents=True` |
+
+Note: `url="https://example.invalid"` in `examples/p0_capabilities.py` only demonstrates the
+field. The example never calls the remote subagent, so it needs no network and does not fail on
+an unreachable address.
 
 ## Middleware scopes
 

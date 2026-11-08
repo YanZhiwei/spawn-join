@@ -12,10 +12,17 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - [提供的能力](#提供的能力)
 - [安装](#安装)
 - [快速开始](#快速开始)
+  - [1. 先运行完整离线示例](#1-先运行完整离线示例)
+  - [2. 连接自己的模型服务](#2-连接自己的模型服务)
 - [模型用途](#模型用途)
 - [子代理](#子代理)
+  - [AsyncSubAgent（远程子代理）](#asyncsubagent远程子代理)
+  - [AsyncSubAgent 字段说明](#asyncsubagent-字段说明)
+  - [远程执行流程](#远程执行流程)
+  - [本地与远程子代理对比](#本地与远程子代理对比)
 - [Middleware 作用域](#middleware-作用域)
 - [Memory、Skills 与 Profile](#memoryskills-与-profile)
+  - [完整可运行示例](#完整可运行示例)
 - [委派](#委派)
 - [诊断](#诊断)
 - [资源与恢复](#资源与恢复)
@@ -205,6 +212,89 @@ if __name__ == "__main__":
   最终以实际图为准；
 - `mode="fork"` 是 DeepAgents beta，只能通过
   `SupervisorSpec(allow_experimental_fork=True)` 显式开启，且不进入稳定兼容承诺。
+
+### AsyncSubAgent（远程子代理）
+
+`AsyncSubAgentDefinition` 不是“在本进程再建一个 agent”，而是登记一个运行在远程
+Agent Protocol 服务上的子代理。远程服务拥有自己的模型、工具和运行环境；本包只负责校验
+声明、转换成 DeepAgents 原生 `AsyncSubAgent`，并在装配报告中说明它。
+
+#### Agent Protocol 是什么
+
+Agent Protocol 是一套面向 Agent 服务的 HTTP 接口约定：客户端可以查询 assistant/graph、
+创建 thread、启动 run、查询状态和结果。LangGraph Platform 实现了它；自托管服务也可以用
+FastAPI 等实现同样的接口。DeepAgents 的 `AsyncSubAgentMiddleware` 通过 `langgraph_sdk`
+调用这些接口，所以：
+
+- `url` 是“远程服务地址”；
+- `graph_id` 是“远程服务上的哪个 agent/graph/assistant”。
+
+#### AsyncSubAgent 字段说明
+
+| 字段 | 必填 | 默认 | 大白话 |
+| --- | --- | --- | --- |
+| `name` | 是 | 无 | 本地给这个远程代理起的名字，supervisor 用它选人 |
+| `description` | 是 | 无 | 告诉模型“它适合干什么”，模型靠它决定是否派活 |
+| `graph_id` | 是 | 无 | 远程服务上的 graph/assistant ID，相当于“找哪个团队” |
+| `url` | 否 | SDK 默认地址 | Agent Protocol 服务地址；省略时使用 LangGraph SDK 默认端点或本地 ASGI transport |
+| `headers` | 否 | 无 | 调远程服务时附加的 HTTP headers，通常放认证信息；不会进入报告 |
+| `webhook` | 否 | 无 | 远程 run 结束时回调的 URL，供宿主自行接收完成通知 |
+| `update_strategy` | 否 | `"interrupt"` | 运行中再发跟进消息：`interrupt` 打断当前 run，`enqueue` 排队等当前 run 结束 |
+| `notify_parent` | 否 | 上游默认 `True` | 远程任务完成时是否允许唤醒当前 agent；应用自己用 webhook 交付时可设为 `False` |
+| `mode` | 否 | `"isolated"` | `isolated` 使用独立上下文；`fork` 复制父对话历史（beta，需要远程侧配置匹配） |
+
+最小写法只需要前三个字段：
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+)
+```
+
+真实部署通常还会带地址和认证头（密钥必须来自宿主环境，不要硬编码）：
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+    url="https://my-deployment.langsmith.dev",
+    headers={"Authorization": f"Bearer {token_from_host}"},
+    update_strategy="enqueue",
+    notify_parent=False,
+    webhook="https://my-app.example.com/agent-events",
+)
+```
+
+#### 远程执行流程
+
+1. `build_supervisor` 只做校验和转换，**不连接远程服务**。
+2. `create_deep_agent` 看到 `graph_id` 后自动安装 `AsyncSubAgentMiddleware`。
+3. supervisor 模型会多出一组异步任务工具：`start_async_task`、`check_async_task`、
+   `update_async_task`、`cancel_async_task`、`list_async_tasks`。
+4. 模型调用 `start_async_task`，立刻拿到 `task_id`，然后可以继续做别的事。
+5. 远程服务在自己的进程里执行真正的 agent。
+6. 模型之后可以查状态/取结果，或者依赖 webhook / `notify_parent` 接收完成通知。
+7. 这条路径要求 `ainvoke` / `astream` 异步执行；远程服务必须实现 Agent Protocol。
+
+这也是它和普通子代理最大的区别：普通子代理是“派活并等结果”，async 子代理是
+“先拿工单号，稍后查进度”。
+
+#### 本地与远程子代理对比
+
+| | `SubAgentDefinition` | `AsyncSubAgentDefinition` |
+| --- | --- | --- |
+| 模型在哪 | 当前进程 | 远程服务 |
+| 是否等结果 | 等 | 先拿 `task_id`，稍后查 |
+| 包是否注入 Middleware | 会 | 不会 |
+| 报告中的模型来源 | `purpose:worker` 等 | `remote:<graph_id>` |
+| 是否需要远程服务 | 不需要 | 需要 Agent Protocol 服务 |
+| beta 开关 | `fork` 才需要 | `allow_experimental_async_subagents=True` |
+
+注意：`examples/p0_capabilities.py` 里的 `url="https://example.invalid"` 只是展示字段，
+示例并不会调用远程子代理，因此不会联网，也不会因为地址不可达而失败。
 
 ## Middleware 作用域
 
