@@ -106,18 +106,18 @@ class MiddlewareConfiguration:
 
         declarative = set(declarative_names)
         compiled = set(compiled_names)
-        unknown = set(self.worker_overrides) - declarative
-        if unknown:
-            names = ", ".join(sorted(unknown))
-            raise MiddlewareConfigurationError(
-                "middleware.worker_overrides: unknown declarative subagent(s): " + names
-            )
         compiled_overrides = set(self.worker_overrides) & compiled
         if compiled_overrides:
             names = ", ".join(sorted(compiled_overrides))
             raise MiddlewareConfigurationError(
-                "middleware.worker_overrides: compiled subagent(s) own their "
-                "middleware: " + names
+                "middleware.worker_overrides: compiled/async subagents do not "
+                "accept injected middleware: " + names
+            )
+        unknown = set(self.worker_overrides) - declarative - compiled
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise MiddlewareConfigurationError(
+                "middleware.worker_overrides: unknown declarative subagent(s): " + names
             )
 
 
