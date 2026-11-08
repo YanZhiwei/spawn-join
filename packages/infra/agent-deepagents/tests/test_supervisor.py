@@ -298,6 +298,72 @@ def test_compiled_subagent_has_no_injected_middleware(
     assert assembly.report.middleware.per_subagent["compiled"] == ()
 
 
+def test_llm_error_normalization_is_enabled_by_default(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+        )
+    )
+
+    assert "spawn_join_llm_error_normalization" in (
+        assembly.report.middleware.supervisor_names
+    )
+
+
+def test_llm_error_normalization_can_be_disabled(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            normalize_llm_errors=False,
+        )
+    )
+
+    assert "spawn_join_llm_error_normalization" not in (
+        assembly.report.middleware.supervisor_names
+    )
+
+
+def test_llm_error_normalization_applies_to_declarative_workers(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            control_default_subagent=False,
+        )
+    )
+
+    assert "spawn_join_llm_error_normalization" in (
+        assembly.report.middleware.per_subagent["researcher"]
+    )
+
+
+def test_llm_error_normalization_warns_for_compiled_subagents(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_compiled_definition(),),
+        )
+    )
+
+    assert any("llm_errors" in warning for warning in assembly.report.warnings)
+
+
 def test_governed_delegation_report_and_controller_reuse(
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
 ) -> None:

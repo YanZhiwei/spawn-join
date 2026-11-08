@@ -18,12 +18,14 @@ from .errors import MiddlewareConfigurationError
 RESERVED_SUMMARIZATION_MIDDLEWARE_NAME = "SummarizationMiddleware"
 DELEGATION_MIDDLEWARE_NAME = "spawn_join_delegation_policy"
 DIAGNOSTICS_MIDDLEWARE_NAME = "spawn_join_diagnostics"
+LLM_ERROR_MIDDLEWARE_NAME = "spawn_join_llm_error_normalization"
 
 RESERVED_MIDDLEWARE_NAMES = frozenset(
     {
         RESERVED_SUMMARIZATION_MIDDLEWARE_NAME,
         DELEGATION_MIDDLEWARE_NAME,
         DIAGNOSTICS_MIDDLEWARE_NAME,
+        LLM_ERROR_MIDDLEWARE_NAME,
     }
 )
 

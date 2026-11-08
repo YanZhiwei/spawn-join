@@ -50,7 +50,12 @@ from .execution import (
     DelegationController,
     DelegationPolicyMiddleware,
 )
-from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
+from .llm_errors import LLMErrorNormalizationMiddleware
+from .middleware import (
+    LLM_ERROR_MIDDLEWARE_NAME,
+    MiddlewareConfiguration,
+    MiddlewareScopeReport,
+)
 from .models import (
     ModelBindings,
     ModelPurpose,
@@ -116,6 +121,7 @@ class SupervisorSpec:
     cache: BaseCache[Any] | None = None
     name: str | None = None
     debug: bool = False
+    normalize_llm_errors: bool = True
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tools", tuple(self.tools))
@@ -410,7 +416,10 @@ def _supervisor_middleware(
     controller: DelegationController | None,
     memory_middleware: MiddlewareType | None = None,
 ) -> list[MiddlewareType]:
-    middleware: list[MiddlewareType] = list(spec.middleware.supervisor)
+    middleware: list[MiddlewareType] = []
+    if spec.normalize_llm_errors:
+        middleware.append(LLMErrorNormalizationMiddleware())
+    middleware.extend(spec.middleware.supervisor)
     if summary is not None:
         middleware.append(summary)
     if memory_middleware is not None:
@@ -432,11 +441,12 @@ def _declarative_middleware(
     spec: SupervisorSpec,
     summary: MiddlewareType | None,
 ) -> tuple[MiddlewareType, ...]:
-    middleware: list[MiddlewareType] = [
-        *definition.middleware,
-        *spec.middleware.workers,
-        *spec.middleware.worker_overrides.get(definition.name, ()),
-    ]
+    middleware: list[MiddlewareType] = []
+    if spec.normalize_llm_errors:
+        middleware.append(LLMErrorNormalizationMiddleware())
+    middleware.extend(definition.middleware)
+    middleware.extend(spec.middleware.workers)
+    middleware.extend(spec.middleware.worker_overrides.get(definition.name, ()))
     if summary is not None:
         middleware.append(summary)
     return tuple(middleware)
@@ -717,6 +727,11 @@ def _subagent_warnings(spec: SupervisorSpec) -> list[str]:
             )
     if spec.middleware.workers and declarative_count == 0:
         warnings.append("middleware.workers: no declarative subagents are registered")
+    if spec.normalize_llm_errors and (compiled_count or async_count):
+        warnings.append(
+            "middleware.llm_errors: compiled/async subagents own their middleware "
+            "and are not normalized"
+        )
     return warnings
 
 
@@ -817,9 +832,13 @@ def _build_report(
     replaced_defaults: list[str] = []
     if summary is not None:
         replaced_defaults.append("SummarizationMiddleware")
+    worker_names: list[str] = []
+    if spec.normalize_llm_errors:
+        worker_names.append(LLM_ERROR_MIDDLEWARE_NAME)
+    worker_names.extend(item.name for item in spec.middleware.workers)
     middleware = MiddlewareScopeReport(
         supervisor_names=tuple(item.name for item in supervisor_middleware),
-        worker_names=tuple(item.name for item in spec.middleware.workers),
+        worker_names=tuple(worker_names),
         per_subagent=per_subagent_report,
         replaced_defaults=tuple(replaced_defaults),
         warnings=warnings,
