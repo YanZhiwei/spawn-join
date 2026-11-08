@@ -260,6 +260,8 @@ print(summary.metadata_ref, summary.metadata)
   非法或 `base_model` 不匹配时抛 `ConfigurationError`。
 - 加载快照不发起网络请求，也不搜索 AppData；路径必须显式传入。
 - 元数据是只读描述，不驱动路由、降级或能力协商。
+- `metadata_source` 的坐标校验失败会转换为带字段路径的 `ConfigurationError`，公开消息
+  不回显非法值；原始异常保存在 `__cause__` 中，完整 traceback 可能包含原始输入。
 
 ## 协议与选项
 
@@ -270,6 +272,9 @@ print(summary.metadata_ref, summary.metadata)
 | `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking` |
 
 三种协议都显式设置 `max_retries`（默认 `0`）、endpoint 和 timeout。
+
+Anthropic 未配置 `max_output_tokens` 时沿用 LangChain 的模型默认输出预算；具体值由
+模型与已安装的 LangChain 版本决定。显式配置和原生调用时的 `max_tokens` 覆盖仍然有效。
 
 ### Chat Completions
 
@@ -558,6 +563,13 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 - 公共 API 为 `ChatModelConfig`、`ModelCatalog`、`ModelSummary`、`create_chat_model`、
   `load_model_catalog`，由 [`test_public_api.py`](tests/test_public_api.py) 固定。
 
+模型文件的内部字段结构集中声明在 `model_file/_input.py`，由 `_validation.py` 的有类型
+helper 统一检查结构和严格值类型，再由 `_schema.py` 组装现有配置对象。它们都是适配包的
+私有实现，不增加公共 API；YAML 重复键检查、缺省与显式 `null` 的区别、领域校验顺序及
+安全错误路径保持不变。新增字段时同步维护对应输入模型、领域映射和回归测试，不再重复
+维护允许字段集合与协议选项的逐字段读取代码。条目级字段仍按原领域构造顺序读取，以保持
+多处输入同时非法时的首个错误。
+
 ## 开发与验证
 
 ```powershell
@@ -567,7 +579,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langc
 ```
 
 质量命令包含 Black、isort、Ruff、Pyright strict、pytest、隔离构建/安装和导入检查。
-默认测试只构造模型，不访问网络，不使用真实凭据。
+默认测试覆盖模型构造、配置解析及离线请求转换，不访问网络，不使用真实凭据。
 
 维护者新增协议或选项时：
 

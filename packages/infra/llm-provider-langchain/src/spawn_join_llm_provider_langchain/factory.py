@@ -1,6 +1,6 @@
 """Create configured LangChain chat models from explicit protocol configuration."""
 
-from typing import cast
+from typing import TypedDict, cast
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
@@ -85,11 +85,19 @@ def _thinking_payload(
     raise ConfigurationError("Unsupported Anthropic thinking configuration")
 
 
+class _AnthropicTokenLimit(TypedDict, total=False):
+    max_tokens_to_sample: int
+
+
 def _anthropic_model(
     config: ChatModelConfig,
     api_key: SecretStr,
     options: AnthropicMessagesOptions | None,
 ) -> ChatAnthropic:
+    # Passing None via the alias overrides LangChain's model-specific default.
+    token_limit: _AnthropicTokenLimit = {}
+    if options is not None and options.max_output_tokens is not None:
+        token_limit["max_tokens_to_sample"] = options.max_output_tokens
     return ChatAnthropic(
         model_name=config.model,
         api_key=api_key,
@@ -97,9 +105,7 @@ def _anthropic_model(
         timeout=config.timeout_seconds,
         max_retries=config.max_retries,
         temperature=options.temperature if options is not None else None,
-        max_tokens_to_sample=(
-            options.max_output_tokens if options is not None else None
-        ),
+        **token_limit,
         top_p=options.top_p if options is not None else None,
         top_k=options.top_k if options is not None else None,
         stop=(
