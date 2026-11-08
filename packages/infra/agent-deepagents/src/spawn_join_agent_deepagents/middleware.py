@@ -19,13 +19,15 @@ RESERVED_SUMMARIZATION_MIDDLEWARE_NAME = "SummarizationMiddleware"
 DELEGATION_MIDDLEWARE_NAME = "spawn_join_delegation_policy"
 DIAGNOSTICS_MIDDLEWARE_NAME = "spawn_join_diagnostics"
 
-_RESERVED_NAMES = frozenset(
+RESERVED_MIDDLEWARE_NAMES = frozenset(
     {
         RESERVED_SUMMARIZATION_MIDDLEWARE_NAME,
         DELEGATION_MIDDLEWARE_NAME,
         DIAGNOSTICS_MIDDLEWARE_NAME,
     }
 )
+
+_RESERVED_NAMES = RESERVED_MIDDLEWARE_NAMES
 
 
 def _empty_worker_overrides() -> Mapping[str, Sequence[AgentMiddleware[Any, Any, Any]]]:
