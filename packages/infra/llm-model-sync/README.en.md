@@ -24,7 +24,7 @@ never modifies `model.yaml`, never registers models automatically, and never run
 ## Status
 
 Version `0.1.0`, early development; Python `>=3.11`. Runtime dependencies are
-`spawn-join-llm-provider`, `platformdirs`, and `PyYAML`.
+`spawn-join-llm-provider`, `spawn-join-common`, `platformdirs`, and `PyYAML`.
 
 This package belongs to the SpawnJoin monorepo and is not published to PyPI. It is a maintenance
 tool, not a runtime dependency of the LangChain adapter package. See
@@ -139,14 +139,14 @@ The application owns that environment and its credential configuration.
 
 ### Package boundaries
 
-- `spawn-join-llm-provider`: framework-independent metadata types, snapshot parsing, and shared
-  strict field reading.
+- `spawn-join-llm-provider`: framework-independent metadata types and snapshot parsing.
+- `spawn-join-common`: shared strict field reading; the sync tool injects its own error type.
 - `spawn-join-llm-provider-langchain`: full `model.yaml` parsing and runtime catalog reading; a
   test/dev dependency only, not a CLI runtime dependency.
 - `spawn-join-llm-model-sync`: network fetching, source registration, raw DTOs, metadata projection,
   snapshot generation, cache, and CLI.
 
-The sync tool depends on `llm-provider`; the full model-file parser still
+The sync tool depends on `llm-provider` and `common`; the full model-file parser still
 belongs to `llm-provider-langchain`, but the sync tool reads only the metadata projection and imports
 no LangChain. Runtime packages must not depend on the sync tool.
 
@@ -270,8 +270,9 @@ pwsh -NoProfile -File scripts/test-quality.ps1
 ```
 
 - Each Distribution uses an independent `.venv` and `uv.lock`; never create a root uv environment.
-- When changing shared parsing rules, reuse `spawn_join_llm_provider.parsing.FieldReader` rather than
-  duplicating field-reading code across adapters.
+- When changing shared parsing rules, reuse `spawn_join_common.FieldReader` rather than
+  duplicating field-reading code across adapters; `spawn_join_llm_provider.parsing.FieldReader`
+  is only the protocol package's compatibility entry for its own callers.
 - Cache and reports are not committed; only a reviewed `model-metadata.json` is committed.
 - ADR status is closed by independent review and `speckit.decision.finalize`; tool presence does not
   prove review completion.

@@ -15,13 +15,13 @@ from typing import cast
 
 import yaml
 
+from spawn_join_common import FieldReader
 from spawn_join_llm_provider import (
     ConfigurationError,
     ModelMetadataOverride,
     ModelSourceRef,
     parse_model_metadata_override,
 )
-from spawn_join_llm_provider.parsing import FieldReader
 
 _READER = FieldReader(ConfigurationError)
 _MODEL_KEY = r"^[^/\s]+/[^/\s].*$"

@@ -4,6 +4,7 @@ from datetime import date
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from spawn_join_llm_provider import (
     ConfigurationError,
@@ -403,3 +404,35 @@ def test_channel_must_reference_known_model() -> None:
 def test_reasoning_controls_must_be_absent_when_unsupported() -> None:
     with pytest.raises(ConfigurationError, match="must be absent"):
         ModelReasoning(supported=False, efforts=("low",))
+
+
+def test_override_conversion_preserves_exact_message_and_cause() -> None:
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_override(
+            {"limits": {"context": "invalid-input"}, "unknown": None}
+        )
+
+    assert str(excinfo.value) == (
+        "metadata: limits.context: Input should be a valid integer; "
+        "unknown: unknown field(s): unknown"
+    )
+    assert isinstance(excinfo.value.__cause__, ValidationError)
+
+
+def test_document_nested_conversion_preserves_exact_message_and_cause() -> None:
+    document = {
+        "schema_version": 1,
+        "sources": {},
+        "models": {"lab/model": {"name": False}},
+        "channels": {},
+    }
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        parse_model_metadata_document(document)
+
+    assert str(excinfo.value) == (
+        "models.lab/model: name: Input should be a valid string; "
+        "type: missing required field(s): type; "
+        "modalities: missing required field(s): modalities"
+    )
+    assert isinstance(excinfo.value.__cause__, ValidationError)

@@ -9,13 +9,13 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
-    ValidationError,
     ValidationInfo,
     model_validator,
 )
 
+from spawn_join_common import FieldReader
+from spawn_join_common.validation import validate_with
 from spawn_join_llm_provider import ConfigurationError
-from spawn_join_llm_provider.parsing import FieldReader
 
 reader = FieldReader(ConfigurationError)
 
@@ -100,8 +100,9 @@ InputT = TypeVar("InputT", bound=FileInput)
 
 def validate_input(schema: type[InputT], value: object, path: str) -> InputT:
     """Validate one wire shape, preserving safe errors and foreign causes."""
-    try:
-        return schema.model_validate(value, context={"path": path})
-    except ValidationError as exc:
+    return validate_with(
+        lambda: schema.model_validate(value, context={"path": path}),
+        error=ConfigurationError,
         # Never render Pydantic's input, context, or arbitrary mapping keys.
-        raise ConfigurationError(f"{path}: invalid configuration") from exc
+        message=lambda _: f"{path}: invalid configuration",
+    )

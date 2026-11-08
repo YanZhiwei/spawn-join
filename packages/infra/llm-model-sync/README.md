@@ -23,7 +23,7 @@ SpawnJoin 的手动模型元数据同步工具。
 ## 状态
 
 版本 `0.1.0`，早期开发，要求 Python `>=3.11`。运行时依赖为
-`spawn-join-llm-provider`、`platformdirs` 和 `PyYAML`。
+`spawn-join-llm-provider`、`spawn-join-common`、`platformdirs` 和 `PyYAML`。
 
 本包属于 SpawnJoin monorepo，不发布到 PyPI。它是维护工具，不是 LangChain 适配包的
 运行时依赖。长期边界见
@@ -126,13 +126,14 @@ for key, metadata in document.models.items():
 
 ### 包边界
 
-- `spawn-join-llm-provider`：框架无关的元数据类型、快照解析和共享严格字段读取。
+- `spawn-join-llm-provider`：框架无关的元数据类型和快照解析。
+- `spawn-join-common`：共享严格字段读取；同步工具注入自己的异常类型。
 - `spawn-join-llm-provider-langchain`：完整 `model.yaml` 解析和运行时目录读取；仅作为
   本包的测试/dev 依赖，不是 CLI 运行时依赖。
 - `spawn-join-llm-model-sync`：网络抓取、源注册、原始 DTO、元数据投影、快照生成、缓存
   和 CLI。
 
-同步工具依赖 `llm-provider`；完整模型文件解析器仍属于
+同步工具依赖 `llm-provider` 和 `common`；完整模型文件解析器仍属于
 `llm-provider-langchain`，但同步工具只读取元数据投影，不导入 LangChain。运行时包不得
 反向依赖同步工具。
 
@@ -251,8 +252,9 @@ pwsh -NoProfile -File scripts/test-quality.ps1
 ```
 
 - 每个 Distribution 使用独立 `.venv` 和 `uv.lock`；不要创建根级 uv 环境。
-- 修改共享解析规则时优先复用 `spawn_join_llm_provider.parsing.FieldReader`，不要在多个
-  adapter 中复制字段读取代码。
+- 修改共享解析规则时优先复用 `spawn_join_common.FieldReader`，不要在多个 adapter 中
+  复制字段读取代码；`spawn_join_llm_provider.parsing.FieldReader` 只是协议包为自身调用者
+  保留的兼容入口。
 - 缓存和报告不提交；只提交经过审查的 `model-metadata.json`。
 - ADR 状态由独立评审和 `speckit.decision.finalize` 收口，工具存在不等于评审完成。
 

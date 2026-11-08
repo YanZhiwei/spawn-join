@@ -67,3 +67,55 @@ models:
 
     with pytest.raises(ConfigurationError, match="metadata_ref is required"):
         load_model_metadata_entries(path)
+
+
+def test_metadata_source_keeps_strict_reader_errors(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        """\
+schema_version: 2
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-5
+    api_key_env: FAST_API_KEY
+    metadata_ref: lab/model
+    metadata_source:
+      models.dev:
+        provider: null
+        model: gpt-5
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"models\.fast\.metadata_source\.models\.dev\.provider: must be a string",
+    ):
+        load_model_metadata_entries(path)
+
+
+def test_metadata_source_rejects_unknown_fields(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        """\
+schema_version: 2
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-5
+    api_key_env: FAST_API_KEY
+    metadata_ref: lab/model
+    metadata_source:
+      models.dev:
+        provider: openai
+        model: gpt-5
+        extra: true
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="unknown field\\(s\\): extra"):
+        load_model_metadata_entries(path)

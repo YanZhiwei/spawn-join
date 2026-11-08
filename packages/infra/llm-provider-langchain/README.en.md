@@ -67,6 +67,7 @@ uv sync --locked --directory packages/infra/llm-provider-langchain
 Runtime dependencies:
 
 - `spawn-join-llm-provider`
+- `spawn-join-common[validation]`
 - `langchain-core`
 - `langchain-openai`
 - `langchain-anthropic`
@@ -603,6 +604,8 @@ copy an inference exception hierarchy.
 
 Internal file shapes are declared in `model_file/_input.py`. Typed helpers in `_validation.py`
 check shapes and strict value types, and `_schema.py` assembles the existing configuration objects.
+Strict reading and Pydantic exception conversion reuse `spawn-join-common`; the error type,
+null rules, and first-error order remain owned by this adapter.
 These are private adapter implementation details, not new public APIs. YAML duplicate-key checks,
 omitted versus explicit `null` values, domain-validation order, and safe error paths are preserved.
 When adding a field, update its input model, domain mapping, and regression tests instead of
@@ -637,6 +640,9 @@ When adding a protocol or option, maintainers must:
 
 - [`spawn-join-llm-provider`](../../core/llm-provider/README.en.md): endpoint, channel, protocol
   options, and error contracts.
+- [`spawn-join-common`](../../core/common/README.en.md): shared strict reading and Pydantic
+  exception conversion; this package keeps its own input schema, error type, null rules, and
+  first-error order.
 - [`spawn-join-core`](../../core/spawn-join-core/README.en.md): shared configuration, exceptions, and
   types.
 

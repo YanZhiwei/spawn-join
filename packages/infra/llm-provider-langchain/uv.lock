@@ -1241,6 +1241,30 @@ wheels = [
 ]
 
 [[package]]
+name = "spawn-join-common"
+version = "0.1.0"
+source = { editable = "../../core/common" }
+
+[package.optional-dependencies]
+validation = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", marker = "extra == 'validation'", specifier = ">=2.0,<3.0" }]
+provides-extras = ["validation"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black", specifier = ">=26.10.1,<27" },
+    { name = "isort", specifier = ">=9.0.2,<10" },
+    { name = "pydantic", specifier = ">=2.0,<3.0" },
+    { name = "pyright", specifier = ">=1.1.414,<2" },
+    { name = "pytest", specifier = ">=9.1.1,<10" },
+    { name = "ruff", specifier = ">=0.17.2,<0.18" },
+]
+
+[[package]]
 name = "spawn-join-core"
 version = "0.1.0"
 source = { editable = "../../core/spawn-join-core" }
@@ -1262,12 +1286,14 @@ version = "0.1.0"
 source = { editable = "../../core/llm-provider" }
 dependencies = [
     { name = "pydantic" },
+    { name = "spawn-join-common", extra = ["validation"] },
     { name = "spawn-join-core" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.0,<3.0" },
+    { name = "spawn-join-common", extras = ["validation"], editable = "../../core/common" },
     { name = "spawn-join-core", editable = "../../core/spawn-join-core" },
 ]
 
@@ -1291,6 +1317,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "spawn-join-common", extra = ["validation"] },
     { name = "spawn-join-llm-provider" },
 ]
 
@@ -1311,6 +1338,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "python-dotenv", specifier = ">=1.2.4,<2" },
     { name = "pyyaml", specifier = ">=6.0.3,<7" },
+    { name = "spawn-join-common", extras = ["validation"], editable = "../../core/common" },
     { name = "spawn-join-llm-provider", editable = "../../core/llm-provider" },
 ]
 

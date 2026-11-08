@@ -24,6 +24,7 @@ def test_framework_dependency_belongs_to_adapter() -> None:
     }
     assert dependency_names == {
         "spawn-join-llm-provider",
+        "spawn-join-common",
         "langchain-core",
         "langchain-openai",
         "langchain-anthropic",

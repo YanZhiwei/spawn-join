@@ -22,7 +22,7 @@ workspace，不得向其加入 project/build-system/dependency-groups。Black �
 Ruff formatter/I 规则混用；CI 不运行自动修复。
 
 Black、isort、Ruff、Pyright、pytest 的版本范围归各包的 dev group 所有，实际版本归各自
-uv.lock 所有。运行时依赖未增加；工具不会进入 wheel 的 Requires-Dist。
+uv.lock 所有。这些开发工具不会进入 wheel 的 Requires-Dist。
 
 ## Prerequisites
 
@@ -40,6 +40,7 @@ uv.lock 所有。运行时依赖未增加；工具不会进入 wheel 的 Require
 ```powershell
 pwsh -NoProfile -File scripts/quality.ps1
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core
+pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-common
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core -Check format
 pwsh -NoProfile -File scripts/quality.ps1 -Check lint
 pwsh -NoProfile -File scripts/quality.ps1 -Check type
@@ -53,7 +54,7 @@ pwsh -NoProfile -File scripts/test-governance.ps1
 pwsh -NoProfile -File scripts/test-static.ps1
 ```
 
-Package 是五个保留 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理、静态分析和包检查；
+Package 是六个保留 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理、静态分析和包检查；
 指定 Package 的包级任务不重复执行仓库级检查。只指定其他 Check 时不宣称其他门禁通过。
 工具缺失、锁不一致、安装失败都不会被跳过。
 
@@ -83,9 +84,13 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 第三方运行时依赖从目标包的锁导出；本仓库包显式排除，改为安装本次构建的 wheel。
 全新 venv 中执行 `uv pip check` 和 `python -I` 导入，避免 editable 安装掩盖包缺失问题。
 
+Common 额外验证两种安装：基础 wheel 环境不含 Pydantic 或领域包，并实际执行严格读取；
+独立的 `validation` extra 环境从锁导出可选依赖，安装本次 wheel 后实际执行校验结果与
+异常转换、原因链检查。包的 dev 环境中有 Pydantic，不能用它代替默认安装隔离验证。
+
 临时目录父路径默认使用系统临时目录；本机可设置 `SPAWN_JOIN_TEMP_DIR` 为已存在路径。
 成功或失败都会在 finally 中删除本次创建的唯一子目录，不清理整个父目录或用户源树。
-五个保留包现已补齐包级 README、LICENSE 与 `license` 元数据；构建不再产生
+六个保留包均维护包级 README、LICENSE 与 `license` 元数据；构建不再产生
 `sdist: standard file not found` 警告。新 agent 包使用自己的锁文件、质量 Profile、
 隔离 wheel 安装和 CI 矩阵。
 
@@ -93,7 +98,7 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 [`quality.yml`](../../.github/workflows/quality.yml) 对所有 PR、main push 和手动运行启用：
 
-- 五个保留包 × Linux/Python 3.11、Linux/Python 3.14、Windows/Python 3.11，共 15 组合；
+- 六个保留包 × Linux/Python 3.11、Linux/Python 3.14、Windows/Python 3.11，共 18 组合；
 - 独立 governance job 执行文档和门禁故障回归；
 - 最后固定名称 `Quality Gate`，只有 packages 和 governance 都为 success 才成功；
 - 无路径过滤，避免只改文档时 required check 永远 pending；
@@ -107,8 +112,10 @@ uv run --locked --directory packages/core/spawn-join-core black --config ../../.
 
 ## Regression and limitations
 
-`scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：一个全流程成功，
-以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、坏链接八种拒绝场景。
+`scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：Core 与 Common
+各自的全流程成功，以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、
+坏链接的拒绝场景。Common 还验证基础包意外导入 Pydantic、可选校验导入失败和已安装
+helper 未执行操作时，构建门禁都必须失败。
 `scripts/test-governance.ps1` 用独立 fixture 覆盖 26 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
@@ -120,7 +127,7 @@ gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Deliver
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
-- pytest 用例覆盖五个保留包的导入、身份、运行时依赖边界，以及 LLM 契约、工厂、同步行为，和
+- pytest 用例覆盖六个保留包的导入、身份、运行时依赖边界，以及 LLM 契约、工厂、同步行为，和
   DeepAgents 装配/委派/诊断契约；具体数量随包演进，不把用例数量当作业务覆盖率。
 - 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
 - 治理检查的链接扫描同时覆盖已跟踪与未跟踪（未被 Git 忽略）的 Markdown；新建 README

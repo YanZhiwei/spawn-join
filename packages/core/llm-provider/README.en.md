@@ -35,7 +35,7 @@ use LangChain `BaseChatModel` and message types directly.
 
 - no real channel HTTP implementation;
 - no `ChannelPool`, model routing, or health-based selection;
-- the protocol package depends only on `spawn-join-core` and the general validation library Pydantic.
+- the protocol package depends only on `spawn-join-core`, `spawn-join-common[validation]`, and the general validation library Pydantic.
 
 ## Installation
 
@@ -443,6 +443,9 @@ When changing public API, maintainers must:
 ## Related packages
 
 - [`spawn-join-core`](../spawn-join-core/README.en.md): shared configuration, exceptions, and types.
+- [`spawn-join-common`](../common/README.en.md): shared strict field reading and Pydantic
+  exception conversion; this package's `FieldReader` keeps its original import path and default
+  `ConfigurationError`.
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.en.md): LangChain
   model factory, protocol option mapping, and `model.yaml` / `.env` parsing. This package reads no
   files or environment variables.

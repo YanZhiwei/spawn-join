@@ -7,6 +7,9 @@ from typing import Any, cast
 
 from pydantic import TypeAdapter, ValidationError
 
+from spawn_join_common import FieldReader
+from spawn_join_common.validation import validate_with
+
 from ..errors import ConfigurationError
 from .types import _parse_model_key  # pyright: ignore[reportPrivateUsage]
 from .types import (
@@ -25,17 +28,11 @@ _OVERRIDE_ADAPTER = TypeAdapter(ModelMetadataOverride)
 _MODEL_ADAPTER = TypeAdapter(ModelMetadata)
 _CHANNEL_ADAPTER = TypeAdapter(ModelChannel)
 _SOURCE_ADAPTER = TypeAdapter(ModelSource)
+_READER = FieldReader(ConfigurationError)
 
 
 def _mapping(value: object, path: str) -> dict[str, object]:
-    if not isinstance(value, Mapping):
-        raise ConfigurationError(f"{path}: must be a mapping")
-    result: dict[str, object] = {}
-    for key, item in cast("Mapping[object, object]", value).items():
-        if not isinstance(key, str):
-            raise ConfigurationError(f"{path}: keys must be strings")
-        result[key] = item
-    return result
+    return _READER.as_mapping(value, path)
 
 
 def _normalize_source(value: object) -> object:
@@ -150,15 +147,17 @@ def parse_model_metadata_override(
     """Parse a channel or inline override mapping."""
     if not isinstance(value, Mapping):
         raise ConfigurationError(f"{path}: must be a mapping")
-    try:
-        return _OVERRIDE_ADAPTER.validate_python(value)
-    except ValidationError as exc:
-        raise ConfigurationError(f"{path}: {_validation_message(exc)}") from exc
+    return validate_with(
+        lambda: _OVERRIDE_ADAPTER.validate_python(value),
+        error=ConfigurationError,
+        message=lambda exc: f"{path}: {_validation_message(exc)}",
+    )
 
 
 def parse_model_metadata_document(value: object) -> ModelMetadataDocument:
     """Parse a metadata snapshot document."""
-    try:
-        return _DOCUMENT_ADAPTER.validate_python(_normalize_document(value))
-    except ValidationError as exc:
-        raise ConfigurationError(f"<metadata>: {_validation_message(exc)}") from exc
+    return validate_with(
+        lambda: _DOCUMENT_ADAPTER.validate_python(_normalize_document(value)),
+        error=ConfigurationError,
+        message=lambda exc: f"<metadata>: {_validation_message(exc)}",
+    )
