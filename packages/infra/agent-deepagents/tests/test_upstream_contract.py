@@ -8,7 +8,14 @@ from importlib.metadata import version
 from typing import Any, cast
 
 import deepagents
-from deepagents import CompiledSubAgent, SubAgent
+from deepagents import (
+    AsyncSubAgent,
+    CompiledSubAgent,
+    HarnessProfile,
+    MemoryMiddleware,
+    ProviderProfile,
+    SubAgent,
+)
 from deepagents.backends import StateBackend
 from deepagents.middleware.subagents import (
     GENERAL_PURPOSE_SUBAGENT,
@@ -30,7 +37,19 @@ def test_deepagents_version_is_in_the_supported_line() -> None:
 def test_native_subagent_types_are_importable() -> None:
     assert SubAgent is not None
     assert CompiledSubAgent is not None
+    assert AsyncSubAgent is not None
+    assert MemoryMiddleware is not None
+    assert HarnessProfile is not None
+    assert ProviderProfile is not None
     assert issubclass(GraphInterrupt, BaseException)
+
+
+def test_async_subagent_contract_has_the_expected_fields() -> None:
+    annotations = AsyncSubAgent.__annotations__
+
+    assert {"name", "description", "graph_id"} <= set(annotations)
+    assert {"url", "headers", "webhook"} <= set(annotations)
+    assert {"update_strategy", "notify_parent", "mode"} <= set(annotations)
 
 
 def test_summarization_middleware_name_is_replaceable(
