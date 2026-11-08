@@ -3,24 +3,23 @@
 delivery_run: deepagents-p0-capabilities-20261108
 lane: feature
 feature_id: 012-deepagents-official-p0
-phase_id: verification
+phase_id: handoff
 base_revision: 7dbc714e8d575ae326da81c92eca7459807a241d
-head_revision: 34f88957242772df28a949532119b93fda19a34a
+head_revision: 4d27b6c65ddcfea11f749d6c6ae45b9062347027
 working_directory: C:\Users\YanZh\.local\share\opencode\worktree\86e56b\quick-lagoon
 recorded_at: 2026-11-08
 result: pass
 limitations: remote async/profile/fork integration not executed; see "Residual risks / not executed"
 pr_body_path: .specify/delivery/deepagents-p0-capabilities-20261108/pull-request.md
 
-- Branch: `feat/012-deepagents-official-p0`
+- Branch: `feat/012-deepagents-official-p0-replay`
 - Base: `7dbc714e8d575ae326da81c92eca7459807a241d` (`origin/main`)
-- Head at verification: `34f88957242772df28a949532119b93fda19a34a` (committed code,
-  tests, docs, and ADR)
+- Head at verification: `4d27b6c65ddcfea11f749d6c6ae45b9062347027` (T013, the last of
+  13 task commits; non-operational tree identical to reviewed commit `34f8895`)
 - Working directory: repository root
 - Date: 2026-11-08
-- Status: implementation and verification complete; handoff is blocked on the missing
-  Ralph-style per-task runtime closure records (the change was verified as one reviewed
-  commit, not individually task-gated). Publication remains unauthorized.
+- Status: implementation, task closure, verification, and review complete; handoff is
+  ready. Publication remains unauthorized.
 
 ## Changed paths
 
@@ -82,21 +81,20 @@ before final verification; non-blocking findings are documented or dispositioned
 
 ## Machine-recorded gate receipts
 
-- Quality: `runtime/result-quality.json`, report `runtime/quality-report.md`,
-  verdict `pass`.
-- Standards: `runtime/result-standards.json`, report `runtime/standards-report.md`,
-  verdict `pass`.
-- Review: `runtime/result-review.json`, report `runtime/review-report.md`,
-  verdict `pass`, scope `outgoing-diff`, coverage `complete`.
+- Quality: `runtime/final-quality-report.md`, verdict `pass`.
+- Standards: `runtime/final-standards-report.md`, verdict `pass`.
+- Review: `runtime/final-review-report.md`, verdict `pass`, scope `outgoing-diff`,
+  coverage `complete`.
+- Task closure: 13 task commits, `require --kind task-closure` returned `audited: true`.
 - `require --kind review` returned `ready: true`.
-- Handoff phase is blocked by missing per-task runtime closure records; no task-closure
-  receipt was fabricated.
+- Handoff phase: ready (see `runtime/logs/phase-handoff-final.json`).
 
 ## Residual risks / not executed
 
 - No live Agent Protocol server, real model harness profile, or real `fork` execution.
 - Profile registration is process-wide with no upstream rollback; documented.
-- No commit, push, PR, or merge was created. Publication and outcome remain pending
-  separate user authorization.
+- 13 task commits were created locally on `feat/012-deepagents-official-p0-replay`;
+  no push, PR, or merge was created. Publication and outcome remain pending separate
+  user authorization.
 - Governance warning for the historical v0.2.2 evidence file predates this change and
   is not caused by it.

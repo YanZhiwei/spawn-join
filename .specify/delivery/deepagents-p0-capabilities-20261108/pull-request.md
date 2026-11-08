@@ -60,7 +60,7 @@ Part of #<issue>；本 PR 不关闭 Issue。
 ## 审查身份
 
 - `base_revision`：`7dbc714e8d575ae326da81c92eca7459807a241d`
-- `reviewed_head`：`34f88957242772df28a949532119b93fda19a34a`
+- `reviewed_head`：`4d27b6c65ddcfea11f749d6c6ae45b9062347027`
 - `content_fingerprint`：`2fce5f93d4872262480f7da5b31413e5a59a88d856895faf3bfd8c9af9d9ce39`
 - `requirements_fingerprint`：见同 run `runtime/result-review.json`
 - native Review report / receipt：`.specify/delivery/deepagents-p0-capabilities-20261108/review.md`
