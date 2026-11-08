@@ -188,8 +188,8 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
   结果，不阻塞交付。
 - [Diagram](../../.specify/extensions/diagram/diagram-config.yml)：默认 `format: mermaid`、
   `renderer: auto`；未安装渲染器时保持 Mermaid，不自动下载或初始化任何工具。
-- [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、六个保留包、自动化、
-  治理文档共九个 Profile。包级 `quality` 命令组合格式、lint、类型、测试和隔离构建；
+- [Quality](../../.specify/extensions/quality/quality-config.yml)：共享工具配置、七个保留包、自动化、
+  治理文档共十个 Profile。包级 `quality` 命令组合格式、lint、类型、测试和隔离构建；
   根 `pyproject.toml` 单独映射一次全量门禁，不创建根级 uv 环境。
 - [Decision](../../.specify/extensions/decision/decision-config.yml)：唯一 ADR 根 `docs/decisions/`。
 - [Ralph](../../.specify/extensions/ralph/ralph-config.yml)：Specs 为 ephemeral、单任务串行。

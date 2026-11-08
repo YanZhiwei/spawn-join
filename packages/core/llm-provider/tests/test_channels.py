@@ -191,6 +191,7 @@ def test_channel_timeout_must_be_finite_and_positive(
 def test_ping_result_ok_property() -> None:
     assert PingResult(status=ChannelStatus.OK).ok is True
     assert PingResult(status=ChannelStatus.AUTHENTICATION_FAILED).ok is False
+    assert PingResult(status=ChannelStatus.UNSUPPORTED).ok is False
 
 
 def test_ping_result_rejects_negative_latency() -> None:

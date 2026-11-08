@@ -280,6 +280,7 @@ unspecified.
 | `unreachable` | network/DNS/connection failure |
 | `timeout` | check timed out |
 | `invalid_response` | response could not be parsed or violated the contract |
+| `unsupported` | channel is reachable but does not provide model listing |
 
 `list_models()` result semantics:
 
@@ -288,7 +289,8 @@ unspecified.
 | success with models | `ModelPage(models=(...))` |
 | success with no models | `ModelPage(models=())` |
 | operation unsupported | `UnsupportedChannelOperationError` |
-| network/auth/timeout failure | `ChannelUnavailableError` |
+| authentication/permission failure | `ChannelAuthenticationError` |
+| network/timeout/rate-limit/server failure | `ChannelUnavailableError` |
 | unparseable response | `ChannelResponseError` |
 
 An empty list is a legitimate "no models" result and must not represent failure or unsupported
@@ -300,6 +302,7 @@ operation.
 LLMProviderError
 ├── ConfigurationError
 └── ChannelError
+    ├── ChannelAuthenticationError
     ├── ChannelUnavailableError
     ├── UnsupportedChannelOperationError
     └── ChannelResponseError
