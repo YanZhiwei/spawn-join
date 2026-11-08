@@ -15,6 +15,7 @@ from spawn_join_agent_deepagents import (
     ModelBindingError,
     ProfileConfigurationError,
     RecoveryConfigurationError,
+    RubricConfigurationError,
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
 )
@@ -29,6 +30,7 @@ _SUBCLASSES = [
     RecoveryConfigurationError,
     ContextConfigurationError,
     ProfileConfigurationError,
+    RubricConfigurationError,
 ]
 
 
@@ -87,6 +89,9 @@ _CURRENT_PUBLIC_NAMES = {
     "RecoveryContext",
     "ResolvedModelBindings",
     "ResourceReport",
+    "RubricConfiguration",
+    "RubricConfigurationError",
+    "RubricReport",
     "SkillsConfiguration",
     "SubAgentDefinition",
     "SubAgentKind",
@@ -96,7 +101,16 @@ _CURRENT_PUBLIC_NAMES = {
     "SupervisorAssembly",
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
+    "PendingInterrupt",
+    "PermissionReport",
+    "approve_decision",
     "build_supervisor",
+    "edit_decision",
+    "reject_decision",
+    "respond_decision",
+    "resume_batched",
+    "resume_per_call",
+    "resume_with",
 }
 
 
