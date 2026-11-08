@@ -268,9 +268,9 @@ print(summary.metadata_ref, summary.metadata)
 
 | 协议 | 返回类型 | 选项映射 |
 |---|---|---|
-| `chat_completions` | `ChatOpenAI`（`use_responses_api=False`） | `temperature`、`max_completion_tokens`、`top_p`、`stop_sequences`、`seed` |
+| `chat_completions` | `ChatOpenAI`（`use_responses_api=False`） | `temperature`、`max_completion_tokens`、`top_p`、`stop_sequences`、`seed`、`reasoning_effort` |
 | `responses` | `ChatOpenAI`（`use_responses_api=True`） | `temperature`、`max_completion_tokens`、`top_p`、`store`、`reasoning_effort`、`truncation` |
-| `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking` |
+| `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking`、`reasoning_effort` |
 
 三种协议都显式设置 `max_retries`（默认 `0`）、endpoint 和 timeout。
 
@@ -288,6 +288,7 @@ options = ChatCompletionsOptions(
     top_p=0.9,
     stop=("\n\n", "END"),
     seed=42,
+    reasoning_effort="medium",
 )
 ```
 
@@ -323,8 +324,9 @@ options = AnthropicMessagesOptions(
 )
 ```
 
-`AnthropicThinkingAdaptive()` 可用于自适应 thinking。budget 模式要求
-`max_output_tokens` 存在且大于 `budget_tokens`。
+`AnthropicThinkingAdaptive()` 可用于自适应 thinking，`AnthropicThinkingDisabled()`
+表示显式关闭。budget 模式要求 `max_output_tokens` 存在且大于 `budget_tokens`；
+adaptive 与 disabled 模式都不接受 `budget_tokens`。
 
 ## 思考与思考强度
 
@@ -419,15 +421,16 @@ response = await model.ainvoke(
 
 ### 默认值、兼容性与边界
 
-- 当前 `ChatCompletionsOptions` 没有 `reasoning_effort`；`ResponsesOptions` 已支持
-  `low` / `medium` / `high`；`AnthropicMessagesOptions` 已支持固定预算和自适应
-  `thinking`，但没有 `reasoning_effort`。这不限制原生调用参数入口。
-- `Options` 中的 `None` 表示不指定该默认值，不表示显式关闭思考。不传调用覆盖值时，
-  继续使用模型构造配置及 LangChain / 服务端默认行为。
+- 三种 Options 都已支持 `reasoning_effort` 的 `low` / `medium` / `high`；
+  `AnthropicMessagesOptions` 另外支持固定预算和自适应 `thinking`。这不限制原生调用参数入口。
+- `None` 在 `Options` 中表示不指定该默认值，不等于显式关闭思考。YAML 中省略
+  `reasoning_effort`（或整个 `options`）同样表示不指定；显式 `reasoning_effort: null`
+  会在创建模型前以带字段路径的 `ConfigurationError` 拒绝。Python `None` 不等同于 YAML null。
 - 字段同名不代表各模型支持相同等级，也不保证所有模型都允许关闭思考。思考强度不等于
   固定 token 预算；不指定 `thinking` 时的行为由 LangChain 和目标模型决定。
 - 上述调用形状对照了仓库 `uv.lock` 中的 `langchain-openai==1.7.3` 和
-  `langchain-anthropic==1.7.7`。不能仅凭包声明的 `>=1.0` 下限断言旧版本支持全部示例；
+  `langchain-anthropic==1.7.7`。`langchain-core` 与 `langchain-anthropic` 的声明下限为
+  `>=1.5.0,<2.0`，`langchain-openai` 保持 `>=1.0,<2.0`；下限本身不等于所有中间版本均已验证。
   在仓库内请使用 `uv sync --locked`，其他环境应核对实际安装版本。
 - 兼容 OpenAI 的服务未必支持相同的思考扩展。本包不猜测模型能力、不自动切换协议或
   降级参数；不支持参数时的异常由 LangChain / 服务端产生，应用负责处理。
