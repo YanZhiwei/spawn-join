@@ -464,6 +464,59 @@ def test_chat_completions_options_are_mapped(tmp_path: Path) -> None:
     assert model.seed == 42
 
 
+@pytest.mark.parametrize("schema_version", [1, 2])
+def test_chat_completions_reasoning_effort_is_mapped(
+    tmp_path: Path,
+    schema_version: int,
+) -> None:
+    text = (
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: chat_completions\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      reasoning_effort: high\n"
+    )
+    catalog = _catalog(tmp_path, text)
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.reasoning_effort == "high"
+
+
+@pytest.mark.parametrize("protocol", ["chat_completions", "responses"])
+def test_reasoning_effort_null_is_rejected(
+    tmp_path: Path,
+    protocol: str,
+) -> None:
+    extra = "    options:\n      reasoning_effort: null\n"
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"options\.reasoning_effort",
+    ):
+        _catalog(
+            tmp_path,
+            _single_model_yaml(protocol=protocol, extra=extra),
+        )
+
+
+def test_model_catalog_from_file_maps_reasoning_effort(tmp_path: Path) -> None:
+    extra = "    options:\n      reasoning_effort: medium\n"
+    path = _write(tmp_path, _single_model_yaml(extra=extra))
+
+    model = ModelCatalog.from_file(path).create_chat_model(
+        environ={"OPENAI_API_KEY": "sk-test"}
+    )
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.reasoning_effort == "medium"
+
+
 def test_responses_options_are_mapped(tmp_path: Path) -> None:
     extra = (
         "    options:\n"

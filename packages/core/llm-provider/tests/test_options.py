@@ -31,6 +31,7 @@ def test_chat_completions_defaults() -> None:
     assert options.top_p is None
     assert options.stop is None
     assert options.seed is None
+    assert options.reasoning_effort is None
 
 
 def test_options_are_immutable() -> None:
@@ -50,6 +51,29 @@ def test_chat_completions_accepts_valid_values() -> None:
     )
     assert options.stop == ("\n\n", "END")
     assert options.seed == 42
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_chat_completions_accepts_reasoning_effort(
+    effort: ReasoningEffort,
+) -> None:
+    options = ChatCompletionsOptions(reasoning_effort=effort)
+    assert options.reasoning_effort == effort
+
+
+@pytest.mark.parametrize(
+    "effort",
+    ["", "LOW", "max", True, 1, ["high"], {"effort": "high"}],
+)
+def test_chat_completions_rejects_invalid_reasoning_effort(effort: object) -> None:
+    with pytest.raises(ConfigurationError):
+        ChatCompletionsOptions(reasoning_effort=cast(ReasoningEffort, effort))
+
+
+def test_chat_completions_keeps_legacy_positional_order() -> None:
+    options = ChatCompletionsOptions(0.2, 1024, 0.9, ("END",), 7)
+    assert options.seed == 7
+    assert options.reasoning_effort is None
 
 
 @pytest.mark.parametrize("temperature", [-0.1, 2.1, float("nan"), float("inf")])

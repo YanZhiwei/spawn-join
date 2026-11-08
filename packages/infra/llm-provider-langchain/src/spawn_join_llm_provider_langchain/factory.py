@@ -43,6 +43,7 @@ def _chat_completions_model(
             list(options.stop) if options is not None and options.stop else None
         ),
         seed=options.seed if options is not None else None,
+        reasoning_effort=options.reasoning_effort if options is not None else None,
     )
 
 

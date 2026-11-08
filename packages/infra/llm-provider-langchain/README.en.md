@@ -288,7 +288,7 @@ Rules:
 
 | Protocol | Return type | Option mapping |
 |---|---|---|
-| `chat_completions` | `ChatOpenAI` (`use_responses_api=False`) | `temperature`, `max_completion_tokens`, `top_p`, `stop_sequences`, `seed` |
+| `chat_completions` | `ChatOpenAI` (`use_responses_api=False`) | `temperature`, `max_completion_tokens`, `top_p`, `stop_sequences`, `seed`, `reasoning_effort` |
 | `responses` | `ChatOpenAI` (`use_responses_api=True`) | `temperature`, `max_completion_tokens`, `top_p`, `store`, `reasoning_effort`, `truncation` |
 | `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking` |
 
@@ -309,6 +309,7 @@ options = ChatCompletionsOptions(
     top_p=0.9,
     stop=("\n\n", "END"),
     seed=42,
+    reasoning_effort="medium",
 )
 ```
 
@@ -443,11 +444,13 @@ response = await model.ainvoke(
 
 ### Defaults, compatibility, and boundaries
 
-- `ChatCompletionsOptions` has no `reasoning_effort` yet; `ResponsesOptions` supports
+- Both `ChatCompletionsOptions` and `ResponsesOptions` support `reasoning_effort` with
   `low` / `medium` / `high`; `AnthropicMessagesOptions` supports fixed-budget and adaptive
-  `thinking`, but no `reasoning_effort`. This does not restrict native call parameters.
+  `thinking`, but no `reasoning_effort` yet. This does not restrict native call parameters.
 - `None` in `Options` means "do not specify this default", not "explicitly disable thinking".
-  Without a per-call override, construction configuration and LangChain / server defaults apply.
+  Omitting `reasoning_effort` (or the whole `options` block) in YAML also means unspecified;
+  an explicit `reasoning_effort: null` is rejected before model creation with a path-bearing
+  `ConfigurationError`. Python `None` is not equivalent to YAML null.
 - Same-named fields do not mean every model supports the same levels, and not every model allows
   disabling thinking. Effort is not a fixed token budget; behavior without `thinking` is determined
   by LangChain and the target model.

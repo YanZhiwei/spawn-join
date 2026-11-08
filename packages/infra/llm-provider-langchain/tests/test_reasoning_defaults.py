@@ -1,0 +1,190 @@
+"""Offline request contracts for file-configured reasoning effort."""
+
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+from typing import Any, cast
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
+from openai.types.chat import ChatCompletion
+from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+
+from spawn_join_llm_provider_langchain import load_model_catalog
+
+_ENVIRON = {"OPENAI_API_KEY": "sk-test"}
+
+
+def _write(
+    tmp_path: Path,
+    protocol: str,
+    effort: str,
+    *,
+    schema_version: int = 1,
+) -> Path:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        f"    protocol: {protocol}\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        f"      reasoning_effort: {effort}\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _model(
+    tmp_path: Path,
+    protocol: str,
+    effort: str = "low",
+    *,
+    schema_version: int = 1,
+) -> ChatOpenAI:
+    catalog = load_model_catalog(
+        _write(tmp_path, protocol, effort, schema_version=schema_version)
+    )
+    model = catalog.create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatOpenAI)
+    return model
+
+
+def _payload(model: ChatOpenAI, **kwargs: Any) -> dict[str, Any]:
+    payload = cast(
+        dict[str, Any],
+        model._get_request_payload(  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+            [HumanMessage(content="hi")],
+            **kwargs,
+        ),
+    )
+    return payload
+
+
+def _completion() -> ChatCompletion:
+    return ChatCompletion(
+        id="chatcmpl-test",
+        choices=[
+            Choice(
+                finish_reason="stop",
+                index=0,
+                message=ChatCompletionMessage(content="ok", role="assistant"),
+            )
+        ],
+        created=0,
+        model="gpt-test",
+        object="chat.completion",
+    )
+
+
+def _raw_response() -> MagicMock:
+    response = MagicMock()
+    response.headers = {}
+    response.parse.return_value = _completion()
+    return response
+
+
+def _capture(**_kwargs: object) -> MagicMock:
+    return _raw_response()
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_chat_completions_default_reaches_native_payload(
+    tmp_path: Path,
+    schema_version: int,
+    effort: str,
+) -> None:
+    model = _model(tmp_path, "chat_completions", effort, schema_version=schema_version)
+
+    payload = _payload(model)
+
+    assert payload["reasoning_effort"] == effort
+    assert "reasoning" not in payload
+
+
+def test_chat_completions_override_restores_default(tmp_path: Path) -> None:
+    model = _model(tmp_path, "chat_completions")
+
+    assert _payload(model, reasoning_effort="high")["reasoning_effort"] == "high"
+    assert _payload(model)["reasoning_effort"] == "low"
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_responses_default_uses_nested_reasoning(
+    tmp_path: Path,
+    schema_version: int,
+    effort: str,
+) -> None:
+    model = _model(tmp_path, "responses", effort, schema_version=schema_version)
+
+    payload = _payload(model)
+
+    assert payload["reasoning"] == {"effort": effort}
+    assert "reasoning_effort" not in payload
+
+
+def test_responses_override_restores_default(tmp_path: Path) -> None:
+    model = _model(tmp_path, "responses")
+
+    assert _payload(model, reasoning_effort="high")["reasoning"] == {"effort": "high"}
+    assert _payload(model)["reasoning"] == {"effort": "low"}
+
+
+@pytest.mark.parametrize("options_block", ["", "    options: {}\n"])
+def test_omitted_options_omit_reasoning_effort(
+    tmp_path: Path,
+    options_block: str,
+) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: chat_completions\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        f"{options_block}",
+        encoding="utf-8",
+    )
+    catalog = load_model_catalog(path)
+    model = catalog.create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatOpenAI)
+
+    assert "reasoning_effort" not in _payload(model)
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_sync_and_async_override_reach_sdk_and_restore(
+    tmp_path: Path,
+    asynchronous: bool,
+) -> None:
+    model = _model(tmp_path, "chat_completions")
+    sync_create = MagicMock(side_effect=_capture)
+    async_create = AsyncMock(side_effect=_capture)
+
+    with (
+        patch.object(model.client, "create", sync_create),
+        patch.object(model.async_client, "create", async_create),
+    ):
+        if asynchronous:
+            asyncio.run(
+                model.ainvoke([HumanMessage(content="hi")], reasoning_effort="high")
+            )
+            assert async_create.call_args.kwargs["reasoning_effort"] == "high"
+            asyncio.run(model.ainvoke([HumanMessage(content="hi")]))
+            assert async_create.call_args.kwargs["reasoning_effort"] == "low"
+        else:
+            model.invoke([HumanMessage(content="hi")], reasoning_effort="high")
+            assert sync_create.call_args.kwargs["reasoning_effort"] == "high"
+            model.invoke([HumanMessage(content="hi")])
+            assert sync_create.call_args.kwargs["reasoning_effort"] == "low"

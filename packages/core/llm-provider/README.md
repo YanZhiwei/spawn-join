@@ -196,7 +196,11 @@ from spawn_join_llm_provider import (
     ResponsesOptions,
 )
 
-chat = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
+chat = ChatCompletionsOptions(
+    temperature=0.2,
+    max_output_tokens=1024,
+    reasoning_effort="high",
+)
 responses = ResponsesOptions(store=False, reasoning_effort="medium")
 anthropic = AnthropicMessagesOptions(
     max_output_tokens=4096,
@@ -213,7 +217,7 @@ anthropic = AnthropicMessagesOptions(
 
 | 选项类型 | 当前可配置的思考默认值 |
 |---|---|
-| `ChatCompletionsOptions` | 尚无思考字段 |
+| `ChatCompletionsOptions` | `reasoning_effort`：`low`、`medium`、`high` |
 | `ResponsesOptions` | `reasoning_effort`：`low`、`medium`、`high` |
 | `AnthropicMessagesOptions` | `thinking`：固定 token 预算或自适应模式 |
 
@@ -236,6 +240,7 @@ response = await model.ainvoke(
 兼容性说明见
 [适配包的思考与思考强度](../../infra/llm-provider-langchain/README.md#思考与思考强度)。
 具体模型和服务端必须支持所传参数；本包不做能力推断、强度到 token 预算的换算或自动降级。
+适配包从 YAML 读取默认值时会拒绝显式 `reasoning_effort: null`；Python `None` 表示不指定。
 
 ## 公共 API
 

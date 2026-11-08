@@ -65,6 +65,29 @@ def test_chat_completions_factory_maps_options() -> None:
     assert "sk-test-secret" not in repr(model)
 
 
+def test_chat_completions_factory_maps_reasoning_effort() -> None:
+    model = create_chat_model(
+        _config(ProtocolKind.CHAT_COMPLETIONS),
+        api_key="sk-test-secret",
+        options=ChatCompletionsOptions(reasoning_effort="high"),
+    )
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.use_responses_api is False
+    assert model.reasoning_effort == "high"
+
+
+def test_chat_completions_factory_leaves_reasoning_effort_unset() -> None:
+    model = create_chat_model(
+        _config(ProtocolKind.CHAT_COMPLETIONS),
+        api_key="sk-test-secret",
+        options=ChatCompletionsOptions(),
+    )
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.reasoning_effort is None
+
+
 def test_responses_factory_maps_options() -> None:
     model = create_chat_model(
         _config(ProtocolKind.RESPONSES),

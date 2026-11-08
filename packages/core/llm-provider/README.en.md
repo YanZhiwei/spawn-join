@@ -200,7 +200,11 @@ from spawn_join_llm_provider import (
     ResponsesOptions,
 )
 
-chat = ChatCompletionsOptions(temperature=0.2, max_output_tokens=1024)
+chat = ChatCompletionsOptions(
+    temperature=0.2,
+    max_output_tokens=1024,
+    reasoning_effort="high",
+)
 responses = ResponsesOptions(store=False, reasoning_effort="medium")
 anthropic = AnthropicMessagesOptions(
     max_output_tokens=4096,
@@ -218,7 +222,7 @@ capabilities:
 
 | Option type | Thinking defaults configurable here |
 |---|---|
-| `ChatCompletionsOptions` | no thinking field yet |
+| `ChatCompletionsOptions` | `reasoning_effort`: `low`, `medium`, `high` |
 | `ResponsesOptions` | `reasoning_effort`: `low`, `medium`, `high` |
 | `AnthropicMessagesOptions` | `thinking`: fixed token budget or adaptive mode |
 
@@ -242,7 +246,9 @@ response = await model.ainvoke(
 Anthropic thinking modes, and compatibility notes, see
 [the adapter's thinking guide](../../infra/llm-provider-langchain/README.en.md#thinking-and-reasoning-effort).
 The actual model and server must support the parameters; this package performs no capability
-inference, strength-to-token-budget conversion, or automatic degradation.
+inference, strength-to-token-budget conversion, or automatic degradation. When the adapter reads
+defaults from YAML, an explicit `reasoning_effort: null` is rejected; Python `None` means
+unspecified.
 
 ## Public API
 

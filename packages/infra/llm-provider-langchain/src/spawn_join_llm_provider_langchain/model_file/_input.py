@@ -97,6 +97,7 @@ class ChatCompletionsInput(FileInput):
     top_p: OptionalNumber = None
     stop: OptionalStrings = None
     seed: OptionalInteger = None
+    reasoning_effort: OptionalText = None
 
     def to_options(self) -> ChatCompletionsOptions:
         return ChatCompletionsOptions(
@@ -105,6 +106,7 @@ class ChatCompletionsInput(FileInput):
             top_p=self.top_p,
             stop=self.stop,
             seed=self.seed,
+            reasoning_effort=cast(ReasoningEffort | None, self.reasoning_effort),
         )
 
 
