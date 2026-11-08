@@ -50,7 +50,7 @@ streaming capabilities.
 - declarative, compiled, and remote async subagents; compiled/async subagents keep their own
   execution boundary;
 - three middleware scopes: supervisor, workers, and per-subagent override;
-- memory/skills configuration objects, including an explicit memory cache-control choice;
+- memory/skills configuration objects, including an explicit memory-prefix cache choice;
 - explicit registration, reserved-name validation, and reporting for upstream Harness/Provider
   profiles;
 - an explicit async-first delegation controller: concurrency limit, bounded FIFO, deadline,
@@ -350,7 +350,7 @@ from deepagents import HarnessProfile
 
 spec = SupervisorSpec(
     models=models,
-    memory=MemoryConfiguration(sources=("AGENTS.md",), add_cache_control=False),
+    memory=MemoryConfiguration(sources=("AGENTS.md",), cache_memory_prefix=False),
     skills=SkillsConfiguration(sources=("skills",)),
     profiles=ProfilesConfiguration(
         harness=(
@@ -366,7 +366,7 @@ spec = SupervisorSpec(
 
 - `MemoryConfiguration` / `SkillsConfiguration` reject empty, blank, and duplicate sources; the
   package does not read the sources during assembly.
-- `add_cache_control=True` (the default) keeps the upstream `MemoryMiddleware`; `False` makes the
+- `cache_memory_prefix=True` (the default) keeps the upstream `MemoryMiddleware`; `False` makes the
   package construct its own same-name instance and pass `memory=None`, so there is no upstream
   default to replace and fork subagents do not inherit this memory.
 - `ProfilesConfiguration` calls upstream `register_harness_profile` /
@@ -477,7 +477,7 @@ async def main() -> None:
                 backend=FilesystemBackend(root_dir=root),
                 memory=MemoryConfiguration(
                     sources=("/AGENTS.md",),
-                    add_cache_control=False,
+                    cache_memory_prefix=False,
                 ),
                 skills=SkillsConfiguration(sources=("/skills",)),
                 profiles=ProfilesConfiguration(
@@ -528,7 +528,7 @@ if __name__ == "__main__":
 
 Key points:
 
-- `MemoryConfiguration(add_cache_control=False)` exercises the package-managed
+- `MemoryConfiguration(cache_memory_prefix=False)` exercises the package-managed
   `MemoryMiddleware` path; the `FilesystemBackend` is host-owned and cleaned up by
   `TemporaryDirectory`.
 - `SkillsConfiguration(sources=("/skills",))` points at a directory containing

@@ -83,7 +83,7 @@ Part of #<issue>；本 PR 不关闭 Issue。
 
 - 入口或建议阅读顺序：`supervisor.py` → `subagents.py` / `context_sources.py` / `profiles.py`
   → `diagnostics.py` → tests。
-- 关键行为、边界或设计取舍：async/profile 默认关闭；`memory.add_cache_control=False` 时
+- 关键行为、边界或设计取舍：async/profile 默认关闭；`memory.cache_memory_prefix=False` 时
   包自己创建 `MemoryMiddleware` 并传 `memory=None`，fork 不继承；provider profile 只影响
   上游字符串模型路径。
 - 需要人工或特定环境验证：远程 Agent Protocol 部署、真实 harness profile、真实 fork。

@@ -46,7 +46,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - 从显式模型用途构建 supervisor，返回原生 LangGraph 图和不可变装配报告；
 - 声明式、compiled 和远程 async 子代理；compiled/async 子代理保留自己的执行边界；
 - supervisor、workers、per-subagent override 三种 Middleware 作用域；
-- Memory/Skills 配置对象，支持 memory cache-control 选择；
+- Memory/Skills 配置对象，支持 memory 前缀缓存选择；
 - 上游 Harness/Provider profile 的显式注册、保留名校验和报告；
 - 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
 - 可选同步/异步诊断回调，以及脱敏的装配/生命周期记录；
@@ -334,7 +334,7 @@ from deepagents import HarnessProfile
 
 spec = SupervisorSpec(
     models=models,
-    memory=MemoryConfiguration(sources=("AGENTS.md",), add_cache_control=False),
+    memory=MemoryConfiguration(sources=("AGENTS.md",), cache_memory_prefix=False),
     skills=SkillsConfiguration(sources=("skills",)),
     profiles=ProfilesConfiguration(
         harness=(
@@ -350,7 +350,7 @@ spec = SupervisorSpec(
 
 - `MemoryConfiguration` / `SkillsConfiguration` 拒绝空、空白和重复 source；装配期不读取
   source，宿主或虚拟 Backend 负责实际内容。
-- `add_cache_control=True`（默认）继续由上游创建 `MemoryMiddleware`；`False` 时本包自己创建
+- `cache_memory_prefix=True`（默认）继续由上游创建 `MemoryMiddleware`；`False` 时本包自己创建
   同名实例并向上游传 `memory=None`，因此没有可替换的上游默认实例，fork 子代理也不会继承
   这份 memory。
 - `ProfilesConfiguration` 在 `create_deep_agent` 前调用上游
@@ -460,7 +460,7 @@ async def main() -> None:
                 backend=FilesystemBackend(root_dir=root),
                 memory=MemoryConfiguration(
                     sources=("/AGENTS.md",),
-                    add_cache_control=False,
+                    cache_memory_prefix=False,
                 ),
                 skills=SkillsConfiguration(sources=("/skills",)),
                 profiles=ProfilesConfiguration(
@@ -511,7 +511,7 @@ if __name__ == "__main__":
 
 要点：
 
-- `MemoryConfiguration(add_cache_control=False)` 走包自己创建 `MemoryMiddleware` 的路径；
+- `MemoryConfiguration(cache_memory_prefix=False)` 走包自己创建 `MemoryMiddleware` 的路径；
   `FilesystemBackend` 由宿主提供，示例退出时由 `TemporaryDirectory` 清理。
 - `SkillsConfiguration(sources=("/skills",))` 指向包含 `web-research/SKILL.md` 的目录；
   缺少有效 frontmatter 的文件会被上游跳过并记录 warning。

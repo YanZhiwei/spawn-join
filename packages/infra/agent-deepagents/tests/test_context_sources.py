@@ -151,7 +151,7 @@ def test_cache_control_false_is_managed_by_the_package(
             control_default_subagent=False,
             memory=MemoryConfiguration(
                 sources=("AGENTS.md",),
-                add_cache_control=False,
+                cache_memory_prefix=False,
             ),
         )
     )
@@ -160,7 +160,7 @@ def test_cache_control_false_is_managed_by_the_package(
     names = [item.name for item in calls[0]["middleware"]]
     assert "MemoryMiddleware" in names
     assert assembly.report.context.memory_managed_by == "package"
-    assert assembly.report.context.memory_cache_control is False
+    assert assembly.report.context.memory_cache_prefix is False
 
 
 def test_package_managed_memory_rejects_a_user_memory_middleware(
@@ -180,7 +180,7 @@ def test_package_managed_memory_rejects_a_user_memory_middleware(
                 control_default_subagent=False,
                 memory=MemoryConfiguration(
                     sources=("AGENTS.md",),
-                    add_cache_control=False,
+                    cache_memory_prefix=False,
                 ),
                 middleware=MiddlewareConfiguration(supervisor=(MemoryMiddleware(),)),
             )

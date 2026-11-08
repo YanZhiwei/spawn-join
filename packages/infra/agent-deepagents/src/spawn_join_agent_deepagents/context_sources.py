@@ -39,10 +39,10 @@ def normalize_sources(sources: Sequence[str], label: str) -> tuple[str, ...]:
 
 @dataclass(frozen=True, slots=True)
 class MemoryConfiguration:
-    """Host-declared memory sources with optional prompt-cache control."""
+    """Host-declared memory sources with optional prompt-prefix cache control."""
 
     sources: Sequence[str]
-    add_cache_control: bool = True
+    cache_memory_prefix: bool = True
 
     def __post_init__(self) -> None:
         object.__setattr__(

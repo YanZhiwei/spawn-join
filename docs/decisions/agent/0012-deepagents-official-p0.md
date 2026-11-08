@@ -23,7 +23,7 @@
    并自动装配 `AsyncSubAgentMiddleware`。当前 `SupervisorSpec.subagents` 不接受该形态，
    传入原生字典会进入 compiled 分支并触发 `AttributeError`。
 2. **Memory / Skills**：官方 `MemoryMiddleware` 与 `SkillsMiddleware` 接受 source 列表；
-   当前包只接受 `Sequence[str]`，没有形状校验、cache-control 选择或装配报告。
+   当前包只接受 `Sequence[str]`，没有形状校验、memory 前缀缓存选择或装配报告。
 3. **Harness / Provider profile**：官方 beta API 通过进程级注册表影响模型/中间件；
    当前包既不感知也不报告，`general-purpose` 的装配报告可能失真。
 
@@ -58,13 +58,13 @@
 
 ### Memory / Skills
 
-- 新增 `MemoryConfiguration(sources, add_cache_control=True)` 与
+- 新增 `MemoryConfiguration(sources, cache_memory_prefix=True)` 与
   `SkillsConfiguration(sources)`；拒绝空、空白、重复 source，不在装配期读取 source。
 - 旧的 `Sequence[str]` 写法继续接受。
-- `add_cache_control=False` 时由包构造 `MemoryMiddleware` 并向上游传 `memory=None`；
+- `cache_memory_prefix=False` 时由包构造 `MemoryMiddleware` 并向上游传 `memory=None`；
   此时没有可替换的上游默认实例，fork 子代理也不会继承这份 memory，且拒绝用户提供同名
   middleware。默认路径继续由上游管理。
-- 装配报告新增 `ContextReport`，只记录 source 数量、cache-control 和管理方式。
+- 装配报告新增 `ContextReport`，只记录 source 数量、前缀缓存和管理方式。
 
 ### Harness / Provider profiles
 
@@ -129,7 +129,7 @@ Host
 验证覆盖：
 
 - async beta 门控、原生 kwargs、报告字段、未知形态与重复名称；
-- memory/skills 的空/空白/重复校验、旧写法兼容、cache-control 两条路径、同名冲突；
+- memory/skills 的空/空白/重复校验、旧写法兼容、memory 前缀缓存两条路径、同名冲突；
 - profile beta 门控、key 唯一、保留名冲突、注册顺序、异常 cause、报告 key；
 - 0.7.32 上游契约测试仍通过；
 - 包级质量门、文档检查和 `git diff --check`。

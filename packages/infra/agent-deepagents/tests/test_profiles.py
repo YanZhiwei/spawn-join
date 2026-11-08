@@ -205,7 +205,7 @@ def test_package_managed_memory_cannot_be_excluded_by_a_profile(
                 control_default_subagent=False,
                 memory=MemoryConfiguration(
                     sources=("AGENTS.md",),
-                    add_cache_control=False,
+                    cache_memory_prefix=False,
                 ),
                 profiles=profiles,
                 allow_experimental_profiles=True,

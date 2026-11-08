@@ -276,13 +276,13 @@ def _context_plan(
     memory_list: list[str] | None = None
     memory_middleware: MiddlewareType | None = None
     memory_count = 0
-    memory_cache_control = True
+    memory_cache_prefix = True
     memory_managed_by = "absent"
 
     if isinstance(spec.memory, MemoryConfiguration):
         memory_count = spec.memory.source_count
-        memory_cache_control = spec.memory.add_cache_control
-        if spec.memory.add_cache_control:
+        memory_cache_prefix = spec.memory.cache_memory_prefix
+        if spec.memory.cache_memory_prefix:
             memory_list = list(spec.memory.sources)
             memory_managed_by = "upstream"
         else:
@@ -291,7 +291,7 @@ def _context_plan(
             ):
                 raise MiddlewareConfigurationError(
                     "middleware.supervisor: MemoryMiddleware is reserved when "
-                    "memory.add_cache_control=False"
+                    "memory.cache_memory_prefix=False"
                 )
             memory_middleware = MemoryMiddleware(
                 backend=backend,
@@ -322,7 +322,7 @@ def _context_plan(
         skills_list,
         ContextReport(
             memory_source_count=memory_count,
-            memory_cache_control=memory_cache_control,
+            memory_cache_prefix=memory_cache_prefix,
             memory_managed_by=memory_managed_by,
             skills_source_count=skills_count,
             skills_managed_by=skills_managed_by,
@@ -723,11 +723,11 @@ def _subagent_warnings(spec: SupervisorSpec) -> list[str]:
 def _management_warnings(spec: SupervisorSpec) -> list[str]:
     warnings: list[str] = []
     if isinstance(spec.memory, MemoryConfiguration) and (
-        not spec.memory.add_cache_control
+        not spec.memory.cache_memory_prefix
     ):
         warnings.append(
             "memory: the package adds MemoryMiddleware and passes memory=None "
-            "because add_cache_control=False"
+            "because cache_memory_prefix=False"
         )
         if any(definition.mode == SubAgentMode.FORK for definition in spec.subagents):
             warnings.append(

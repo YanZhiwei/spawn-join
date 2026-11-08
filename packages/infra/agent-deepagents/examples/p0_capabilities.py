@@ -91,7 +91,7 @@ async def main() -> None:
                 backend=FilesystemBackend(root_dir=root),
                 memory=MemoryConfiguration(
                     sources=("/AGENTS.md",),
-                    add_cache_control=False,
+                    cache_memory_prefix=False,
                 ),
                 skills=SkillsConfiguration(sources=("/skills",)),
                 profiles=ProfilesConfiguration(

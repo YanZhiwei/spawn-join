@@ -121,7 +121,7 @@ class ContextReport:
     """Safe summary of memory and skills sources; paths are not recorded."""
 
     memory_source_count: int = 0
-    memory_cache_control: bool = True
+    memory_cache_prefix: bool = True
     memory_managed_by: str = "absent"
     skills_source_count: int = 0
     skills_managed_by: str = "absent"
