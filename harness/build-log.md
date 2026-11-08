@@ -1150,3 +1150,6 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
   结构 11 项回归通过。
 - 本项目根 README 结构守卫结果为 `README_STRUCTURE: pass`，项目检查、评审与远端 CI
   在对应 PR run 中另行记录，不把安装验证写成 Ralph 或模型 eval 通过。
+- PR [#60](https://github.com/YanZhiwei/spawn-join/pull/60) 在 Quality Gate 全部通过后
+  squash 合并为 `a45b2503e089db4c18ffd3fb8b390d08489cd544`；交付 run
+  `delivery-v046-upgrade-20261109` 已按 SD Close 契约记录 `delivered`。

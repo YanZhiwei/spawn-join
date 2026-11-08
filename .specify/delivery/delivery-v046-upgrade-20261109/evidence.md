@@ -8,13 +8,15 @@
 - **base_revision**: 02e3d913fd6fbc740a57ddaa23f34cde1048877f
 - **head_revision**: working-tree
 - **reviewed_head**: working-tree
-- **original_pr_head**: pending
-- **pull_request**: pending
-- **status**: pending
+- **original_pr_head**: 82fbb5c3e83f3835b7e9e40b506cd824e2a3c1b2
+- **pull_request**: https://github.com/YanZhiwei/spawn-join/pull/60
+- **status**: delivered
+- **merge_revision**: a45b2503e089db4c18ffd3fb8b390d08489cd544
+- **merged_at**: 2026-11-08T16:44:09Z
 - **recorded_at**: 2026-11-09
 - **working_directory**: C:\Users\YanZh\.local\share\opencode\worktree\86e56b\quick-forest
 - **method_identity**: builtin
-- **result**: pass — 本文件记录安装、项目检查与 PR 交接身份；远端 CI 和合并结果在完成后补记
+- **result**: pass — 安装与项目检查通过，PR #60 CI 通过后 squash 合并且已按 Close 契约补记 `delivered`
 
 ## 范围与授权
 
@@ -47,11 +49,13 @@ evidence。未改包源码、依赖、公共 API、数据、权限或 Hook；无
 
 ## Limitations
 
-远端 CI 结果、PR 编号和合并修订在创建/合并后补记，本快照不能读成终态。包未变，未重跑
-六个 Distribution 的完整矩阵；真实 SD/Ralph、模型 eval、多宿主交接效果未验证。本记录
-不代表 Doctor 或完整交付循环已执行。
+PR #60 的远端 CI 在合并前通过，合并修订为 `a45b2503…`；本文件在合并后补记 `delivered`。
+包未变，未重跑六个 Distribution 的完整矩阵以外的组合场景；真实 SD/Ralph、模型 eval、
+多宿主交接效果未验证。本记录不代表 Doctor 或完整交付循环已执行。
 
 ## 关闭
 
-PR 合并后按 SD Close 契约更新 `status`、`pull_request` 和 `merge_revision`；未合并关闭记为
-`abandoned`，被替代记为 `superseded`。
+PR #60 于 2026-11-08T16:44:09Z squash 合并，`merge_revision` 为
+`a45b2503e089db4c18ffd3fb8b390d08489cd544`；`original_pr_head` 为
+`82fbb5c3e83f3835b7e9e40b506cd824e2a3c1b2`。按 SD Close 契约记录为 `delivered`，未创建或
+合并其他远端引用。未合并关闭记为 `abandoned`，被替代记为 `superseded`。
