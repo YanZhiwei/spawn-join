@@ -29,7 +29,8 @@ Part of #<issue>；本 PR 不关闭 Issue。
 | `src/.../supervisor.py` | 接线 async、memory/skills、profiles；报告新增 `ContextReport`/`ProfileReport` | 一处装配入口保持向后兼容 |
 | `src/.../diagnostics.py` / `errors.py` / `middleware.py` | 新报告分区、两个错误子类、async override 文案 | 可观察、稳定失败 |
 | `tests/` | 新增 async/context/profile 测试；扩展公共 API 与上游契约测试 | 覆盖 beta gate、报告脱敏和 0.7.32 契约 |
-| `README.md` / `README.en.md` / ADR-0012 | 记录能力、beta 风险、限制和示例 | 使用文档与实现一致 |
+| `examples/p0_capabilities.py` | 新增完整离线示例：memory/skills、async 声明、profile 注册与报告 | 让 README 示例可直接运行验证 |
+| `README.md` / `README.en.md` / ADR-0012 | 记录能力、beta 风险、限制和完整示例代码 | 使用文档与实现一致 |
 
 ## 验证
 
@@ -60,7 +61,7 @@ Part of #<issue>；本 PR 不关闭 Issue。
 ## 审查身份
 
 - `base_revision`：`7dbc714e8d575ae326da81c92eca7459807a241d`
-- `reviewed_head`：`4d27b6c65ddcfea11f749d6c6ae45b9062347027`
+- `reviewed_head`：`eeea2b9cd912c2baba71f0e0ff1e6004dcff0b9e`
 - `content_fingerprint`：`2fce5f93d4872262480f7da5b31413e5a59a88d856895faf3bfd8c9af9d9ce39`
 - `requirements_fingerprint`：见同 run `runtime/result-review.json`
 - native Review report / receipt：`.specify/delivery/deepagents-p0-capabilities-20261108/review.md`

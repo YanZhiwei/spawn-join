@@ -5,7 +5,7 @@ lane: feature
 feature_id: 012-deepagents-official-p0
 phase_id: handoff
 base_revision: 7dbc714e8d575ae326da81c92eca7459807a241d
-head_revision: 4d27b6c65ddcfea11f749d6c6ae45b9062347027
+head_revision: eeea2b9cd912c2baba71f0e0ff1e6004dcff0b9e
 working_directory: C:\Users\YanZh\.local\share\opencode\worktree\86e56b\quick-lagoon
 recorded_at: 2026-11-08
 result: pass
@@ -14,8 +14,8 @@ pr_body_path: .specify/delivery/deepagents-p0-capabilities-20261108/pull-request
 
 - Branch: `feat/012-deepagents-official-p0-replay`
 - Base: `7dbc714e8d575ae326da81c92eca7459807a241d` (`origin/main`)
-- Head at verification: `4d27b6c65ddcfea11f749d6c6ae45b9062347027` (T013, the last of
-  13 task commits; non-operational tree identical to reviewed commit `34f8895`)
+- Head at verification: `eeea2b9cd912c2baba71f0e0ff1e6004dcff0b9e` (T014, the last of
+  14 task commits; includes the complete P0 example and README samples)
 - Working directory: repository root
 - Date: 2026-11-08
 - Status: implementation, task closure, verification, and review complete; handoff is
@@ -41,6 +41,7 @@ New files:
 - `packages/infra/agent-deepagents/tests/test_async_subagents.py`
 - `packages/infra/agent-deepagents/tests/test_context_sources.py`
 - `packages/infra/agent-deepagents/tests/test_profiles.py`
+- `packages/infra/agent-deepagents/examples/p0_capabilities.py`
 - `docs/decisions/agent/0012-deepagents-official-p0.md`
 
 Local-only planning/evidence:
@@ -85,7 +86,7 @@ before final verification; non-blocking findings are documented or dispositioned
 - Standards: `runtime/final-standards-report.md`, verdict `pass`.
 - Review: `runtime/final-review-report.md`, verdict `pass`, scope `outgoing-diff`,
   coverage `complete`.
-- Task closure: 13 task commits, `require --kind task-closure` returned `audited: true`.
+- Task closure: 14 task commits, `require --kind task-closure` returned `audited: true`.
 - `require --kind review` returned `ready: true`.
 - Handoff phase: ready (see `runtime/logs/phase-handoff-final.json`).
 
@@ -93,7 +94,7 @@ before final verification; non-blocking findings are documented or dispositioned
 
 - No live Agent Protocol server, real model harness profile, or real `fork` execution.
 - Profile registration is process-wide with no upstream rollback; documented.
-- 13 task commits were created locally on `feat/012-deepagents-official-p0-replay`;
+- 14 task commits were created locally on `feat/012-deepagents-official-p0-replay`;
   no push, PR, or merge was created. Publication and outcome remain pending separate
   user authorization.
 - Governance warning for the historical v0.2.2 evidence file predates this change and
