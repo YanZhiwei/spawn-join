@@ -6,7 +6,7 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-当前使用固定 Release Delivery Bundle v0.4.5（13 个组件），Constitution 为 `v1.0.0`。
+当前使用固定 Release Delivery Bundle v0.4.6（13 个组件），Constitution 为 `v1.0.0`。
 安装方式、版本能力与升级历史只维护在 [Delivery 安装说明](docs/development/spec-kit-delivery.md)
 和 [ADR-0004](docs/decisions/engineering/0004-release-managed-delivery-installation.md)，不在本文件复制。
 
