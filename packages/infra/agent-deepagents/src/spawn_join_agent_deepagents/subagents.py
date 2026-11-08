@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from deepagents.middleware.filesystem import FilesystemPermission
 from langchain.agents.middleware import InterruptOnConfig
@@ -35,10 +35,11 @@ DEFAULT_GENERAL_PURPOSE_NAME = "general-purpose"
 
 
 class SubAgentKind(StrEnum):
-    """Whether a subagent is declarative, host-compiled, or upstream-owned."""
+    """Whether a subagent is declarative, host-compiled, async, or upstream-owned."""
 
     DECLARATIVE = "declarative"
     COMPILED = "compiled"
+    ASYNC = "async"
     UPSTREAM_DEFAULT = "upstream_default"
 
 
@@ -114,7 +115,57 @@ class CompiledSubAgentDefinition:
             )
 
 
-SubAgentDefinitionLike = SubAgentDefinition | CompiledSubAgentDefinition
+@dataclass(frozen=True, slots=True)
+class AsyncSubAgentDefinition:
+    """A remote Agent Protocol subagent executed by the native async middleware.
+
+    The package only validates and forwards the declaration. The remote graph,
+    transport, credentials, and lifecycle stay with the host and the upstream
+    ``AsyncSubAgentMiddleware``.
+    """
+
+    name: str
+    description: str
+    graph_id: str
+    url: str | None = None
+    headers: Mapping[str, str] | None = None
+    webhook: str | None = None
+    update_strategy: Literal["interrupt", "enqueue"] = "interrupt"
+    notify_parent: bool | None = None
+    mode: SubAgentMode = SubAgentMode.ISOLATED
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise SubagentConfigurationError("subagents: name must not be blank")
+        if self.name == DEFAULT_GENERAL_PURPOSE_NAME:
+            raise SubagentConfigurationError(
+                "subagents.general-purpose: the async form cannot use the "
+                "reserved default subagent name"
+            )
+        if not self.description.strip():
+            raise SubagentConfigurationError(
+                f"subagents.{self.name}: description must not be blank"
+            )
+        if not self.graph_id.strip():
+            raise SubagentConfigurationError(
+                f"subagents.{self.name}: graph_id must not be blank"
+            )
+        if self.update_strategy not in ("interrupt", "enqueue"):
+            raise SubagentConfigurationError(
+                f"subagents.{self.name}: update_strategy must be "
+                "'interrupt' or 'enqueue'"
+            )
+        if self.headers is not None:
+            object.__setattr__(
+                self,
+                "headers",
+                MappingProxyType(dict(self.headers)),
+            )
+
+
+SubAgentDefinitionLike = (
+    SubAgentDefinition | CompiledSubAgentDefinition | AsyncSubAgentDefinition
+)
 
 
 def validate_unique_subagent_names(
@@ -145,4 +196,21 @@ def validate_experimental_fork(
             raise SubagentConfigurationError(
                 f"subagents.{definition.name}: mode='fork' requires "
                 "allow_experimental_fork=True"
+            )
+
+
+def validate_experimental_async_subagents(
+    definitions: Sequence[SubAgentDefinitionLike],
+    *,
+    allow_experimental_async_subagents: bool,
+) -> None:
+    """Require an explicit opt-in before any async subagent is assembled."""
+
+    if allow_experimental_async_subagents:
+        return
+    for definition in definitions:
+        if isinstance(definition, AsyncSubAgentDefinition):
+            raise SubagentConfigurationError(
+                f"subagents.{definition.name}: async subagents require "
+                "allow_experimental_async_subagents=True"
             )

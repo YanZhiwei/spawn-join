@@ -39,3 +39,11 @@ class UnsupportedSyncDelegationError(AgentConfigurationError):
 
 class RecoveryConfigurationError(AgentConfigurationError):
     """A checkpoint, interrupt, or thread identity requirement is missing."""
+
+
+class ContextConfigurationError(AgentConfigurationError):
+    """A memory or skills source list is empty, blank, or duplicated."""
+
+
+class ProfileConfigurationError(AgentConfigurationError):
+    """A harness or provider profile registration is invalid or failed."""

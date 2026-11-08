@@ -19,13 +19,15 @@ RESERVED_SUMMARIZATION_MIDDLEWARE_NAME = "SummarizationMiddleware"
 DELEGATION_MIDDLEWARE_NAME = "spawn_join_delegation_policy"
 DIAGNOSTICS_MIDDLEWARE_NAME = "spawn_join_diagnostics"
 
-_RESERVED_NAMES = frozenset(
+RESERVED_MIDDLEWARE_NAMES = frozenset(
     {
         RESERVED_SUMMARIZATION_MIDDLEWARE_NAME,
         DELEGATION_MIDDLEWARE_NAME,
         DIAGNOSTICS_MIDDLEWARE_NAME,
     }
 )
+
+_RESERVED_NAMES = RESERVED_MIDDLEWARE_NAMES
 
 
 def _empty_worker_overrides() -> Mapping[str, Sequence[AgentMiddleware[Any, Any, Any]]]:
@@ -104,18 +106,18 @@ class MiddlewareConfiguration:
 
         declarative = set(declarative_names)
         compiled = set(compiled_names)
-        unknown = set(self.worker_overrides) - declarative
-        if unknown:
-            names = ", ".join(sorted(unknown))
-            raise MiddlewareConfigurationError(
-                "middleware.worker_overrides: unknown declarative subagent(s): " + names
-            )
         compiled_overrides = set(self.worker_overrides) & compiled
         if compiled_overrides:
             names = ", ".join(sorted(compiled_overrides))
             raise MiddlewareConfigurationError(
-                "middleware.worker_overrides: compiled subagent(s) own their "
-                "middleware: " + names
+                "middleware.worker_overrides: compiled/async subagents do not "
+                "accept injected middleware: " + names
+            )
+        unknown = set(self.worker_overrides) - declarative - compiled
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise MiddlewareConfigurationError(
+                "middleware.worker_overrides: unknown declarative subagent(s): " + names
             )
 
 

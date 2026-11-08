@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from importlib.metadata import version
 from types import MappingProxyType
 from typing import Any, cast
 
 import deepagents
-from deepagents import DeepAgentState
+from deepagents import DeepAgentState, MemoryMiddleware
 from deepagents.backends import StateBackend
 from deepagents.backends.protocol import BackendProtocol
 from deepagents.middleware.filesystem import FilesystemPermission
@@ -26,16 +26,25 @@ from langgraph.cache.base import BaseCache
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 
+from .context_sources import MemoryConfiguration, SkillsConfiguration
 from .diagnostics import (
     AssemblyReport,
+    ContextReport,
     DelegationDiagnosticsMiddleware,
     DelegationReport,
     DiagnosticEmitter,
     DiagnosticsConfig,
+    ProfileReport,
     ResourceReport,
     SubagentReport,
 )
-from .errors import AgentConfigurationError, ModelBindingError
+from .errors import (
+    AgentConfigurationError,
+    MiddlewareConfigurationError,
+    ModelBindingError,
+    ProfileConfigurationError,
+    SubagentConfigurationError,
+)
 from .execution import (
     DelegationConfiguration,
     DelegationController,
@@ -47,6 +56,7 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
+from .profiles import ProfilesConfiguration
 from .recovery import (
     checkpointer_present,
     validate_checkpointer_value,
@@ -54,6 +64,7 @@ from .recovery import (
 )
 from .subagents import (
     DEFAULT_GENERAL_PURPOSE_NAME,
+    AsyncSubAgentDefinition,
     CompiledSubAgentDefinition,
     ResponseFormatLike,
     SubAgentDefinition,
@@ -61,6 +72,7 @@ from .subagents import (
     SubAgentKind,
     SubAgentMode,
     ToolLike,
+    validate_experimental_async_subagents,
     validate_experimental_fork,
     validate_unique_subagent_names,
 )
@@ -88,6 +100,9 @@ class SupervisorSpec:
     delegation: DelegationConfiguration | None = None
     diagnostics: DiagnosticsConfig | None = None
     allow_experimental_fork: bool = False
+    allow_experimental_async_subagents: bool = False
+    allow_experimental_profiles: bool = False
+    profiles: ProfilesConfiguration | None = None
     backend: BackendProtocol | None = None
     store: BaseStore | None = None
     checkpointer: CheckpointerType = None
@@ -96,8 +111,8 @@ class SupervisorSpec:
     context_schema: type[Any] | None = None
     response_format: ResponseFormatLike | None = None
     permissions: Sequence[FilesystemPermission] | None = None
-    skills: Sequence[str] | None = None
-    memory: Sequence[str] | None = None
+    skills: Sequence[str] | SkillsConfiguration | None = None
+    memory: Sequence[str] | MemoryConfiguration | None = None
     cache: BaseCache[Any] | None = None
     name: str | None = None
     debug: bool = False
@@ -113,10 +128,12 @@ class SupervisorSpec:
             )
         if self.permissions is not None:
             object.__setattr__(self, "permissions", tuple(self.permissions))
-        if self.skills is not None:
-            object.__setattr__(self, "skills", tuple(self.skills))
-        if self.memory is not None:
-            object.__setattr__(self, "memory", tuple(self.memory))
+        skills = self.skills
+        if skills is not None and not isinstance(skills, SkillsConfiguration):
+            object.__setattr__(self, "skills", tuple(skills))
+        memory = self.memory
+        if memory is not None and not isinstance(memory, MemoryConfiguration):
+            object.__setattr__(self, "memory", tuple(memory))
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,8 +156,21 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
 
     backend = spec.backend if spec.backend is not None else StateBackend()
     summary = _summary_middleware(resolved, backend)
+    memory_list, memory_middleware, skills_list, context = _context_plan(
+        spec,
+        backend,
+    )
+    extra_reserved: frozenset[str] = frozenset()
+    if memory_middleware is not None:
+        extra_reserved = frozenset({"MemoryMiddleware"})
+    profiles = _apply_profiles(spec, extra_reserved)
     controller = _delegation_controller(spec)
-    supervisor_middleware = _supervisor_middleware(spec, summary, controller)
+    supervisor_middleware = _supervisor_middleware(
+        spec,
+        summary,
+        controller,
+        memory_middleware,
+    )
     native_subagents, subagent_reports, per_subagent = _native_subagents(
         spec,
         resolved,
@@ -152,6 +182,8 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
         backend,
         supervisor_middleware,
         native_subagents,
+        memory_list,
+        skills_list,
     )
     report = _build_report(
         spec,
@@ -160,6 +192,8 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
         per_subagent,
         supervisor_middleware,
         summary,
+        context,
+        profiles,
     )
     return SupervisorAssembly(
         graph=graph,
@@ -169,7 +203,25 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
 
 
 def _validate_subagents(spec: SupervisorSpec) -> None:
+    raw_definitions: Sequence[object] = cast(Sequence[object], spec.subagents)
+    for definition in raw_definitions:
+        if not isinstance(
+            definition,
+            (
+                SubAgentDefinition,
+                CompiledSubAgentDefinition,
+                AsyncSubAgentDefinition,
+            ),
+        ):
+            raise SubagentConfigurationError(
+                "subagents: unsupported subagent definition of type "
+                f"{type(definition).__name__}"
+            )
     validate_unique_subagent_names(spec.subagents)
+    validate_experimental_async_subagents(
+        spec.subagents,
+        allow_experimental_async_subagents=(spec.allow_experimental_async_subagents),
+    )
     validate_experimental_fork(
         spec.subagents,
         allow_experimental_fork=spec.allow_experimental_fork,
@@ -184,7 +236,7 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
     compiled_names = {
         definition.name
         for definition in spec.subagents
-        if isinstance(definition, CompiledSubAgentDefinition)
+        if not isinstance(definition, SubAgentDefinition)
     }
     spec.middleware.validate_for_subagents(
         declarative_names=declarative_names,
@@ -194,6 +246,87 @@ def _validate_subagents(spec: SupervisorSpec) -> None:
     validate_interrupt_checkpointer(
         spec.checkpointer,
         _interrupt_configured(spec),
+    )
+
+
+def _apply_profiles(
+    spec: SupervisorSpec,
+    extra_reserved: Collection[str],
+) -> ProfilesConfiguration | None:
+    if spec.profiles is None:
+        return None
+    if not spec.allow_experimental_profiles:
+        raise ProfileConfigurationError(
+            "profiles: harness/provider profiles require "
+            "allow_experimental_profiles=True"
+        )
+    spec.profiles.apply(extra_reserved=extra_reserved)
+    return spec.profiles
+
+
+def _context_plan(
+    spec: SupervisorSpec,
+    backend: BackendProtocol,
+) -> tuple[
+    list[str] | None,
+    MiddlewareType | None,
+    list[str] | None,
+    ContextReport,
+]:
+    memory_list: list[str] | None = None
+    memory_middleware: MiddlewareType | None = None
+    memory_count = 0
+    memory_cache_prefix = True
+    memory_managed_by = "absent"
+
+    if isinstance(spec.memory, MemoryConfiguration):
+        memory_count = spec.memory.source_count
+        memory_cache_prefix = spec.memory.cache_memory_prefix
+        if spec.memory.cache_memory_prefix:
+            memory_list = list(spec.memory.sources)
+            memory_managed_by = "upstream"
+        else:
+            if any(
+                item.name == "MemoryMiddleware" for item in spec.middleware.supervisor
+            ):
+                raise MiddlewareConfigurationError(
+                    "middleware.supervisor: MemoryMiddleware is reserved when "
+                    "memory.cache_memory_prefix=False"
+                )
+            memory_middleware = MemoryMiddleware(
+                backend=backend,
+                sources=list(spec.memory.sources),
+                add_cache_control=False,
+            )
+            memory_managed_by = "package"
+    elif spec.memory is not None:
+        memory_count = len(spec.memory)
+        memory_list = list(spec.memory)
+        memory_managed_by = "upstream"
+
+    skills_list: list[str] | None = None
+    skills_count = 0
+    skills_managed_by = "absent"
+    if isinstance(spec.skills, SkillsConfiguration):
+        skills_count = spec.skills.source_count
+        skills_list = list(spec.skills.sources)
+        skills_managed_by = "upstream"
+    elif spec.skills is not None:
+        skills_count = len(spec.skills)
+        skills_list = list(spec.skills)
+        skills_managed_by = "upstream"
+
+    return (
+        memory_list,
+        memory_middleware,
+        skills_list,
+        ContextReport(
+            memory_source_count=memory_count,
+            memory_cache_prefix=memory_cache_prefix,
+            memory_managed_by=memory_managed_by,
+            skills_source_count=skills_count,
+            skills_managed_by=skills_managed_by,
+        ),
     )
 
 
@@ -227,7 +360,9 @@ def _interrupt_configured(spec: SupervisorSpec) -> bool:
 
 def _has_general_purpose(subagents: Sequence[SubAgentDefinitionLike]) -> bool:
     return any(
-        definition.name == DEFAULT_GENERAL_PURPOSE_NAME for definition in subagents
+        definition.name == DEFAULT_GENERAL_PURPOSE_NAME
+        and not isinstance(definition, AsyncSubAgentDefinition)
+        for definition in subagents
     )
 
 
@@ -273,10 +408,13 @@ def _supervisor_middleware(
     spec: SupervisorSpec,
     summary: MiddlewareType | None,
     controller: DelegationController | None,
+    memory_middleware: MiddlewareType | None = None,
 ) -> list[MiddlewareType]:
     middleware: list[MiddlewareType] = list(spec.middleware.supervisor)
     if summary is not None:
         middleware.append(summary)
+    if memory_middleware is not None:
+        middleware.append(memory_middleware)
     emitter = (
         DiagnosticEmitter(spec.diagnostics, spec.name)
         if spec.diagnostics is not None
@@ -358,6 +496,25 @@ def _native_compiled(definition: CompiledSubAgentDefinition) -> CompiledSubAgent
     return cast(CompiledSubAgent, native)
 
 
+def _native_async(definition: AsyncSubAgentDefinition) -> dict[str, Any]:
+    native: dict[str, Any] = {
+        "name": definition.name,
+        "description": definition.description,
+        "graph_id": definition.graph_id,
+        "update_strategy": definition.update_strategy,
+        "mode": definition.mode.value,
+    }
+    if definition.url is not None:
+        native["url"] = definition.url
+    if definition.headers is not None:
+        native["headers"] = dict(definition.headers)
+    if definition.webhook is not None:
+        native["webhook"] = definition.webhook
+    if definition.notify_parent is not None:
+        native["notify_parent"] = definition.notify_parent
+    return native
+
+
 def _declarative_report(
     definition: SubAgentDefinition,
     middleware: tuple[MiddlewareType, ...],
@@ -394,6 +551,20 @@ def _compiled_report(definition: CompiledSubAgentDefinition) -> SubagentReport:
     )
 
 
+def _async_report(definition: AsyncSubAgentDefinition) -> SubagentReport:
+    return SubagentReport(
+        name=definition.name,
+        kind=SubAgentKind.ASYNC,
+        mode=definition.mode,
+        model_source=f"remote:{definition.graph_id}",
+        availability="experimental",
+        warnings=(
+            "async subagents require a remote Agent Protocol server and the "
+            "async execution path",
+        ),
+    )
+
+
 def _default_general_purpose_definition(
     spec: SupervisorSpec,
 ) -> SubAgentDefinition:
@@ -404,12 +575,17 @@ def _default_general_purpose_definition(
         raise AgentConfigurationError(
             "supervisor: upstream general-purpose definition is incomplete"
         )
+    skills: tuple[str, ...] | None = None
+    if isinstance(spec.skills, SkillsConfiguration):
+        skills = tuple(spec.skills.sources)
+    elif spec.skills is not None:
+        skills = tuple(spec.skills)
     return SubAgentDefinition(
         name=DEFAULT_GENERAL_PURPOSE_NAME,
         description=description,
         system_prompt=system_prompt,
         model_purpose=ModelPurpose.WORKER,
-        skills=None if spec.skills is None else tuple(spec.skills),
+        skills=skills,
     )
 
 
@@ -418,7 +594,7 @@ def _native_subagents(
     resolved: ResolvedModelBindings,
     summary: MiddlewareType | None,
 ) -> tuple[
-    list[SubAgent | CompiledSubAgent],
+    list[Any],
     tuple[SubagentReport, ...],
     dict[str, tuple[str, ...]],
 ]:
@@ -426,7 +602,7 @@ def _native_subagents(
     controlled_default = _uses_controlled_general_purpose(spec)
     if controlled_default:
         definitions.insert(0, _default_general_purpose_definition(spec))
-    native: list[SubAgent | CompiledSubAgent] = []
+    native: list[Any] = []
     reports: list[SubagentReport] = []
     per_subagent: dict[str, tuple[str, ...]] = {}
     for definition in definitions:
@@ -449,9 +625,13 @@ def _native_subagents(
                 )
             )
             per_subagent[definition.name] = tuple(item.name for item in middleware)
-        else:
+        elif isinstance(definition, CompiledSubAgentDefinition):
             native.append(_native_compiled(definition))
             reports.append(_compiled_report(definition))
+            per_subagent[definition.name] = ()
+        else:
+            native.append(_native_async(definition))
+            reports.append(_async_report(definition))
             per_subagent[definition.name] = ()
     return native, tuple(reports), per_subagent
 
@@ -461,7 +641,9 @@ def _create_graph(
     resolved: ResolvedModelBindings,
     backend: BackendProtocol,
     supervisor_middleware: list[MiddlewareType],
-    native_subagents: list[SubAgent | CompiledSubAgent],
+    native_subagents: list[Any],
+    memory_list: list[str] | None,
+    skills_list: list[str] | None,
 ) -> Any:
     try:
         return _create_deep_agent(
@@ -482,8 +664,8 @@ def _create_graph(
             context_schema=spec.context_schema,
             response_format=cast(Any, spec.response_format),
             permissions=(None if spec.permissions is None else list(spec.permissions)),
-            skills=None if spec.skills is None else list(spec.skills),
-            memory=None if spec.memory is None else list(spec.memory),
+            skills=skills_list,
+            memory=memory_list,
             cache=spec.cache,
             name=spec.name,
             debug=spec.debug,
@@ -508,6 +690,65 @@ def _model_source_labels(
     return labels
 
 
+def _subagent_warnings(spec: SupervisorSpec) -> list[str]:
+    warnings: list[str] = []
+    declarative_count = sum(
+        isinstance(definition, SubAgentDefinition) for definition in spec.subagents
+    )
+    if _uses_controlled_general_purpose(spec):
+        declarative_count += 1
+    compiled_count = sum(
+        isinstance(definition, CompiledSubAgentDefinition)
+        for definition in spec.subagents
+    )
+    async_count = sum(
+        isinstance(definition, AsyncSubAgentDefinition) for definition in spec.subagents
+    )
+    if (compiled_count or async_count) and spec.middleware.workers:
+        if async_count == 0:
+            warnings.append(
+                "middleware.workers: compiled subagents own their middleware "
+                "and are not modified"
+            )
+        else:
+            warnings.append(
+                "middleware.workers: compiled/async subagents own their "
+                "execution and do not receive injected worker middleware"
+            )
+    if spec.middleware.workers and declarative_count == 0:
+        warnings.append("middleware.workers: no declarative subagents are registered")
+    return warnings
+
+
+def _management_warnings(spec: SupervisorSpec) -> list[str]:
+    warnings: list[str] = []
+    if isinstance(spec.memory, MemoryConfiguration) and (
+        not spec.memory.cache_memory_prefix
+    ):
+        warnings.append(
+            "memory: the package adds MemoryMiddleware and passes memory=None "
+            "because cache_memory_prefix=False"
+        )
+        if any(definition.mode == SubAgentMode.FORK for definition in spec.subagents):
+            warnings.append(
+                "memory: package-managed memory is not inherited by fork "
+                "subagents; the upstream memory= path is disabled"
+            )
+    if spec.profiles is not None:
+        warnings.append(
+            "profiles: DeepAgents harness/provider profiles are beta and are "
+            "registered process-wide before assembly"
+        )
+    if any(
+        isinstance(definition, AsyncSubAgentDefinition) for definition in spec.subagents
+    ):
+        warnings.append(
+            "async subagents are beta remote Agent Protocol workers and require "
+            "the async execution path"
+        )
+    return warnings
+
+
 def _report_warnings(
     spec: SupervisorSpec,
     summary: MiddlewareType | None,
@@ -518,32 +759,18 @@ def _report_warnings(
             "models.summarization: no explicit summarization binding; the "
             "upstream default may use the supervisor model"
         )
-    declarative_count = sum(
-        isinstance(definition, SubAgentDefinition) for definition in spec.subagents
-    )
-    if _uses_controlled_general_purpose(spec):
-        declarative_count += 1
-    compiled_count = sum(
-        isinstance(definition, CompiledSubAgentDefinition)
-        for definition in spec.subagents
-    )
-    if compiled_count and spec.middleware.workers:
-        warnings.append(
-            "middleware.workers: compiled subagents own their middleware and "
-            "are not modified"
-        )
+    warnings.extend(_subagent_warnings(spec))
     if _uses_upstream_general_purpose(spec):
         warnings.append(
             "general-purpose: upstream-owned default uses the supervisor model; "
             "the WORKER binding and workers middleware do not apply"
         )
-    if spec.middleware.workers and declarative_count == 0:
-        warnings.append("middleware.workers: no declarative subagents are registered")
     if spec.diagnostics is not None and spec.diagnostics.async_callback is not None:
         warnings.append(
             "diagnostics: async callback is awaited only with ainvoke/astream; "
             "sync execution uses the sync callback only"
         )
+    warnings.extend(_management_warnings(spec))
     return tuple(warnings)
 
 
@@ -561,6 +788,8 @@ def _build_report(
     per_subagent: dict[str, tuple[str, ...]],
     supervisor_middleware: list[MiddlewareType],
     summary: MiddlewareType | None,
+    context: ContextReport,
+    profiles: ProfilesConfiguration | None,
 ) -> AssemblyReport:
     warnings = _report_warnings(spec, summary)
     reports = list(subagent_reports)
@@ -585,11 +814,14 @@ def _build_report(
             DEFAULT_GENERAL_PURPOSE_NAME: _UPSTREAM_GENERAL_PURPOSE_MIDDLEWARE,
             **per_subagent_report,
         }
+    replaced_defaults: list[str] = []
+    if summary is not None:
+        replaced_defaults.append("SummarizationMiddleware")
     middleware = MiddlewareScopeReport(
         supervisor_names=tuple(item.name for item in supervisor_middleware),
         worker_names=tuple(item.name for item in spec.middleware.workers),
         per_subagent=per_subagent_report,
-        replaced_defaults=(("SummarizationMiddleware",) if summary is not None else ()),
+        replaced_defaults=tuple(replaced_defaults),
         warnings=warnings,
     )
     interrupt_configured = _interrupt_configured(spec)
@@ -603,6 +835,15 @@ def _build_report(
             execution_mode="async",
             warnings=("governed delegation requires ainvoke/astream",),
         )
+    experimental_features: list[str] = []
+    if any(definition.mode == SubAgentMode.FORK for definition in spec.subagents):
+        experimental_features.append("forked_subagents")
+    if any(
+        isinstance(definition, AsyncSubAgentDefinition) for definition in spec.subagents
+    ):
+        experimental_features.append("async_subagents")
+    if profiles is not None:
+        experimental_features.append("harness_profiles")
     return AssemblyReport(
         package_version=version("spawn-join-agent-deepagents"),
         deepagents_version=deepagents.__version__,
@@ -620,13 +861,12 @@ def _build_report(
             interrupt_configured=interrupt_configured,
             thread_id_required=interrupt_configured,
         ),
-        warnings=warnings,
-        experimental_features=(
-            ("forked_subagents",)
-            if any(
-                definition.mode == SubAgentMode.FORK for definition in spec.subagents
-            )
-            else ()
+        context=context,
+        profiles=ProfileReport(
+            harness_keys=profiles.harness_keys if profiles is not None else (),
+            provider_keys=profiles.provider_keys if profiles is not None else (),
         ),
+        warnings=warnings,
+        experimental_features=tuple(experimental_features),
         diagnostics_enabled=spec.diagnostics is not None,
     )

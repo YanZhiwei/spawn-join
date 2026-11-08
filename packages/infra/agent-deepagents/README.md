@@ -12,9 +12,17 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - [提供的能力](#提供的能力)
 - [安装](#安装)
 - [快速开始](#快速开始)
+  - [1. 先运行完整离线示例](#1-先运行完整离线示例)
+  - [2. 连接自己的模型服务](#2-连接自己的模型服务)
 - [模型用途](#模型用途)
 - [子代理](#子代理)
+  - [AsyncSubAgent（远程子代理）](#asyncsubagent远程子代理)
+  - [AsyncSubAgent 字段说明](#asyncsubagent-字段说明)
+  - [远程执行流程](#远程执行流程)
+  - [本地与远程子代理对比](#本地与远程子代理对比)
 - [Middleware 作用域](#middleware-作用域)
+- [Memory、Skills 与 Profile](#memoryskills-与-profile)
+  - [完整可运行示例](#完整可运行示例)
 - [委派](#委派)
 - [诊断](#诊断)
 - [资源与恢复](#资源与恢复)
@@ -36,8 +44,10 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 ## 提供的能力
 
 - 从显式模型用途构建 supervisor，返回原生 LangGraph 图和不可变装配报告；
-- 声明式与 compiled 子代理；compiled 子代理保留自己的图、模型和内部中间件；
+- 声明式、compiled 和远程 async 子代理；compiled/async 子代理保留自己的执行边界；
 - supervisor、workers、per-subagent override 三种 Middleware 作用域；
+- Memory/Skills 配置对象，支持 memory 前缀缓存选择；
+- 上游 Harness/Provider profile 的显式注册、保留名校验和报告；
 - 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
 - 可选同步/异步诊断回调，以及脱敏的装配/生命周期记录；
 - 宿主拥有 Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend；
@@ -72,13 +82,16 @@ uv sync --locked --directory packages/infra/agent-deepagents
 ```powershell
 uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
 uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
 ```
 
-完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)。
+完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)、
+[官方 P0 能力](examples/p0_capabilities.py)。
 它们使用同目录的 [`fake_model.py`](examples/fake_model.py) 提供确定性离线响应；请在仓库中
 运行这些文件，而不是单独复制其中一个文件。第一个示例输出装配报告、worker 的
 `research result` 和最终的 `The supervisor's final answer.`；第二个还输出 `Events:`
-生命周期列表。报告的完整 repr 不是稳定输出契约。
+生命周期列表；第三个输出 `Context`、`Profiles`、`Subagents` 分区和同样的最终回答。
+报告的完整 repr 不是稳定输出契约。
 
 ### 2. 连接自己的模型服务
 
@@ -185,7 +198,11 @@ if __name__ == "__main__":
 - `SubAgentDefinition`：声明式 worker，支持 `tools`、`middleware`、`interrupt_on`、
   `response_format`、`skills`、`permissions` 和上下文模式；
 - `CompiledSubAgentDefinition`：宿主提供的 runnable，保留自己的图、模型和内部中间件；
-- 名称在两种形态之间必须唯一；
+- `AsyncSubAgentDefinition`：远程 Agent Protocol 子代理，按原生 `graph_id`/`url`/
+  `headers`/`webhook` 透传；必须显式设置
+  `SupervisorSpec(allow_experimental_async_subagents=True)`，`mode="fork"` 还需
+  `allow_experimental_fork=True`，且只支持异步执行路径；
+- 名称在三种形态之间必须唯一；
 - `tools=None` 表示沿用上游工具继承，`tools=()` 表示显式不提供额外工具；
 - 默认情况下，如果没有声明 `general-purpose`，包会注入一个受控的 `general-purpose`：
   使用 `WORKER` 模型和 `workers` middleware，并出现在装配报告中；
@@ -195,6 +212,89 @@ if __name__ == "__main__":
   最终以实际图为准；
 - `mode="fork"` 是 DeepAgents beta，只能通过
   `SupervisorSpec(allow_experimental_fork=True)` 显式开启，且不进入稳定兼容承诺。
+
+### AsyncSubAgent（远程子代理）
+
+`AsyncSubAgentDefinition` 不是“在本进程再建一个 agent”，而是登记一个运行在远程
+Agent Protocol 服务上的子代理。远程服务拥有自己的模型、工具和运行环境；本包只负责校验
+声明、转换成 DeepAgents 原生 `AsyncSubAgent`，并在装配报告中说明它。
+
+#### Agent Protocol 是什么
+
+Agent Protocol 是一套面向 Agent 服务的 HTTP 接口约定：客户端可以查询 assistant/graph、
+创建 thread、启动 run、查询状态和结果。LangGraph Platform 实现了它；自托管服务也可以用
+FastAPI 等实现同样的接口。DeepAgents 的 `AsyncSubAgentMiddleware` 通过 `langgraph_sdk`
+调用这些接口，所以：
+
+- `url` 是“远程服务地址”；
+- `graph_id` 是“远程服务上的哪个 agent/graph/assistant”。
+
+#### AsyncSubAgent 字段说明
+
+| 字段 | 必填 | 默认 | 大白话 |
+| --- | --- | --- | --- |
+| `name` | 是 | 无 | 本地给这个远程代理起的名字，supervisor 用它选人 |
+| `description` | 是 | 无 | 告诉模型“它适合干什么”，模型靠它决定是否派活 |
+| `graph_id` | 是 | 无 | 远程服务上的 graph/assistant ID，相当于“找哪个团队” |
+| `url` | 否 | SDK 默认地址 | Agent Protocol 服务地址；省略时使用 LangGraph SDK 默认端点或本地 ASGI transport |
+| `headers` | 否 | 无 | 调远程服务时附加的 HTTP headers，通常放认证信息；不会进入报告 |
+| `webhook` | 否 | 无 | 远程 run 结束时回调的 URL，供宿主自行接收完成通知 |
+| `update_strategy` | 否 | `"interrupt"` | 运行中再发跟进消息：`interrupt` 打断当前 run，`enqueue` 排队等当前 run 结束 |
+| `notify_parent` | 否 | 上游默认 `True` | 远程任务完成时是否允许唤醒当前 agent；应用自己用 webhook 交付时可设为 `False` |
+| `mode` | 否 | `"isolated"` | `isolated` 使用独立上下文；`fork` 复制父对话历史（beta，需要远程侧配置匹配） |
+
+最小写法只需要前三个字段：
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+)
+```
+
+真实部署通常还会带地址和认证头（密钥必须来自宿主环境，不要硬编码）：
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+    url="https://my-deployment.langsmith.dev",
+    headers={"Authorization": f"Bearer {token_from_host}"},
+    update_strategy="enqueue",
+    notify_parent=False,
+    webhook="https://my-app.example.com/agent-events",
+)
+```
+
+#### 远程执行流程
+
+1. `build_supervisor` 只做校验和转换，**不连接远程服务**。
+2. `create_deep_agent` 看到 `graph_id` 后自动安装 `AsyncSubAgentMiddleware`。
+3. supervisor 模型会多出一组异步任务工具：`start_async_task`、`check_async_task`、
+   `update_async_task`、`cancel_async_task`、`list_async_tasks`。
+4. 模型调用 `start_async_task`，立刻拿到 `task_id`，然后可以继续做别的事。
+5. 远程服务在自己的进程里执行真正的 agent。
+6. 模型之后可以查状态/取结果，或者依赖 webhook / `notify_parent` 接收完成通知。
+7. 这条路径要求 `ainvoke` / `astream` 异步执行；远程服务必须实现 Agent Protocol。
+
+这也是它和普通子代理最大的区别：普通子代理是“派活并等结果”，async 子代理是
+“先拿工单号，稍后查进度”。
+
+#### 本地与远程子代理对比
+
+| | `SubAgentDefinition` | `AsyncSubAgentDefinition` |
+| --- | --- | --- |
+| 模型在哪 | 当前进程 | 远程服务 |
+| 是否等结果 | 等 | 先拿 `task_id`，稍后查 |
+| 包是否注入 Middleware | 会 | 不会 |
+| 报告中的模型来源 | `purpose:worker` 等 | `remote:<graph_id>` |
+| 是否需要远程服务 | 不需要 | 需要 Agent Protocol 服务 |
+| beta 开关 | `fork` 才需要 | `allow_experimental_async_subagents=True` |
+
+注意：`examples/p0_capabilities.py` 里的 `url="https://example.invalid"` 只是展示字段，
+示例并不会调用远程子代理，因此不会联网，也不会因为地址不可达而失败。
 
 ## Middleware 作用域
 
@@ -220,6 +320,204 @@ compiled 子代理不接收任何注入。
 - `"SummarizationMiddleware"` 和包内部 middleware 名称保留；
 - 上游 `.name` 替换语义原样保留，包不实现第二套 registry；
 - assembly report 记录实际生效的名称和作用域。
+
+## Memory、Skills 与 Profile
+
+```python
+from spawn_join_agent_deepagents import (
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+)
+from deepagents import HarnessProfile
+
+spec = SupervisorSpec(
+    models=models,
+    memory=MemoryConfiguration(sources=("AGENTS.md",), cache_memory_prefix=False),
+    skills=SkillsConfiguration(sources=("skills",)),
+    profiles=ProfilesConfiguration(
+        harness=(
+            HarnessProfileBinding(
+                "openai:gpt-5.4",
+                HarnessProfile(system_prompt_suffix="Be concise."),
+            ),
+        )
+    ),
+    allow_experimental_profiles=True,
+)
+```
+
+- `MemoryConfiguration` / `SkillsConfiguration` 拒绝空、空白和重复 source；装配期不读取
+  source，宿主或虚拟 Backend 负责实际内容。
+- `cache_memory_prefix=True`（默认）继续由上游创建 `MemoryMiddleware`；`False` 时本包自己创建
+  同名实例并向上游传 `memory=None`，因此没有可替换的上游默认实例，fork 子代理也不会继承
+  这份 memory。
+- `ProfilesConfiguration` 在 `create_deep_agent` 前调用上游
+  `register_harness_profile` / `register_provider_profile`；这是 beta 的进程级注册表，
+  必须显式开启 `allow_experimental_profiles=True`。Provider profile 只影响上游从字符串
+  构造模型的路径；本包始终传 `BaseChatModel`，所以对已解析实例不生效。
+- profile 的 `excluded_middleware` 不得包含本包保留名
+  （`SummarizationMiddleware`、`spawn_join_delegation_policy`、`spawn_join_diagnostics`）。
+- 装配报告的 `context` 只记录 source 数量和管理方式，`profiles` 只记录注册 key；
+  不记录路径、URL、headers 或凭据。
+
+### 完整可运行示例
+
+下面的脚本与 [`examples/p0_capabilities.py`](examples/p0_capabilities.py) 一致：用临时
+`FilesystemBackend` 提供 memory/skills 文件，用 fake model 离线执行，同时声明一个不会被
+调用的远程 async 子代理。运行：
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
+```
+
+```python
+from __future__ import annotations
+
+import asyncio
+import tempfile
+from pathlib import Path
+from typing import Any, cast
+
+from deepagents import HarnessProfile
+from deepagents.backends import FilesystemBackend
+from fake_model import FakeChatModel
+from langchain_core.messages import AIMessage, HumanMessage
+
+from spawn_join_agent_deepagents import (
+    AsyncSubAgentDefinition,
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+    SubAgentDefinition,
+    SupervisorSpec,
+    build_supervisor,
+)
+
+
+def _task_call() -> AIMessage:
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "task",
+                "args": {
+                    "description": "Research the topic.",
+                    "subagent_type": "researcher",
+                },
+                "id": "call-researcher",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+async def main() -> None:
+    with tempfile.TemporaryDirectory() as raw_root:
+        root = Path(raw_root)
+        (root / "AGENTS.md").write_text(
+            "# Agent memory\n\nReturn concise answers.\n",
+            encoding="utf-8",
+        )
+        skill = root / "skills" / "web-research"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\n"
+            "name: web-research\n"
+            "description: Research a bounded question.\n"
+            "---\n\n"
+            "Use the available research tools and cite the result.\n",
+            encoding="utf-8",
+        )
+
+        supervisor = FakeChatModel(
+            responses=[
+                _task_call(),
+                AIMessage(content="The supervisor's final answer."),
+            ]
+        )
+        worker = FakeChatModel(responses=[AIMessage(content="research result")])
+        models = ModelBindings(
+            catalog=None,
+            bindings=(
+                ModelBinding(ModelPurpose.SUPERVISOR, model=supervisor),
+                ModelBinding(ModelPurpose.WORKER, model=worker),
+                ModelBinding(
+                    ModelPurpose.SUMMARIZATION,
+                    inherit_from=ModelPurpose.SUPERVISOR,
+                ),
+            ),
+        )
+
+        assembly = build_supervisor(
+            SupervisorSpec(
+                models=models,
+                backend=FilesystemBackend(root_dir=root),
+                memory=MemoryConfiguration(
+                    sources=("/AGENTS.md",),
+                    cache_memory_prefix=False,
+                ),
+                skills=SkillsConfiguration(sources=("/skills",)),
+                profiles=ProfilesConfiguration(
+                    harness=(
+                        HarnessProfileBinding(
+                            "example:fake-model",
+                            HarnessProfile(system_prompt_suffix="Be concise."),
+                        ),
+                    )
+                ),
+                allow_experimental_profiles=True,
+                subagents=(
+                    SubAgentDefinition(
+                        name="researcher",
+                        description="Research a bounded question.",
+                        system_prompt="Return a concise result.",
+                    ),
+                    AsyncSubAgentDefinition(
+                        name="remote-researcher",
+                        description="A remote Agent Protocol worker.",
+                        graph_id="research_agent",
+                        url="https://example.invalid",
+                    ),
+                ),
+                allow_experimental_async_subagents=True,
+                name="coordinator",
+            )
+        )
+
+        result = cast(
+            dict[str, Any],
+            await assembly.graph.ainvoke(
+                {"messages": [HumanMessage(content="Start the research.")]}
+            ),
+        )
+
+        print("Report:", assembly.report)
+        print("Context:", assembly.report.context)
+        print("Profiles:", assembly.report.profiles)
+        print("Subagents:", [(item.name, item.kind) for item in assembly.report.subagents])
+        for message in cast(list[Any], result["messages"]):
+            print(type(message).__name__, getattr(message, "content", ""))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+要点：
+
+- `MemoryConfiguration(cache_memory_prefix=False)` 走包自己创建 `MemoryMiddleware` 的路径；
+  `FilesystemBackend` 由宿主提供，示例退出时由 `TemporaryDirectory` 清理。
+- `SkillsConfiguration(sources=("/skills",))` 指向包含 `web-research/SKILL.md` 的目录；
+  缺少有效 frontmatter 的文件会被上游跳过并记录 warning。
+- `AsyncSubAgentDefinition` 只参与装配和报告；示例不会调用远程子代理，因此没有网络依赖。
+- `ProfilesConfiguration` 注册的 harness profile 是 beta 进程级状态；示例 key 不会匹配
+  fake model，所以只用于展示注册、校验和报告，不改变离线输出。
 
 ## 委派
 
@@ -288,22 +586,29 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 - `build_supervisor`、`SupervisorSpec`、`SupervisorAssembly`；
 - `ModelPurpose`、`ModelBinding`、`ModelBindings`、`ResolvedModelBindings`；
-- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`（含 `UPSTREAM_DEFAULT`）、
-  `SubAgentMode`；
+- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`AsyncSubAgentDefinition`、
+  `SubAgentKind`（含 `UPSTREAM_DEFAULT`、`ASYNC`）、`SubAgentMode`；
+- `MemoryConfiguration`、`SkillsConfiguration`；
+- `ProfilesConfiguration`、`HarnessProfileBinding`、`ProviderProfileBinding`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
 - `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、
-  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、`ResourceReport`；
+  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、
+  `ResourceReport`、`ContextReport`、`ProfileReport`；
 - `RecoveryContext`；
-- 稳定错误类型（`AgentConfigurationError` 及其子类）。
+- 稳定错误类型（`AgentConfigurationError` 及其子类，包括 `ContextConfigurationError`、
+  `ProfileConfigurationError`）。
 
 内部模块不会因为可导入就自动成为公共契约。
 
 ## 错误与失败行为
 
-- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复和委派
-  各有稳定子类，便于调用方区分失败类别。
-- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配异常保留 `__cause__`。
+- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复、Memory/
+  Skills 和 Profile 各有稳定子类，便于调用方区分失败类别。
+- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配/注册异常保留 `__cause__`。
+- async 子代理和 profile 注册未显式开启 beta 开关时，在装配前失败。
+- 未知子代理形态、空白 `graph_id`、重复 key 或 profile 排除保留 Middleware 名都会得到
+  稳定配置错误，而不是上游 `AttributeError` 或静默忽略。
 - 委派队列满、deadline、父级取消、worker 失败和中断具有可区分语义；worker 原始异常
   不会被转换为成功结果。
 - 诊断回调异常会传播，不会被静默吞掉；异步回调只在异步执行中 await。
@@ -313,6 +618,8 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - Python `>=3.11`；
 - DeepAgents `>=0.7.32,<0.8`；升级到 0.8 需要单独的兼容验证；
 - `fork` 子代理是 beta，不包含在稳定兼容承诺中；
+- async 子代理是 beta，依赖远程 Agent Protocol 服务和异步执行路径；
+- Harness/Provider profile 是上游 beta，注册为进程级副作用；
 - 受控委派仅异步；同步策略明确报错；
 - 不实现 MCP Server、数据库、沙箱、Web/SSE、生产观测后端、租户/授权/计费、产物台账或 UI；
 - 不提供自动 PR、发布或后台调度。

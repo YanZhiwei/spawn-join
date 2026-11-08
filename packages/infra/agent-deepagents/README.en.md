@@ -13,9 +13,17 @@ streaming capabilities.
 - [Capabilities](#capabilities)
 - [Installation](#installation)
 - [Quick start](#quick-start)
+  - [1. Run the complete offline examples first](#1-run-the-complete-offline-examples-first)
+  - [2. Connect your own model service](#2-connect-your-own-model-service)
 - [Model purposes](#model-purposes)
 - [Subagents](#subagents)
+  - [AsyncSubAgent (remote subagent)](#asyncsubagent-remote-subagent)
+  - [AsyncSubAgent field reference](#asyncsubagent-field-reference)
+  - [Remote execution flow](#remote-execution-flow)
+  - [Local vs remote subagents](#local-vs-remote-subagents)
 - [Middleware scopes](#middleware-scopes)
+- [Memory, skills, and profiles](#memory-skills-and-profiles)
+  - [Complete runnable example](#complete-runnable-example)
 - [Delegation](#delegation)
 - [Diagnostics](#diagnostics)
 - [Resources and recovery](#resources-and-recovery)
@@ -39,9 +47,12 @@ streaming capabilities.
 
 - build a supervisor from explicit model purposes, returning a native LangGraph graph and an
   immutable assembly report;
-- declarative and compiled subagents; compiled subagents keep their own graph, model, and internal
-  middleware;
+- declarative, compiled, and remote async subagents; compiled/async subagents keep their own
+  execution boundary;
 - three middleware scopes: supervisor, workers, and per-subagent override;
+- memory/skills configuration objects, including an explicit memory-prefix cache choice;
+- explicit registration, reserved-name validation, and reporting for upstream Harness/Provider
+  profiles;
 - an explicit async-first delegation controller: concurrency limit, bounded FIFO, deadline,
   cancellation, and failure semantics;
 - optional sync/async diagnostic callbacks and redacted assembly/lifecycle records;
@@ -78,14 +89,17 @@ Run from the repository root; no model file or credentials are needed:
 ```powershell
 uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
 uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
 ```
 
-Complete source: [basic supervisor](examples/basic_supervisor.py) and
-[governed delegation](examples/governed_delegation.py). Both use the adjacent
+Complete source: [basic supervisor](examples/basic_supervisor.py),
+[governed delegation](examples/governed_delegation.py), and
+[official P0 capabilities](examples/p0_capabilities.py). They use the adjacent
 [`fake_model.py`](examples/fake_model.py) for deterministic offline responses; run them in the
 repository rather than copying just one file. The first prints an assembly report, the worker's
 `research result` and `The supervisor's final answer.`; the second also prints an `Events:`
-lifecycle list. The full report repr is not a stable output contract.
+lifecycle list; the third prints `Context`, `Profiles`, `Subagents`, and the same final answer.
+The full report repr is not a stable output contract.
 
 ### 2. Connect your own model service
 
@@ -197,7 +211,11 @@ than appending a duplicate.
   `response_format`, `skills`, `permissions`, and context schema;
 - `CompiledSubAgentDefinition`: a host-provided runnable that keeps its own graph, model, and
   internal middleware;
-- names must be unique across both forms;
+- `AsyncSubAgentDefinition`: a remote Agent Protocol worker forwarded with the native
+  `graph_id`/`url`/`headers`/`webhook` fields; it requires
+  `SupervisorSpec(allow_experimental_async_subagents=True)`, and `mode="fork"` also requires
+  `allow_experimental_fork=True`; only the async execution path is supported;
+- names must be unique across all three forms;
 - `tools=None` means inherit upstream tools; `tools=()` means explicitly provide no extra tools;
 - by default, if `general-purpose` is not declared, the package injects a controlled
   `general-purpose` using the `WORKER` model and `workers` middleware, and reports it;
@@ -207,6 +225,91 @@ than appending a duplicate.
   entry represents the upstream default contract and the actual graph is authoritative;
 - `mode="fork"` is DeepAgents beta and requires explicit
   `SupervisorSpec(allow_experimental_fork=True)`; it is outside the stable compatibility promise.
+
+### AsyncSubAgent (remote subagent)
+
+`AsyncSubAgentDefinition` does not create another agent in this process. It registers a
+subagent that runs on a remote Agent Protocol service. That service owns its model, tools, and
+runtime; this package only validates the declaration, converts it to the native DeepAgents
+`AsyncSubAgent`, and reports it.
+
+#### What Agent Protocol is
+
+Agent Protocol is an HTTP contract for agent services: clients can look up
+assistants/graphs, create threads, start runs, and query status/results. LangGraph Platform
+implements it; a self-hosted FastAPI service can implement the same contract. DeepAgents'
+`AsyncSubAgentMiddleware` calls it through `langgraph_sdk`, so:
+
+- `url` is the remote service address;
+- `graph_id` is the agent/graph/assistant on that service.
+
+#### AsyncSubAgent field reference
+
+| Field | Required | Default | Plain meaning |
+| --- | --- | --- | --- |
+| `name` | yes | none | Local name the supervisor uses to select this remote worker |
+| `description` | yes | none | Tells the model what the worker is good at |
+| `graph_id` | yes | none | Graph/assistant ID on the remote service |
+| `url` | no | SDK default | Agent Protocol service URL; omit for the LangGraph SDK default or local ASGI transport |
+| `headers` | no | none | Extra HTTP headers, usually auth; never included in the report |
+| `webhook` | no | none | URL the remote service calls when a run finishes |
+| `update_strategy` | no | `"interrupt"` | Follow-up while running: `interrupt` stops the current run, `enqueue` waits behind it |
+| `notify_parent` | no | upstream `True` | Whether the worker may wake the parent when done; set `False` when the app delivers via webhook |
+| `mode` | no | `"isolated"` | `isolated` uses separate context; `fork` copies parent history (beta, remote config must match) |
+
+The minimal form needs only the first three fields:
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+)
+```
+
+A real deployment usually adds the URL and auth headers (keep secrets in the host environment):
+
+```python
+AsyncSubAgentDefinition(
+    name="remote-researcher",
+    description="Research a bounded question on the remote deployment.",
+    graph_id="research_agent",
+    url="https://my-deployment.langsmith.dev",
+    headers={"Authorization": f"Bearer {token_from_host}"},
+    update_strategy="enqueue",
+    notify_parent=False,
+    webhook="https://my-app.example.com/agent-events",
+)
+```
+
+#### Remote execution flow
+
+1. `build_supervisor` validates and converts the declaration; it does **not** connect.
+2. `create_deep_agent` sees `graph_id` and installs `AsyncSubAgentMiddleware`.
+3. The supervisor model gains async tools: `start_async_task`, `check_async_task`,
+   `update_async_task`, `cancel_async_task`, `list_async_tasks`.
+4. The model calls `start_async_task`, receives a `task_id` immediately, and can continue.
+5. The remote service runs the actual agent in its own process.
+6. The model later checks status/results, or receives completion via webhook / `notify_parent`.
+7. This path requires `ainvoke` / `astream` and an Agent Protocol service.
+
+The key difference from a normal subagent: a normal subagent delegates and waits; an async
+subagent gets a ticket ID first and checks progress later.
+
+#### Local vs remote subagents
+
+| | `SubAgentDefinition` | `AsyncSubAgentDefinition` |
+| --- | --- | --- |
+| Model location | current process | remote service |
+| Result timing | wait | get `task_id`, check later |
+| Package injects middleware | yes | no |
+| Reported model source | `purpose:worker`, etc. | `remote:<graph_id>` |
+| Remote service needed | no | yes, Agent Protocol |
+| Beta switch | only for `fork` | `allow_experimental_async_subagents=True` |
+
+Note: `url="https://example.invalid"` in `examples/p0_capabilities.py` only demonstrates the
+field. The example never calls the remote subagent, so it needs no network and does not fail on
+an unreachable address.
 
 ## Middleware scopes
 
@@ -233,6 +336,207 @@ no injection.
 - `"SummarizationMiddleware"` and internal package middleware names are reserved;
 - upstream `.name` replacement semantics are preserved; the package implements no second registry;
 - the assembly report records effective names and scopes.
+
+## Memory, skills, and profiles
+
+```python
+from spawn_join_agent_deepagents import (
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+)
+from deepagents import HarnessProfile
+
+spec = SupervisorSpec(
+    models=models,
+    memory=MemoryConfiguration(sources=("AGENTS.md",), cache_memory_prefix=False),
+    skills=SkillsConfiguration(sources=("skills",)),
+    profiles=ProfilesConfiguration(
+        harness=(
+            HarnessProfileBinding(
+                "openai:gpt-5.4",
+                HarnessProfile(system_prompt_suffix="Be concise."),
+            ),
+        )
+    ),
+    allow_experimental_profiles=True,
+)
+```
+
+- `MemoryConfiguration` / `SkillsConfiguration` reject empty, blank, and duplicate sources; the
+  package does not read the sources during assembly.
+- `cache_memory_prefix=True` (the default) keeps the upstream `MemoryMiddleware`; `False` makes the
+  package construct its own same-name instance and pass `memory=None`, so there is no upstream
+  default to replace and fork subagents do not inherit this memory.
+- `ProfilesConfiguration` calls upstream `register_harness_profile` /
+  `register_provider_profile` before `create_deep_agent`; this is beta process-wide state and
+  requires `allow_experimental_profiles=True`. Provider profiles only affect upstream
+  string-model construction; this package always passes a `BaseChatModel`, so they do not
+  reshape resolved instances.
+- A profile cannot exclude package-reserved middleware names (`SummarizationMiddleware`,
+  `spawn_join_delegation_policy`, `spawn_join_diagnostics`).
+- The `context` report records only source counts and management mode; the `profiles` report
+  records only registered keys. Paths, URLs, headers, and credentials are never reported.
+
+### Complete runnable example
+
+The script below matches [`examples/p0_capabilities.py`](examples/p0_capabilities.py). It uses a
+temporary `FilesystemBackend` for memory/skills, runs offline with fake models, and declares a
+remote async subagent without invoking it.
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
+```
+
+```python
+from __future__ import annotations
+
+import asyncio
+import tempfile
+from pathlib import Path
+from typing import Any, cast
+
+from deepagents import HarnessProfile
+from deepagents.backends import FilesystemBackend
+from fake_model import FakeChatModel
+from langchain_core.messages import AIMessage, HumanMessage
+
+from spawn_join_agent_deepagents import (
+    AsyncSubAgentDefinition,
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+    SubAgentDefinition,
+    SupervisorSpec,
+    build_supervisor,
+)
+
+
+def _task_call() -> AIMessage:
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "task",
+                "args": {
+                    "description": "Research the topic.",
+                    "subagent_type": "researcher",
+                },
+                "id": "call-researcher",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+async def main() -> None:
+    with tempfile.TemporaryDirectory() as raw_root:
+        root = Path(raw_root)
+        (root / "AGENTS.md").write_text(
+            "# Agent memory\n\nReturn concise answers.\n",
+            encoding="utf-8",
+        )
+        skill = root / "skills" / "web-research"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\n"
+            "name: web-research\n"
+            "description: Research a bounded question.\n"
+            "---\n\n"
+            "Use the available research tools and cite the result.\n",
+            encoding="utf-8",
+        )
+
+        supervisor = FakeChatModel(
+            responses=[
+                _task_call(),
+                AIMessage(content="The supervisor's final answer."),
+            ]
+        )
+        worker = FakeChatModel(responses=[AIMessage(content="research result")])
+        models = ModelBindings(
+            catalog=None,
+            bindings=(
+                ModelBinding(ModelPurpose.SUPERVISOR, model=supervisor),
+                ModelBinding(ModelPurpose.WORKER, model=worker),
+                ModelBinding(
+                    ModelPurpose.SUMMARIZATION,
+                    inherit_from=ModelPurpose.SUPERVISOR,
+                ),
+            ),
+        )
+
+        assembly = build_supervisor(
+            SupervisorSpec(
+                models=models,
+                backend=FilesystemBackend(root_dir=root),
+                memory=MemoryConfiguration(
+                    sources=("/AGENTS.md",),
+                    cache_memory_prefix=False,
+                ),
+                skills=SkillsConfiguration(sources=("/skills",)),
+                profiles=ProfilesConfiguration(
+                    harness=(
+                        HarnessProfileBinding(
+                            "example:fake-model",
+                            HarnessProfile(system_prompt_suffix="Be concise."),
+                        ),
+                    )
+                ),
+                allow_experimental_profiles=True,
+                subagents=(
+                    SubAgentDefinition(
+                        name="researcher",
+                        description="Research a bounded question.",
+                        system_prompt="Return a concise result.",
+                    ),
+                    AsyncSubAgentDefinition(
+                        name="remote-researcher",
+                        description="A remote Agent Protocol worker.",
+                        graph_id="research_agent",
+                        url="https://example.invalid",
+                    ),
+                ),
+                allow_experimental_async_subagents=True,
+                name="coordinator",
+            )
+        )
+
+        result = cast(
+            dict[str, Any],
+            await assembly.graph.ainvoke(
+                {"messages": [HumanMessage(content="Start the research.")]}
+            ),
+        )
+
+        print("Report:", assembly.report)
+        print("Context:", assembly.report.context)
+        print("Profiles:", assembly.report.profiles)
+        print("Subagents:", [(item.name, item.kind) for item in assembly.report.subagents])
+        for message in cast(list[Any], result["messages"]):
+            print(type(message).__name__, getattr(message, "content", ""))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Key points:
+
+- `MemoryConfiguration(cache_memory_prefix=False)` exercises the package-managed
+  `MemoryMiddleware` path; the `FilesystemBackend` is host-owned and cleaned up by
+  `TemporaryDirectory`.
+- `SkillsConfiguration(sources=("/skills",))` points at a directory containing
+  `web-research/SKILL.md`; invalid frontmatter is skipped by upstream with a warning.
+- `AsyncSubAgentDefinition` participates only in assembly and the report; the example never
+  invokes the remote worker and needs no network.
+- The harness profile is beta process-wide state. Its key does not match the fake model, so it
+  demonstrates registration, validation, and reporting without changing offline output.
 
 ## Delegation
 
@@ -312,23 +616,30 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
 
 - `build_supervisor`, `SupervisorSpec`, `SupervisorAssembly`;
 - `ModelPurpose`, `ModelBinding`, `ModelBindings`, `ResolvedModelBindings`;
-- `SubAgentDefinition`, `CompiledSubAgentDefinition`, `SubAgentKind` (including `UPSTREAM_DEFAULT`),
-  `SubAgentMode`;
+- `SubAgentDefinition`, `CompiledSubAgentDefinition`, `AsyncSubAgentDefinition`,
+  `SubAgentKind` (including `UPSTREAM_DEFAULT` and `ASYNC`), `SubAgentMode`;
+- `MemoryConfiguration`, `SkillsConfiguration`;
+- `ProfilesConfiguration`, `HarnessProfileBinding`, `ProviderProfileBinding`;
 - `MiddlewareConfiguration`, `MiddlewareScopeReport`;
 - `DelegationPolicy`, `DelegationController`, `DelegationConfiguration`;
 - `DiagnosticsConfig`, `DiagnosticCallback`, `AsyncDiagnosticCallback`, `DiagnosticEvent`,
-  `DiagnosticEventType`, `AssemblyReport`, `SubagentReport`, `DelegationReport`, `ResourceReport`;
+  `DiagnosticEventType`, `AssemblyReport`, `SubagentReport`, `DelegationReport`,
+  `ResourceReport`, `ContextReport`, `ProfileReport`;
 - `RecoveryContext`;
-- stable error types (`AgentConfigurationError` and subclasses).
+- stable error types (`AgentConfigurationError` and subclasses, including
+  `ContextConfigurationError` and `ProfileConfigurationError`).
 
 Internal modules do not become public contracts merely because they are importable.
 
 ## Errors and failure behavior
 
 - `AgentConfigurationError` is the assembly-time configuration error base; models, subagents,
-  middleware, recovery, and delegation have stable subclasses for callers to distinguish failures.
+  middleware, recovery, memory/skills, profiles, and delegation have stable subclasses.
 - Configuration errors are raised before `create_deep_agent`, never returning a half-configured
-  graph; upstream assembly exceptions preserve `__cause__`.
+  graph; upstream assembly/registration exceptions preserve `__cause__`.
+- Async subagents and profile registration fail before assembly unless their beta switch is set.
+- Unknown subagent forms, blank `graph_id`, duplicate keys, and reserved-middleware exclusions
+  produce stable configuration errors instead of upstream `AttributeError` or silent ignores.
 - Delegation queue-full, deadline, parent cancellation, worker failure, and interrupt have
   distinguishable semantics; worker exceptions are never converted to success.
 - Diagnostic callback exceptions propagate and are never silently swallowed; async callbacks are
@@ -339,6 +650,8 @@ Internal modules do not become public contracts merely because they are importab
 - Python `>=3.11`;
 - DeepAgents `>=0.7.32,<0.8`; upgrading to 0.8 needs separate compatibility verification;
 - `fork` subagents are beta and outside the stable compatibility promise;
+- async subagents are beta and depend on a remote Agent Protocol service and the async path;
+- Harness/Provider profiles are upstream beta and register process-wide state;
 - governed delegation is asynchronous only; synchronous policies explicitly error;
 - no MCP Server, database, sandbox, Web/SSE, production observability backend,
   tenant/authorization/billing, artifact ledger, or UI;

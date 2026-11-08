@@ -1,22 +1,27 @@
 """DeepAgents product assembly, model binding, delegation, and diagnostics."""
 
+from .context_sources import MemoryConfiguration, SkillsConfiguration
 from .diagnostics import (
     AssemblyReport,
     AsyncDiagnosticCallback,
+    ContextReport,
     DelegationReport,
     DiagnosticCallback,
     DiagnosticEvent,
     DiagnosticEventType,
     DiagnosticsConfig,
+    ProfileReport,
     ResourceReport,
     SubagentReport,
 )
 from .errors import (
     AgentConfigurationError,
+    ContextConfigurationError,
     DelegationQueueFullError,
     DelegationTimeoutError,
     MiddlewareConfigurationError,
     ModelBindingError,
+    ProfileConfigurationError,
     RecoveryConfigurationError,
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
@@ -33,8 +38,14 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
+from .profiles import (
+    HarnessProfileBinding,
+    ProfilesConfiguration,
+    ProviderProfileBinding,
+)
 from .recovery import RecoveryContext
 from .subagents import (
+    AsyncSubAgentDefinition,
     CompiledSubAgentDefinition,
     SubAgentDefinition,
     SubAgentKind,
@@ -46,7 +57,10 @@ __all__ = [
     "AgentConfigurationError",
     "AssemblyReport",
     "AsyncDiagnosticCallback",
+    "AsyncSubAgentDefinition",
     "CompiledSubAgentDefinition",
+    "ContextConfigurationError",
+    "ContextReport",
     "DelegationConfiguration",
     "DelegationController",
     "DelegationPolicy",
@@ -57,6 +71,8 @@ __all__ = [
     "DiagnosticEvent",
     "DiagnosticEventType",
     "DiagnosticsConfig",
+    "HarnessProfileBinding",
+    "MemoryConfiguration",
     "MiddlewareConfiguration",
     "MiddlewareConfigurationError",
     "MiddlewareScopeReport",
@@ -64,10 +80,15 @@ __all__ = [
     "ModelBindingError",
     "ModelBindings",
     "ModelPurpose",
+    "ProfileConfigurationError",
+    "ProfileReport",
+    "ProfilesConfiguration",
+    "ProviderProfileBinding",
     "RecoveryConfigurationError",
     "RecoveryContext",
     "ResolvedModelBindings",
     "ResourceReport",
+    "SkillsConfiguration",
     "SubAgentDefinition",
     "SubAgentKind",
     "SubAgentMode",

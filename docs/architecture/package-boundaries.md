@@ -64,8 +64,8 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
    不得运行时依赖 LangChain 适配包。完整 `model.yaml` 解析仍由适配包负责，同步工具只
    读取元数据投影。
 5. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
-   受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain、`langgraph` 和模型适配包，
-   不得被 Core、协议包或模型包反向依赖。
+   Memory/Skills/Profile 接线、async 子代理、受控委派、诊断和恢复接缝；它依赖
+   `deepagents`、LangChain、`langgraph` 和模型适配包，不得被 Core、协议包或模型包反向依赖。
 6. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
 7. `spawn-join-common` 不依赖其他 SpawnJoin 包；默认零第三方运行时依赖，Pydantic 能力
    通过 `validation` extra 显式安装。它拥有公共辅助实现，Core 保留稳定契约；领域异常、
