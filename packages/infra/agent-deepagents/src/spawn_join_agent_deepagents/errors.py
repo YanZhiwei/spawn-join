@@ -47,3 +47,7 @@ class ContextConfigurationError(AgentConfigurationError):
 
 class ProfileConfigurationError(AgentConfigurationError):
     """A harness or provider profile registration is invalid or failed."""
+
+
+class RubricConfigurationError(AgentConfigurationError):
+    """A rubric grader configuration is invalid or used without its beta gate."""

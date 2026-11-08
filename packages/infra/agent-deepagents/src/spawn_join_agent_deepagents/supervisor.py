@@ -9,7 +9,7 @@ from types import MappingProxyType
 from typing import Any, cast
 
 import deepagents
-from deepagents import DeepAgentState, MemoryMiddleware
+from deepagents import DeepAgentState, MemoryMiddleware, RubricMiddleware
 from deepagents.backends import StateBackend
 from deepagents.backends.protocol import BackendProtocol
 from deepagents.middleware.filesystem import FilesystemPermission
@@ -26,6 +26,7 @@ from langgraph.cache.base import BaseCache
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 
+from .backends import backend_kind, permission_report
 from .context_sources import MemoryConfiguration, SkillsConfiguration
 from .diagnostics import (
     AssemblyReport,
@@ -36,6 +37,7 @@ from .diagnostics import (
     DiagnosticsConfig,
     ProfileReport,
     ResourceReport,
+    RubricReport,
     SubagentReport,
 )
 from .errors import (
@@ -43,6 +45,7 @@ from .errors import (
     MiddlewareConfigurationError,
     ModelBindingError,
     ProfileConfigurationError,
+    RubricConfigurationError,
     SubagentConfigurationError,
 )
 from .execution import (
@@ -62,6 +65,7 @@ from .recovery import (
     validate_checkpointer_value,
     validate_interrupt_checkpointer,
 )
+from .rubric import RubricConfiguration
 from .subagents import (
     DEFAULT_GENERAL_PURPOSE_NAME,
     AsyncSubAgentDefinition,
@@ -103,6 +107,8 @@ class SupervisorSpec:
     allow_experimental_async_subagents: bool = False
     allow_experimental_profiles: bool = False
     profiles: ProfilesConfiguration | None = None
+    allow_experimental_rubric: bool = False
+    rubric: RubricConfiguration | None = None
     backend: BackendProtocol | None = None
     store: BaseStore | None = None
     checkpointer: CheckpointerType = None
@@ -149,6 +155,7 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
     """Validate the spec and assemble exactly one native supervisor graph."""
 
     _validate_subagents(spec)
+    _validate_rubric(spec)
     worker_requirement = spec.models.require_worker
     if worker_requirement is None:
         worker_requirement = _worker_required(spec)
@@ -165,11 +172,13 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
         extra_reserved = frozenset({"MemoryMiddleware"})
     profiles = _apply_profiles(spec, extra_reserved)
     controller = _delegation_controller(spec)
+    rubric_middleware = _rubric_middleware(spec)
     supervisor_middleware = _supervisor_middleware(
         spec,
         summary,
         controller,
         memory_middleware,
+        rubric_middleware,
     )
     native_subagents, subagent_reports, per_subagent = _native_subagents(
         spec,
@@ -262,6 +271,30 @@ def _apply_profiles(
         )
     spec.profiles.apply(extra_reserved=extra_reserved)
     return spec.profiles
+
+
+def _validate_rubric(spec: SupervisorSpec) -> None:
+    if spec.rubric is None:
+        return
+    if not spec.allow_experimental_rubric:
+        raise RubricConfigurationError(
+            "rubric: rubric grading requires allow_experimental_rubric=True"
+        )
+
+
+def _rubric_middleware(
+    spec: SupervisorSpec,
+) -> MiddlewareType | None:
+    if spec.rubric is None:
+        return None
+    rubric = spec.rubric
+    return RubricMiddleware(
+        model=rubric.model,
+        system_prompt=rubric.system_prompt,
+        tools=list(rubric.tools),
+        max_iterations=rubric.max_iterations,
+        on_evaluation=rubric.on_evaluation,
+    )
 
 
 def _context_plan(
@@ -409,12 +442,15 @@ def _supervisor_middleware(
     summary: MiddlewareType | None,
     controller: DelegationController | None,
     memory_middleware: MiddlewareType | None = None,
+    rubric_middleware: MiddlewareType | None = None,
 ) -> list[MiddlewareType]:
     middleware: list[MiddlewareType] = list(spec.middleware.supervisor)
     if summary is not None:
         middleware.append(summary)
     if memory_middleware is not None:
         middleware.append(memory_middleware)
+    if rubric_middleware is not None:
+        middleware.append(rubric_middleware)
     emitter = (
         DiagnosticEmitter(spec.diagnostics, spec.name)
         if spec.diagnostics is not None
@@ -739,6 +775,11 @@ def _management_warnings(spec: SupervisorSpec) -> list[str]:
             "profiles: DeepAgents harness/provider profiles are beta and are "
             "registered process-wide before assembly"
         )
+    if spec.rubric is not None:
+        warnings.append(
+            "rubric: DeepAgents rubric grading is beta and activates only when "
+            "the invocation supplies a rubric in state"
+        )
     if any(
         isinstance(definition, AsyncSubAgentDefinition) for definition in spec.subagents
     ):
@@ -844,6 +885,8 @@ def _build_report(
         experimental_features.append("async_subagents")
     if profiles is not None:
         experimental_features.append("harness_profiles")
+    if spec.rubric is not None:
+        experimental_features.append("rubric")
     return AssemblyReport(
         package_version=version("spawn-join-agent-deepagents"),
         deepagents_version=deepagents.__version__,
@@ -854,17 +897,29 @@ def _build_report(
         delegation=delegation,
         resources=ResourceReport(
             backend="host" if spec.backend is not None else "default_state",
+            backend_kind=backend_kind(spec.backend),
             store="host" if spec.store is not None else "absent",
             checkpointer=(
                 "host" if checkpointer_present(spec.checkpointer) else "absent"
             ),
             interrupt_configured=interrupt_configured,
             thread_id_required=interrupt_configured,
+            permissions=permission_report(spec.permissions),
         ),
         context=context,
         profiles=ProfileReport(
             harness_keys=profiles.harness_keys if profiles is not None else (),
             provider_keys=profiles.provider_keys if profiles is not None else (),
+        ),
+        rubric=RubricReport(
+            enabled=spec.rubric is not None,
+            max_iterations=(
+                spec.rubric.max_iterations if spec.rubric is not None else 0
+            ),
+            model_source=(
+                spec.rubric.model_source if spec.rubric is not None else "none"
+            ),
+            tool_count=spec.rubric.tool_count if spec.rubric is not None else 0,
         ),
         warnings=warnings,
         experimental_features=tuple(experimental_features),

@@ -106,14 +106,25 @@ class DelegationReport:
 
 
 @dataclass(frozen=True, slots=True)
+class PermissionReport:
+    """Counts of host-provided filesystem permission rules by effect."""
+
+    allow: int = 0
+    deny: int = 0
+    interrupt: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class ResourceReport:
     """Safe presence/ownership summary for host-provided resources."""
 
     backend: str = "host"
+    backend_kind: str = "default_state"
     store: str = "absent"
     checkpointer: str = "absent"
     interrupt_configured: bool = False
     thread_id_required: bool = False
+    permissions: PermissionReport = field(default_factory=PermissionReport)
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +148,16 @@ class ProfileReport:
     def __post_init__(self) -> None:
         object.__setattr__(self, "harness_keys", tuple(self.harness_keys))
         object.__setattr__(self, "provider_keys", tuple(self.provider_keys))
+
+
+@dataclass(frozen=True, slots=True)
+class RubricReport:
+    """Safe description of the optional beta rubric middleware."""
+
+    enabled: bool = False
+    max_iterations: int = 0
+    model_source: str = "none"
+    tool_count: int = 0
 
 
 def _empty_middleware_report() -> MiddlewareScopeReport:
@@ -165,6 +186,7 @@ class AssemblyReport:
     resources: ResourceReport = field(default_factory=ResourceReport)
     context: ContextReport = field(default_factory=ContextReport)
     profiles: ProfileReport = field(default_factory=ProfileReport)
+    rubric: RubricReport = field(default_factory=RubricReport)
     warnings: tuple[str, ...] = ()
     experimental_features: tuple[str, ...] = ()
     diagnostics_enabled: bool = False

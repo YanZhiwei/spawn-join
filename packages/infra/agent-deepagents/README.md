@@ -23,9 +23,11 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - [Middleware 作用域](#middleware-作用域)
 - [Memory、Skills 与 Profile](#memoryskills-与-profile)
   - [完整可运行示例](#完整可运行示例)
+- [Rubric 评分（beta）](#rubric-评分beta)
 - [委派](#委派)
 - [诊断](#诊断)
 - [资源与恢复](#资源与恢复)
+- [HITL 中断辅助](#hitl-中断辅助)
 - [公共 API](#公共-api)
 - [错误与失败行为](#错误与失败行为)
 - [兼容性与限制](#兼容性与限制)
@@ -519,6 +521,27 @@ if __name__ == "__main__":
 - `ProfilesConfiguration` 注册的 harness profile 是 beta 进程级状态；示例 key 不会匹配
   fake model，所以只用于展示注册、校验和报告，不改变离线输出。
 
+## Rubric 评分（beta）
+
+```python
+from spawn_join_agent_deepagents import RubricConfiguration
+
+spec = SupervisorSpec(
+    models=models,
+    rubric=RubricConfiguration(
+        model=grader_model,
+        max_iterations=2,
+    ),
+    allow_experimental_rubric=True,
+)
+```
+
+- `RubricConfiguration` 只负责登记 grader 模型和选项；`RubricMiddleware` 是上游 beta 能力。
+- 装配后，只有在调用时传入 `{"rubric": "..."}` 才会真正触发评分；没有 rubric 时 middleware 不生效。
+- `max_iterations` 必须是正整数；默认 3。
+- 报告新增 `RubricReport`，记录是否启用、迭代上限、grader 来源和工具数量。
+- 完整离线示例：`examples/p1_capabilities.py`。
+
 ## 委派
 
 ```python
@@ -580,6 +603,30 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - 本包不创建或关闭宿主资源，不承诺 exactly-once 副作用；
 - 调用方应使用 `to_graph_config()` 生成 native config，或自行提供等价的 `configurable.thread_id`。
 
+## HITL 中断辅助
+
+```python
+from spawn_join_agent_deepagents import (
+    approve_decision,
+    edit_decision,
+    pending_interrupts,
+    reject_decision,
+    resume_batched,
+)
+
+interrupts = pending_interrupts(state)
+command = resume_batched([
+    approve_decision(),
+    reject_decision("keep the original"),
+])
+result = await assembly.graph.ainvoke(command, config)
+```
+
+- `pending_interrupts` 只读取原生 `__interrupt__`，不替宿主做审批。
+- `approve_decision` / `edit_decision` / `reject_decision` / `respond_decision` 生成 LangChain HITL 期望的 decision 形状。
+- `resume_batched` 用于 batched 模式；`resume_per_call` 用于按 interrupt id 回答的 per-call 模式。
+- 这些 helper 不创建 Checkpointer、不持久化审批、不承诺 exactly-once。
+
 ## 公共 API
 
 公共导出由 `spawn_join_agent_deepagents.__all__` 定义，主要包括：
@@ -590,6 +637,10 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
   `SubAgentKind`（含 `UPSTREAM_DEFAULT`、`ASYNC`）、`SubAgentMode`；
 - `MemoryConfiguration`、`SkillsConfiguration`；
 - `ProfilesConfiguration`、`HarnessProfileBinding`、`ProviderProfileBinding`；
+- `RubricConfiguration`、`RubricReport`；
+- `PermissionReport`；
+- `PendingInterrupt`、`approve_decision`、`edit_decision`、`reject_decision`、
+  `respond_decision`、`resume_batched`、`resume_per_call`、`resume_with`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
 - `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、

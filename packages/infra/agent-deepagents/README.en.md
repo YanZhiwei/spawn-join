@@ -24,9 +24,11 @@ streaming capabilities.
 - [Middleware scopes](#middleware-scopes)
 - [Memory, skills, and profiles](#memory-skills-and-profiles)
   - [Complete runnable example](#complete-runnable-example)
+- [Rubric grading (beta)](#rubric-grading-beta)
 - [Delegation](#delegation)
 - [Diagnostics](#diagnostics)
 - [Resources and recovery](#resources-and-recovery)
+- [HITL interrupt helpers](#hitl-interrupt-helpers)
 - [Public API](#public-api)
 - [Errors and failure behavior](#errors-and-failure-behavior)
 - [Compatibility and limitations](#compatibility-and-limitations)
@@ -538,6 +540,26 @@ Key points:
 - The harness profile is beta process-wide state. Its key does not match the fake model, so it
   demonstrates registration, validation, and reporting without changing offline output.
 
+## Rubric grading (beta)
+
+```python
+from spawn_join_agent_deepagents import RubricConfiguration
+
+spec = SupervisorSpec(
+    models=models,
+    rubric=RubricConfiguration(model=grader_model, max_iterations=2),
+    allow_experimental_rubric=True,
+)
+```
+
+- `RubricConfiguration` registers the grader model/options; the upstream
+  `RubricMiddleware` is beta.
+- Grading runs only when an invocation supplies a `rubric` in state; without it the
+  middleware is inert.
+- `max_iterations` must be a positive integer (default 3).
+- The report adds `RubricReport` with enabled, iteration cap, grader source, and tool count.
+- Complete offline example: `examples/p1_capabilities.py`.
+
 ## Delegation
 
 ```python
@@ -610,6 +632,29 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - Callers should use `to_graph_config()` to generate native config or provide an equivalent
   `configurable.thread_id` themselves.
 
+## HITL interrupt helpers
+
+```python
+from spawn_join_agent_deepagents import (
+    approve_decision,
+    pending_interrupts,
+    reject_decision,
+    resume_batched,
+)
+
+interrupts = pending_interrupts(state)
+command = resume_batched([
+    approve_decision(),
+    reject_decision("keep the original"),
+])
+result = await assembly.graph.ainvoke(command, config)
+```
+
+- `pending_interrupts` only reads the native `__interrupt__` payload; approval stays host-owned.
+- Decision builders match LangChain HITL shapes.
+- `resume_batched` is for batched mode; `resume_per_call` answers per-interrupt IDs.
+- The helpers do not create checkpointers, persist approvals, or promise exactly-once effects.
+
 ## Public API
 
 Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
@@ -620,6 +665,10 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
   `SubAgentKind` (including `UPSTREAM_DEFAULT` and `ASYNC`), `SubAgentMode`;
 - `MemoryConfiguration`, `SkillsConfiguration`;
 - `ProfilesConfiguration`, `HarnessProfileBinding`, `ProviderProfileBinding`;
+- `RubricConfiguration`, `RubricReport`;
+- `PermissionReport`;
+- `PendingInterrupt`, `approve_decision`, `edit_decision`, `reject_decision`,
+  `respond_decision`, `resume_batched`, `resume_per_call`, `resume_with`;
 - `MiddlewareConfiguration`, `MiddlewareScopeReport`;
 - `DelegationPolicy`, `DelegationController`, `DelegationConfiguration`;
 - `DiagnosticsConfig`, `DiagnosticCallback`, `AsyncDiagnosticCallback`, `DiagnosticEvent`,
