@@ -11,7 +11,7 @@
 - Baseline HEAD / relevant working-tree changes: `9f8cb1c78cc254450e2a7557eb88013bc7cdb302`;
   only this run’s local Delivery/spec artifacts are untracked. Product source is clean.
 - Design approval: user selected “批准，但去掉 CLI” at the design gate. The plan,
-  spec, and ADR-0012 were reduced to library-only closure and re-presented; CLI is
+  spec, and ADR-0013 were reduced to library-only closure and re-presented; CLI is
   out of scope. Accepted limitation: live Provider tests cannot run without
   credentials and remain opt-in.
 - Artifact policy: ephemeral (`specs/` local-only; Delivery packet local-only).
@@ -160,7 +160,7 @@
 
 - Acceptance outcome: new Distribution is in quality ValidateSet/map, CI matrix,
   and quality profile; AGENTS/README/architecture maps describe seven packages;
-  ADR-0012 is indexed as Proposed; docs/governance checks pass; final evidence
+  ADR-0013 is indexed as Proposed; docs/governance checks pass; final evidence
   records actual commands and the live-test limitation.
 - Task IDs: T009, T010.
 - Expected paths: modify `scripts/quality.ps1`, `.github/workflows/quality.yml`,

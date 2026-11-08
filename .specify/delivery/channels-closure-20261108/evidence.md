@@ -3,7 +3,7 @@
 - feature_id: 015-llm-channel-closure
 - phase_id: implementation-verification
 - base_revision: 9f8cb1c78cc254450e2a7557eb88013bc7cdb302
-- head_revision: 78c96941198554804f09664c5ec039080d5d1cf0
+- head_revision: 44a32f0b87bc6b460261000fb866a05954ce654b
 - working_directory: D:\Repos\Github\spawn-join
 - recorded_at: 2026-11-09T00:13:34+08:00
 - result: pass
@@ -27,7 +27,7 @@ added.
 | `24a8ded` | Channel package, protocol additions, adapter bridge, docs/quality/CI |
 | `78c9694` | Reject empty Anthropic cursor IDs and clarify bridge ownership docs |
 
-`9b674c1` is the Proposed ADR-0012 planning baseline.
+`9b674c1` is the Proposed ADR-0013 planning baseline.
 
 ## Commands and results
 
@@ -78,6 +78,6 @@ quality run. A second fresh review reported `NO_BLOCKER`.
 - Provider SDK behavior is validated with fake clients and real SDK
   `httpx2.MockTransport`; real endpoint behavior still needs opt-in live
   validation.
-- ADR-0012 remains `Proposed` until the reviewed repository HEAD matches it.
+- ADR-0013 remains `Proposed` until the reviewed repository HEAD matches it.
 - The implementation was committed as a single feature commit rather than one
   Ralph task commit; task-closure receipts are incomplete.

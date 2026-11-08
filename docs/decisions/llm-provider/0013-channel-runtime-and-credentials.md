@@ -1,4 +1,4 @@
-# ADR-0012: 真实 Channel Transport、凭据边界与模型目录桥接
+# ADR-0013: 真实 Channel Transport、凭据边界与模型目录桥接
 
 - Status: Proposed
 - Date: 2026-11-08

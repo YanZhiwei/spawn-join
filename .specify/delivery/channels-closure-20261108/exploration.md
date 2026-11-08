@@ -187,7 +187,7 @@ spawn-join/
 ├── AGENTS.md / README.md / README.en.md                  [预计修改] 七包基线与包选择表
 ├── docs/architecture/package-boundaries.md              [预计修改] 新包职责与依赖方向
 ├── docs/architecture/repository-map.md                  [预计修改] 目录地图
-└── docs/decisions/llm-provider/0012-channel-runtime-and-credentials.md
+└── docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md
                                                          [预计新增] Proposed ADR，扩展 ADR-0006 的延后 channel 条款
 ```
 
@@ -204,7 +204,7 @@ spawn-join/
   - 适配包 `ChatModelConfig.from_channel`、`ModelSummary.from_model_info`、
     `ModelSummary` 增 protocol/endpoint/timeout/max_retries/options、
     `ModelCatalog.get/names/__len__/__contains__`。
-  - 新包 README/许可证/锁文件/质量 Profile/CI；ADR-0012。
+  - 新包 README/许可证/锁文件/质量 Profile/CI；ADR-0013。
 - Excluded scope:
   - `channels.yaml`、渠道注册表、多文件合并、热重载、远程配置、密钥管理服务。
   - pool、路由、健康选路、failover、限流、并发控制。

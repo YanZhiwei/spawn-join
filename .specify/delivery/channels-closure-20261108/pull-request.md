@@ -10,7 +10,7 @@
 - [ ] Bugfix 或回归
 - [ ] 文档或治理
 - [ ] 质量基线或工程化
-- [x] 架构/设计决策（ADR-0012 Proposed）
+- [x] 架构/设计决策（ADR-0013 Proposed）
 
 ## 修改点
 
@@ -22,7 +22,7 @@
 | `packages/infra/llm-provider-langchain/src/.../config.py` | 新增 `ChatModelConfig.from_channel()` | 无网络桥接 channel 配置 |
 | `packages/infra/llm-provider-langchain/src/.../model_file/_catalog.py` | `ModelSummary` 增字段、`from_model_info()`、`ModelCatalog.get/names/len/contains` | 支持只读目录检视和 `ModelInfo` 桥接 |
 | `scripts/quality.ps1`、CI、quality profile | 加入第 7 个 Distribution | 保持质量门和 CI matrix 完整 |
-| `AGENTS.md`、README、架构地图、ADR 索引 | 七包边界、channel 职责和 ADR-0012 | 保持治理文档一致 |
+| `AGENTS.md`、README、架构地图、ADR 索引 | 七包边界、channel 职责和 ADR-0013 | 保持治理文档一致 |
 
 ## 验证
 
@@ -44,14 +44,14 @@
 | 维度 | 影响 | 证据 |
 | --- | --- | --- |
 | 公共 API | 协议包新增 `UNSUPPORTED`、`ChannelAuthenticationError`；适配包新增 classmethod/字段/目录方法；`create_chat_model` 不变 | 协议/适配 public API 测试；README |
-| 持久化/迁移 | 无数据迁移；不新增 `channels.yaml`；`model.yaml` 不变 | ADR-0012；diff |
+| 持久化/迁移 | 无数据迁移；不新增 `channels.yaml`；`model.yaml` 不变 | ADR-0013；diff |
 | 安全/权限 | 密钥只通过显式参数/环境变量解析；公开错误固定文案；测试覆盖 malformed 响应和 sentinel 泄漏 | channel 测试；独立 review |
 | 性能/资源 | `ping` 单次 `/models` 请求；`aclose()` 关闭客户端；无隐藏重试 | channel 实现与 README |
 | 依赖/发布 | 新增独立 Distribution、锁文件、质量 Profile、CI matrix；未发布 | `pyproject.toml`、`uv.lock`、CI |
 
 ## 关联决策
 
-- ADR-0012: `docs/decisions/llm-provider/0012-channel-runtime-and-credentials.md`（Proposed）
+- ADR-0013: `docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md`（Proposed）
 - 该 ADR 补齐 ADR-0006 延后的真实 channel transport；不改变 LangChain-first 推理边界。
 
 ## AI Code Review 发现与修复
@@ -67,7 +67,7 @@
 
 - 阅读顺序：`docs/decisions/llm-provider/0012...` → `packages/infra/llm-channel/src/` → `packages/infra/llm-provider-langchain/src/.../config.py` 与 `_catalog.py` → tests。
 - 关键行为边界：channel 包不得依赖 LangChain；协议包不得引入 SDK；适配包不包装 `BaseChatModel`。
-- 需要人工确认：OpenAI-compatible/Anthropic 真实 endpoint 的行为、Anthropic `base_url` 是否按文档使用源站而非 `/v1`、以及是否接受 ADR-0012 的 Proposed 基线。
+- 需要人工确认：OpenAI-compatible/Anthropic 真实 endpoint 的行为、Anthropic `base_url` 是否按文档使用源站而非 `/v1`、以及是否接受 ADR-0013 的 Proposed 基线。
 
 ## 检查清单
 

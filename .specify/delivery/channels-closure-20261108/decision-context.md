@@ -48,7 +48,7 @@ does not change the inference runtime, but it does implement the deferred real
 channel transport. Therefore:
 
 - ADR-0006 remains the accepted inference-runtime decision.
-- A new Proposed ADR (planned `docs/decisions/llm-provider/0012-channel-runtime-and-credentials.md`)
+- A new Proposed ADR (planned `docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md`)
   must state that it extends the deferred channel clause, defines the
   provider transport boundary and credential semantics, and continues to
   exclude pool, routing, health selection, and failover.
@@ -103,7 +103,7 @@ ADR-0006 into routing or pool behavior.
   create_chat_model`); a future CLI needs a separate Feature.
 - Excluded: pool, routing, health selection, failover, hot reload, secret
   manager, new providers, Agent assembly changes, automatic catalog writes.
-- ADR: `docs/decisions/llm-provider/0012-channel-runtime-and-credentials.md`
+- ADR: `docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md`
   is Proposed; it extends ADR-0006's deferred channel clause and does not
   change LangChain-first inference.
 
