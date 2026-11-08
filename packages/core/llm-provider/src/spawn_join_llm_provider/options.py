@@ -52,6 +52,16 @@ def _normalize_stop(
     return tuple(normalized)
 
 
+ReasoningEffort: TypeAlias = Literal["low", "medium", "high"]
+
+
+def _require_reasoning_effort(value: object, *, field: str) -> None:
+    if value is None:
+        return
+    if not isinstance(value, str) or value not in {"low", "medium", "high"}:
+        raise ConfigurationError(f"{field} must be one of: low, medium, high")
+
+
 @dataclass(frozen=True, slots=True)
 class ChatCompletionsOptions:
     """Options for the OpenAI Chat Completions protocol."""
@@ -61,6 +71,7 @@ class ChatCompletionsOptions:
     top_p: float | None = None
     stop: tuple[str, ...] | None = None
     seed: int | None = None
+    reasoning_effort: ReasoningEffort | None = None
 
     def __post_init__(self) -> None:
         _require_range(self.temperature, minimum=0.0, maximum=2.0, field="temperature")
@@ -71,9 +82,9 @@ class ChatCompletionsOptions:
             "stop",
             _normalize_stop(self.stop, field="stop"),
         )
+        _require_reasoning_effort(self.reasoning_effort, field="reasoning_effort")
 
 
-ReasoningEffort: TypeAlias = Literal["low", "medium", "high"]
 Truncation: TypeAlias = Literal["auto", "disabled"]
 
 
@@ -92,10 +103,7 @@ class ResponsesOptions:
         _require_range(self.temperature, minimum=0.0, maximum=2.0, field="temperature")
         _require_positive_int(self.max_output_tokens, field="max_output_tokens")
         _require_range(self.top_p, minimum=0.0, maximum=1.0, field="top_p")
-        if self.reasoning_effort not in {None, "low", "medium", "high"}:
-            raise ConfigurationError(
-                "reasoning_effort must be one of: low, medium, high"
-            )
+        _require_reasoning_effort(self.reasoning_effort, field="reasoning_effort")
         if self.truncation not in {None, "auto", "disabled"}:
             raise ConfigurationError("truncation must be one of: auto, disabled")
 
@@ -116,13 +124,24 @@ class AnthropicThinkingAdaptive:
     """Anthropic adaptive thinking without a fixed token budget."""
 
 
-AnthropicThinking: TypeAlias = AnthropicThinkingBudget | AnthropicThinkingAdaptive
+@dataclass(frozen=True, slots=True)
+class AnthropicThinkingDisabled:
+    """Anthropic thinking explicitly disabled."""
+
+
+AnthropicThinking: TypeAlias = (
+    AnthropicThinkingBudget | AnthropicThinkingAdaptive | AnthropicThinkingDisabled
+)
 
 
 def _is_thinking(value: object) -> bool:
     return isinstance(
         value,
-        (AnthropicThinkingBudget, AnthropicThinkingAdaptive),
+        (
+            AnthropicThinkingBudget,
+            AnthropicThinkingAdaptive,
+            AnthropicThinkingDisabled,
+        ),
     )
 
 
@@ -136,6 +155,7 @@ class AnthropicMessagesOptions:
     top_k: int | None = None
     stop_sequences: tuple[str, ...] | None = None
     thinking: AnthropicThinking | None = None
+    reasoning_effort: ReasoningEffort | None = None
 
     def __post_init__(self) -> None:
         _require_range(self.temperature, minimum=0.0, maximum=1.0, field="temperature")
@@ -149,8 +169,8 @@ class AnthropicMessagesOptions:
         )
         if self.thinking is not None and not _is_thinking(self.thinking):
             raise ConfigurationError(
-                "thinking must be AnthropicThinkingBudget or "
-                "AnthropicThinkingAdaptive"
+                "thinking must be AnthropicThinkingBudget, "
+                "AnthropicThinkingAdaptive, or AnthropicThinkingDisabled"
             )
         if isinstance(self.thinking, AnthropicThinkingBudget):
             if self.max_output_tokens is None:
@@ -161,6 +181,7 @@ class AnthropicMessagesOptions:
                 raise ConfigurationError(
                     "thinking budget_tokens must be less than max_output_tokens"
                 )
+        _require_reasoning_effort(self.reasoning_effort, field="reasoning_effort")
 
 
 ProtocolOptions: TypeAlias = (

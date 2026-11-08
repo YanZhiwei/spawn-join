@@ -11,6 +11,7 @@ from spawn_join_llm_provider import (
     AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ResponsesOptions,
@@ -73,8 +74,16 @@ class ThinkingInput(FileInput):
                     f"{path}: budget_tokens is not allowed for adaptive thinking"
                 )
             return AnthropicThinkingAdaptive()
+        if self.mode == "disabled":
+            if "budget_tokens" in self.model_fields_set:
+                raise ConfigurationError(
+                    f"{path}: budget_tokens is not allowed for disabled thinking"
+                )
+            return AnthropicThinkingDisabled()
         if self.mode != "budget":
-            raise ConfigurationError(f"{path}.mode: must be 'budget' or 'adaptive'")
+            raise ConfigurationError(
+                f"{path}.mode: must be 'budget', 'adaptive', or 'disabled'"
+            )
         if "budget_tokens" not in self.model_fields_set:
             raise ConfigurationError(
                 f"{path}: budget_tokens is required for budget thinking"
@@ -97,6 +106,7 @@ class ChatCompletionsInput(FileInput):
     top_p: OptionalNumber = None
     stop: OptionalStrings = None
     seed: OptionalInteger = None
+    reasoning_effort: OptionalText = None
 
     def to_options(self) -> ChatCompletionsOptions:
         return ChatCompletionsOptions(
@@ -105,6 +115,7 @@ class ChatCompletionsInput(FileInput):
             top_p=self.top_p,
             stop=self.stop,
             seed=self.seed,
+            reasoning_effort=cast(ReasoningEffort | None, self.reasoning_effort),
         )
 
 
@@ -134,6 +145,7 @@ class AnthropicInput(FileInput):
     top_k: OptionalInteger = None
     stop_sequences: OptionalStrings = None
     thinking: Annotated[AnthropicThinking | None, BeforeValidator(_thinking)] = None
+    reasoning_effort: OptionalText = None
 
     def to_options(self) -> AnthropicMessagesOptions:
         return AnthropicMessagesOptions(
@@ -143,4 +155,5 @@ class AnthropicInput(FileInput):
             top_k=self.top_k,
             stop_sequences=self.stop_sequences,
             thinking=self.thinking,
+            reasoning_effort=cast(ReasoningEffort | None, self.reasoning_effort),
         )

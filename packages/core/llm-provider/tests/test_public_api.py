@@ -9,6 +9,7 @@ EXPECTED_EXPORTS = [
     "AnthropicThinking",
     "AnthropicThinkingAdaptive",
     "AnthropicThinkingBudget",
+    "AnthropicThinkingDisabled",
     "Channel",
     "ChannelConfig",
     "ChannelError",

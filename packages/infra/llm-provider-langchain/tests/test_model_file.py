@@ -464,6 +464,86 @@ def test_chat_completions_options_are_mapped(tmp_path: Path) -> None:
     assert model.seed == 42
 
 
+@pytest.mark.parametrize("schema_version", [1, 2])
+def test_chat_completions_reasoning_effort_is_mapped(
+    tmp_path: Path,
+    schema_version: int,
+) -> None:
+    text = (
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: chat_completions\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: gpt-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      reasoning_effort: high\n"
+    )
+    catalog = _catalog(tmp_path, text)
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.reasoning_effort == "high"
+
+
+@pytest.mark.parametrize(
+    "protocol",
+    ["chat_completions", "responses", "anthropic_messages"],
+)
+def test_reasoning_effort_null_is_rejected(
+    tmp_path: Path,
+    protocol: str,
+) -> None:
+    extra = "    options:\n      reasoning_effort: null\n"
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"options\.reasoning_effort",
+    ):
+        _catalog(
+            tmp_path,
+            _single_model_yaml(protocol=protocol, extra=extra),
+        )
+
+
+def test_model_catalog_from_file_maps_reasoning_effort(tmp_path: Path) -> None:
+    extra = "    options:\n      reasoning_effort: medium\n"
+    path = _write(tmp_path, _single_model_yaml(extra=extra))
+
+    model = ModelCatalog.from_file(path).create_chat_model(
+        environ={"OPENAI_API_KEY": "sk-test"}
+    )
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.reasoning_effort == "medium"
+
+
+def test_model_catalog_from_file_maps_anthropic_reasoning_effort(
+    tmp_path: Path,
+) -> None:
+    text = (
+        "schema_version: 2\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      reasoning_effort: medium\n"
+    )
+    path = _write(tmp_path, text)
+
+    model = ModelCatalog.from_file(path).create_chat_model(
+        environ={"OPENAI_API_KEY": "sk-test"}
+    )
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.reasoning_effort == "medium"
+
+
 def test_responses_options_are_mapped(tmp_path: Path) -> None:
     extra = (
         "    options:\n"
@@ -489,6 +569,30 @@ def test_responses_options_are_mapped(tmp_path: Path) -> None:
     assert model.store is False
     assert model.reasoning_effort == "medium"
     assert model.truncation == "disabled"
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+def test_anthropic_reasoning_effort_is_mapped(
+    tmp_path: Path,
+    schema_version: int,
+) -> None:
+    text = (
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      reasoning_effort: high\n"
+    )
+    catalog = _catalog(tmp_path, text)
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.reasoning_effort == "high"
 
 
 def test_anthropic_options_are_mapped(tmp_path: Path) -> None:
@@ -565,7 +669,7 @@ def test_unknown_option_is_rejected(tmp_path: Path) -> None:
             "      max_output_tokens: 4096\n"
             "      thinking:\n"
             "        mode: other\n",
-            "must be 'budget' or 'adaptive'",
+            "must be 'budget', 'adaptive', or 'disabled'",
         ),
     ],
 )
@@ -616,6 +720,82 @@ def test_adaptive_thinking_is_mapped(tmp_path: Path) -> None:
 
     assert isinstance(model, ChatAnthropic)
     assert model.thinking == {"type": "adaptive"}
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+def test_disabled_thinking_is_mapped(
+    tmp_path: Path,
+    schema_version: int,
+) -> None:
+    text = (
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      thinking:\n"
+        "        mode: disabled\n"
+    )
+    catalog = _catalog(tmp_path, text)
+
+    model = catalog.create_chat_model(environ={"OPENAI_API_KEY": "sk-test"})
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.thinking == {"type": "disabled"}
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+@pytest.mark.parametrize(
+    "budget",
+    ["        budget_tokens: 2048\n", "        budget_tokens: null\n"],
+)
+def test_disabled_thinking_rejects_budget(
+    tmp_path: Path,
+    schema_version: int,
+    budget: str,
+) -> None:
+    text = (
+        f"schema_version: {schema_version}\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      thinking:\n"
+        "        mode: disabled\n"
+        f"{budget}"
+    )
+
+    with pytest.raises(ConfigurationError, match=r"budget_tokens"):
+        _catalog(tmp_path, text)
+
+
+def test_model_catalog_from_file_maps_disabled_thinking(tmp_path: Path) -> None:
+    text = (
+        "schema_version: 2\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      thinking:\n"
+        "        mode: disabled\n"
+    )
+    path = _write(tmp_path, text)
+
+    model = ModelCatalog.from_file(path).create_chat_model(
+        environ={"OPENAI_API_KEY": "sk-test"}
+    )
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.thinking == {"type": "disabled"}
 
 
 def test_thinking_must_be_a_mapping(tmp_path: Path) -> None:
