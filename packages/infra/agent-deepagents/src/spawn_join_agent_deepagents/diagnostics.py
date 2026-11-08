@@ -116,6 +116,29 @@ class ResourceReport:
     thread_id_required: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class ContextReport:
+    """Safe summary of memory and skills sources; paths are not recorded."""
+
+    memory_source_count: int = 0
+    memory_cache_prefix: bool = True
+    memory_managed_by: str = "absent"
+    skills_source_count: int = 0
+    skills_managed_by: str = "absent"
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileReport:
+    """Keys registered with the upstream beta profile registries."""
+
+    harness_keys: tuple[str, ...] = ()
+    provider_keys: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "harness_keys", tuple(self.harness_keys))
+        object.__setattr__(self, "provider_keys", tuple(self.provider_keys))
+
+
 def _empty_middleware_report() -> MiddlewareScopeReport:
     return MiddlewareScopeReport(
         supervisor_names=(),
@@ -140,6 +163,8 @@ class AssemblyReport:
     middleware: MiddlewareScopeReport = field(default_factory=_empty_middleware_report)
     delegation: DelegationReport | None = None
     resources: ResourceReport = field(default_factory=ResourceReport)
+    context: ContextReport = field(default_factory=ContextReport)
+    profiles: ProfileReport = field(default_factory=ProfileReport)
     warnings: tuple[str, ...] = ()
     experimental_features: tuple[str, ...] = ()
     diagnostics_enabled: bool = False
