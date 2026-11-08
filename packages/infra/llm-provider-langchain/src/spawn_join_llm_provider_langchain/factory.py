@@ -12,6 +12,7 @@ from spawn_join_llm_provider import (
     AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -43,6 +44,7 @@ def _chat_completions_model(
             list(options.stop) if options is not None and options.stop else None
         ),
         seed=options.seed if options is not None else None,
+        reasoning_effort=options.reasoning_effort if options is not None else None,
     )
 
 
@@ -80,6 +82,8 @@ def _thinking_payload(
         return None
     if isinstance(thinking, AnthropicThinkingBudget):
         return {"type": "enabled", "budget_tokens": thinking.budget_tokens}
+    if isinstance(thinking, AnthropicThinkingDisabled):
+        return {"type": "disabled"}
     if _is_adaptive_thinking(thinking):
         return {"type": "adaptive"}
     raise ConfigurationError("Unsupported Anthropic thinking configuration")
@@ -114,6 +118,9 @@ def _anthropic_model(
             else None
         ),
         thinking=(_thinking_payload(options.thinking) if options is not None else None),
+        # ChatAnthropic exposes the field as `reasoning_effort` with the native
+        # constructor alias `effort`; passing the alias keeps strict typing valid.
+        effort=options.reasoning_effort if options is not None else None,
     )
 
 

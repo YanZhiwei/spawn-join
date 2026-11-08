@@ -1123,3 +1123,16 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 在 `chore/delivery-v045-governance-context` 分支准备完整实际 diff；远端 main 仍为基准。
   后续原生 Quality/Standards/Review 及 PR 身份记录在该 run 的 canonical evidence，
   不把一次性安装的 Harness evidence 复制成第二份安装记录，不声明 Ralph 或模型 eval 通过。
+
+## 2026-11-08 — 交付记录与治理元数据清理
+
+- Route: Lightweight。用户选择“治理清理 + 继续 013”，先修复阻塞本地治理门的记录缺口。
+- Base revision: `7dbc714e8d575ae326da81c92eca7459807a241d`（与 `origin/main` 一致）。
+- Working directory: `D:\Repos\Github\spawn-join`。
+- 把两个已交付 run 的持久工件纳入 Git：`readme-governance-package-retirement-20261105`
+  与 `common-foundation-20261107`；`runtime/` 运行日志仍保留本地。
+- 为 `readme-governance.../evidence.md` 补 `head_revision`（合并修订 `02c14ccc…`），
+  消除治理检查的 missing field 错误；未改写其历史结论。
+- 详细范围、验证与未执行项见
+  [治理记录清理 evidence](evidence/governance-records-cleanup.md)。
+- 本次不改产品源码、manifest、锁、CI 或质量 Profile；不涉及提交后的 push、PR 或合并。
