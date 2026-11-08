@@ -33,7 +33,7 @@ lane: feature
 feature_id: 012-deepagents-official-p0
 phase_id: handoff
 base_revision: 7dbc714e8d575ae326da81c92eca7459807a241d
-head_revision: 274cc140511c223b3bc1b15f1d22e433d5579488
+head_revision: 653cbea76f27fc7924131fbce4edad550419a05e
 working_directory: C:\Users\YanZh\.local\share\opencode\worktree\86e56b\quick-lagoon
 recorded_at: 2026-11-08
 result: pass
@@ -42,8 +42,8 @@ pr_body_path: .specify/delivery/deepagents-p0-capabilities-20261108/pull-request
 
 - Branch: `feat/012-deepagents-official-p0-replay`
 - Base: `7dbc714e8d575ae326da81c92eca7459807a241d` (`origin/main`)
-- Head at verification: `274cc140511c223b3bc1b15f1d22e433d5579488` (docs/rename commits after
-  T014; includes the complete P0 example and bilingual README samples)
+- Head at verification: `653cbea76f27fc7924131fbce4edad550419a05e` (squash-merged
+  delivered revision); the native review covered PR head `274cc14` before merge
 - Working directory: repository root
 - Date: 2026-11-08
 - Status: implementation, task closure, verification, and review complete; handoff is
