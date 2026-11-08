@@ -17,6 +17,7 @@ from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -183,6 +184,21 @@ def test_anthropic_adaptive_thinking_mapping() -> None:
 
     assert isinstance(model, ChatAnthropic)
     assert model.thinking == {"type": "adaptive"}
+
+
+def test_anthropic_disabled_thinking_mapping() -> None:
+    model = create_chat_model(
+        _config(ProtocolKind.ANTHROPIC_MESSAGES),
+        api_key="sk-test-secret",
+        options=AnthropicMessagesOptions(
+            thinking=AnthropicThinkingDisabled(),
+            reasoning_effort="high",
+        ),
+    )
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.thinking == {"type": "disabled"}
+    assert model.reasoning_effort == "high"
 
 
 def test_factory_without_options_uses_safe_defaults() -> None:

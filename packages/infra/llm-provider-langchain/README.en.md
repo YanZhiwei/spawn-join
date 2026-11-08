@@ -345,8 +345,10 @@ options = AnthropicMessagesOptions(
 )
 ```
 
-`AnthropicThinkingAdaptive()` can be used for adaptive thinking. Budget mode requires
-`max_output_tokens` to exist and exceed `budget_tokens`.
+`AnthropicThinkingAdaptive()` can be used for adaptive thinking and
+`AnthropicThinkingDisabled()` explicitly disables it. Budget mode requires
+`max_output_tokens` to exist and exceed `budget_tokens`; adaptive and disabled modes
+do not accept `budget_tokens`.
 
 ## Thinking and reasoning effort
 

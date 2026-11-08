@@ -324,8 +324,9 @@ options = AnthropicMessagesOptions(
 )
 ```
 
-`AnthropicThinkingAdaptive()` 可用于自适应 thinking。budget 模式要求
-`max_output_tokens` 存在且大于 `budget_tokens`。
+`AnthropicThinkingAdaptive()` 可用于自适应 thinking，`AnthropicThinkingDisabled()`
+表示显式关闭。budget 模式要求 `max_output_tokens` 存在且大于 `budget_tokens`；
+adaptive 与 disabled 模式都不接受 `budget_tokens`。
 
 ## 思考与思考强度
 

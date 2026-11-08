@@ -224,7 +224,7 @@ capabilities:
 |---|---|
 | `ChatCompletionsOptions` | `reasoning_effort`: `low`, `medium`, `high` |
 | `ResponsesOptions` | `reasoning_effort`: `low`, `medium`, `high` |
-| `AnthropicMessagesOptions` | `thinking`: fixed token budget or adaptive mode; `reasoning_effort`: `low`, `medium`, `high` |
+| `AnthropicMessagesOptions` | `thinking`: fixed token budget, adaptive, or explicitly disabled; `reasoning_effort`: `low`, `medium`, `high` |
 
 **A missing Options field does not mean the model call cannot think.** The factory returns a
 native LangChain `BaseChatModel`; applications can pass `reasoning_effort`, Anthropic `thinking`,

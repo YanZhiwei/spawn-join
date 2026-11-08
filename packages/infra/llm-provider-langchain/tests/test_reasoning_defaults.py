@@ -303,6 +303,109 @@ def test_anthropic_effort_and_thinking_are_independent(
     assert overridden["output_config"] == {"effort": "high"}
 
 
+def test_anthropic_disabled_reaches_payload_with_effort(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      reasoning_effort: low\n"
+        "      thinking:\n"
+        "        mode: disabled\n",
+        encoding="utf-8",
+    )
+    model = load_model_catalog(path).create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatAnthropic)
+
+    payload = _payload(model)
+
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["output_config"] == {"effort": "low"}
+
+    overridden = _payload(model, reasoning_effort="high")
+
+    assert overridden["thinking"] == {"type": "disabled"}
+    assert overridden["output_config"] == {"effort": "high"}
+
+
+def _thinking_model(tmp_path: Path, thinking_block: str) -> ChatAnthropic:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      thinking:\n"
+        f"{thinking_block}",
+        encoding="utf-8",
+    )
+    model = load_model_catalog(path).create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatAnthropic)
+    return model
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_anthropic_disabled_sync_async_three_levels(
+    tmp_path: Path,
+    asynchronous: bool,
+    effort: str,
+) -> None:
+    model = _thinking_model(tmp_path, "        mode: disabled\n")
+    response = _anthropic_response()
+    request = (
+        AsyncMock(return_value=response)
+        if asynchronous
+        else MagicMock(return_value=response)
+    )
+    method = "_acreate" if asynchronous else "_create"
+
+    with patch.object(model, method, request):
+        if asynchronous:
+            asyncio.run(
+                model.ainvoke([HumanMessage(content="hi")], reasoning_effort=effort)
+            )
+        else:
+            model.invoke([HumanMessage(content="hi")], reasoning_effort=effort)
+
+    payload = request.call_args.args[0]
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["output_config"] == {"effort": effort}
+
+
+def test_instance_disabled_wins_over_call_adaptive(tmp_path: Path) -> None:
+    model = _thinking_model(tmp_path, "        mode: disabled\n")
+
+    payload = _payload(model, thinking={"type": "adaptive"})
+
+    assert payload["thinking"] == {"type": "disabled"}
+
+
+def test_instance_adaptive_wins_over_call_disabled(tmp_path: Path) -> None:
+    model = _thinking_model(tmp_path, "        mode: adaptive\n")
+
+    payload = _payload(model, thinking={"type": "disabled"})
+
+    assert payload["thinking"] == {"type": "adaptive"}
+
+
+def test_unset_instance_accepts_call_disabled(tmp_path: Path) -> None:
+    model = _anthropic_model(tmp_path, "low")
+
+    payload = _payload(model, thinking={"type": "disabled"})
+
+    assert payload["thinking"] == {"type": "disabled"}
+
+
 @pytest.mark.parametrize("options_block", ["", "    options: {}\n"])
 def test_omitted_options_omit_reasoning_effort(
     tmp_path: Path,

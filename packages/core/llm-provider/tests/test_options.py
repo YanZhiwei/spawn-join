@@ -10,6 +10,7 @@ from spawn_join_llm_provider import (
     AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -235,6 +236,22 @@ def test_anthropic_accepts_adaptive_thinking() -> None:
         thinking=AnthropicThinkingAdaptive(),
     )
     assert isinstance(options.thinking, AnthropicThinkingAdaptive)
+
+
+def test_anthropic_accepts_disabled_thinking() -> None:
+    options = AnthropicMessagesOptions(
+        thinking=AnthropicThinkingDisabled(),
+    )
+    assert isinstance(options.thinking, AnthropicThinkingDisabled)
+
+
+def test_anthropic_thinking_disabled_has_no_fields() -> None:
+    value = AnthropicThinkingDisabled()
+    assert AnthropicThinkingDisabled.__slots__ == ()
+    assert not AnthropicThinkingDisabled.__dataclass_fields__
+    attribute = "mode"
+    with pytest.raises((FrozenInstanceError, TypeError)):
+        setattr(value, attribute, "disabled")
 
 
 @pytest.mark.parametrize("temperature", [0.0, 1.0])

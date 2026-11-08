@@ -124,13 +124,24 @@ class AnthropicThinkingAdaptive:
     """Anthropic adaptive thinking without a fixed token budget."""
 
 
-AnthropicThinking: TypeAlias = AnthropicThinkingBudget | AnthropicThinkingAdaptive
+@dataclass(frozen=True, slots=True)
+class AnthropicThinkingDisabled:
+    """Anthropic thinking explicitly disabled."""
+
+
+AnthropicThinking: TypeAlias = (
+    AnthropicThinkingBudget | AnthropicThinkingAdaptive | AnthropicThinkingDisabled
+)
 
 
 def _is_thinking(value: object) -> bool:
     return isinstance(
         value,
-        (AnthropicThinkingBudget, AnthropicThinkingAdaptive),
+        (
+            AnthropicThinkingBudget,
+            AnthropicThinkingAdaptive,
+            AnthropicThinkingDisabled,
+        ),
     )
 
 
@@ -158,8 +169,8 @@ class AnthropicMessagesOptions:
         )
         if self.thinking is not None and not _is_thinking(self.thinking):
             raise ConfigurationError(
-                "thinking must be AnthropicThinkingBudget or "
-                "AnthropicThinkingAdaptive"
+                "thinking must be AnthropicThinkingBudget, "
+                "AnthropicThinkingAdaptive, or AnthropicThinkingDisabled"
             )
         if isinstance(self.thinking, AnthropicThinkingBudget):
             if self.max_output_tokens is None:

@@ -11,6 +11,7 @@ from spawn_join_llm_provider import (
     AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ResponsesOptions,
@@ -73,8 +74,16 @@ class ThinkingInput(FileInput):
                     f"{path}: budget_tokens is not allowed for adaptive thinking"
                 )
             return AnthropicThinkingAdaptive()
+        if self.mode == "disabled":
+            if "budget_tokens" in self.model_fields_set:
+                raise ConfigurationError(
+                    f"{path}: budget_tokens is not allowed for disabled thinking"
+                )
+            return AnthropicThinkingDisabled()
         if self.mode != "budget":
-            raise ConfigurationError(f"{path}.mode: must be 'budget' or 'adaptive'")
+            raise ConfigurationError(
+                f"{path}.mode: must be 'budget', 'adaptive', or 'disabled'"
+            )
         if "budget_tokens" not in self.model_fields_set:
             raise ConfigurationError(
                 f"{path}: budget_tokens is required for budget thinking"

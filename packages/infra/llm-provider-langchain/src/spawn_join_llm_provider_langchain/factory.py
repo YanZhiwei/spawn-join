@@ -12,6 +12,7 @@ from spawn_join_llm_provider import (
     AnthropicThinking,
     AnthropicThinkingAdaptive,
     AnthropicThinkingBudget,
+    AnthropicThinkingDisabled,
     ChatCompletionsOptions,
     ConfigurationError,
     ProtocolKind,
@@ -81,6 +82,8 @@ def _thinking_payload(
         return None
     if isinstance(thinking, AnthropicThinkingBudget):
         return {"type": "enabled", "budget_tokens": thinking.budget_tokens}
+    if isinstance(thinking, AnthropicThinkingDisabled):
+        return {"type": "disabled"}
     if _is_adaptive_thinking(thinking):
         return {"type": "adaptive"}
     raise ConfigurationError("Unsupported Anthropic thinking configuration")
