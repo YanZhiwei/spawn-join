@@ -16,6 +16,7 @@ streaming capabilities.
 - [Model purposes](#model-purposes)
 - [Subagents](#subagents)
 - [Middleware scopes](#middleware-scopes)
+- [Memory, skills, and profiles](#memory-skills-and-profiles)
 - [Delegation](#delegation)
 - [Diagnostics](#diagnostics)
 - [Resources and recovery](#resources-and-recovery)
@@ -81,14 +82,17 @@ Run from the repository root; no model file or credentials are needed:
 ```powershell
 uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
 uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
 ```
 
-Complete source: [basic supervisor](examples/basic_supervisor.py) and
-[governed delegation](examples/governed_delegation.py). Both use the adjacent
+Complete source: [basic supervisor](examples/basic_supervisor.py),
+[governed delegation](examples/governed_delegation.py), and
+[official P0 capabilities](examples/p0_capabilities.py). They use the adjacent
 [`fake_model.py`](examples/fake_model.py) for deterministic offline responses; run them in the
 repository rather than copying just one file. The first prints an assembly report, the worker's
 `research result` and `The supervisor's final answer.`; the second also prints an `Events:`
-lifecycle list. The full report repr is not a stable output contract.
+lifecycle list; the third prints `Context`, `Profiles`, `Subagents`, and the same final answer.
+The full report repr is not a stable output contract.
 
 ### 2. Connect your own model service
 
@@ -282,6 +286,165 @@ spec = SupervisorSpec(
   `spawn_join_delegation_policy`, `spawn_join_diagnostics`).
 - The `context` report records only source counts and management mode; the `profiles` report
   records only registered keys. Paths, URLs, headers, and credentials are never reported.
+
+### Complete runnable example
+
+The script below matches [`examples/p0_capabilities.py`](examples/p0_capabilities.py). It uses a
+temporary `FilesystemBackend` for memory/skills, runs offline with fake models, and declares a
+remote async subagent without invoking it.
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
+```
+
+```python
+from __future__ import annotations
+
+import asyncio
+import tempfile
+from pathlib import Path
+from typing import Any, cast
+
+from deepagents import HarnessProfile
+from deepagents.backends import FilesystemBackend
+from fake_model import FakeChatModel
+from langchain_core.messages import AIMessage, HumanMessage
+
+from spawn_join_agent_deepagents import (
+    AsyncSubAgentDefinition,
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+    SubAgentDefinition,
+    SupervisorSpec,
+    build_supervisor,
+)
+
+
+def _task_call() -> AIMessage:
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "task",
+                "args": {
+                    "description": "Research the topic.",
+                    "subagent_type": "researcher",
+                },
+                "id": "call-researcher",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+async def main() -> None:
+    with tempfile.TemporaryDirectory() as raw_root:
+        root = Path(raw_root)
+        (root / "AGENTS.md").write_text(
+            "# Agent memory\n\nReturn concise answers.\n",
+            encoding="utf-8",
+        )
+        skill = root / "skills" / "web-research"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\n"
+            "name: web-research\n"
+            "description: Research a bounded question.\n"
+            "---\n\n"
+            "Use the available research tools and cite the result.\n",
+            encoding="utf-8",
+        )
+
+        supervisor = FakeChatModel(
+            responses=[
+                _task_call(),
+                AIMessage(content="The supervisor's final answer."),
+            ]
+        )
+        worker = FakeChatModel(responses=[AIMessage(content="research result")])
+        models = ModelBindings(
+            catalog=None,
+            bindings=(
+                ModelBinding(ModelPurpose.SUPERVISOR, model=supervisor),
+                ModelBinding(ModelPurpose.WORKER, model=worker),
+                ModelBinding(
+                    ModelPurpose.SUMMARIZATION,
+                    inherit_from=ModelPurpose.SUPERVISOR,
+                ),
+            ),
+        )
+
+        assembly = build_supervisor(
+            SupervisorSpec(
+                models=models,
+                backend=FilesystemBackend(root_dir=root),
+                memory=MemoryConfiguration(
+                    sources=("/AGENTS.md",),
+                    add_cache_control=False,
+                ),
+                skills=SkillsConfiguration(sources=("/skills",)),
+                profiles=ProfilesConfiguration(
+                    harness=(
+                        HarnessProfileBinding(
+                            "example:fake-model",
+                            HarnessProfile(system_prompt_suffix="Be concise."),
+                        ),
+                    )
+                ),
+                allow_experimental_profiles=True,
+                subagents=(
+                    SubAgentDefinition(
+                        name="researcher",
+                        description="Research a bounded question.",
+                        system_prompt="Return a concise result.",
+                    ),
+                    AsyncSubAgentDefinition(
+                        name="remote-researcher",
+                        description="A remote Agent Protocol worker.",
+                        graph_id="research_agent",
+                        url="https://example.invalid",
+                    ),
+                ),
+                allow_experimental_async_subagents=True,
+                name="coordinator",
+            )
+        )
+
+        result = cast(
+            dict[str, Any],
+            await assembly.graph.ainvoke(
+                {"messages": [HumanMessage(content="Start the research.")]}
+            ),
+        )
+
+        print("Report:", assembly.report)
+        print("Context:", assembly.report.context)
+        print("Profiles:", assembly.report.profiles)
+        print("Subagents:", [(item.name, item.kind) for item in assembly.report.subagents])
+        for message in cast(list[Any], result["messages"]):
+            print(type(message).__name__, getattr(message, "content", ""))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Key points:
+
+- `MemoryConfiguration(add_cache_control=False)` exercises the package-managed
+  `MemoryMiddleware` path; the `FilesystemBackend` is host-owned and cleaned up by
+  `TemporaryDirectory`.
+- `SkillsConfiguration(sources=("/skills",))` points at a directory containing
+  `web-research/SKILL.md`; invalid frontmatter is skipped by upstream with a warning.
+- `AsyncSubAgentDefinition` participates only in assembly and the report; the example never
+  invokes the remote worker and needs no network.
+- The harness profile is beta process-wide state. Its key does not match the fake model, so it
+  demonstrates registration, validation, and reporting without changing offline output.
 
 ## Delegation
 

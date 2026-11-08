@@ -15,6 +15,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - [模型用途](#模型用途)
 - [子代理](#子代理)
 - [Middleware 作用域](#middleware-作用域)
+- [Memory、Skills 与 Profile](#memoryskills-与-profile)
 - [委派](#委派)
 - [诊断](#诊断)
 - [资源与恢复](#资源与恢复)
@@ -74,13 +75,16 @@ uv sync --locked --directory packages/infra/agent-deepagents
 ```powershell
 uv run --locked --directory packages/infra/agent-deepagents python examples/basic_supervisor.py
 uv run --locked --directory packages/infra/agent-deepagents python examples/governed_delegation.py
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
 ```
 
-完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)。
+完整源码：[基础 supervisor](examples/basic_supervisor.py)、[受控委派](examples/governed_delegation.py)、
+[官方 P0 能力](examples/p0_capabilities.py)。
 它们使用同目录的 [`fake_model.py`](examples/fake_model.py) 提供确定性离线响应；请在仓库中
 运行这些文件，而不是单独复制其中一个文件。第一个示例输出装配报告、worker 的
 `research result` 和最终的 `The supervisor's final answer.`；第二个还输出 `Events:`
-生命周期列表。报告的完整 repr 不是稳定输出契约。
+生命周期列表；第三个输出 `Context`、`Profiles`、`Subagents` 分区和同样的最终回答。
+报告的完整 repr 不是稳定输出契约。
 
 ### 2. 连接自己的模型服务
 
@@ -267,6 +271,163 @@ spec = SupervisorSpec(
   （`SummarizationMiddleware`、`spawn_join_delegation_policy`、`spawn_join_diagnostics`）。
 - 装配报告的 `context` 只记录 source 数量和管理方式，`profiles` 只记录注册 key；
   不记录路径、URL、headers 或凭据。
+
+### 完整可运行示例
+
+下面的脚本与 [`examples/p0_capabilities.py`](examples/p0_capabilities.py) 一致：用临时
+`FilesystemBackend` 提供 memory/skills 文件，用 fake model 离线执行，同时声明一个不会被
+调用的远程 async 子代理。运行：
+
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/p0_capabilities.py
+```
+
+```python
+from __future__ import annotations
+
+import asyncio
+import tempfile
+from pathlib import Path
+from typing import Any, cast
+
+from deepagents import HarnessProfile
+from deepagents.backends import FilesystemBackend
+from fake_model import FakeChatModel
+from langchain_core.messages import AIMessage, HumanMessage
+
+from spawn_join_agent_deepagents import (
+    AsyncSubAgentDefinition,
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+    SubAgentDefinition,
+    SupervisorSpec,
+    build_supervisor,
+)
+
+
+def _task_call() -> AIMessage:
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "task",
+                "args": {
+                    "description": "Research the topic.",
+                    "subagent_type": "researcher",
+                },
+                "id": "call-researcher",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+async def main() -> None:
+    with tempfile.TemporaryDirectory() as raw_root:
+        root = Path(raw_root)
+        (root / "AGENTS.md").write_text(
+            "# Agent memory\n\nReturn concise answers.\n",
+            encoding="utf-8",
+        )
+        skill = root / "skills" / "web-research"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\n"
+            "name: web-research\n"
+            "description: Research a bounded question.\n"
+            "---\n\n"
+            "Use the available research tools and cite the result.\n",
+            encoding="utf-8",
+        )
+
+        supervisor = FakeChatModel(
+            responses=[
+                _task_call(),
+                AIMessage(content="The supervisor's final answer."),
+            ]
+        )
+        worker = FakeChatModel(responses=[AIMessage(content="research result")])
+        models = ModelBindings(
+            catalog=None,
+            bindings=(
+                ModelBinding(ModelPurpose.SUPERVISOR, model=supervisor),
+                ModelBinding(ModelPurpose.WORKER, model=worker),
+                ModelBinding(
+                    ModelPurpose.SUMMARIZATION,
+                    inherit_from=ModelPurpose.SUPERVISOR,
+                ),
+            ),
+        )
+
+        assembly = build_supervisor(
+            SupervisorSpec(
+                models=models,
+                backend=FilesystemBackend(root_dir=root),
+                memory=MemoryConfiguration(
+                    sources=("/AGENTS.md",),
+                    add_cache_control=False,
+                ),
+                skills=SkillsConfiguration(sources=("/skills",)),
+                profiles=ProfilesConfiguration(
+                    harness=(
+                        HarnessProfileBinding(
+                            "example:fake-model",
+                            HarnessProfile(system_prompt_suffix="Be concise."),
+                        ),
+                    )
+                ),
+                allow_experimental_profiles=True,
+                subagents=(
+                    SubAgentDefinition(
+                        name="researcher",
+                        description="Research a bounded question.",
+                        system_prompt="Return a concise result.",
+                    ),
+                    AsyncSubAgentDefinition(
+                        name="remote-researcher",
+                        description="A remote Agent Protocol worker.",
+                        graph_id="research_agent",
+                        url="https://example.invalid",
+                    ),
+                ),
+                allow_experimental_async_subagents=True,
+                name="coordinator",
+            )
+        )
+
+        result = cast(
+            dict[str, Any],
+            await assembly.graph.ainvoke(
+                {"messages": [HumanMessage(content="Start the research.")]}
+            ),
+        )
+
+        print("Report:", assembly.report)
+        print("Context:", assembly.report.context)
+        print("Profiles:", assembly.report.profiles)
+        print("Subagents:", [(item.name, item.kind) for item in assembly.report.subagents])
+        for message in cast(list[Any], result["messages"]):
+            print(type(message).__name__, getattr(message, "content", ""))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+要点：
+
+- `MemoryConfiguration(add_cache_control=False)` 走包自己创建 `MemoryMiddleware` 的路径；
+  `FilesystemBackend` 由宿主提供，示例退出时由 `TemporaryDirectory` 清理。
+- `SkillsConfiguration(sources=("/skills",))` 指向包含 `web-research/SKILL.md` 的目录；
+  缺少有效 frontmatter 的文件会被上游跳过并记录 warning。
+- `AsyncSubAgentDefinition` 只参与装配和报告；示例不会调用远程子代理，因此没有网络依赖。
+- `ProfilesConfiguration` 注册的 harness profile 是 beta 进程级状态；示例 key 不会匹配
+  fake model，所以只用于展示注册、校验和报告，不改变离线输出。
 
 ## 委派
 
