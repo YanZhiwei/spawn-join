@@ -189,6 +189,36 @@ def test_anthropic_defaults() -> None:
     options = AnthropicMessagesOptions()
     assert options.thinking is None
     assert options.stop_sequences is None
+    assert options.reasoning_effort is None
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_anthropic_accepts_reasoning_effort(effort: ReasoningEffort) -> None:
+    options = AnthropicMessagesOptions(reasoning_effort=effort)
+    assert options.reasoning_effort == effort
+
+
+@pytest.mark.parametrize(
+    "effort",
+    ["", "LOW", "max", True, 1, ["high"], {"effort": "high"}],
+)
+def test_anthropic_rejects_invalid_reasoning_effort(effort: object) -> None:
+    with pytest.raises(ConfigurationError):
+        AnthropicMessagesOptions(reasoning_effort=cast(ReasoningEffort, effort))
+
+
+def test_anthropic_keeps_legacy_positional_order() -> None:
+    options = AnthropicMessagesOptions(
+        0.2,
+        4096,
+        0.9,
+        40,
+        None,
+        AnthropicThinkingAdaptive(),
+    )
+    assert options.top_k == 40
+    assert isinstance(options.thinking, AnthropicThinkingAdaptive)
+    assert options.reasoning_effort is None
 
 
 def test_anthropic_accepts_budget_thinking() -> None:

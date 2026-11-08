@@ -115,6 +115,9 @@ def _anthropic_model(
             else None
         ),
         thinking=(_thinking_payload(options.thinking) if options is not None else None),
+        # ChatAnthropic exposes the field as `reasoning_effort` with the native
+        # constructor alias `effort`; passing the alias keeps strict typing valid.
+        effort=options.reasoning_effort if options is not None else None,
     )
 
 

@@ -136,6 +136,7 @@ class AnthropicInput(FileInput):
     top_k: OptionalInteger = None
     stop_sequences: OptionalStrings = None
     thinking: Annotated[AnthropicThinking | None, BeforeValidator(_thinking)] = None
+    reasoning_effort: OptionalText = None
 
     def to_options(self) -> AnthropicMessagesOptions:
         return AnthropicMessagesOptions(
@@ -145,4 +146,5 @@ class AnthropicInput(FileInput):
             top_k=self.top_k,
             stop_sequences=self.stop_sequences,
             thinking=self.thinking,
+            reasoning_effort=cast(ReasoningEffort | None, self.reasoning_effort),
         )

@@ -1367,8 +1367,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "langchain-anthropic", specifier = ">=1.0,<2.0" },
-    { name = "langchain-core", specifier = ">=1.0,<2.0" },
+    { name = "langchain-anthropic", specifier = ">=1.5.0,<2.0" },
+    { name = "langchain-core", specifier = ">=1.5.0,<2.0" },
     { name = "langchain-openai", specifier = ">=1.0,<2.0" },
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "python-dotenv", specifier = ">=1.2.4,<2" },

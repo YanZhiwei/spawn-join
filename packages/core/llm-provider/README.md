@@ -219,7 +219,7 @@ anthropic = AnthropicMessagesOptions(
 |---|---|
 | `ChatCompletionsOptions` | `reasoning_effort`：`low`、`medium`、`high` |
 | `ResponsesOptions` | `reasoning_effort`：`low`、`medium`、`high` |
-| `AnthropicMessagesOptions` | `thinking`：固定 token 预算或自适应模式 |
+| `AnthropicMessagesOptions` | `thinking`：固定 token 预算或自适应模式；`reasoning_effort`：`low`、`medium`、`high` |
 
 **没有对应的 Options 字段，不代表模型调用不支持思考。** 工厂返回的是 LangChain
 原生 `BaseChatModel`，应用可在 `ainvoke()` 等调用中直接传入 `reasoning_effort`、

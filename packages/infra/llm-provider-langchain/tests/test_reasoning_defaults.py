@@ -8,6 +8,8 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from anthropic.types import Message, TextBlock, Usage
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from openai.types.chat import ChatCompletion
@@ -57,7 +59,21 @@ def _model(
     return model
 
 
-def _payload(model: ChatOpenAI, **kwargs: Any) -> dict[str, Any]:
+def _anthropic_model(
+    tmp_path: Path,
+    effort: str,
+    *,
+    schema_version: int = 1,
+) -> ChatAnthropic:
+    catalog = load_model_catalog(
+        _write(tmp_path, "anthropic_messages", effort, schema_version=schema_version)
+    )
+    model = catalog.create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatAnthropic)
+    return model
+
+
+def _payload(model: ChatOpenAI | ChatAnthropic, **kwargs: Any) -> dict[str, Any]:
     payload = cast(
         dict[str, Any],
         model._get_request_payload(  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
@@ -93,6 +109,35 @@ def _raw_response() -> MagicMock:
 
 def _capture(**_kwargs: object) -> MagicMock:
     return _raw_response()
+
+
+class _NativeAnthropicResponse:
+    """Offline response compatible with both `_create` return contracts."""
+
+    def __init__(self, message: Message) -> None:
+        self.headers: dict[str, str] = {}
+        self._message = message
+
+    def parse(self) -> Message:
+        return self._message
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._message, name)
+
+
+def _anthropic_response() -> _NativeAnthropicResponse:
+    return _NativeAnthropicResponse(
+        Message(
+            id="msg_test",
+            content=[TextBlock(type="text", text="ok")],
+            model="claude-test",
+            role="assistant",
+            stop_reason="end_turn",
+            stop_sequence=None,
+            type="message",
+            usage=Usage(input_tokens=1, output_tokens=1),
+        )
+    )
 
 
 @pytest.mark.parametrize("schema_version", [1, 2])
@@ -137,6 +182,125 @@ def test_responses_override_restores_default(tmp_path: Path) -> None:
 
     assert _payload(model, reasoning_effort="high")["reasoning"] == {"effort": "high"}
     assert _payload(model)["reasoning"] == {"effort": "low"}
+
+
+@pytest.mark.parametrize("schema_version", [1, 2])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_anthropic_default_reaches_output_config(
+    tmp_path: Path,
+    schema_version: int,
+    effort: str,
+) -> None:
+    model = _anthropic_model(tmp_path, effort, schema_version=schema_version)
+
+    payload = _payload(model)
+
+    assert payload["output_config"] == {"effort": effort}
+    assert "reasoning_effort" not in payload
+
+
+def test_anthropic_override_restores_default(tmp_path: Path) -> None:
+    model = _anthropic_model(tmp_path, "low")
+
+    assert _payload(model, reasoning_effort="high")["output_config"] == {
+        "effort": "high"
+    }
+    assert _payload(model)["output_config"] == {"effort": "low"}
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_anthropic_sync_and_async_override_reach_sdk_and_restore(
+    tmp_path: Path,
+    asynchronous: bool,
+) -> None:
+    model = _anthropic_model(tmp_path, "low")
+    response = _anthropic_response()
+    request = (
+        AsyncMock(return_value=response)
+        if asynchronous
+        else MagicMock(return_value=response)
+    )
+    method = "_acreate" if asynchronous else "_create"
+
+    with patch.object(model, method, request):
+        if asynchronous:
+            asyncio.run(
+                model.ainvoke([HumanMessage(content="hi")], reasoning_effort="high")
+            )
+            assert request.call_args.args[0]["output_config"] == {"effort": "high"}
+            asyncio.run(model.ainvoke([HumanMessage(content="hi")]))
+            assert request.call_args.args[0]["output_config"] == {"effort": "low"}
+        else:
+            model.invoke([HumanMessage(content="hi")], reasoning_effort="high")
+            assert request.call_args.args[0]["output_config"] == {"effort": "high"}
+            model.invoke([HumanMessage(content="hi")])
+            assert request.call_args.args[0]["output_config"] == {"effort": "low"}
+
+
+def test_anthropic_omitted_options_omit_reasoning_effort(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n",
+        encoding="utf-8",
+    )
+    model = load_model_catalog(path).create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatAnthropic)
+
+    payload = _payload(model)
+
+    assert "output_config" not in payload
+    assert "reasoning_effort" not in payload
+
+
+@pytest.mark.parametrize(
+    "thinking_block,expected",
+    [
+        ("        mode: adaptive\n", {"type": "adaptive"}),
+        (
+            "        mode: budget\n        budget_tokens: 2048\n",
+            {"type": "enabled", "budget_tokens": 2048},
+        ),
+    ],
+)
+def test_anthropic_effort_and_thinking_are_independent(
+    tmp_path: Path,
+    thinking_block: str,
+    expected: dict[str, object],
+) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        "schema_version: 1\n"
+        "models:\n"
+        "  fast:\n"
+        "    protocol: anthropic_messages\n"
+        "    endpoint: https://api.example.com/v1\n"
+        "    model: claude-test\n"
+        "    api_key_env: OPENAI_API_KEY\n"
+        "    options:\n"
+        "      max_output_tokens: 4096\n"
+        "      reasoning_effort: low\n"
+        "      thinking:\n"
+        f"{thinking_block}",
+        encoding="utf-8",
+    )
+    model = load_model_catalog(path).create_chat_model(environ=_ENVIRON)
+    assert isinstance(model, ChatAnthropic)
+
+    payload = _payload(model)
+
+    assert payload["thinking"] == expected
+    assert payload["output_config"] == {"effort": "low"}
+
+    overridden = _payload(model, reasoning_effort="high")
+
+    assert overridden["thinking"] == expected
+    assert overridden["output_config"] == {"effort": "high"}
 
 
 @pytest.mark.parametrize("options_block", ["", "    options: {}\n"])

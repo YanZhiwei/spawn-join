@@ -270,7 +270,7 @@ print(summary.metadata_ref, summary.metadata)
 |---|---|---|
 | `chat_completions` | `ChatOpenAI`（`use_responses_api=False`） | `temperature`、`max_completion_tokens`、`top_p`、`stop_sequences`、`seed`、`reasoning_effort` |
 | `responses` | `ChatOpenAI`（`use_responses_api=True`） | `temperature`、`max_completion_tokens`、`top_p`、`store`、`reasoning_effort`、`truncation` |
-| `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking` |
+| `anthropic_messages` | `ChatAnthropic` | `temperature`、`max_tokens_to_sample`、`top_p`、`top_k`、`stop`、`thinking`、`reasoning_effort` |
 
 三种协议都显式设置 `max_retries`（默认 `0`）、endpoint 和 timeout。
 
@@ -420,16 +420,16 @@ response = await model.ainvoke(
 
 ### 默认值、兼容性与边界
 
-- `ChatCompletionsOptions` 与 `ResponsesOptions` 都已支持 `reasoning_effort` 的
-  `low` / `medium` / `high`；`AnthropicMessagesOptions` 已支持固定预算和自适应
-  `thinking`，但尚无 `reasoning_effort`。这不限制原生调用参数入口。
+- 三种 Options 都已支持 `reasoning_effort` 的 `low` / `medium` / `high`；
+  `AnthropicMessagesOptions` 另外支持固定预算和自适应 `thinking`。这不限制原生调用参数入口。
 - `None` 在 `Options` 中表示不指定该默认值，不等于显式关闭思考。YAML 中省略
   `reasoning_effort`（或整个 `options`）同样表示不指定；显式 `reasoning_effort: null`
   会在创建模型前以带字段路径的 `ConfigurationError` 拒绝。Python `None` 不等同于 YAML null。
 - 字段同名不代表各模型支持相同等级，也不保证所有模型都允许关闭思考。思考强度不等于
   固定 token 预算；不指定 `thinking` 时的行为由 LangChain 和目标模型决定。
 - 上述调用形状对照了仓库 `uv.lock` 中的 `langchain-openai==1.7.3` 和
-  `langchain-anthropic==1.7.7`。不能仅凭包声明的 `>=1.0` 下限断言旧版本支持全部示例；
+  `langchain-anthropic==1.7.7`。`langchain-core` 与 `langchain-anthropic` 的声明下限为
+  `>=1.5.0,<2.0`，`langchain-openai` 保持 `>=1.0,<2.0`；下限本身不等于所有中间版本均已验证。
   在仓库内请使用 `uv sync --locked`，其他环境应核对实际安装版本。
 - 兼容 OpenAI 的服务未必支持相同的思考扩展。本包不猜测模型能力、不自动切换协议或
   降级参数；不支持参数时的异常由 LangChain / 服务端产生，应用负责处理。

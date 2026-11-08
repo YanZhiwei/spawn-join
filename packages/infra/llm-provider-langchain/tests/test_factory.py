@@ -118,6 +118,28 @@ def test_responses_factory_maps_options() -> None:
     assert "sk-test-secret" not in repr(model)
 
 
+def test_anthropic_factory_maps_reasoning_effort() -> None:
+    model = create_chat_model(
+        _config(ProtocolKind.ANTHROPIC_MESSAGES),
+        api_key="sk-test-secret",
+        options=AnthropicMessagesOptions(reasoning_effort="medium"),
+    )
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.reasoning_effort == "medium"
+
+
+def test_anthropic_factory_leaves_reasoning_effort_unset() -> None:
+    model = create_chat_model(
+        _config(ProtocolKind.ANTHROPIC_MESSAGES),
+        api_key="sk-test-secret",
+        options=AnthropicMessagesOptions(),
+    )
+
+    assert isinstance(model, ChatAnthropic)
+    assert model.reasoning_effort is None
+
+
 def test_anthropic_factory_maps_options() -> None:
     model = create_chat_model(
         _config(ProtocolKind.ANTHROPIC_MESSAGES),
@@ -222,6 +244,26 @@ class _TokenOverride(TypedDict, total=False):
     max_tokens: int
 
 
+class _NativeAnthropicResponse:
+    """Offline response compatible with both `_create` return contracts.
+
+    langchain-anthropic 1.5 returns the parsed message directly, while newer
+    versions return a wrapper whose `parse()` yields it. Delegating attributes
+    and providing `parse()` keeps the same fixture valid for the declared floor
+    and the repository lock.
+    """
+
+    def __init__(self, message: Message) -> None:
+        self.headers: dict[str, str] = {}
+        self._message = message
+
+    def parse(self) -> Message:
+        return self._message
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._message, name)
+
+
 @pytest.mark.parametrize("model_name", ["example-model", "claude-sonnet-4-5-20250929"])
 @pytest.mark.parametrize(
     "options",
@@ -261,17 +303,17 @@ def test_anthropic_budget_reaches_native_request(
         expected = override
     assert expected is not None and expected > 0
 
-    raw_response = MagicMock()
-    raw_response.headers = {}
-    raw_response.parse.return_value = Message(
-        id="msg_test",
-        content=[TextBlock(type="text", text="offline response")],
-        model=model_name,
-        role="assistant",
-        stop_reason="end_turn",
-        stop_sequence=None,
-        type="message",
-        usage=Usage(input_tokens=2, output_tokens=1),
+    raw_response = _NativeAnthropicResponse(
+        Message(
+            id="msg_test",
+            content=[TextBlock(type="text", text="offline response")],
+            model=model_name,
+            role="assistant",
+            stop_reason="end_turn",
+            stop_sequence=None,
+            type="message",
+            usage=Usage(input_tokens=2, output_tokens=1),
+        )
     )
     request = (
         AsyncMock(return_value=raw_response)

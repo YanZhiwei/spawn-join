@@ -290,7 +290,7 @@ Rules:
 |---|---|---|
 | `chat_completions` | `ChatOpenAI` (`use_responses_api=False`) | `temperature`, `max_completion_tokens`, `top_p`, `stop_sequences`, `seed`, `reasoning_effort` |
 | `responses` | `ChatOpenAI` (`use_responses_api=True`) | `temperature`, `max_completion_tokens`, `top_p`, `store`, `reasoning_effort`, `truncation` |
-| `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking` |
+| `anthropic_messages` | `ChatAnthropic` | `temperature`, `max_tokens_to_sample`, `top_p`, `top_k`, `stop`, `thinking`, `reasoning_effort` |
 
 All three protocols explicitly set `max_retries` (default `0`), endpoint, and timeout.
 
@@ -444,9 +444,9 @@ response = await model.ainvoke(
 
 ### Defaults, compatibility, and boundaries
 
-- Both `ChatCompletionsOptions` and `ResponsesOptions` support `reasoning_effort` with
-  `low` / `medium` / `high`; `AnthropicMessagesOptions` supports fixed-budget and adaptive
-  `thinking`, but no `reasoning_effort` yet. This does not restrict native call parameters.
+- All three Options types support `reasoning_effort` with `low` / `medium` / `high`;
+  `AnthropicMessagesOptions` additionally supports fixed-budget and adaptive `thinking`.
+  This does not restrict native call parameters.
 - `None` in `Options` means "do not specify this default", not "explicitly disable thinking".
   Omitting `reasoning_effort` (or the whole `options` block) in YAML also means unspecified;
   an explicit `reasoning_effort: null` is rejected before model creation with a path-bearing
@@ -455,9 +455,10 @@ response = await model.ainvoke(
   disabling thinking. Effort is not a fixed token budget; behavior without `thinking` is determined
   by LangChain and the target model.
 - The call shapes above were checked against `langchain-openai==1.7.3` and
-  `langchain-anthropic==1.7.7` from the repository `uv.lock`. The declared `>=1.0` lower bound alone
-  does not prove older versions support every example; use `uv sync --locked` in this repository and
-  verify the installed version elsewhere.
+  `langchain-anthropic==1.7.7` from the repository `uv.lock`. `langchain-core` and
+  `langchain-anthropic` declare `>=1.5.0,<2.0`; `langchain-openai` keeps `>=1.0,<2.0`.
+  A lower bound does not prove every intermediate version works; use `uv sync --locked` in this
+  repository and verify the installed version elsewhere.
 - OpenAI-compatible services may not support the same thinking extensions. This package does not
   guess model capabilities, switch protocols, or degrade parameters; unsupported-parameter errors
   come from LangChain / the server and are the application's responsibility.

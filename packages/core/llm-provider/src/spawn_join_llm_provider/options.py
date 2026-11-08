@@ -144,6 +144,7 @@ class AnthropicMessagesOptions:
     top_k: int | None = None
     stop_sequences: tuple[str, ...] | None = None
     thinking: AnthropicThinking | None = None
+    reasoning_effort: ReasoningEffort | None = None
 
     def __post_init__(self) -> None:
         _require_range(self.temperature, minimum=0.0, maximum=1.0, field="temperature")
@@ -169,6 +170,7 @@ class AnthropicMessagesOptions:
                 raise ConfigurationError(
                     "thinking budget_tokens must be less than max_output_tokens"
                 )
+        _require_reasoning_effort(self.reasoning_effort, field="reasoning_effort")
 
 
 ProtocolOptions: TypeAlias = (
