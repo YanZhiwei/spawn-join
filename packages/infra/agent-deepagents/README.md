@@ -36,8 +36,10 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 ## 提供的能力
 
 - 从显式模型用途构建 supervisor，返回原生 LangGraph 图和不可变装配报告；
-- 声明式与 compiled 子代理；compiled 子代理保留自己的图、模型和内部中间件；
+- 声明式、compiled 和远程 async 子代理；compiled/async 子代理保留自己的执行边界；
 - supervisor、workers、per-subagent override 三种 Middleware 作用域；
+- Memory/Skills 配置对象，支持 memory cache-control 选择；
+- 上游 Harness/Provider profile 的显式注册、保留名校验和报告；
 - 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
 - 可选同步/异步诊断回调，以及脱敏的装配/生命周期记录；
 - 宿主拥有 Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend；
@@ -185,7 +187,11 @@ if __name__ == "__main__":
 - `SubAgentDefinition`：声明式 worker，支持 `tools`、`middleware`、`interrupt_on`、
   `response_format`、`skills`、`permissions` 和上下文模式；
 - `CompiledSubAgentDefinition`：宿主提供的 runnable，保留自己的图、模型和内部中间件；
-- 名称在两种形态之间必须唯一；
+- `AsyncSubAgentDefinition`：远程 Agent Protocol 子代理，按原生 `graph_id`/`url`/
+  `headers`/`webhook` 透传；必须显式设置
+  `SupervisorSpec(allow_experimental_async_subagents=True)`，`mode="fork"` 还需
+  `allow_experimental_fork=True`，且只支持异步执行路径；
+- 名称在三种形态之间必须唯一；
 - `tools=None` 表示沿用上游工具继承，`tools=()` 表示显式不提供额外工具；
 - 默认情况下，如果没有声明 `general-purpose`，包会注入一个受控的 `general-purpose`：
   使用 `WORKER` 模型和 `workers` middleware，并出现在装配报告中；
@@ -220,6 +226,47 @@ compiled 子代理不接收任何注入。
 - `"SummarizationMiddleware"` 和包内部 middleware 名称保留；
 - 上游 `.name` 替换语义原样保留，包不实现第二套 registry；
 - assembly report 记录实际生效的名称和作用域。
+
+## Memory、Skills 与 Profile
+
+```python
+from spawn_join_agent_deepagents import (
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+)
+from deepagents import HarnessProfile
+
+spec = SupervisorSpec(
+    models=models,
+    memory=MemoryConfiguration(sources=("AGENTS.md",), add_cache_control=False),
+    skills=SkillsConfiguration(sources=("skills",)),
+    profiles=ProfilesConfiguration(
+        harness=(
+            HarnessProfileBinding(
+                "openai:gpt-5.4",
+                HarnessProfile(system_prompt_suffix="Be concise."),
+            ),
+        )
+    ),
+    allow_experimental_profiles=True,
+)
+```
+
+- `MemoryConfiguration` / `SkillsConfiguration` 拒绝空、空白和重复 source；装配期不读取
+  source，宿主或虚拟 Backend 负责实际内容。
+- `add_cache_control=True`（默认）继续由上游创建 `MemoryMiddleware`；`False` 时本包自己创建
+  同名实例并向上游传 `memory=None`，因此没有可替换的上游默认实例，fork 子代理也不会继承
+  这份 memory。
+- `ProfilesConfiguration` 在 `create_deep_agent` 前调用上游
+  `register_harness_profile` / `register_provider_profile`；这是 beta 的进程级注册表，
+  必须显式开启 `allow_experimental_profiles=True`。Provider profile 只影响上游从字符串
+  构造模型的路径；本包始终传 `BaseChatModel`，所以对已解析实例不生效。
+- profile 的 `excluded_middleware` 不得包含本包保留名
+  （`SummarizationMiddleware`、`spawn_join_delegation_policy`、`spawn_join_diagnostics`）。
+- 装配报告的 `context` 只记录 source 数量和管理方式，`profiles` 只记录注册 key；
+  不记录路径、URL、headers 或凭据。
 
 ## 委派
 
@@ -288,22 +335,29 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 - `build_supervisor`、`SupervisorSpec`、`SupervisorAssembly`；
 - `ModelPurpose`、`ModelBinding`、`ModelBindings`、`ResolvedModelBindings`；
-- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`SubAgentKind`（含 `UPSTREAM_DEFAULT`）、
-  `SubAgentMode`；
+- `SubAgentDefinition`、`CompiledSubAgentDefinition`、`AsyncSubAgentDefinition`、
+  `SubAgentKind`（含 `UPSTREAM_DEFAULT`、`ASYNC`）、`SubAgentMode`；
+- `MemoryConfiguration`、`SkillsConfiguration`；
+- `ProfilesConfiguration`、`HarnessProfileBinding`、`ProviderProfileBinding`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
 - `DiagnosticsConfig`、`DiagnosticCallback`、`AsyncDiagnosticCallback`、`DiagnosticEvent`、
-  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、`ResourceReport`；
+  `DiagnosticEventType`、`AssemblyReport`、`SubagentReport`、`DelegationReport`、
+  `ResourceReport`、`ContextReport`、`ProfileReport`；
 - `RecoveryContext`；
-- 稳定错误类型（`AgentConfigurationError` 及其子类）。
+- 稳定错误类型（`AgentConfigurationError` 及其子类，包括 `ContextConfigurationError`、
+  `ProfileConfigurationError`）。
 
 内部模块不会因为可导入就自动成为公共契约。
 
 ## 错误与失败行为
 
-- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复和委派
-  各有稳定子类，便于调用方区分失败类别。
-- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配异常保留 `__cause__`。
+- `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复、Memory/
+  Skills 和 Profile 各有稳定子类，便于调用方区分失败类别。
+- 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配/注册异常保留 `__cause__`。
+- async 子代理和 profile 注册未显式开启 beta 开关时，在装配前失败。
+- 未知子代理形态、空白 `graph_id`、重复 key 或 profile 排除保留 Middleware 名都会得到
+  稳定配置错误，而不是上游 `AttributeError` 或静默忽略。
 - 委派队列满、deadline、父级取消、worker 失败和中断具有可区分语义；worker 原始异常
   不会被转换为成功结果。
 - 诊断回调异常会传播，不会被静默吞掉；异步回调只在异步执行中 await。
@@ -313,6 +367,8 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - Python `>=3.11`；
 - DeepAgents `>=0.7.32,<0.8`；升级到 0.8 需要单独的兼容验证；
 - `fork` 子代理是 beta，不包含在稳定兼容承诺中；
+- async 子代理是 beta，依赖远程 Agent Protocol 服务和异步执行路径；
+- Harness/Provider profile 是上游 beta，注册为进程级副作用；
 - 受控委派仅异步；同步策略明确报错；
 - 不实现 MCP Server、数据库、沙箱、Web/SSE、生产观测后端、租户/授权/计费、产物台账或 UI；
 - 不提供自动 PR、发布或后台调度。

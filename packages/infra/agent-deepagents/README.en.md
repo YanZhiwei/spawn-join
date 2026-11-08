@@ -39,9 +39,12 @@ streaming capabilities.
 
 - build a supervisor from explicit model purposes, returning a native LangGraph graph and an
   immutable assembly report;
-- declarative and compiled subagents; compiled subagents keep their own graph, model, and internal
-  middleware;
+- declarative, compiled, and remote async subagents; compiled/async subagents keep their own
+  execution boundary;
 - three middleware scopes: supervisor, workers, and per-subagent override;
+- memory/skills configuration objects, including an explicit memory cache-control choice;
+- explicit registration, reserved-name validation, and reporting for upstream Harness/Provider
+  profiles;
 - an explicit async-first delegation controller: concurrency limit, bounded FIFO, deadline,
   cancellation, and failure semantics;
 - optional sync/async diagnostic callbacks and redacted assembly/lifecycle records;
@@ -197,7 +200,11 @@ than appending a duplicate.
   `response_format`, `skills`, `permissions`, and context schema;
 - `CompiledSubAgentDefinition`: a host-provided runnable that keeps its own graph, model, and
   internal middleware;
-- names must be unique across both forms;
+- `AsyncSubAgentDefinition`: a remote Agent Protocol worker forwarded with the native
+  `graph_id`/`url`/`headers`/`webhook` fields; it requires
+  `SupervisorSpec(allow_experimental_async_subagents=True)`, and `mode="fork"` also requires
+  `allow_experimental_fork=True`; only the async execution path is supported;
+- names must be unique across all three forms;
 - `tools=None` means inherit upstream tools; `tools=()` means explicitly provide no extra tools;
 - by default, if `general-purpose` is not declared, the package injects a controlled
   `general-purpose` using the `WORKER` model and `workers` middleware, and reports it;
@@ -233,6 +240,48 @@ no injection.
 - `"SummarizationMiddleware"` and internal package middleware names are reserved;
 - upstream `.name` replacement semantics are preserved; the package implements no second registry;
 - the assembly report records effective names and scopes.
+
+## Memory, skills, and profiles
+
+```python
+from spawn_join_agent_deepagents import (
+    HarnessProfileBinding,
+    MemoryConfiguration,
+    ProfilesConfiguration,
+    SkillsConfiguration,
+)
+from deepagents import HarnessProfile
+
+spec = SupervisorSpec(
+    models=models,
+    memory=MemoryConfiguration(sources=("AGENTS.md",), add_cache_control=False),
+    skills=SkillsConfiguration(sources=("skills",)),
+    profiles=ProfilesConfiguration(
+        harness=(
+            HarnessProfileBinding(
+                "openai:gpt-5.4",
+                HarnessProfile(system_prompt_suffix="Be concise."),
+            ),
+        )
+    ),
+    allow_experimental_profiles=True,
+)
+```
+
+- `MemoryConfiguration` / `SkillsConfiguration` reject empty, blank, and duplicate sources; the
+  package does not read the sources during assembly.
+- `add_cache_control=True` (the default) keeps the upstream `MemoryMiddleware`; `False` makes the
+  package construct its own same-name instance and pass `memory=None`, so there is no upstream
+  default to replace and fork subagents do not inherit this memory.
+- `ProfilesConfiguration` calls upstream `register_harness_profile` /
+  `register_provider_profile` before `create_deep_agent`; this is beta process-wide state and
+  requires `allow_experimental_profiles=True`. Provider profiles only affect upstream
+  string-model construction; this package always passes a `BaseChatModel`, so they do not
+  reshape resolved instances.
+- A profile cannot exclude package-reserved middleware names (`SummarizationMiddleware`,
+  `spawn_join_delegation_policy`, `spawn_join_diagnostics`).
+- The `context` report records only source counts and management mode; the `profiles` report
+  records only registered keys. Paths, URLs, headers, and credentials are never reported.
 
 ## Delegation
 
@@ -312,23 +361,30 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
 
 - `build_supervisor`, `SupervisorSpec`, `SupervisorAssembly`;
 - `ModelPurpose`, `ModelBinding`, `ModelBindings`, `ResolvedModelBindings`;
-- `SubAgentDefinition`, `CompiledSubAgentDefinition`, `SubAgentKind` (including `UPSTREAM_DEFAULT`),
-  `SubAgentMode`;
+- `SubAgentDefinition`, `CompiledSubAgentDefinition`, `AsyncSubAgentDefinition`,
+  `SubAgentKind` (including `UPSTREAM_DEFAULT` and `ASYNC`), `SubAgentMode`;
+- `MemoryConfiguration`, `SkillsConfiguration`;
+- `ProfilesConfiguration`, `HarnessProfileBinding`, `ProviderProfileBinding`;
 - `MiddlewareConfiguration`, `MiddlewareScopeReport`;
 - `DelegationPolicy`, `DelegationController`, `DelegationConfiguration`;
 - `DiagnosticsConfig`, `DiagnosticCallback`, `AsyncDiagnosticCallback`, `DiagnosticEvent`,
-  `DiagnosticEventType`, `AssemblyReport`, `SubagentReport`, `DelegationReport`, `ResourceReport`;
+  `DiagnosticEventType`, `AssemblyReport`, `SubagentReport`, `DelegationReport`,
+  `ResourceReport`, `ContextReport`, `ProfileReport`;
 - `RecoveryContext`;
-- stable error types (`AgentConfigurationError` and subclasses).
+- stable error types (`AgentConfigurationError` and subclasses, including
+  `ContextConfigurationError` and `ProfileConfigurationError`).
 
 Internal modules do not become public contracts merely because they are importable.
 
 ## Errors and failure behavior
 
 - `AgentConfigurationError` is the assembly-time configuration error base; models, subagents,
-  middleware, recovery, and delegation have stable subclasses for callers to distinguish failures.
+  middleware, recovery, memory/skills, profiles, and delegation have stable subclasses.
 - Configuration errors are raised before `create_deep_agent`, never returning a half-configured
-  graph; upstream assembly exceptions preserve `__cause__`.
+  graph; upstream assembly/registration exceptions preserve `__cause__`.
+- Async subagents and profile registration fail before assembly unless their beta switch is set.
+- Unknown subagent forms, blank `graph_id`, duplicate keys, and reserved-middleware exclusions
+  produce stable configuration errors instead of upstream `AttributeError` or silent ignores.
 - Delegation queue-full, deadline, parent cancellation, worker failure, and interrupt have
   distinguishable semantics; worker exceptions are never converted to success.
 - Diagnostic callback exceptions propagate and are never silently swallowed; async callbacks are
@@ -339,6 +395,8 @@ Internal modules do not become public contracts merely because they are importab
 - Python `>=3.11`;
 - DeepAgents `>=0.7.32,<0.8`; upgrading to 0.8 needs separate compatibility verification;
 - `fork` subagents are beta and outside the stable compatibility promise;
+- async subagents are beta and depend on a remote Agent Protocol service and the async path;
+- Harness/Provider profiles are upstream beta and register process-wide state;
 - governed delegation is asynchronous only; synchronous policies explicitly error;
 - no MCP Server, database, sandbox, Web/SSE, production observability backend,
   tenant/authorization/billing, artifact ledger, or UI;
