@@ -3,7 +3,7 @@
 - feature_id: 015-llm-channel-closure
 - phase_id: implementation-verification
 - base_revision: 9f8cb1c78cc254450e2a7557eb88013bc7cdb302
-- head_revision: 78c9694
+- head_revision: 78c96941198554804f09664c5ec039080d5d1cf0
 - working_directory: D:\Repos\Github\spawn-join
 - recorded_at: 2026-11-09T00:13:34+08:00
 - result: pass
@@ -64,7 +64,7 @@ The first review found a blocker (malformed 200 handling), a minor cursor bug,
 and a docs ownership wording issue. All three were fixed before the final
 quality run. A second fresh review reported `NO_BLOCKER`.
 
-## Unexecuted checks
+## Limitations and unexecuted checks
 
 - Real Provider live tests were skipped because no live credentials are
   available. They are opt-in and are **not** reported as passed.
