@@ -59,6 +59,7 @@ _CURRENT_PUBLIC_NAMES = {
     "AsyncSubAgentDefinition",
     "CompiledSubAgentDefinition",
     "ContextConfigurationError",
+    "ContextOverflowLLMError",
     "ContextReport",
     "DelegationConfiguration",
     "DelegationController",
@@ -71,6 +72,9 @@ _CURRENT_PUBLIC_NAMES = {
     "DiagnosticEventType",
     "DiagnosticsConfig",
     "HarnessProfileBinding",
+    "LLMCallError",
+    "LLMErrorCode",
+    "LLMErrorNormalizationMiddleware",
     "MemoryConfiguration",
     "MiddlewareConfiguration",
     "MiddlewareConfigurationError",
@@ -97,6 +101,8 @@ _CURRENT_PUBLIC_NAMES = {
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
     "build_supervisor",
+    "classify_llm_error",
+    "normalize_llm_error",
 }
 
 

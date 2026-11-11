@@ -16,6 +16,7 @@ from spawn_join_agent_deepagents.errors import MiddlewareConfigurationError
 from spawn_join_agent_deepagents.middleware import (
     DELEGATION_MIDDLEWARE_NAME,
     DIAGNOSTICS_MIDDLEWARE_NAME,
+    LLM_ERROR_MIDDLEWARE_NAME,
     RESERVED_SUMMARIZATION_MIDDLEWARE_NAME,
     MiddlewareConfiguration,
     MiddlewareScopeReport,
@@ -143,6 +144,7 @@ def test_duplicate_names_within_one_scope_are_rejected() -> None:
         RESERVED_SUMMARIZATION_MIDDLEWARE_NAME,
         DELEGATION_MIDDLEWARE_NAME,
         DIAGNOSTICS_MIDDLEWARE_NAME,
+        LLM_ERROR_MIDDLEWARE_NAME,
     ],
 )
 def test_reserved_names_are_rejected(reserved: str) -> None:
@@ -297,6 +299,7 @@ def test_requested_worker_middleware_order_and_summarization_replacement(
 
     names = assembly.report.middleware.per_subagent["researcher"]
     assert names == (
+        "spawn_join_llm_error_normalization",
         "definition-marker",
         "worker-marker",
         "override-marker",
