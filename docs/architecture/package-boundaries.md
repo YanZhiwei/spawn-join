@@ -10,13 +10,14 @@
 | `spawn-join-core` | `spawn_join_core` | [`packages/core/spawn-join-core`](../../packages/core/spawn-join-core/) | `core` | 跨领域稳定的配置机制、异常、类型和基础协议 |
 | `spawn-join-common` | `spawn_join_common` | [`packages/core/common`](../../packages/core/common/) | `core` | 按功能组织的跨领域公共辅助实现；严格读取与可选 Pydantic 异常转换 |
 | `spawn-join-llm-provider` | `spawn_join_llm_provider` | [`packages/core/llm-provider`](../../packages/core/llm-provider/) | `core` | 与框架无关的 LLM 协议选项、渠道契约和稳定错误 |
+| `spawn-join-llm-channel` | `spawn_join_llm_channel` | [`packages/infra/llm-channel`](../../packages/infra/llm-channel/) | `infra` | 真实 Provider channel transport：连接/认证检查和模型发现；不依赖 LangChain |
 | `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 模型工厂、协议选项映射和配置校验 |
 | `spawn-join-llm-model-sync` | `spawn_join_llm_model_sync` | [`packages/infra/llm-model-sync`](../../packages/infra/llm-model-sync/) | `infra` | 手动模型元数据同步、源注册和确定性快照生成 |
 | `spawn-join-agent-deepagents` | `spawn_join_agent_deepagents` | [`packages/infra/agent-deepagents`](../../packages/infra/agent-deepagents/) | `infra` | DeepAgents 产品装配、模型用途绑定、Middleware 作用域、受控委派、诊断和恢复边界 |
 
-当前 LLM 包已实现渠道/选项契约、LangChain 模型工厂和手动元数据同步；agent 包负责
-DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确认它属于哪个 Distribution、
-由哪个包拥有，以及是否真的需要形成跨组件复用。
+当前 LLM 包已实现渠道/选项契约、真实 Provider channel transport、LangChain 模型工厂和
+手动元数据同步；agent 包负责 DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确认
+它属于哪个 Distribution、由哪个包拥有，以及是否真的需要形成跨组件复用。
 
 ## Dependency Direction
 
@@ -31,6 +32,10 @@ DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确
     │       ├── langchain-openai
     │       ├── langchain-anthropic
     │       └── pydantic
+    ├── spawn-join-llm-channel
+    │       ├── spawn-join-llm-provider
+    │       ├── openai
+    │       └── anthropic
     ├── spawn-join-llm-model-sync
     │       ├── spawn-join-llm-provider
     │       ├── spawn-join-common
@@ -48,6 +53,9 @@ spawn-join-llm-provider ──> spawn-join-core
                      └──> pydantic
 spawn-join-llm-provider-langchain ──> spawn-join-llm-provider
                                  └──> spawn-join-common[validation]
+spawn-join-llm-channel ──> spawn-join-llm-provider
+                      ├──> openai
+                      └──> anthropic
 spawn-join-llm-model-sync ──> spawn-join-llm-provider
                          └──> spawn-join-common
 ```
@@ -59,15 +67,20 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
    依赖 LangChain 或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包。应用层直接使用 LangChain 消息和 `BaseChatModel`。
-4. `spawn-join-llm-model-sync` 的运行时依赖只允许 `spawn-join-llm-provider`、
+4. `spawn-join-llm-provider-langchain` 不得运行时依赖 `spawn-join-llm-channel`；渠道桥接
+   只使用协议包类型，网络行为属于 channel 包。
+5. `spawn-join-llm-channel` 负责真实 Provider channel transport（连接检查、认证和模型
+   发现），只依赖 `spawn-join-llm-provider`、`openai` 和 `anthropic`；不得依赖 LangChain、
+   模型适配包或 Agent 包。
+6. `spawn-join-llm-model-sync` 的运行时依赖只允许 `spawn-join-llm-provider`、
    `spawn-join-common` 和通用工具；
    不得运行时依赖 LangChain 适配包。完整 `model.yaml` 解析仍由适配包负责，同步工具只
    读取元数据投影。
-5. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
+7. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
    Memory/Skills/Profile 接线、async 子代理、受控委派、诊断和恢复接缝；它依赖
    `deepagents`、LangChain、`langgraph` 和模型适配包，不得被 Core、协议包或模型包反向依赖。
-6. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
-7. `spawn-join-common` 不依赖其他 SpawnJoin 包；默认零第三方运行时依赖，Pydantic 能力
+8. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
+9. `spawn-join-common` 不依赖其他 SpawnJoin 包；默认零第三方运行时依赖，Pydantic 能力
    通过 `validation` extra 显式安装。它拥有公共辅助实现，Core 保留稳定契约；领域异常、
    schema、null 策略和错误文案由调用方拥有。
 
@@ -80,6 +93,7 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 | `spawn-join-core` | `packages/core/spawn-join-core/.venv/` | `packages/core/spawn-join-core/uv.lock` | 无 SpawnJoin 包依赖 |
 | `spawn-join-common` | `packages/core/common/.venv/` | `packages/core/common/uv.lock` | 无 SpawnJoin 包依赖；可选 `validation` |
 | `spawn-join-llm-provider` | `packages/core/llm-provider/.venv/` | `packages/core/llm-provider/uv.lock` | `spawn-join-core`、`spawn-join-common` 的相对路径源 |
+| `spawn-join-llm-channel` | `packages/infra/llm-channel/.venv/` | `packages/infra/llm-channel/uv.lock` | `spawn-join-llm-provider` 的相对路径源 |
 | `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common` 的相对路径源 |
 | `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common`、`spawn-join-llm-provider-langchain` 的相对路径源（后者仅 dev） |
 | `spawn-join-agent-deepagents` | `packages/infra/agent-deepagents/.venv/` | `packages/infra/agent-deepagents/uv.lock` | `spawn-join-llm-provider-langchain` 的相对路径源；Common 仅传递解析 |
@@ -88,7 +102,7 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 `pyproject.toml` 的 `[tool.uv.sources]` 中。这样既保留 Distribution 的发布元数据，
 又允许每个包在自己的环境中以 editable 方式开发。
 
-六个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
+七个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
 属于本机或构建产物，不应提交。
 
 共享质量策略放在根 tool-only `pyproject.toml`，不创建根级 Python project 或共享环境。
@@ -105,6 +119,8 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
   适配和副作用留在对应的 infra 或适配器包。
 - 模型文件（`model.yaml`）与环境变量/`.env` 解析属于
   `spawn-join-llm-provider-langchain`；协议包只保留配置类型和校验，不读取文件。
+- 真实 Provider channel transport（连接/认证检查、模型列表、Provider SDK 错误映射）
+  属于 `spawn-join-llm-channel`；它不依赖 LangChain，也不自动修改 `model.yaml`。
 - 模型元数据契约、快照文档解析和覆盖合并属于 `spawn-join-llm-provider`；
   手动同步、源注册、缓存和 CLI 副作用属于 `spawn-join-llm-model-sync`。
 - DeepAgents supervisor 装配、模型用途绑定、Middleware 作用域、受控委派、诊断和恢复接缝
@@ -124,8 +140,9 @@ Black/isort/Ruff/Pyright/pytest 只加入每包 dev group，不进入发布运�
 - 如果能力依赖第三方库，优先放入相应领域或 infra 包；明确通用的依赖可以作为 Common
   的可选 extra。Core 保持零第三方运行时依赖。
 - 不要预先创建没有明确拥有者的 `utils.py`、`helpers.py`、`constants.py` 或万能基类。
-- 未来的 Provider 集成暂时共享 `spawn-join-llm-provider-langchain` 适配包。只有当某个
-  Provider 需要独立版本、依赖、测试或维护周期时，才考虑拆分为独立 Distribution。
+- 未来的 Provider channel transport 在 `spawn-join-llm-channel` 中增加；LangChain 模型工厂
+  适配仍在 `spawn-join-llm-provider-langchain`。只有当某个 Provider 需要独立版本、依赖、
+  测试或维护周期时，才考虑拆分为独立 Distribution。
 
 ## Change Review
 

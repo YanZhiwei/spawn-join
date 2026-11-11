@@ -3,6 +3,7 @@
 import pytest
 
 from spawn_join_llm_provider import (
+    ChannelAuthenticationError,
     ChannelError,
     ChannelResponseError,
     ChannelUnavailableError,
@@ -19,6 +20,7 @@ def test_configuration_error_is_a_provider_error() -> None:
 @pytest.mark.parametrize(
     "error_type",
     [
+        ChannelAuthenticationError,
         ChannelUnavailableError,
         UnsupportedChannelOperationError,
         ChannelResponseError,

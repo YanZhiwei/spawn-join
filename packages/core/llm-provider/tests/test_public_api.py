@@ -11,6 +11,7 @@ EXPECTED_EXPORTS = [
     "AnthropicThinkingBudget",
     "AnthropicThinkingDisabled",
     "Channel",
+    "ChannelAuthenticationError",
     "ChannelConfig",
     "ChannelError",
     "ChannelResponseError",

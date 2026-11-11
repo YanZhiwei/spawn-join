@@ -45,6 +45,7 @@ class ChannelStatus(StrEnum):
     UNREACHABLE = "unreachable"
     TIMEOUT = "timeout"
     INVALID_RESPONSE = "invalid_response"
+    UNSUPPORTED = "unsupported"
 
 
 @dataclass(frozen=True, slots=True)

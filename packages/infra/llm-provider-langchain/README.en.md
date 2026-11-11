@@ -28,6 +28,7 @@ It does not redefine messages, content blocks, tools, requests/responses, stream
 - [Tool calling](#tool-calling)
 - [Streaming](#streaming)
 - [Configuration and errors](#configuration-and-errors)
+- [Channel bridge and catalog inspection](#channel-bridge-and-catalog-inspection)
 - [Security](#security)
 - [Design boundaries](#design-boundaries)
 - [Development and verification](#development-and-verification)
@@ -40,8 +41,8 @@ If an application already runs on LangChain, using `ChatOpenAI` / `ChatAnthropic
 valid. This package solves the **configuration boundary**:
 
 - protocol is decided by an explicit `ProtocolKind`, never guessed from a model name;
-- `ChatModelConfig` contains only fields required for inference and does not depend on
-  `ChannelConfig`;
+- `ChatModelConfig` contains only fields required for inference and does not store
+  `ChannelConfig`; `from_channel()` is an optional conversion;
 - options have typed and range validation instead of being silently forwarded through arbitrary
   `**kwargs`;
 - channel/model configuration and LangChain construction details are centralized in one factory.
@@ -555,8 +556,9 @@ class ChatModelConfig(EndpointConfig):
     max_retries: int = 0
 ```
 
-It **does not depend on `ChannelConfig`**. Calling a model requires neither a channel name nor a
-credential reference.
+It **does not store `ChannelConfig`**. Calling a model requires neither a channel name nor a
+credential reference; when bridging, use `ChatModelConfig.from_channel()` as a one-time
+conversion.
 
 The following raise `ConfigurationError` before a model is constructed:
 
@@ -593,6 +595,46 @@ copy an inference exception hierarchy.
   host/port.
 - Error messages do not concatenate YAML line contents or echo secret values.
 - Default `max_retries=0` does not hide SDK automatic retries.
+
+## Channel bridge and catalog inspection
+
+`ChannelConfig` and `ModelInfo` from `spawn-join-llm-provider` can be used here;
+they are normally discovered by `spawn-join-llm-channel`, without network access
+or new YAML fields:
+
+```python
+from spawn_join_llm_provider import ChannelConfig, ModelInfo, ProtocolKind
+from spawn_join_llm_provider_langchain import (
+    ChatModelConfig,
+    ModelSummary,
+    create_chat_model,
+)
+
+channel = ChannelConfig(
+    name="primary",
+    protocol=ProtocolKind.CHAT_COMPLETIONS,
+    endpoint="https://api.example.com/v1",
+    credential_ref="OPENAI_API_KEY",
+)
+info = ModelInfo(id="gpt-test", display_name="GPT Test")
+
+summary = ModelSummary.from_model_info(info, name="fast")
+config = ChatModelConfig.from_channel(channel, model=summary.model)
+model = create_chat_model(config, api_key="sk-...")
+```
+
+- `ChatModelConfig.from_channel()` copies protocol/endpoint/timeout and sets the
+  model and `max_retries`; it performs no request.
+- `ModelSummary.from_model_info()` fills only name/model/display_name; it does
+  not fabricate metadata.
+- `ModelCatalog.get(name)`, `names`, `len(catalog)`, and `name in catalog`
+  provide read-only inspection; `ModelSummary` also exposes
+  protocol/endpoint/timeout/max_retries/options.
+- `create_chat_model()` keeps its signature, return type, and behavior; it
+  still returns a native `BaseChatModel`.
+
+`spawn-join-llm-channel` is not a runtime dependency of this package; the bridge
+uses only protocol-package types.
 
 ## Design boundaries
 
@@ -646,6 +688,9 @@ When adding a protocol or option, maintainers must:
 
 - [`spawn-join-llm-provider`](../../core/llm-provider/README.en.md): endpoint, channel, protocol
   options, and error contracts.
+- [`spawn-join-llm-channel`](../llm-channel/README.en.md): real provider checks,
+  authentication, and model discovery; connect through
+  `ChatModelConfig.from_channel`.
 - [`spawn-join-common`](../../core/common/README.en.md): shared strict reading and Pydantic
   exception conversion; this package keeps its own input schema, error type, null rules, and
   first-error order.

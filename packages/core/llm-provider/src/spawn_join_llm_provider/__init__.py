@@ -10,6 +10,7 @@ from .channels import (
 )
 from .endpoints import EndpointConfig
 from .errors import (
+    ChannelAuthenticationError,
     ChannelError,
     ChannelResponseError,
     ChannelUnavailableError,
@@ -63,6 +64,7 @@ __all__ = [
     "AnthropicThinkingBudget",
     "AnthropicThinkingDisabled",
     "Channel",
+    "ChannelAuthenticationError",
     "ChannelConfig",
     "ChannelError",
     "ChannelResponseError",

@@ -270,6 +270,7 @@ response = await model.ainvoke(
 | `unreachable` | 网络/DNS/连接失败 |
 | `timeout` | 检查超时 |
 | `invalid_response` | 响应无法解析或不符合契约 |
+| `unsupported` | 渠道可达，但不提供模型列表能力 |
 
 `list_models()` 的结果语义：
 
@@ -278,7 +279,8 @@ response = await model.ainvoke(
 | 成功，有模型 | `ModelPage(models=(...))` |
 | 成功，无模型 | `ModelPage(models=())` |
 | 渠道不支持 | `UnsupportedChannelOperationError` |
-| 网络/认证/超时失败 | `ChannelUnavailableError` |
+| 认证/权限失败 | `ChannelAuthenticationError` |
+| 网络/超时/限流/服务端失败 | `ChannelUnavailableError` |
 | 响应无法解析 | `ChannelResponseError` |
 
 空列表是合法的“没有模型”，不能用来表示失败或不支持。
@@ -289,6 +291,7 @@ response = await model.ainvoke(
 LLMProviderError
 ├── ConfigurationError
 └── ChannelError
+    ├── ChannelAuthenticationError
     ├── ChannelUnavailableError
     ├── UnsupportedChannelOperationError
     └── ChannelResponseError

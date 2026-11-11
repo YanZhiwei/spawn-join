@@ -13,9 +13,12 @@ from langchain_core.language_models import BaseChatModel
 
 from spawn_join_llm_provider import (
     ConfigurationError,
+    ModelInfo,
     ModelMetadata,
     ModelMetadataDocument,
     ModelSourceRef,
+    ProtocolKind,
+    ProtocolOptions,
 )
 
 from ..factory import create_chat_model as _create_chat_model
@@ -38,6 +41,26 @@ class ModelSummary:
         default_factory=lambda: MappingProxyType({})
     )
     metadata: ModelMetadata | None = None
+    protocol: ProtocolKind | None = None
+    endpoint: str | None = None
+    timeout_seconds: float | None = None
+    max_retries: int | None = None
+    options: ProtocolOptions | None = None
+
+    @classmethod
+    def from_model_info(
+        cls,
+        info: ModelInfo,
+        *,
+        name: str | None = None,
+    ) -> ModelSummary:
+        """Build a summary from a channel-discovered model identifier."""
+        alias = info.id if name is None else name
+        return cls(
+            name=alias,
+            model=info.id,
+            display_name=info.display_name or alias,
+        )
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -84,20 +107,40 @@ class ModelCatalog:
     @property
     def models(self) -> tuple[ModelSummary, ...]:
         """Return display summaries in the order defined by the file."""
-        return tuple(
-            ModelSummary(
-                name=entry.name,
-                model=entry.config.model,
-                display_name=entry.display_name,
-                metadata_ref=entry.metadata_ref,
-                metadata_source=entry.metadata_source,
-                metadata=resolve_metadata(
-                    entry,
-                    self._metadata_document,
-                    self._metadata_file,
-                ),
-            )
-            for entry in self._entries.values()
+        return tuple(self._summary(entry) for entry in self._entries.values())
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        """Return the catalog entry names in file order."""
+        return tuple(self._entries)
+
+    def get(self, name: str) -> ModelSummary:
+        """Return the read-only summary for one named entry."""
+        return self._summary(self._resolve_entry(name))
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    def __contains__(self, name: object) -> bool:
+        return isinstance(name, str) and name in self._entries
+
+    def _summary(self, entry: CatalogEntry) -> ModelSummary:
+        return ModelSummary(
+            name=entry.name,
+            model=entry.config.model,
+            display_name=entry.display_name,
+            metadata_ref=entry.metadata_ref,
+            metadata_source=entry.metadata_source,
+            metadata=resolve_metadata(
+                entry,
+                self._metadata_document,
+                self._metadata_file,
+            ),
+            protocol=entry.config.protocol,
+            endpoint=entry.config.endpoint,
+            timeout_seconds=entry.config.timeout_seconds,
+            max_retries=entry.config.max_retries,
+            options=entry.options,
         )
 
     @property

@@ -123,26 +123,31 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
    LangChain 或具体 Provider SDK。
 3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
    不能把框架类型泄漏回协议包；应用层直接使用 LangChain 消息和 `BaseChatModel`。
-4. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向
+4. `spawn-join-llm-provider-langchain` 可以依赖协议包和 LangChain；不得依赖
+   `spawn-join-llm-channel` 作为运行时依赖，渠道桥接只使用协议包类型。
+5. `spawn-join-llm-channel` 负责真实 Provider channel transport（连接检查、认证和模型
+   发现），只依赖 `spawn-join-llm-provider`、`openai` 和 `anthropic`；不得依赖 LangChain、
+   模型适配包或 Agent 包，也不得把网络行为放进协议包。
+6. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向
    依赖它，同步工具只以显式路径读取 `model.yaml` 和快照，且运行时不得依赖 LangChain
    适配包。
-5. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
+7. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
    受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain、`langchain-core`、`langgraph`
    和模型适配包，不得被 Core、协议包或模型包反向依赖。
-6. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
-7. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
-8. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
-9. `spawn-join-common` 承载按职责组织的跨领域公共辅助实现，不依赖其他 SpawnJoin 包；
-   默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
-   策略留在调用方，后续能力需有真实复用契约，不预建空模块。
+8. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
+9. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
+10. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
+11. `spawn-join-common` 承载按职责组织的跨领域公共辅助实现，不依赖其他 SpawnJoin 包；
+    默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
+    策略留在调用方，后续能力需有真实复用契约，不预建空模块。
 
-当前配置基线（2026-11-07）：六个保留包各自拥有独立 uv 锁文件、dev group 和 `tests/`，
+当前配置基线（2026-11-08）：七个保留包各自拥有独立 uv 锁文件、dev group 和 `tests/`，
 消费者通过本地开发源解析仓库依赖；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
 活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
-新 agent 包已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
+新 agent 包和 channel 包已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
 不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
 发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
 以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：

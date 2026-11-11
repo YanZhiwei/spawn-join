@@ -26,6 +26,7 @@
 - [工具调用](#工具调用)
 - [流式输出](#流式输出)
 - [配置与错误](#配置与错误)
+- [渠道桥接与目录检视](#渠道桥接与目录检视)
 - [安全](#安全)
 - [设计边界](#设计边界)
 - [开发与验证](#开发与验证)
@@ -38,7 +39,7 @@
 解决的是**配置边界**：
 
 - 协议由显式 `ProtocolKind` 决定，不根据模型名称猜测；
-- `ChatModelConfig` 只包含推理需要的字段，不依赖 `ChannelConfig`；
+- `ChatModelConfig` 只包含推理需要的字段，不存储 `ChannelConfig`；`from_channel()` 只是可选转换；
 - 选项有类型和范围校验，不通过任意 `**kwargs` 静默传递；
 - 渠道/模型配置和 LangChain 构造细节集中在一个工厂里。
 
@@ -522,7 +523,8 @@ class ChatModelConfig(EndpointConfig):
     max_retries: int = 0
 ```
 
-它**不依赖 `ChannelConfig`**。只想调用模型时，不需要渠道名称或凭据引用。
+它**不存储 `ChannelConfig`**。只想调用模型时，不需要渠道名称或凭据引用；需要桥接时用
+`ChatModelConfig.from_channel()` 做一次性转换。
 
 以下情况在构造模型前抛 `ConfigurationError`：
 
@@ -555,6 +557,41 @@ LangChain 调用阶段的异常由 LangChain/应用处理；本包不复制一�
 - endpoint 拒绝内嵌用户名/密码、空白/控制字符、非法 host/port。
 - 错误信息不拼接 YAML 行内容，不回显密钥值。
 - 默认 `max_retries=0`，不隐藏 SDK 的自动重试。
+
+## 渠道桥接与目录检视
+
+`spawn-join-llm-provider` 的 `ChannelConfig` 和 `ModelInfo` 可以直接接入本包；它们通常由
+`spawn-join-llm-channel` 发现，不需要网络或新的 YAML 字段：
+
+```python
+from spawn_join_llm_provider import ChannelConfig, ModelInfo, ProtocolKind
+from spawn_join_llm_provider_langchain import (
+    ChatModelConfig,
+    ModelSummary,
+    create_chat_model,
+)
+
+channel = ChannelConfig(
+    name="primary",
+    protocol=ProtocolKind.CHAT_COMPLETIONS,
+    endpoint="https://api.example.com/v1",
+    credential_ref="OPENAI_API_KEY",
+)
+info = ModelInfo(id="gpt-test", display_name="GPT Test")
+
+summary = ModelSummary.from_model_info(info, name="fast")
+config = ChatModelConfig.from_channel(channel, model=summary.model)
+model = create_chat_model(config, api_key="sk-...")
+```
+
+- `ChatModelConfig.from_channel()` 只复制 protocol/endpoint/timeout，并设置 model 与
+  `max_retries`；不发起请求。
+- `ModelSummary.from_model_info()` 只填 name/model/display_name；不伪造元数据。
+- `ModelCatalog.get(name)`、`names`、`len(catalog)`、`name in catalog` 提供只读检视；
+  `ModelSummary` 还包含 protocol/endpoint/timeout/max_retries/options。
+- `create_chat_model()` 的签名、返回类型和行为保持不变，仍返回原生 `BaseChatModel`。
+
+`spawn-join-llm-channel` 不属于本包的运行时依赖；桥接只使用协议包中的类型。
 
 ## 设计边界
 
@@ -603,6 +640,8 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langc
 
 - [`spawn-join-llm-provider`](../../core/llm-provider/README.md)：endpoint、channel、
   协议选项和错误契约。
+- [`spawn-join-llm-channel`](../llm-channel/README.md)：真实 Provider 连接、认证检查和
+  模型发现；通过 `ChatModelConfig.from_channel` 接入本包。
 - [`spawn-join-common`](../../core/common/README.md)：共享严格读取与 Pydantic 异常转换；
   本包保留自己的输入 schema、错误类型、null 规则和首个错误顺序。
 - [`spawn-join-core`](../../core/spawn-join-core/README.md)：共享配置、异常和类型。
