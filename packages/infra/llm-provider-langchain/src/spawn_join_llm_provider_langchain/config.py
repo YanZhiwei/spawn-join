@@ -1,9 +1,12 @@
 """Configuration and pre-call validation for LangChain model creation."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from spawn_join_llm_provider import (
     AnthropicMessagesOptions,
+    ChannelConfig,
     ChatCompletionsOptions,
     ConfigurationError,
     EndpointConfig,
@@ -28,6 +31,23 @@ class ChatModelConfig(EndpointConfig):
             )
         if self.max_retries < 0:
             raise ConfigurationError("Chat model max_retries must be non-negative")
+
+    @classmethod
+    def from_channel(
+        cls,
+        channel: ChannelConfig,
+        *,
+        model: str,
+        max_retries: int = 0,
+    ) -> ChatModelConfig:
+        """Copy an explicit channel configuration into a model configuration."""
+        return cls(
+            protocol=channel.protocol,
+            endpoint=channel.endpoint,
+            timeout_seconds=channel.timeout_seconds,
+            model=model,
+            max_retries=max_retries,
+        )
 
 
 def validate_api_key(api_key: str) -> None:

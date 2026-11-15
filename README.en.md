@@ -33,13 +33,14 @@ published to PyPI. Core is currently a scaffold.
 | --- | --- | --- |
 | [spawn-join-common](packages/core/common/README.en.md) | Shared helpers across domains; no default dependencies, optional Pydantic validation | `FieldReader`, `validation.validate_with` |
 | [spawn-join-llm-provider](packages/core/llm-provider/README.en.md) | Framework-independent endpoint/channel contracts, protocol options, metadata, and errors | `EndpointConfig`, `ProtocolKind` |
+| [spawn-join-llm-channel](packages/infra/llm-channel/README.en.md) | Real provider channel checks, authentication, and model discovery; no LangChain dependency | `OpenAIChannel`, `create_channel` |
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.en.md) | Supervisor assembly, model bindings, middleware, delegation, and recovery seams | `build_supervisor` |
 | [spawn-join-core](packages/core/spawn-join-core/README.en.md) | Shared foundations; currently a scaffold with no callable public API | `__version__` |
 
-Applications compose the adapter and agent packages. Framework types stay in the adapters;
-Core and the LLM protocol package do not depend on LangChain. See
+Applications compose the channel, adapter, and agent packages. Framework types stay in the adapters;
+Core, the LLM protocol package, and the channel package do not depend on LangChain. See
 [package boundaries](docs/architecture/package-boundaries.md) for dependency ownership and
 the [repository map](docs/architecture/repository-map.md) for the full layout.
 
@@ -165,7 +166,7 @@ in [ADRs](docs/decisions/README.en.md); delivery records belong in [Harness](har
 
 ## License
 
-SpawnJoin and its six Distributions are **proprietary software**, with all rights reserved.
+SpawnJoin and its seven Distributions are **proprietary software**, with all rights reserved.
 Use, copying, modification, publication, distribution, sublicensing, and sale require written
 permission from the copyright holder. See [LICENSE](LICENSE). Vendored tools retain their
 own licenses and provenance.
