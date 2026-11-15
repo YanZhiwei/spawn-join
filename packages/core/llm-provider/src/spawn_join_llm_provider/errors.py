@@ -13,6 +13,10 @@ class ChannelError(LLMProviderError):
     """Base class for channel operation failures."""
 
 
+class ChannelAuthenticationError(ChannelError):
+    """A channel rejected the supplied credentials or permissions."""
+
+
 class ChannelUnavailableError(ChannelError):
     """A channel could not complete an operation because it was unavailable."""
 

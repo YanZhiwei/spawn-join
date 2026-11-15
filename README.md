@@ -30,12 +30,13 @@ SpawnJoin 将公共输入读取与校验、类型化模型配置、LangChain 模
 | --- | --- | --- |
 | [spawn-join-common](packages/core/common/README.md) | 跨领域公共辅助能力；默认零依赖，Pydantic 校验为可选能力 | `FieldReader`、`validation.validate_with` |
 | [spawn-join-llm-provider](packages/core/llm-provider/README.md) | 框架无关的 endpoint/channel 契约、协议选项、元数据与错误 | `EndpointConfig`、`ProtocolKind` |
+| [spawn-join-llm-channel](packages/infra/llm-channel/README.md) | 真实 Provider 渠道连接、认证检查与模型发现；不依赖 LangChain | `OpenAIChannel`、`create_channel` |
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.md) | 经校验的 LangChain 模型构造与命名模型目录 | `create_chat_model`、`ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.md) | 从 models.dev 等数据源手动同步元数据 | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.md) | Supervisor 装配、模型绑定、Middleware、委派与恢复接缝 | `build_supervisor` |
 | [spawn-join-core](packages/core/spawn-join-core/README.md) | 共享基础；当前为骨架，无可调用的公共 API | `__version__` |
 
-应用组合适配包和 Agent 包；框架类型留在适配层，Core 与 LLM 协议包不依赖 LangChain。
+应用组合 channel、适配包和 Agent 包；框架类型留在适配层，Core、LLM 协议包和 channel 包不依赖 LangChain。
 依赖归属见[包边界](docs/architecture/package-boundaries.md)，完整目录见
 [仓库地图](docs/architecture/repository-map.md)。
 
@@ -153,6 +154,6 @@ SpawnJoin 由仓库维护者维护，包作者为 Yan Zhiwei。获授权的贡�
 
 ## 许可证
 
-SpawnJoin 及六个 Distribution 均为**专有软件**，保留所有权利。使用、复制、修改、发布、
+SpawnJoin 及七个 Distribution 均为**专有软件**，保留所有权利。使用、复制、修改、发布、
 分发、再许可与销售均须获得版权持有人的书面许可，详见 [LICENSE](LICENSE)。
 仓库内第三方工具保留各自的许可证与来源声明。
