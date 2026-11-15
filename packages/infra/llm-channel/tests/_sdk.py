@@ -21,6 +21,14 @@ def openai_auth() -> Exception:
     )
 
 
+def openai_auth_with_secret(secret: str = "sk-sentinel-secret") -> Exception:
+    return openai.AuthenticationError(
+        f"authentication failed for {secret}",
+        response=_response(401),
+        body=None,
+    )
+
+
 def openai_status(status_code: int) -> Exception:
     return openai.APIStatusError(
         "status error",

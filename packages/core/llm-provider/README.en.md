@@ -70,7 +70,8 @@ uv run --locked --project packages/core/llm-provider python channel_demo.py
 
 `DemoChannel` is an in-memory implementation included in the example: it returns fixed results,
 never contacts the example endpoint and reads no credentials. It demonstrates implementing and
-consuming `Channel`; an application supplies its own implementation for real HTTP checks.
+consuming `Channel`; this package performs no network I/O and imports no Provider SDK. Real HTTP
+connection checks live in the separate `spawn-join-llm-channel` Distribution.
 
 ```python
 import asyncio
@@ -458,6 +459,9 @@ When changing public API, maintainers must:
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.en.md): LangChain
   model factory, protocol option mapping, and `model.yaml` / `.env` parsing. This package reads no
   files or environment variables.
+- [`spawn-join-llm-channel`](../../infra/llm-channel/README.en.md): real OpenAI-compatible and
+  Anthropic `Channel` transports, credential resolution, and model discovery. This package keeps
+  only framework-independent contracts and adds no Provider SDK or network side effects.
 
 See [LICENSE](LICENSE).
 

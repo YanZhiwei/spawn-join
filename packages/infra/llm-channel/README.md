@@ -154,10 +154,12 @@ OpenAI-compatible 端点通常本身包含 `/v1`。显式 `api_key` 也会经过
 
 - `list_models(limit=...)` 的 `limit` 必须是正数；`limit <= 0` 在请求前抛 `ValueError`。
 - OpenAI-compatible 模型列表当前是单页；`next_cursor` 为 `None`，传入 `cursor` 会抛
-  `ValueError`。
+  `ValueError`。由于 Provider 不提供分页，`limit` 是客户端截断：先取回完整列表再截断，
+  `next_cursor` 仍为 `None`，调用方不能据此判断是否还有更多模型。
 - Anthropic 使用 `after_id`/`limit` 和 `has_more`/`last_id`；有下一页时返回 cursor。
 - 空模型列表是合法的成功结果。
-- 404/405 表示渠道可达但不提供模型列表能力，不是认证失败。
+- 404/405 表示渠道可达但不提供模型列表能力，不是认证失败。若 `endpoint` 路径拼写错误
+  （例如给 Anthropic 额外加了 `/v1`）也可能表现为 404/405，请先检查 `endpoint`。
 
 ## 生命周期
 

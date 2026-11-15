@@ -115,6 +115,14 @@ def test_list_models_without_options() -> None:
     client.models.list.assert_awaited_once_with(timeout=1.0)
 
 
+def test_list_models_empty_page_is_success() -> None:
+    client = _Client(page=_Page([]))
+    page = asyncio.run(_channel(client).list_models())
+    assert page.models == ()
+    assert page.next_cursor is None
+    client.models.list.assert_awaited_once_with(timeout=1.0)
+
+
 def test_list_models_does_not_fabricate_cursor() -> None:
     client = _Client(page=_Page([("claude", "Claude")], has_more=True, last_id=None))
     page = asyncio.run(_channel(client).list_models())

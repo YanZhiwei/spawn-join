@@ -1,4 +1,4 @@
-"""Tests for the adapter's exact public surface."""
+"""Tests for the channel package's exact public surface."""
 
 import spawn_join_llm_channel as channel
 

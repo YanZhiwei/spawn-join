@@ -1,11 +1,11 @@
 # ADR-0013: 真实 Channel Transport、凭据边界与模型目录桥接
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-08
 - Domain: llm-provider
 - Classification: 本决策约束 LLM 渠道连接、Provider SDK 依赖、凭据解析、模型发现和适配包桥接，属于 `llm-provider` 领域。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者 / 2026-11-15
 - Depends on: [ADR-0006](0006-langchain-first-llm-runtime.md)、[ADR-0008](0008-model-file-and-env-boundary.md)、[ADR-0009](0009-model-metadata-and-sync.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、[ADR-0010](../agent/0010-deepagents-product-boundary.md)
 - Supersedes: 无；本 ADR 补齐 ADR-0006 明确延后的真实 channel transport，不替代 LangChain-first 推理运行时决策
@@ -211,7 +211,12 @@ ChannelConfig + ModelInfo
 迁移：
 
 - 现有 `model.yaml` 和 `ModelCatalog` 调用方不需要修改；
-- 新增字段有默认值，`ModelSummary` 的现有构造方式保持可用；
+- 新增字段有默认值，`ModelSummary` 的现有构造方式保持可用；但新字段会参与 frozen
+  dataclass 的 `__eq__`/`__hash__`，手工构造的 summary 与目录产出的 summary 若字段不同，
+  比较结果会变化。依赖值语义的调用方应显式比较关心的字段；
+- `ModelSummary.endpoint`/`protocol` 等字段用于只读展示；`EndpointConfig` 允许 query 和
+  fragment，若 endpoint 中包含令牌，summary 或日志可能带出。不要把 summary 写入日志或
+  不受控的展示面；需要时在写入前脱敏；
 - `ChannelStatus.UNSUPPORTED` 是新增枚举成员；对枚举做穷举匹配的调用方需要更新；
 - `ChannelAuthenticationError` 是新增子类；现有 `except ChannelError` 仍可捕获；
 - 库 API 是新增入口，不影响现有包。
@@ -226,19 +231,25 @@ ChannelConfig + ModelInfo
 
 ## Verification and implementation status
 
-本 ADR 当前为 `Proposed`，仅表示设计候选，不代表实现已完成。计划验证：
+本 ADR 于 2026-11-15 在最新 `main` 基线（`8044db5`）上完成实现、全量质量门和独立评审后转为
+`Accepted`；被评审的实质 HEAD 与最终合并内容一致。
 
-- 协议包：新枚举成员/错误子类、公共导出、现有 185 个测试；
-- 新 channel 包：fake client 覆盖成功、认证、超时、连接、限流、5xx、404/不支持、
-  空列表、分页、limit 校验和凭据解析；
-- 适配包：`from_channel`、`ModelSummary.from_model_info`、目录检视和现有 301 个测试；
-- 新包独立锁文件、构建、隔离安装、质量 Profile 和 CI matrix；
-- 全仓库质量门、docs/governance、`git diff --check`；
-- 真实 Provider live tests 默认 skip；无凭据时明确报告未执行。
+实际验证（命令、退出码与限制见
+[本 Feature 的 Delivery evidence](../../../.specify/delivery/channels-closure-20261108/evidence.md)）：
 
-实际命令、退出码和残余风险由 Delivery evidence 记录；在获得 reviewed HEAD 之前不得将
-本 ADR 改为 `Accepted`。
+- 协议包：`spawn-join-llm-provider` 187 passed；新枚举成员、错误子类和公共导出测试通过；
+- 新 channel 包：fake client 与真实 SDK `httpx2.MockTransport` 覆盖成功、认证、超时、连接、
+  限流、5xx、404/405、400、空列表、分页、limit 校验和凭据解析；99 passed，2 skipped；
+- 适配包：`from_channel`、`ModelSummary.from_model_info`、目录检视和既有 309 个测试通过；
+- 其余四个 Distribution（core、common、model-sync、agent-deepagents）在同一全量质量门中通过；
+- 新包独立锁文件、构建、隔离安装、质量 Profile 和 CI matrix 已加入；
+- 全仓库 `scripts/quality.ps1`、docs/governance/static 和 `git diff --check` 通过；
+- 真实 Provider live tests 因无凭据保持 opt-in skip，未报告为通过。
+
+若后续修改 transport 边界、错误映射、凭据策略或适配桥接，需要重新评估本决策并刷新证据。
 
 ## Revision history
 
 - 2026-11-08：提出真实 channel transport、协议补充、凭据边界和适配桥接的候选决策。
+- 2026-11-08：因 `main` 已占用 ADR-0012（DeepAgents 官方 P0），本决策从 0012 重编号为 0013。
+- 2026-11-15：合并最新 `main`、完成七包全量质量门与独立评审后转为 `Accepted`。

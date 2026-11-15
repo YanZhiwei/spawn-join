@@ -37,7 +37,7 @@ spawn-join/
 │   │   └── llm-provider/             # 独立 uv project、环境和锁文件
 │   └── infra/
 │       ├── agent-deepagents/           # 独立 uv project、环境和锁文件
-│       ├── llm-channel/                # 真实 Provider channel transport
+│       ├── llm-channel/                # 独立 uv project、环境和锁文件；真实 Provider channel transport
 │       ├── llm-model-sync/            # 独立 uv project、环境和锁文件
 │       └── llm-provider-langchain/    # 独立 uv project、环境和锁文件
 ├── AGENTS.md                      # Agent 工作约定和治理入口

@@ -104,7 +104,7 @@ class OpenAIChannel:
         return ModelPage(models=models, next_cursor=None)
 
     async def aclose(self) -> None:
-        """Close the owned SDK client."""
+        """Close the SDK client held by this channel, including an injected client."""
         await self._client.close()
 
 

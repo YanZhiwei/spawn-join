@@ -166,12 +166,17 @@ bodies, full URLs, or keys; the original exception is preserved with
 - `list_models(limit=...)` requires a positive limit; non-positive values raise
   `ValueError` before any request.
 - OpenAI-compatible listing is currently a single page; `next_cursor` is
-  `None` and a non-`None` cursor raises `ValueError`.
+  `None` and a non-`None` cursor raises `ValueError`. Because the provider
+  exposes no pagination, `limit` is a client-side truncation of the full list
+  and `next_cursor` still stays `None`; callers cannot infer whether more
+  models exist.
 - Anthropic uses `after_id`/`limit` and `has_more`/`last_id`; a cursor is
   returned when another page exists.
 - An empty model page is a valid success.
 - 404/405 means the channel is reachable but does not support model listing,
-  not that authentication failed.
+  not that authentication failed. A wrong `endpoint` path (for example an
+  extra `/v1` on Anthropic) can also appear as 404/405, so check `endpoint`
+  first.
 
 ## Lifecycle
 

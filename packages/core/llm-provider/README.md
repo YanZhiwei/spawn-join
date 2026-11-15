@@ -67,7 +67,8 @@ uv run --locked --project packages/core/llm-provider python channel_demo.py
 ```
 
 `DemoChannel` 是示例自带的内存实现：返回固定结果，不访问示例 endpoint，也不读取密钥。
-它演示如何实现与消费 `Channel`；真实 HTTP 连接检查需要应用提供自己的实现。
+它演示如何实现与消费 `Channel`；本包自身不联网、不引入 Provider SDK，真实 HTTP 连接检查
+由独立 Distribution `spawn-join-llm-channel` 提供。
 
 ```python
 import asyncio
@@ -441,6 +442,9 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md)：
   LangChain 模型工厂、协议选项映射，以及 `model.yaml` / `.env` 解析。本包不读取
   文件或环境变量。
+- [`spawn-join-llm-channel`](../../infra/llm-channel/README.md)：OpenAI-compatible 与
+  Anthropic 的真实 `Channel` transport、凭据解析和模型发现。本包只保留框架无关契约，
+  不引入 Provider SDK 或网络副作用。
 
 许可证见 [LICENSE](LICENSE)。
 

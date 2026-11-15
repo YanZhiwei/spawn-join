@@ -43,6 +43,22 @@ def test_not_found_maps_to_unsupported() -> None:
     assert result.status is ChannelStatus.UNSUPPORTED
 
 
+@pytest.mark.parametrize("status_code", [404, 405])
+def test_unsupported_status_maps_to_unsupported(status_code: int) -> None:
+    result = ping_result(_sdk.openai_status(status_code), latency_ms=1.0)
+    assert result.status is ChannelStatus.UNSUPPORTED
+    assert isinstance(
+        list_error(_sdk.openai_status(status_code)),
+        UnsupportedChannelOperationError,
+    )
+
+
+def test_other_api_status_maps_to_invalid_response() -> None:
+    result = ping_result(_sdk.openai_status(400), latency_ms=1.0)
+    assert result.status is ChannelStatus.INVALID_RESPONSE
+    assert isinstance(list_error(_sdk.openai_status(400)), ChannelResponseError)
+
+
 @pytest.mark.parametrize("status_code", [401, 403])
 def test_generic_auth_status_maps_to_authentication_failed(status_code: int) -> None:
     result = ping_result(_sdk.openai_status(status_code), latency_ms=1.0)
@@ -74,6 +90,13 @@ def test_list_errors_are_stable_and_safe() -> None:
     assert isinstance(unsupported, UnsupportedChannelOperationError)
     assert isinstance(response, ChannelResponseError)
     assert "sk-" not in str(auth)
+
+
+def test_public_messages_do_not_leak_provider_secret() -> None:
+    sentinel = "sk-sentinel-secret"
+    exc = _sdk.openai_auth_with_secret(sentinel)
+    assert sentinel not in (ping_result(exc, latency_ms=1.0).detail or "")
+    assert sentinel not in str(list_error(exc))
 
 
 def test_anthropic_errors_share_the_mapping() -> None:

@@ -113,5 +113,9 @@ class Channel(Protocol):
         ``limit``, when provided, must be positive. An empty ``ModelPage`` is a
         successful result and must not be used to represent an unsupported
         operation or a failed request.
+
+        Invalid arguments, such as a non-positive ``limit`` or a cursor a
+        channel cannot honor, raise ``ValueError`` before any request; they are
+        caller errors rather than channel failures.
         """
         ...

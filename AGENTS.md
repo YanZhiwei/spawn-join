@@ -328,6 +328,7 @@ uv build packages/core/spawn-join-core --out-dir <temporary-output-dir>
 uv build packages/core/common --out-dir <temporary-output-dir>
 uv build packages/core/llm-provider --out-dir <temporary-output-dir>
 uv build packages/infra/llm-provider-langchain --out-dir <temporary-output-dir>
+uv build packages/infra/llm-channel --out-dir <temporary-output-dir>
 uv build packages/infra/llm-model-sync --out-dir <temporary-output-dir>
 uv build packages/infra/agent-deepagents --out-dir <temporary-output-dir>
 ```
@@ -339,6 +340,7 @@ uv lock --check --directory packages/core/spawn-join-core
 uv lock --check --directory packages/core/common
 uv lock --check --directory packages/core/llm-provider
 uv lock --check --directory packages/infra/llm-provider-langchain
+uv lock --check --directory packages/infra/llm-channel
 uv lock --check --directory packages/infra/llm-model-sync
 uv lock --check --directory packages/infra/agent-deepagents
 
@@ -346,6 +348,7 @@ uv sync --locked --directory packages/core/spawn-join-core
 uv sync --locked --directory packages/core/common
 uv sync --locked --directory packages/core/llm-provider
 uv sync --locked --directory packages/infra/llm-provider-langchain
+uv sync --locked --directory packages/infra/llm-channel
 uv sync --locked --directory packages/infra/llm-model-sync
 uv sync --locked --directory packages/infra/agent-deepagents
 ```
