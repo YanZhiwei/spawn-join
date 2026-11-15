@@ -231,15 +231,15 @@ ChannelConfig + ModelInfo
 
 ## Verification and implementation status
 
-本 ADR 于 2026-11-15 在最新 `main` 基线（`8044db5`）上完成实现、全量质量门和独立评审后转为
-`Accepted`；被评审的实质 HEAD 与最终合并内容一致。
+本 ADR 的实现于 2026-11-09 完成；2026-11-15 在最新 `main` 基线（`8044db5`）上完成最终
+全量质量门和独立评审后转为 `Accepted`。被评审的实质 HEAD 与最终合并内容一致。
 
 实际验证（命令、退出码与限制见
 [本 Feature 的 Delivery evidence](../../../.specify/delivery/channels-closure-20261108/evidence.md)）：
 
 - 协议包：`spawn-join-llm-provider` 187 passed；新枚举成员、错误子类和公共导出测试通过；
 - 新 channel 包：fake client 与真实 SDK `httpx2.MockTransport` 覆盖成功、认证、超时、连接、
-  限流、5xx、404/405、400、空列表、分页、limit 校验和凭据解析；99 passed，2 skipped；
+  限流、5xx、404/405、400、空列表、分页、limit 校验和凭据解析；104 passed，2 skipped；
 - 适配包：`from_channel`、`ModelSummary.from_model_info`、目录检视和既有 309 个测试通过；
 - 其余四个 Distribution（core、common、model-sync、agent-deepagents）在同一全量质量门中通过；
 - 新包独立锁文件、构建、隔离安装、质量 Profile 和 CI matrix 已加入；
@@ -251,5 +251,5 @@ ChannelConfig + ModelInfo
 ## Revision history
 
 - 2026-11-08：提出真实 channel transport、协议补充、凭据边界和适配桥接的候选决策。
-- 2026-11-08：因 `main` 已占用 ADR-0012（DeepAgents 官方 P0），本决策从 0012 重编号为 0013。
+- 2026-11-09：因 `main` 已占用 ADR-0012（DeepAgents 官方 P0），本决策从 0012 重编号为 0013。
 - 2026-11-15：合并最新 `main`、完成七包全量质量门与独立评审后转为 `Accepted`。

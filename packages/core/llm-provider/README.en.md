@@ -33,7 +33,9 @@ use LangChain `BaseChatModel` and message types directly.
 
 `0.1.0`, early development; Python `>=3.11`. This release delivers contracts and offline tests only:
 
-- no real channel HTTP implementation;
+- no real channel HTTP implementation; the real transport lives in the separate
+  [`spawn-join-llm-channel`](../../infra/llm-channel/README.en.md) package, and this package
+  stays framework-independent;
 - no `ChannelPool`, model routing, or health-based selection;
 - the protocol package depends only on `spawn-join-core`, `spawn-join-common[validation]`, and the general validation library Pydantic.
 

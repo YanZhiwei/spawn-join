@@ -10,7 +10,7 @@
 - [ ] Bugfix 或回归
 - [ ] 文档或治理
 - [ ] 质量基线或工程化
-- [x] 架构/设计决策（ADR-0013 Proposed）
+- [x] 架构/设计决策（ADR-0013 Accepted）
 
 ## 修改点
 
@@ -30,12 +30,14 @@
 | --- | --- | --- |
 | 协议包 | 187 passed | `uv run --locked --project packages/core/llm-provider pytest packages/core/llm-provider/tests -q` |
 | 适配包 | 309 passed | `uv run --locked --project packages/infra/llm-provider-langchain pytest packages/infra/llm-provider-langchain/tests -q` |
-| channel 包 | 99 passed, 2 skipped | `uv run --locked --project packages/infra/llm-channel pytest packages/infra/llm-channel/tests -q` |
-| 包级质量门 | 三个包全部 exit 0 | `pwsh -NoProfile -File scripts/quality.ps1 -Package <name>` |
+| channel 包 | 104 passed, 2 skipped | `uv run --locked --project packages/infra/llm-channel pytest packages/infra/llm-channel/tests -q` |
+| 包级质量门 | 受影响包全部 exit 0；7 包全量门 | `pwsh -NoProfile -File scripts/quality.ps1`（7/18/187/309/104+2 skipped/58/146） |
 | 全仓库质量门 | exit 0 | `pwsh -NoProfile -File scripts/quality.ps1` |
-| docs / governance | docs passed；governance 0 errors / 1 historical warning | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` / `-Check governance` |
+| docs / governance / static | docs 68 files/345 targets；governance 0 errors / 1 historical warning；static 0 | `pwsh -NoProfile -File scripts/quality.ps1 -Check docs` / `-Check governance` / `-Check static` |
+| gate 回归 | 15 scenarios PASS | `pwsh -NoProfile -File scripts/test-quality.ps1` |
 | diff hygiene | exit 0 | `git diff --check` |
 
+- 验证在合并最新 `main`（`8044db5`）后的实质 HEAD `550ba93` 上执行；远程 CI 需在 push 后重新运行确认。
 - 未执行：真实 Provider live tests（无凭据，默认 skip）；远程 CI 结果由本 PR 的 Actions 运行确认。
 - 未把 live skip 写成通过。
 
@@ -51,7 +53,7 @@
 
 ## 关联决策
 
-- ADR-0013: `docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md`（Proposed）
+- ADR-0013: `docs/decisions/llm-provider/0013-channel-runtime-and-credentials.md`（Accepted）
 - 该 ADR 补齐 ADR-0006 延后的真实 channel transport；不改变 LangChain-first 推理边界。
 
 ## AI Code Review 发现与修复
@@ -62,12 +64,14 @@
 | 1 | Anthropic 空 cursor id 会重复同页 | MINOR | `next_cursor()` 拒绝空/空白 `last_id`，并补测试 |
 | 1 | README 仍称 `ChatModelConfig` 不依赖 `ChannelConfig`，且把协议类型归到 channel 包 | NIT | 改为“不存储 `ChannelConfig`，可选 `from_channel()` 转换”，归属改为协议包 |
 | 2 | 复审 | — | `NO_BLOCKER` |
+| 3 | 最终评审：evidence head/base 与 HEAD 不一致、ADR 验证段仍是计划、协议 README/AGENTS 命令未同步、少量测试缺口 | BLOCKER / MAJOR / MINOR | 合并最新 `main` 后重跑七包全量门；刷新 evidence；ADR-0013 转 Accepted；同步两种语言 README、AGENTS、lock 与测试 |
+| 4 | 复审修复提交 `550ba93` | — | `REVIEW_VERDICT: pass`（条件：evidence bookkeeping 与 ADR/PR 文案同步） |
 
 ## 评审重点
 
-- 阅读顺序：`docs/decisions/llm-provider/0012...` → `packages/infra/llm-channel/src/` → `packages/infra/llm-provider-langchain/src/.../config.py` 与 `_catalog.py` → tests。
+- 阅读顺序：`docs/decisions/llm-provider/0013...` → `packages/infra/llm-channel/src/` → `packages/infra/llm-provider-langchain/src/.../config.py` 与 `_catalog.py` → tests。
 - 关键行为边界：channel 包不得依赖 LangChain；协议包不得引入 SDK；适配包不包装 `BaseChatModel`。
-- 需要人工确认：OpenAI-compatible/Anthropic 真实 endpoint 的行为、Anthropic `base_url` 是否按文档使用源站而非 `/v1`、以及是否接受 ADR-0013 的 Proposed 基线。
+- 需要人工确认：OpenAI-compatible/Anthropic 真实 endpoint 的行为、Anthropic `base_url` 是否按文档使用源站而非 `/v1`、以及是否接受 ADR-0013 的 Accepted 基线。
 
 ## 检查清单
 

@@ -32,7 +32,8 @@
 
 `0.1.0`，早期开发，要求 Python `>=3.11`。当前只交付契约和离线测试：
 
-- 没有真实 channel HTTP 实现；
+- 没有真实 channel HTTP 实现；真实 transport 在独立包
+  [`spawn-join-llm-channel`](../../infra/llm-channel/README.md)，本包保持框架无关；
 - 没有 `ChannelPool`、模型路由或健康选路；
 - 协议包只依赖 `spawn-join-core`、`spawn-join-common[validation]` 和通用校验库 Pydantic。
 
