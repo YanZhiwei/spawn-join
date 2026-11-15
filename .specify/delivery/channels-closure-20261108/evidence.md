@@ -3,11 +3,16 @@
 - feature_id: 015-llm-channel-closure
 - phase_id: final-review-and-handoff
 - base_revision: 8044db5d3b1430c17f9d6fa0f5c77ef9e3be0a8d
-- head_revision: 550ba93b990df737d7dfefd459bc047252ec7ebd
+- head_revision: 2d1733745d02ade21666a824a55be890bc86ecef
 - reviewed_head: 550ba93b990df737d7dfefd459bc047252ec7ebd
+- original_pr_head: 7d3a1df64b8d8304bcf6656e3964c56b2fe51880
 - working_directory: C:\Users\YanZh\AppData\Local\Temp\opencode\sj-pr58
 - recorded_at: 2026-11-15T21:06:16+08:00
-- result: pass
+- outcome_recorded_at: 2026-11-15
+- status: delivered
+- merged_revision: 2d1733745d02ade21666a824a55be890bc86ecef
+- pull_request: 58 (https://github.com/YanZhiwei/spawn-join/pull/58)
+- result: pass for merged outcome; PR #58 squash-merged as `2d17337` after all 21 CI checks and the required `Quality Gate` passed.
 - bookkeeping_commit: the commit immediately after `550ba93` updates only this evidence, the
   persisted PR body, and documentation-only wording/counts (ADR verification text, protocol
   README status pointer). It changes no product source or test and is excluded from the
@@ -87,8 +92,9 @@ Feature and did not modify the worktree.
 
 - Real Provider live tests were skipped because no live credentials are available. They
   are opt-in and are **not** reported as passed.
-- Remote CI results are not recorded here; the branch CI must run after push and cover
-  Python 3.11/3.14 plus uv 0.13.5.
+- Remote CI run 43718001688 passed all 21 checks (seven Distributions across Ubuntu
+  Python 3.11/3.14 plus Windows 3.11, Governance and gate regression, and the required
+  `Quality Gate`) before the squash merge.
 - This is a legacy Delivery run: it has no `.specify/delivery/.../runtime/` state,
   receipts, or local Spec/Plan/Tasks (the project keeps `specs/` ignored). Runtime task
   closures and Ralph per-task receipts cannot be reconstructed without inventing passes;
@@ -100,8 +106,8 @@ Feature and did not modify the worktree.
 - Provider SDK behavior is validated with fake clients and real SDK `httpx2.MockTransport`;
   real endpoint behavior still needs opt-in live validation.
 - `uv.lock` also recalculated some transitive markers (`h11`/`truststore`) while adding
-  the dev dependency; local lock/sync/full gate passed, and CI's pinned uv remains the
-  final confirmation.
+  the dev dependency; the local lock/sync/full gate passed and CI's pinned uv confirmed it
+  before merge.
 - `_page.next_cursor` still returns a cursor when `has_more` is absent but `last_id` is
   present; Anthropic's contract always sends the boolean, so this remains a known NIT.
 - `ModelSummary.endpoint` can carry query/fragment data; ADR-0013 now records that it must
