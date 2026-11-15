@@ -11,3 +11,7 @@ source_is_authoritative: true
 # have READMEs; the node runs on the next package change.
 package_readme: auto
 package_roots: []
+# Project README contract from Bundle v0.4.6: auto | required | off.
+# auto runs the deterministic structure guard and reports blockers without
+# blocking the delivery. The root README stays an index of links.
+project_readme: auto

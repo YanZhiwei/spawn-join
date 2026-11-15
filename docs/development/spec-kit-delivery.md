@@ -5,7 +5,7 @@
 - 当前 CLI：Specify 1.2.3；默认集成 OpenCode，保留 Codex 核心技能。
 - OpenCode 使用 `/sd` 快捷入口，完整原生命令 `/speckit.delivery.route`、`/speckit.delivery.doctor` 继续可用。
 - 原生命令由 CLI 安装到 `.opencode/commands/`；不要使用本机旧的连字符包装命令或 `$sd` 判断项目状态。
-- 当前 Bundle v0.4.5 已通过 Delivery manifest 注册 `sd` 别名；`.opencode/commands/sd.md`
+- 当前 Bundle v0.4.6 已通过 Delivery manifest 注册 `sd` 别名；`.opencode/commands/sd.md`
   由安装器从 `speckit.delivery.route` 生成，与 `/speckit.delivery.route` 使用同一套路由契约。
   `/sd` 现在由 Bundle 管理，并包含 v0.4.x 的 runtime/status/resume/checkpoint 控制面、逐任务
   关闭 transport 与 outcome 校验；不再维护项目级薄门面或手工复制生命周期 Prompt。
@@ -20,11 +20,11 @@
 
 | 组件 | 来源/版本 |
 |---|---|
-| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.4.5 |
+| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.4.6 |
 | Bug | Specify CLI 1.2.3 随附的 1.0.1 |
-| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.4.5 |
+| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.4.6 |
 
-当前项目使用 **Bundle v0.4.5**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
+当前项目使用 **Bundle v0.4.6**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
 v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow Catalog 的 requirements
 不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`；v0.1.3 增加范围取证与有界
 修复复审；v0.1.4 修正 Doctor 对共享 Reviewer 模板的路径引用。v0.2.0 增加
@@ -50,13 +50,15 @@ Simplify 扫描使其不再无效刷新 Quality/Standards 回执。v0.4.2 新增
 哈希的 native receipt/result，并移除 Feature 在 Ralph 前重复调度的全局 Quality Brief。
 v0.4.4 补强有界研究、被否定假设与冲突证据、角色阅读交接、Plan 合作/上下文计划和 Review
 设计偏差分类；v0.4.5 补强 Handoff、PR 模板、验证缺口、审查身份和可核验的本地 AI Review
-/Repair 历史，不新增 runtime 字段或自动调度器。这些仍是
-引导式契约，不是新增机器强制执行的语义状态引擎。
+/Repair 历史，不新增 runtime 字段或自动调度器；v0.4.6 为 Docs Sync 增加确定性的项目
+README 结构守卫、索引式 README 模板和 `project_readme` 等配置，三条 Lane 在 Review 前
+要求结构结论，默认 `auto` 只报告不阻断。这些仍是引导式契约，不是新增机器强制执行的
+语义状态引擎。
 
-发布入口：[v0.4.5](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.4.5)。
+发布入口：[v0.4.6](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.4.6)。
 安装取舍见 [ADR-0004](../decisions/engineering/0004-release-managed-delivery-installation.md)。
-本次升级命令与限制见 [v0.4.5 evidence](../../harness/evidence/delivery-v045-upgrade.md)；
-前一版升级见 [v0.4.4 evidence](../../harness/evidence/delivery-v044-upgrade.md)，早期安装见
+本次升级命令与限制见 [v0.4.6 evidence](../../harness/evidence/delivery-v046-upgrade.md)；
+前一版升级见 [v0.4.5 evidence](../../harness/evidence/delivery-v045-upgrade.md)，早期安装见
 [历史 evidence](../../harness/evidence/delivery-release-installation.md)。
 
 ## 首次接入已有项目
@@ -70,11 +72,11 @@ specify version
 specify integration install opencode --script ps
 specify integration use opencode
 
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.5/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.6/catalogs'
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog add "$base/workflows.json" --name speckit-delivery
 specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
-specify bundle install speckit-delivery --version 0.4.5
+specify bundle install speckit-delivery --version 0.4.6
 ```
 
 Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Workflow。Catalog 的安装信任
@@ -83,7 +85,7 @@ Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Wor
 
 ### 从 v0.1.0 逐组件安装迁移
 
-先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.4.5 Bundle：
+先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.4.6 Bundle：
 
 ```powershell
 foreach ($extension in @('bug','decision','delivery','docs-sync','evidence','quality','ralph','review','simplify')) {
@@ -96,8 +98,8 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 }
 ```
 
-随后删除旧 Catalog、加入 v0.4.5 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
-`bundle list --json` 为 0.4.5、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
+随后删除旧 Catalog、加入 v0.4.6 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
+`bundle list --json` 为 0.4.6、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
 `tasks-template.md` 不被覆盖；`auto_execute_hooks: false` 保持。
 
 ### 从已有 Bundle 升级
@@ -106,7 +108,7 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 `specify workflow catalog list` 确认旧来源的索引，再更新三类 Catalog：
 
 ```powershell
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.5/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.6/catalogs'
 specify extension catalog remove speckit-delivery
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog remove 0
@@ -116,12 +118,12 @@ specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy i
 specify bundle update speckit-delivery
 ```
 
-升级后检查：`bundle list --json` 为 0.4.5、13 个组件；`*-config.yml` 哈希不变；
+升级后检查：`bundle list --json` 为 0.4.6、13 个组件；`*-config.yml` 哈希不变；
 `auto_execute_hooks: false`；OpenCode 原生命令为 39 个，另有由 manifest 生成的 `sd` alias。
 `bundle update` 会重新安装三条 Workflow，因此 v0.4.x runtime、逐任务关闭 transport、
 Close outcome 校验和 alias 随 Bundle 生效。不能只更新薄门面或单条命令。
 
-v0.1.4 → v0.4.5 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
+v0.1.4 → v0.4.6 的配置差异需要项目明确处理，而不是让安装器代填：v0.2.0 新增
 `pr_slicing`、`slice_warn_files`、`slice_warn_lines`、`slice_requires_approval`、
 `stack_provider` 和 `merge_policy`；v0.2.1 新增 `install_pull_request_template`；v0.2.2
 把随包 PR 模板改为中文；v0.3.0 不新增必填配置字段，但明确 `artifact_policy` 只决定运行
@@ -136,7 +138,10 @@ group 规划；v0.4.3 新增 `delivery_runtime.py owner-result`，集中生成 n
 补全运行目录内 evidence 的 SHA-256，并可选择一次调用现有 `record` 校验；Feature Delivery
 移除了 Ralph 前重复的全局 Quality Brief，Ralph 的逐任务 Brief 保留。v0.4.4 将有界研究、角色
 阅读交接、合作/上下文计划和设计偏差评审纳入既有阶段；v0.4.5 将 Handoff、PR 模板、
-审查身份、验证缺口和本地 AI Review/Repair 历史纳入既有交接，不新增配置或审批层。项目默认启用 Slice 路径，
+审查身份、验证缺口和本地 AI Review/Repair 历史纳入既有交接；v0.4.6 在 Docs Sync 新增
+`project_readme`、`readme_paths`、`readme_max_lines`、`readme_sections` 和
+`readme_docs_root`，把项目 README 作为索引执行确定性结构守卫，本项目显式选择
+`project_readme: auto`。v0.4.6 不新增配置或审批层。项目默认启用 Slice 路径，
 设置 `pr_slicing: "auto"`：
 所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`；`stack_provider: manual`、
 `use_queue: false`，并因仓库 Ruleset 要求线性历史而把 `final` 设为 `squash`；integration
@@ -183,6 +188,7 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
   是同一字节的静态副本，供 GitHub UI 使用。该副本不会随 Bundle 自动刷新，升级后若模板
   变化需显式同步。Handoff 仍通过 `PR_BODY_PATH` 和 `--body-file` 提交每次变更的正文。
   Git 检出可能转换 LF/CRLF；v0.4.5 核对时归一化换行后内容一致，并显式同步了变化后的静态副本。
+  v0.4.6 升级时随包 PR 模板未变化，静态副本保持同一字节。
   未显式写入 `code_context` 时按 `auto` 处理；本项目显式设为 `auto`，Feature 在 `plan`
   前、Bugfix 在 `assess` 前可使用本地 `.codegraph/` 生成上下文；没有索引时降级为部分
   结果，不阻塞交付。
@@ -196,7 +202,9 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
 - [Docs Sync](../../.specify/extensions/docs-sync/docs-sync-config.yml)：手工维护权威文档并执行链接检查；
   当前没有生成投影，因此不虚构 generator 或 publication manifest。v0.3.1 显式设置
   `package_readme: auto`：包 README 在下次包变更时刷新，缺口报告但不阻断；`package_roots`
-  留空，由 manifest 检测。
+  留空，由 manifest 检测。v0.4.6 显式设置 `project_readme: auto`：根 README 按索引执行
+  结构守卫，缺口报告但不阻断；`readme_paths`、`readme_max_lines`、`readme_sections` 和
+  `readme_docs_root` 使用随包默认值。
 - [扩展设置](../../.specify/extensions.yml)：`auto_execute_hooks: false`，`hooks: {}`。
 
 Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push、merge 或发布。原生 Ralph
@@ -205,10 +213,10 @@ Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push�
 ## 验证与升级
 
 运行环境要求见 [质量门前置条件](quality-gates.md#prerequisites)。各版本的环境、命令和
-退出码以对应 evidence 为准，不继承旧会话的通过结论。v0.4.5 先在临时副本执行升级，
+退出码以对应 evidence 为准，不继承旧会话的通过结论。v0.4.6 先在临时副本执行升级，
 再更新目标仓库；核对 13 个组件及 165 个受保护文件的哈希，并运行上游 runtime/分发回归。
 包未变，不重跑五包矩阵。项目文档、治理与静态检查的实际结果见
-[本次 evidence](../../harness/evidence/delivery-v045-upgrade.md)。Doctor 仍是 Agent Prompt，
+[本次 evidence](../../harness/evidence/delivery-v046-upgrade.md)。Doctor 仍是 Agent Prompt，
 安装验证不等于 Doctor、模型行为评估、Ralph 或完整交付循环通过。
 
 ```powershell
@@ -235,7 +243,8 @@ Review 前 Quality/Standards 刷新按运行时 `needs` 条件复用当前回执
 不再被当作规范输入；v0.4.2 增加逐任务关闭、Close outcome 和 publication group 的运行时
 校验；v0.4.3 增加 `owner-result` 传输封装，并移除 Feature 的重复全局 Quality Brief；
 v0.4.4 补强研究收敛、角色交接、合作计划和设计偏差契约；v0.4.5 补强 Handoff、
-PR 模板、审查身份、验证缺口和本地 AI Review/Repair 历史。
+PR 模板、审查身份、验证缺口和本地 AI Review/Repair 历史；v0.4.6 校验项目 README
+的索引结构、目录一致性和验证缺口。
 Doctor 是 Agent Prompt，不是 PATH 可执行文件。安装器生成的命令由
 OpenCode 自动重载；旧技能的当前会话缓存不代表新入口缺失。
 当前项目保留 39 个点号原生命令（29 个扩展命令 + 10 个核心命令），另有 1 个由 Bundle
@@ -245,7 +254,7 @@ manifest 管理的 `/sd` alias。
 [Review 扩展模板](../../.specify/extensions/review/templates/reviewer.md)，而不是
 `.specify/extensions/delivery/templates/reviewer.md`。v0.1.3 曾把该共享模板误指向
 Delivery 扩展，产生错误的就绪阻塞；v0.1.4 已在上游修复，v0.2.1、v0.2.2、v0.3.0、
-v0.3.1、v0.3.2、v0.4.1、v0.4.2、v0.4.3、v0.4.4 与 v0.4.5 保持该路径。安装包仍
+v0.3.1、v0.3.2、v0.4.1、v0.4.2、v0.4.3、v0.4.4、v0.4.5 与 v0.4.6 保持该路径。安装包仍
 保持发布原样，不创建重复模板或手工篡改生成命令。若仍看到旧路径，说明安装未真正刷新到
 当前版本。
 
@@ -256,6 +265,6 @@ v0.3.1、v0.3.2、v0.4.1、v0.4.2、v0.4.3、v0.4.4 与 v0.4.5 保持该路径�
 安装 registry、manifest、配置和生成命令保留以便项目级追溯。Vendor Prompt/README 的上游
 相对链接不属于项目文档链接门，保留原样，不伪称其经过本项目文档验证。
 
-本次实际验证及限制见 [v0.4.5 evidence](../../harness/evidence/delivery-v045-upgrade.md)。
+本次实际验证及限制见 [v0.4.6 evidence](../../harness/evidence/delivery-v046-upgrade.md)。
 参考外部治理的分析与采用状态见 [Delivery/Harness 对照评估](delivery-harness-reference-review.md)。
 角色导航、调查交接和经验回流已接入现有文档；不表示真实 SD/Ralph 或行为评估已完成。
