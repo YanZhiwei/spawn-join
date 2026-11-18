@@ -50,12 +50,12 @@ from .execution import (
     DelegationController,
     DelegationPolicyMiddleware,
 )
-from .llm_errors import LLMErrorNormalizationMiddleware
 from .middleware import (
     LLM_ERROR_MIDDLEWARE_NAME,
     MiddlewareConfiguration,
     MiddlewareScopeReport,
 )
+from .middleware.llm_error_normalization import LLMErrorNormalizationMiddleware
 from .models import (
     ModelBindings,
     ModelPurpose,

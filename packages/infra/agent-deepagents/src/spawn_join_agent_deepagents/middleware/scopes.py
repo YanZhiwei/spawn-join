@@ -13,7 +13,7 @@ from typing import Any
 
 from langchain.agents.middleware.types import AgentMiddleware
 
-from .errors import MiddlewareConfigurationError
+from ..errors import MiddlewareConfigurationError
 
 RESERVED_SUMMARIZATION_MIDDLEWARE_NAME = "SummarizationMiddleware"
 DELEGATION_MIDDLEWARE_NAME = "spawn_join_delegation_policy"
