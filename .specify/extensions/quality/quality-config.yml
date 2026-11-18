@@ -63,6 +63,13 @@ profiles:
       quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-provider-langchain"
     rules:
       complexity_max: 10
+  - id: spawn-join-llm-channel
+    match: ["packages/infra/llm-channel/**"]
+    discovery_files: [pyproject.toml, packages/infra/llm-channel/pyproject.toml, packages/infra/llm-channel/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-llm-channel"
+    rules:
+      complexity_max: 10
   - id: spawn-join-llm-model-sync
     match: ["packages/infra/llm-model-sync/**"]
     discovery_files: [pyproject.toml, packages/infra/llm-model-sync/pyproject.toml, packages/infra/llm-model-sync/uv.lock]

@@ -33,7 +33,9 @@ use LangChain `BaseChatModel` and message types directly.
 
 `0.1.0`, early development; Python `>=3.11`. This release delivers contracts and offline tests only:
 
-- no real channel HTTP implementation;
+- no real channel HTTP implementation; the real transport lives in the separate
+  [`spawn-join-llm-channel`](../../infra/llm-channel/README.en.md) package, and this package
+  stays framework-independent;
 - no `ChannelPool`, model routing, or health-based selection;
 - the protocol package depends only on `spawn-join-core`, `spawn-join-common[validation]`, and the general validation library Pydantic.
 
@@ -70,7 +72,8 @@ uv run --locked --project packages/core/llm-provider python channel_demo.py
 
 `DemoChannel` is an in-memory implementation included in the example: it returns fixed results,
 never contacts the example endpoint and reads no credentials. It demonstrates implementing and
-consuming `Channel`; an application supplies its own implementation for real HTTP checks.
+consuming `Channel`; this package performs no network I/O and imports no Provider SDK. Real HTTP
+connection checks live in the separate `spawn-join-llm-channel` Distribution.
 
 ```python
 import asyncio
@@ -280,6 +283,7 @@ unspecified.
 | `unreachable` | network/DNS/connection failure |
 | `timeout` | check timed out |
 | `invalid_response` | response could not be parsed or violated the contract |
+| `unsupported` | channel is reachable but does not provide model listing |
 
 `list_models()` result semantics:
 
@@ -288,7 +292,8 @@ unspecified.
 | success with models | `ModelPage(models=(...))` |
 | success with no models | `ModelPage(models=())` |
 | operation unsupported | `UnsupportedChannelOperationError` |
-| network/auth/timeout failure | `ChannelUnavailableError` |
+| authentication/permission failure | `ChannelAuthenticationError` |
+| network/timeout/rate-limit/server failure | `ChannelUnavailableError` |
 | unparseable response | `ChannelResponseError` |
 
 An empty list is a legitimate "no models" result and must not represent failure or unsupported
@@ -300,6 +305,7 @@ operation.
 LLMProviderError
 ├── ConfigurationError
 └── ChannelError
+    ├── ChannelAuthenticationError
     ├── ChannelUnavailableError
     ├── UnsupportedChannelOperationError
     └── ChannelResponseError
@@ -455,6 +461,9 @@ When changing public API, maintainers must:
 - [`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.en.md): LangChain
   model factory, protocol option mapping, and `model.yaml` / `.env` parsing. This package reads no
   files or environment variables.
+- [`spawn-join-llm-channel`](../../infra/llm-channel/README.en.md): real OpenAI-compatible and
+  Anthropic `Channel` transports, credential resolution, and model discovery. This package keeps
+  only framework-independent contracts and adds no Provider SDK or network side effects.
 
 See [LICENSE](LICENSE).
 
