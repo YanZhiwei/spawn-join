@@ -1153,3 +1153,21 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - PR [#60](https://github.com/YanZhiwei/spawn-join/pull/60) 在 Quality Gate 全部通过后
   squash 合并为 `a45b2503e089db4c18ffd3fb8b390d08489cd544`；交付 run
   `delivery-v046-upgrade-20261109` 已按 SD Close 契约记录 `delivered`。
+
+## 2026-11-18 — Delivery v0.4.7 升级
+
+- Route: Lightweight。用户要求安装 v0.4.7；本次未授权提交、push、PR 或合并。
+- Base revision: `15f5c03028496abf122b6f5fc685f70496d295dd`（与 `origin/main` 一致）。
+- Working directory: `D:\Repos\spawn-join`。
+- v0.4.7 在临时副本演练后通过原生 Bundle update 安装；13 个组件和 165 个保护路径保持预期，
+  随包 PR 模板未变化。安装内容、来源、环境偏差与实际结果见
+  [v0.4.7 evidence](evidence/delivery-v047-upgrade.md)。
+- 实际安装校验通过：76 个已安装扩展/Workflow 文件与固定 Tag 一致（另 3 个 Workflow README
+  属仓库文档、不在安装负载），39 个点号原生命令加 `sd` alias，0 missing/invalid manifest
+  paths；Bug 扩展实际生效 1.0.2（Bundle pin 1.0.1）。
+- 本机 PowerShell 7 的 `WindowsApps` 别名无法 spawn（`os error 5`），改用版本化目录 junction
+  恢复 pwsh 7.7.0，并据此运行项目脚本；网络需显式使用本机代理。两项均为环境处理，不改变
+  仓库配置和权限边界。
+- 本次 Proportional 检查：README 结构守卫通过，`-Check governance` 为 0 errors / 1 历史
+  warning，`-Check docs` 通过，`git diff --check` 通过。未改包，不跑包矩阵、`-Check static`
+  或回归套件；未创建 PR，远端 CI、Doctor、Ralph 与模型 eval 均未执行。
