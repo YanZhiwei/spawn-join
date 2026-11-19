@@ -10,8 +10,10 @@ from .diagnostics import (
     DiagnosticEvent,
     DiagnosticEventType,
     DiagnosticsConfig,
+    PermissionReport,
     ProfileReport,
     ResourceReport,
+    RubricReport,
     SubagentReport,
 )
 from .errors import (
@@ -26,6 +28,7 @@ from .errors import (
     ModelBindingError,
     ProfileConfigurationError,
     RecoveryConfigurationError,
+    RubricConfigurationError,
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
 )
@@ -33,6 +36,17 @@ from .execution import (
     DelegationConfiguration,
     DelegationController,
     DelegationPolicy,
+)
+from .interrupts import (
+    PendingInterrupt,
+    approve_decision,
+    edit_decision,
+    pending_interrupts,
+    reject_decision,
+    respond_decision,
+    resume_batched,
+    resume_per_call,
+    resume_with,
 )
 from .llm_errors import (
     LLMErrorNormalizationMiddleware,
@@ -52,6 +66,7 @@ from .profiles import (
     ProviderProfileBinding,
 )
 from .recovery import RecoveryContext
+from .rubric import RubricConfiguration
 from .subagents import (
     AsyncSubAgentDefinition,
     CompiledSubAgentDefinition,
@@ -92,6 +107,8 @@ __all__ = [
     "ModelBindingError",
     "ModelBindings",
     "ModelPurpose",
+    "PendingInterrupt",
+    "PermissionReport",
     "ProfileConfigurationError",
     "ProfileReport",
     "ProfilesConfiguration",
@@ -100,6 +117,9 @@ __all__ = [
     "RecoveryContext",
     "ResolvedModelBindings",
     "ResourceReport",
+    "RubricConfiguration",
+    "RubricConfigurationError",
+    "RubricReport",
     "SkillsConfiguration",
     "SubAgentDefinition",
     "SubAgentKind",
@@ -109,7 +129,15 @@ __all__ = [
     "SupervisorAssembly",
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
+    "approve_decision",
     "build_supervisor",
     "classify_llm_error",
+    "edit_decision",
     "normalize_llm_error",
+    "pending_interrupts",
+    "reject_decision",
+    "respond_decision",
+    "resume_batched",
+    "resume_per_call",
+    "resume_with",
 ]

@@ -17,6 +17,7 @@ from spawn_join_agent_deepagents import (
     ModelBindingError,
     ProfileConfigurationError,
     RecoveryConfigurationError,
+    RubricConfigurationError,
     SubagentConfigurationError,
     UnsupportedSyncDelegationError,
 )
@@ -31,6 +32,7 @@ _SUBCLASSES = [
     RecoveryConfigurationError,
     ContextConfigurationError,
     ProfileConfigurationError,
+    RubricConfigurationError,
 ]
 
 
@@ -85,6 +87,8 @@ _CURRENT_PUBLIC_NAMES = {
     "ModelBindingError",
     "ModelBindings",
     "ModelPurpose",
+    "PendingInterrupt",
+    "PermissionReport",
     "ProfileConfigurationError",
     "ProfileReport",
     "ProfilesConfiguration",
@@ -93,6 +97,9 @@ _CURRENT_PUBLIC_NAMES = {
     "RecoveryContext",
     "ResolvedModelBindings",
     "ResourceReport",
+    "RubricConfiguration",
+    "RubricConfigurationError",
+    "RubricReport",
     "SkillsConfiguration",
     "SubAgentDefinition",
     "SubAgentKind",
@@ -102,9 +109,17 @@ _CURRENT_PUBLIC_NAMES = {
     "SupervisorAssembly",
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
+    "approve_decision",
     "build_supervisor",
     "classify_llm_error",
+    "edit_decision",
     "normalize_llm_error",
+    "pending_interrupts",
+    "reject_decision",
+    "respond_decision",
+    "resume_batched",
+    "resume_per_call",
+    "resume_with",
 }
 
 
@@ -115,7 +130,16 @@ def test_public_all_matches_implemented_surface() -> None:
 
 
 def test_internal_modules_are_not_exported() -> None:
-    for name in ("models", "subagents", "middleware", "diagnostics", "supervisor"):
+    for name in (
+        "models",
+        "subagents",
+        "middleware",
+        "diagnostics",
+        "supervisor",
+        "backends",
+        "rubric",
+        "interrupts",
+    ):
         assert name not in package.__all__
 
 

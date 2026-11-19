@@ -53,6 +53,10 @@ class ProfileConfigurationError(AgentConfigurationError):
     """A harness or provider profile registration is invalid or failed."""
 
 
+class RubricConfigurationError(AgentConfigurationError):
+    """A rubric grader configuration is invalid or used without its beta gate."""
+
+
 class LLMErrorCode(StrEnum):
     """Stable runtime categories for model-call failures."""
 

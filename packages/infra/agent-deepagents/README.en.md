@@ -24,9 +24,11 @@ streaming capabilities.
 - [Middleware scopes](#middleware-scopes)
 - [Memory, skills, and profiles](#memory-skills-and-profiles)
   - [Complete runnable example](#complete-runnable-example)
+- [Rubric grading (beta)](#rubric-grading-beta)
 - [Delegation](#delegation)
 - [Diagnostics](#diagnostics)
 - [Resources and recovery](#resources-and-recovery)
+- [HITL interrupt helpers](#hitl-interrupt-helpers)
 - [Public API](#public-api)
 - [Errors and failure behavior](#errors-and-failure-behavior)
 - [Compatibility and limitations](#compatibility-and-limitations)
@@ -538,6 +540,30 @@ Key points:
 - The harness profile is beta process-wide state. Its key does not match the fake model, so it
   demonstrates registration, validation, and reporting without changing offline output.
 
+## Rubric grading (beta)
+
+```python
+from spawn_join_agent_deepagents import RubricConfiguration
+
+spec = SupervisorSpec(
+    models=models,
+    rubric=RubricConfiguration(model=grader_model, max_iterations=2),
+    allow_experimental_rubric=True,
+)
+```
+
+- `RubricConfiguration` builds the grader configuration object; the upstream
+  `RubricMiddleware` is beta.
+- Grading runs only when an invocation supplies a `rubric` in state; without it the
+  middleware is inert.
+- `max_iterations` must be a positive `int` (booleans, floats, and strings are rejected;
+  default 3).
+- A native `RubricMiddleware` may be placed in `middleware.supervisor`, but it also requires
+  `allow_experimental_rubric=True` and cannot be combined with `rubric=`; the report then
+  shows `host_middleware`.
+- The report adds `RubricReport` with enabled, iteration cap, grader source, and tool count.
+- Complete offline example: `examples/p1_capabilities.py`.
+
 ## Delegation
 
 ```python
@@ -600,6 +626,9 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 - Store, Checkpointer, MCP Session, sandbox, business tools, and a host-provided Backend are created,
   kept alive, and closed by the host.
+- `ResourceReport.backend_kind` and `permissions` expose only stable labels and
+  allow/deny/interrupt/other counts, never paths or rules; `backend_kind()` and
+  `permission_report()` are internal helpers, not public exports.
 - When the host omits `backend`, the package creates an in-memory `StateBackend` with no external
   close path, reported as `default_state`.
 - The package validates that explicit `interrupt_on`, declarative subagent `interrupt_on`, and
@@ -609,6 +638,33 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 - The package does not create or close host resources and does not promise exactly-once side effects.
 - Callers should use `to_graph_config()` to generate native config or provide an equivalent
   `configurable.thread_id` themselves.
+
+## HITL interrupt helpers
+
+```python
+from spawn_join_agent_deepagents import (
+    approve_decision,
+    pending_interrupts,
+    reject_decision,
+    resume_batched,
+)
+
+interrupts = pending_interrupts(state)
+command = resume_batched([
+    approve_decision(),
+    reject_decision("keep the original"),
+])
+result = await assembly.graph.ainvoke(command, config)
+```
+
+- `PendingInterrupt` and `pending_interrupts` are exported from the package root.
+- `pending_interrupts` only reads the native `__interrupt__` payload; approval stays host-owned,
+  and missing or malformed input yields an empty tuple.
+- Decision builders match LangChain HITL shapes.
+- `resume_batched` is for batched mode and decisions must match the count/order of
+  `action_requests`; `resume_per_call` answers per-interrupt IDs.
+- Resuming needs the same `thread_id` and a valid checkpointer; the helpers do not create
+  checkpointers, persist approvals, auto-approve, or promise exactly-once effects.
 
 ## Public API
 
@@ -620,6 +676,10 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
   `SubAgentKind` (including `UPSTREAM_DEFAULT` and `ASYNC`), `SubAgentMode`;
 - `MemoryConfiguration`, `SkillsConfiguration`;
 - `ProfilesConfiguration`, `HarnessProfileBinding`, `ProviderProfileBinding`;
+- `RubricConfiguration`, `RubricReport`;
+- `PermissionReport`;
+- `PendingInterrupt`, `pending_interrupts`, `approve_decision`, `edit_decision`, `reject_decision`,
+  `respond_decision`, `resume_batched`, `resume_per_call`, `resume_with`;
 - `MiddlewareConfiguration`, `MiddlewareScopeReport`;
 - `DelegationPolicy`, `DelegationController`, `DelegationConfiguration`;
 - `DiagnosticsConfig`, `DiagnosticCallback`, `AsyncDiagnosticCallback`, `DiagnosticEvent`,
@@ -627,7 +687,7 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
   `ResourceReport`, `ContextReport`, `ProfileReport`;
 - `RecoveryContext`;
 - stable error types (`AgentConfigurationError` and subclasses, including
-  `ContextConfigurationError` and `ProfileConfigurationError`).
+  `ContextConfigurationError`, `ProfileConfigurationError`, and `RubricConfigurationError`).
 
 Internal modules do not become public contracts merely because they are importable.
 
@@ -637,6 +697,8 @@ Internal modules do not become public contracts merely because they are importab
   middleware, recovery, memory/skills, profiles, and delegation have stable subclasses.
 - Configuration errors are raised before `create_deep_agent`, never returning a half-configured
   graph; upstream assembly/registration exceptions preserve `__cause__`.
+- Rubric configuration errors (non-positive integer `max_iterations`, non-`BaseChatModel`,
+  missing beta gate, or native plus package rubric) raise `RubricConfigurationError`.
 - Async subagents and profile registration fail before assembly unless their beta switch is set.
 - Unknown subagent forms, blank `graph_id`, duplicate keys, and reserved-middleware exclusions
   produce stable configuration errors instead of upstream `AttributeError` or silent ignores.
@@ -694,6 +756,7 @@ bound to the current diff.
 ## Related documentation
 
 - [ADR-0010: DeepAgents product boundary](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
+- [ADR-0014: DeepAgents P1 capability boundary](../../../docs/decisions/agent/0014-deepagents-p1-capabilities.md)
 - [Package boundaries](../../../docs/architecture/package-boundaries.md)
 - [Repository map](../../../docs/architecture/repository-map.md)
 - [Quality gates](../../../docs/development/quality-gates.md)
