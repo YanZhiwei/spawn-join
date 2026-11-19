@@ -135,9 +135,9 @@ Native interrupt state
 
 ## Verification and implementation status
 
-本 ADR 当前为 `Proposed`。实现与验证状态记录在
-`.specify/delivery/deepagents-p1-continuation-20261115/evidence.md`；
-只有在最终 reviewed HEAD 与 evidence 一致后才转为 `Accepted`。
+本 ADR 当前为 `Proposed`。本次续作的探索、决策上下文、切片和验证状态记录在
+`.specify/delivery/deepagents-p1-continuation-20261115/`；`evidence.md` 在该 run 关闭时
+按合并后的 revision 补充。只有在最终 reviewed HEAD 与 evidence 一致后才转为 `Accepted`。
 
 计划验证：
 
