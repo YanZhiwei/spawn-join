@@ -6,6 +6,8 @@ from importlib.metadata import requires
 
 import pytest
 import spawn_join_agent_deepagents as package
+import spawn_join_agent_deepagents.llm_errors as llm_errors
+import spawn_join_agent_deepagents.middleware as middleware
 from spawn_join_agent_deepagents import (
     AgentConfigurationError,
     ContextConfigurationError,
@@ -61,6 +63,7 @@ _CURRENT_PUBLIC_NAMES = {
     "AsyncSubAgentDefinition",
     "CompiledSubAgentDefinition",
     "ContextConfigurationError",
+    "ContextOverflowLLMError",
     "ContextReport",
     "DelegationConfiguration",
     "DelegationController",
@@ -73,6 +76,9 @@ _CURRENT_PUBLIC_NAMES = {
     "DiagnosticEventType",
     "DiagnosticsConfig",
     "HarnessProfileBinding",
+    "LLMCallError",
+    "LLMErrorCode",
+    "LLMErrorNormalizationMiddleware",
     "MemoryConfiguration",
     "MiddlewareConfiguration",
     "MiddlewareConfigurationError",
@@ -81,6 +87,8 @@ _CURRENT_PUBLIC_NAMES = {
     "ModelBindingError",
     "ModelBindings",
     "ModelPurpose",
+    "PendingInterrupt",
+    "PermissionReport",
     "ProfileConfigurationError",
     "ProfileReport",
     "ProfilesConfiguration",
@@ -101,11 +109,11 @@ _CURRENT_PUBLIC_NAMES = {
     "SupervisorAssembly",
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
-    "PendingInterrupt",
-    "PermissionReport",
     "approve_decision",
     "build_supervisor",
+    "classify_llm_error",
     "edit_decision",
+    "normalize_llm_error",
     "reject_decision",
     "respond_decision",
     "resume_batched",
@@ -123,6 +131,17 @@ def test_public_all_matches_implemented_surface() -> None:
 def test_internal_modules_are_not_exported() -> None:
     for name in ("models", "subagents", "middleware", "diagnostics", "supervisor"):
         assert name not in package.__all__
+
+
+def test_legacy_import_entries_resolve_to_canonical_objects() -> None:
+    assert llm_errors.LLMErrorNormalizationMiddleware is (
+        package.LLMErrorNormalizationMiddleware
+    )
+    assert llm_errors.classify_llm_error is package.classify_llm_error
+    assert llm_errors.normalize_llm_error is package.normalize_llm_error
+    assert middleware.MiddlewareConfiguration is package.MiddlewareConfiguration
+    assert middleware.MiddlewareScopeReport is package.MiddlewareScopeReport
+    assert middleware.LLM_ERROR_MIDDLEWARE_NAME == "spawn_join_llm_error_normalization"
 
 
 def test_direct_dependencies_are_declared_and_bounded() -> None:
