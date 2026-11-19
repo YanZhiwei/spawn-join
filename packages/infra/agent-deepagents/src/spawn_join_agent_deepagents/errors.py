@@ -8,6 +8,10 @@ need the original failure can inspect ``__cause__``.
 
 from __future__ import annotations
 
+from enum import StrEnum
+
+from langchain_core.exceptions import ContextOverflowError
+
 
 class AgentConfigurationError(Exception):
     """Base class for package configuration errors raised before execution."""
@@ -47,3 +51,39 @@ class ContextConfigurationError(AgentConfigurationError):
 
 class ProfileConfigurationError(AgentConfigurationError):
     """A harness or provider profile registration is invalid or failed."""
+
+
+class LLMErrorCode(StrEnum):
+    """Stable runtime categories for model-call failures."""
+
+    CONTEXT_OVERFLOW = "context_overflow"
+    CONTENT_REJECTED = "content_rejected"
+    INSUFFICIENT_BALANCE = "insufficient_balance"
+    SPEND_QUOTA_EXHAUSTED = "spend_quota_exhausted"
+    RATE_LIMIT = "rate_limit"
+    TIMEOUT = "timeout"
+    CONNECTION = "connection"
+    AUTHENTICATION = "authentication"
+    INTERNAL_ERROR = "internal_error"
+
+
+class LLMCallError(Exception):
+    """A redacted runtime model error with a stable category.
+
+    ``str(error)`` returns only the safe fallback message. The original provider
+    exception stays in ``__cause__`` for host-side diagnosis and never enters the
+    public message.
+    """
+
+    def __init__(self, code: LLMErrorCode, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.user_message = message
+
+
+class ContextOverflowLLMError(LLMCallError, ContextOverflowError):
+    """A redacted overflow error that remains catchable as ``ContextOverflowError``.
+
+    The second base keeps DeepAgents' summarization middleware able to catch and
+    compress instead of turning overflow into a non-recoverable user error.
+    """

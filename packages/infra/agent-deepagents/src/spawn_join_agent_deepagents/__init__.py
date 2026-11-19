@@ -17,8 +17,11 @@ from .diagnostics import (
 from .errors import (
     AgentConfigurationError,
     ContextConfigurationError,
+    ContextOverflowLLMError,
     DelegationQueueFullError,
     DelegationTimeoutError,
+    LLMCallError,
+    LLMErrorCode,
     MiddlewareConfigurationError,
     ModelBindingError,
     ProfileConfigurationError,
@@ -30,6 +33,11 @@ from .execution import (
     DelegationConfiguration,
     DelegationController,
     DelegationPolicy,
+)
+from .llm_errors import (
+    LLMErrorNormalizationMiddleware,
+    classify_llm_error,
+    normalize_llm_error,
 )
 from .middleware import MiddlewareConfiguration, MiddlewareScopeReport
 from .models import (
@@ -60,6 +68,7 @@ __all__ = [
     "AsyncSubAgentDefinition",
     "CompiledSubAgentDefinition",
     "ContextConfigurationError",
+    "ContextOverflowLLMError",
     "ContextReport",
     "DelegationConfiguration",
     "DelegationController",
@@ -72,6 +81,9 @@ __all__ = [
     "DiagnosticEventType",
     "DiagnosticsConfig",
     "HarnessProfileBinding",
+    "LLMCallError",
+    "LLMErrorCode",
+    "LLMErrorNormalizationMiddleware",
     "MemoryConfiguration",
     "MiddlewareConfiguration",
     "MiddlewareConfigurationError",
@@ -98,4 +110,6 @@ __all__ = [
     "SupervisorSpec",
     "UnsupportedSyncDelegationError",
     "build_supervisor",
+    "classify_llm_error",
+    "normalize_llm_error",
 ]

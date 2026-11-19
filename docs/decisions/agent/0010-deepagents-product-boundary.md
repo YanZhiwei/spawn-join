@@ -204,3 +204,4 @@ Checkpoint/interrupt/resume、权限驱动的 interrupt、独立 wheel/sdist 与
 - 2026-11-04：提出 DeepAgents 产品增强包的 Distribution 边界、模型用途、委派、诊断和资源契约；状态为 Proposed。
 - 2026-11-04：实现和验证完成；补充默认 `general-purpose` 控制、权限 interrupt 和临时
   `StateBackend` 例外；仓库维护者批准为 Accepted。
+- 2026-11-08：增加运行期模型错误归一（默认开启、可关闭）；不改变资源所有权与诊断脱敏结论。
