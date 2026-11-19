@@ -536,9 +536,11 @@ spec = SupervisorSpec(
 )
 ```
 
-- `RubricConfiguration` 只负责登记 grader 模型和选项；`RubricMiddleware` 是上游 beta 能力。
+- `RubricConfiguration` 只负责构造 grader 配置对象；`RubricMiddleware` 是上游 beta 能力。
 - 装配后，只有在调用时传入 `{"rubric": "..."}` 才会真正触发评分；没有 rubric 时 middleware 不生效。
-- `max_iterations` 必须是正整数；默认 3。
+- `max_iterations` 必须是正整数 `int`（不接受 `bool`、浮点数或字符串）；默认 3。
+- 也可以把原生 `RubricMiddleware` 放进 `middleware.supervisor`，但同样必须设置
+  `allow_experimental_rubric=True`，且不能同时传 `rubric=`；此时报告来源为 `host_middleware`。
 - 报告新增 `RubricReport`，记录是否启用、迭代上限、grader 来源和工具数量。
 - 完整离线示例：`examples/p1_capabilities.py`。
 
@@ -596,6 +598,8 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 ```
 
 - Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend 由宿主创建、保持有效并关闭；
+- `ResourceReport.backend_kind` 和 `permissions` 只输出稳定标签与 allow/deny/interrupt/other 计数，
+  不输出路径或规则；`backend_kind()` / `permission_report()` 是内部实现，不是公共导出；
 - 宿主省略 `backend` 时，包会创建一个无外部关闭路径的内存 `StateBackend`，报告为 `default_state`；
 - 本包校验显式 `interrupt_on`、声明式子代理 `interrupt_on` 和
   `FilesystemPermission(mode="interrupt")` 都需要 checkpointer，并透传原生 LangGraph 语义；
@@ -615,17 +619,17 @@ from spawn_join_agent_deepagents import (
 )
 
 interrupts = pending_interrupts(state)
-command = resume_batched([
-    approve_decision(),
-    reject_decision("keep the original"),
-])
+requests = interrupts[0].value["action_requests"]
+command = resume_batched([approve_decision() for _ in requests])
 result = await assembly.graph.ainvoke(command, config)
 ```
 
-- `pending_interrupts` 只读取原生 `__interrupt__`，不替宿主做审批。
+- `pending_interrupts` 只读取原生 `__interrupt__`，不替宿主做审批；缺失或畸形输入返回空 tuple。
 - `approve_decision` / `edit_decision` / `reject_decision` / `respond_decision` 生成 LangChain HITL 期望的 decision 形状。
-- `resume_batched` 用于 batched 模式；`resume_per_call` 用于按 interrupt id 回答的 per-call 模式。
-- 这些 helper 不创建 Checkpointer、不持久化审批、不承诺 exactly-once。
+- `resume_batched` 用于 batched 模式，decision 的数量和顺序必须与 `action_requests` 对齐；
+  `resume_per_call` 用于按 interrupt id 回答的 per-call 模式。
+- 恢复需要同一 `thread_id` 和有效 checkpointer；这些 helper 不创建 Checkpointer、不持久化审批、
+  不会自动批准，也不承诺 exactly-once。
 
 ## 公共 API
 
@@ -639,7 +643,7 @@ result = await assembly.graph.ainvoke(command, config)
 - `ProfilesConfiguration`、`HarnessProfileBinding`、`ProviderProfileBinding`；
 - `RubricConfiguration`、`RubricReport`；
 - `PermissionReport`；
-- `PendingInterrupt`、`approve_decision`、`edit_decision`、`reject_decision`、
+- `PendingInterrupt`、`pending_interrupts`、`approve_decision`、`edit_decision`、`reject_decision`、
   `respond_decision`、`resume_batched`、`resume_per_call`、`resume_with`；
 - `MiddlewareConfiguration`、`MiddlewareScopeReport`；
 - `DelegationPolicy`、`DelegationController`、`DelegationConfiguration`；
@@ -648,7 +652,7 @@ result = await assembly.graph.ainvoke(command, config)
   `ResourceReport`、`ContextReport`、`ProfileReport`；
 - `RecoveryContext`；
 - 稳定错误类型（`AgentConfigurationError` 及其子类，包括 `ContextConfigurationError`、
-  `ProfileConfigurationError`）。
+  `ProfileConfigurationError`、`RubricConfigurationError`）。
 
 内部模块不会因为可导入就自动成为公共契约。
 
@@ -657,6 +661,8 @@ result = await assembly.graph.ainvoke(command, config)
 - `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复、Memory/
   Skills 和 Profile 各有稳定子类，便于调用方区分失败类别。
 - 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配/注册异常保留 `__cause__`。
+- rubric 配置错误（非正整数 `max_iterations`、非 `BaseChatModel`、缺少 beta gate、同时配置
+  原生与包内 rubric）抛出 `RubricConfigurationError`。
 - async 子代理和 profile 注册未显式开启 beta 开关时，在装配前失败。
 - 未知子代理形态、空白 `graph_id`、重复 key 或 profile 排除保留 Middleware 名都会得到
   稳定配置错误，而不是上游 `AttributeError` 或静默忽略。
@@ -706,6 +712,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ## 相关文档
 
 - [ADR-0010：DeepAgents 产品边界](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
+- [ADR-0014：DeepAgents 官方 P1 能力的公共边界](../../../docs/decisions/agent/0014-deepagents-p1-capabilities.md)
 - [包边界](../../../docs/architecture/package-boundaries.md)
 - [仓库地图](../../../docs/architecture/repository-map.md)
 - [质量门说明](../../../docs/development/quality-gates.md)

@@ -9,32 +9,78 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Protocol, cast, runtime_checkable
 
 from langgraph.types import Command
 
 
 @dataclass(frozen=True, slots=True)
 class PendingInterrupt:
-    """One native interrupt, reduced to its safe identity and value."""
+    """One native interrupt, reduced to its identity and host-owned value.
+
+    ``value`` is the raw native payload and may contain tool arguments or paths.
+    Treat it as host-owned data and do not write it to logs unredacted.
+    """
 
     id: str | None
     value: Any
 
 
-def pending_interrupts(state: Mapping[str, Any]) -> tuple[PendingInterrupt, ...]:
-    """Return the interrupts from a native state/result mapping."""
+@runtime_checkable
+class _InterruptLike(Protocol):
+    """Duck-typed native interrupt surface.
 
-    raw = state.get("__interrupt__", ())
+    Native LangGraph interrupts expose ``id`` and ``value`` as attributes; the
+    runtime-checkable protocol keeps that shape checkable without ``getattr``.
+    """
+
+    id: object
+    value: object
+
+
+def _interrupt_parts(item: object) -> tuple[object, object] | None:
+    """Return ``(id, value)`` for one interrupt payload, or ``None``."""
+
+    if isinstance(item, Mapping):
+        # The native payload is JSON-like host data. Narrow it explicitly so no
+        # partially unknown type leaks into the normalized result.
+        mapping = cast(Mapping[str, object], item)
+        if "value" not in mapping:
+            return None
+        return mapping.get("id"), mapping["value"]
+    if isinstance(item, _InterruptLike):
+        return item.id, item.value
+    return None
+
+
+def _interrupt_items(raw: object) -> Sequence[object]:
+    """Normalize a native ``__interrupt__`` value into one sequence of items."""
+
+    if isinstance(raw, Mapping):
+        return (cast(Mapping[str, object], raw),)
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
+        return (raw,)
+    return cast(Sequence[object], raw)
+
+
+def pending_interrupts(state: Mapping[str, Any]) -> tuple[PendingInterrupt, ...]:
+    """Return the interrupts from a native state/result mapping.
+
+    Accepts a native sequence of interrupt mappings/objects, a single interrupt
+    mapping/object, or no interrupts. Malformed or non-interrupt values yield an
+    empty tuple instead of fabricating entries or raising.
+    """
+
+    raw: object = state.get("__interrupt__")
+    if raw is None:
+        return ()
+
     result: list[PendingInterrupt] = []
-    for item in raw:
-        if isinstance(item, Mapping):
-            data = cast("Mapping[str, Any]", item)
-            identifier = data.get("id")
-            value = data.get("value")
-        else:
-            identifier = getattr(item, "id", None)
-            value = getattr(item, "value", item)
+    for item in _interrupt_items(raw):
+        parts = _interrupt_parts(item)
+        if parts is None:
+            continue
+        identifier, value = parts
         result.append(
             PendingInterrupt(
                 id=str(identifier) if identifier is not None else None,

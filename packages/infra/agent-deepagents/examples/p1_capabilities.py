@@ -17,6 +17,7 @@ from spawn_join_agent_deepagents import (
     SupervisorSpec,
     approve_decision,
     build_supervisor,
+    pending_interrupts,
     reject_decision,
     resume_batched,
 )
@@ -58,6 +59,12 @@ def main() -> None:
 
     print("Rubric:", assembly.report.rubric)
     print("Resources:", assembly.report.resources)
+    print(
+        "Pending:",
+        pending_interrupts(
+            {"__interrupt__": ({"id": "demo", "value": {"action_requests": []}},)}
+        ),
+    )
     print("Approve:", approve_decision())
     print("Reject:", reject_decision("keep the original"))
     print("Batched resume:", resume_batched([approve_decision()]).resume)

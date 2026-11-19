@@ -17,6 +17,18 @@ from langchain_core.tools import BaseTool
 from .errors import RubricConfigurationError
 
 
+def _require_chat_model(model: object) -> None:
+    if not isinstance(model, BaseChatModel):
+        raise RubricConfigurationError("rubric.model: must be a BaseChatModel instance")
+
+
+def _require_positive_iterations(value: object) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise RubricConfigurationError(
+            "rubric.max_iterations: must be a positive integer"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class RubricConfiguration:
     """A host-provided grader model and its optional tools/prompt."""
@@ -28,10 +40,8 @@ class RubricConfiguration:
     on_evaluation: Callable[[Any], None] | None = None
 
     def __post_init__(self) -> None:
-        if self.max_iterations < 1 or isinstance(self.max_iterations, bool):
-            raise RubricConfigurationError(
-                "rubric.max_iterations: must be a positive integer"
-            )
+        _require_chat_model(self.model)
+        _require_positive_iterations(self.max_iterations)
         if self.on_evaluation is not None and not callable(self.on_evaluation):
             raise RubricConfigurationError(
                 "rubric.on_evaluation: must be callable or None"

@@ -114,6 +114,7 @@ _CURRENT_PUBLIC_NAMES = {
     "classify_llm_error",
     "edit_decision",
     "normalize_llm_error",
+    "pending_interrupts",
     "reject_decision",
     "respond_decision",
     "resume_batched",
@@ -129,7 +130,16 @@ def test_public_all_matches_implemented_surface() -> None:
 
 
 def test_internal_modules_are_not_exported() -> None:
-    for name in ("models", "subagents", "middleware", "diagnostics", "supervisor"):
+    for name in (
+        "models",
+        "subagents",
+        "middleware",
+        "diagnostics",
+        "supervisor",
+        "backends",
+        "rubric",
+        "interrupts",
+    ):
         assert name not in package.__all__
 
 

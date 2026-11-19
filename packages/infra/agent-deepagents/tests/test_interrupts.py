@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
 from spawn_join_agent_deepagents.interrupts import (
     PendingInterrupt,
     approve_decision,
@@ -37,6 +38,35 @@ def test_pending_interrupts_reads_mapping_and_object_shapes() -> None:
         PendingInterrupt(id="a", value={"type": "tool_approval"}),
         PendingInterrupt(id="b", value={"decisions": []}),
     )
+
+
+def test_pending_interrupts_accepts_single_mapping_or_object() -> None:
+    mapping_state = {"__interrupt__": {"id": "a", "value": {"type": "tool_approval"}}}
+    object_state = {"__interrupt__": _Interrupt(id="b", value={"decisions": []})}
+
+    assert pending_interrupts(mapping_state) == (
+        PendingInterrupt(id="a", value={"type": "tool_approval"}),
+    )
+    assert pending_interrupts(object_state) == (
+        PendingInterrupt(id="b", value={"decisions": []}),
+    )
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {},
+        {"__interrupt__": None},
+        {"__interrupt__": ()},
+        {"__interrupt__": []},
+        {"__interrupt__": "not-an-interrupt"},
+        {"__interrupt__": ["bad", 1, {"id": "missing-value"}]},
+    ],
+)
+def test_pending_interrupts_ignores_missing_or_malformed_shapes(
+    state: dict[str, object],
+) -> None:
+    assert pending_interrupts(state) == ()
 
 
 def test_decision_builders_match_hitl_shape() -> None:

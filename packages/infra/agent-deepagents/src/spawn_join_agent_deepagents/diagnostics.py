@@ -112,6 +112,7 @@ class PermissionReport:
     allow: int = 0
     deny: int = 0
     interrupt: int = 0
+    other: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,11 +120,11 @@ class ResourceReport:
     """Safe presence/ownership summary for host-provided resources."""
 
     backend: str = "host"
-    backend_kind: str = "default_state"
     store: str = "absent"
     checkpointer: str = "absent"
     interrupt_configured: bool = False
     thread_id_required: bool = False
+    backend_kind: str = "default_state"
     permissions: PermissionReport = field(default_factory=PermissionReport)
 
 
@@ -186,10 +187,10 @@ class AssemblyReport:
     resources: ResourceReport = field(default_factory=ResourceReport)
     context: ContextReport = field(default_factory=ContextReport)
     profiles: ProfileReport = field(default_factory=ProfileReport)
-    rubric: RubricReport = field(default_factory=RubricReport)
     warnings: tuple[str, ...] = ()
     experimental_features: tuple[str, ...] = ()
     diagnostics_enabled: bool = False
+    rubric: RubricReport = field(default_factory=RubricReport)
 
     def __post_init__(self) -> None:
         object.__setattr__(

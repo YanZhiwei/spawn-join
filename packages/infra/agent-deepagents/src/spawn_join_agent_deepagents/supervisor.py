@@ -279,13 +279,49 @@ def _apply_profiles(
     return spec.profiles
 
 
+def _native_rubric_middleware(spec: SupervisorSpec) -> RubricMiddleware | None:
+    for middleware in spec.middleware.supervisor:
+        if isinstance(middleware, RubricMiddleware):
+            return middleware
+    return None
+
+
 def _validate_rubric(spec: SupervisorSpec) -> None:
+    native_rubric = _native_rubric_middleware(spec)
+    if spec.rubric is not None and native_rubric is not None:
+        raise RubricConfigurationError(
+            "rubric: configure either rubric=... or a native RubricMiddleware, not both"
+        )
+    if native_rubric is not None and not spec.allow_experimental_rubric:
+        raise RubricConfigurationError(
+            "rubric: native RubricMiddleware requires allow_experimental_rubric=True"
+        )
     if spec.rubric is None:
         return
     if not spec.allow_experimental_rubric:
         raise RubricConfigurationError(
             "rubric: rubric grading requires allow_experimental_rubric=True"
         )
+
+
+def _rubric_report(spec: SupervisorSpec) -> RubricReport:
+    if spec.rubric is not None:
+        return RubricReport(
+            enabled=True,
+            max_iterations=spec.rubric.max_iterations,
+            model_source=spec.rubric.model_source,
+            tool_count=spec.rubric.tool_count,
+        )
+    native_rubric = _native_rubric_middleware(spec)
+    if native_rubric is None:
+        return RubricReport()
+    tools = tuple(getattr(native_rubric, "tools", ()) or ())
+    return RubricReport(
+        enabled=True,
+        max_iterations=int(getattr(native_rubric, "max_iterations", 0) or 0),
+        model_source="host_middleware",
+        tool_count=len(tools),
+    )
 
 
 def _rubric_middleware(
@@ -790,7 +826,7 @@ def _management_warnings(spec: SupervisorSpec) -> list[str]:
             "profiles: DeepAgents harness/provider profiles are beta and are "
             "registered process-wide before assembly"
         )
-    if spec.rubric is not None:
+    if spec.rubric is not None or _native_rubric_middleware(spec) is not None:
         warnings.append(
             "rubric: DeepAgents rubric grading is beta and activates only when "
             "the invocation supplies a rubric in state"
@@ -904,7 +940,7 @@ def _build_report(
         experimental_features.append("async_subagents")
     if profiles is not None:
         experimental_features.append("harness_profiles")
-    if spec.rubric is not None:
+    if spec.rubric is not None or _native_rubric_middleware(spec) is not None:
         experimental_features.append("rubric")
     return AssemblyReport(
         package_version=version("spawn-join-agent-deepagents"),
@@ -930,16 +966,7 @@ def _build_report(
             harness_keys=profiles.harness_keys if profiles is not None else (),
             provider_keys=profiles.provider_keys if profiles is not None else (),
         ),
-        rubric=RubricReport(
-            enabled=spec.rubric is not None,
-            max_iterations=(
-                spec.rubric.max_iterations if spec.rubric is not None else 0
-            ),
-            model_source=(
-                spec.rubric.model_source if spec.rubric is not None else "none"
-            ),
-            tool_count=spec.rubric.tool_count if spec.rubric is not None else 0,
-        ),
+        rubric=_rubric_report(spec),
         warnings=warnings,
         experimental_features=tuple(experimental_features),
         diagnostics_enabled=spec.diagnostics is not None,

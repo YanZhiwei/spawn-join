@@ -46,7 +46,7 @@ def permission_report(
 ) -> PermissionReport:
     """Count permission rules by effect without exposing paths or rules."""
 
-    allow = deny = interrupt = 0
+    allow = deny = interrupt = other = 0
     for permission in permissions or ():
         if permission.mode == "allow":
             allow += 1
@@ -54,4 +54,6 @@ def permission_report(
             deny += 1
         elif permission.mode == "interrupt":
             interrupt += 1
-    return PermissionReport(allow=allow, deny=deny, interrupt=interrupt)
+        else:
+            other += 1
+    return PermissionReport(allow=allow, deny=deny, interrupt=interrupt, other=other)

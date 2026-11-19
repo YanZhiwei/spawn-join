@@ -4,10 +4,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from deepagents.backends import FilesystemBackend, StateBackend
+from deepagents.backends import (
+    CompositeBackend,
+    ContextHubBackend,
+    FilesystemBackend,
+    LangSmithSandbox,
+    LocalShellBackend,
+    StateBackend,
+    StoreBackend,
+)
 from deepagents.middleware.filesystem import FilesystemPermission
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -26,6 +35,13 @@ def test_backend_kind_labels_known_and_custom_backends(
     assert backend_kind(None) == "default_state"
     assert backend_kind(StateBackend()) == "state"
     assert backend_kind(FilesystemBackend(root_dir=tmp_path)) == "filesystem"
+    assert backend_kind(LocalShellBackend()) == "local_shell"
+    assert backend_kind(LangSmithSandbox.__new__(LangSmithSandbox)) == "sandbox"
+    assert backend_kind(StoreBackend.__new__(StoreBackend)) == "store"
+    assert (
+        backend_kind(CompositeBackend(default=StateBackend(), routes={})) == "composite"
+    )
+    assert backend_kind(ContextHubBackend("hub")) == "context_hub"
     assert backend_kind(object()) == "custom"  # type: ignore[arg-type]
 
 
@@ -41,6 +57,15 @@ def test_permission_report_counts_effects() -> None:
     assert report.allow == 1
     assert report.deny == 1
     assert report.interrupt == 1
+    assert report.other == 0
+
+
+def test_permission_report_counts_unknown_modes() -> None:
+    report = permission_report(
+        (SimpleNamespace(mode="future-mode"),)  # type: ignore[arg-type]
+    )
+
+    assert report.other == 1
 
 
 def test_assembly_reports_backend_and_permissions(
