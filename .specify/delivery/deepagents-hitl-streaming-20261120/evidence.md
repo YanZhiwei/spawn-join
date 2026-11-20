@@ -62,15 +62,15 @@
 ## 提交后复核与已观察的 PR 发布
 
 - observed_at: 2026-11-20T13:24:12+00:00
-- publication_reviewed_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
-- published_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
-- publication_content_fingerprint: 329936a8bdeb1a80c222c6d3363b0ddd296020d2998be2ef20710bf4635e36e3
-- publication_requirements_fingerprint: 52aa04d04bb342bebb8d59f76e501134479c371a73317963d7dab9b9b523ea58
-- reviewed_diff_archive: .specify/delivery/deepagents-hitl-streaming-20261120/runtime/reviewed-diff-publication.patch
-- reviewed_diff_archive_sha256: 0edc7ca8f9577ffb0e151ccee02e511e9218f2c64f4fc060524b25de6ef4fec5
-- reviewed_diff_archive_base: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
-- reviewed_diff_archive_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
-- reviewed_diff_archive_reviewed_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
+- historical_publication_reviewed_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
+- historical_published_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
+- historical_publication_content_fingerprint: 329936a8bdeb1a80c222c6d3363b0ddd296020d2998be2ef20710bf4635e36e3
+- historical_publication_requirements_fingerprint: 52aa04d04bb342bebb8d59f76e501134479c371a73317963d7dab9b9b523ea58
+- historical_reviewed_diff_archive: .specify/delivery/deepagents-hitl-streaming-20261120/runtime/reviewed-diff-publication.patch
+- historical_reviewed_diff_archive_sha256: 0edc7ca8f9577ffb0e151ccee02e511e9218f2c64f4fc060524b25de6ef4fec5
+- historical_reviewed_diff_archive_base: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
+- historical_reviewed_diff_archive_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
+- historical_reviewed_diff_archive_reviewed_head: 23bfc364c787c87b0fc94993ce685b09f342eae9
 
 用户批准「创建pr」后，产品提交和初始持久证据一并推送到 `docs/deepagents-hitl-streaming`。GitHub 返回 PR #66，状态 `OPEN`，目标 `main`，`isDraft: false`。提供方报告创建时间为 `2026-11-20T13:24:17Z`；上方 observed_at 使用本地采集时间，保留两端时钟的原始值。
 
@@ -91,6 +91,19 @@ GitHub 发布观察保存在本地 `runtime/published-pr-66.json`，SHA-256 为 
 失败记录是 `.specify/delivery/package-readme-examples-20261106/evidence.md` 的 `head_revision: 5e263aa6aaeba10ac81779ea43c01616eead8934`，以及 `.specify/delivery/readme-bilingual-20261106/evidence.md` 的 `head_revision: 6aa0968ee301534ffcb6548b982deac2f25fb654`。已逐字核对，两份文件与 PR 的 base 完全一致；这两个提交在本机对象库存在，但均不可从 `main` 到达。因此本地治理初检通过，CI 的全新检出报出两项不存在的提交。此缺口影响 required gate，按阻塞记录，不以包矩阵成功替代。
 
 本次 PR 已创建且保持开放。后续需单独修复历史治理证据，再由 CI 确认门禁；PR 结果尚未满足 Close 的终态条件。初始本地验证快照与已完成的独立评审保持其原始身份。
+
+## CI 修复的 Close 绑定
+
+本 run 保留初始 `reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd` 作为历史 Review 身份，并为本次已评审的治理修复提交建立当前发布证明。待 PR #66 以 `749b4e1939f59f08034b056d24c13fd690c40bd0` 发布并合并后，Close 使用以下字段校验其内容：
+
+- published_head: 749b4e1939f59f08034b056d24c13fd690c40bd0
+- reviewed_diff_archive: .specify/delivery/deepagents-hitl-streaming-20261120/runtime/reviewed-diff-ci-repair.patch
+- reviewed_diff_archive_sha256: 9650b8f6cff42fc547ef6c45fd84f51eef266dc44601ef44d8647e337e2e47ef
+- reviewed_diff_archive_base: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
+- reviewed_diff_archive_head: 749b4e1939f59f08034b056d24c13fd690c40bd0
+- reviewed_diff_archive_reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
+
+归档是从 PR base 到本次修复提交的完整 binary diff；它只证明已保留的历史 Review 内容与当前发布内容之间的可验证关系，不把修复提交重新标记为原始 Review。旧 `23bfc36` 发布快照已在上一节明确标为 historical，Close 不会把它当作当前证明。
 
 ## CI 治理锚点修复与独立克隆回归
 
