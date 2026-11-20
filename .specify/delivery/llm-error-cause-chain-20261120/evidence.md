@@ -1,3 +1,31 @@
+<!-- DELIVERY_CURRENT_OUTCOME_BEGIN -->
+## Current delivery outcome
+
+- **delivery_run**: llm-error-cause-chain-20261120
+- **lane**: bugfix
+- **status**: delivered
+- **outcome**: merged
+- **provider**: github
+- **repository**: yanzhiwei/spawn-join
+- **number**: 68
+- **pull_request**: https://github.com/yanzhiwei/spawn-join/pull/68
+- **reviewed_head**: 0535e68d49173672de0593b8e7899dc9d5789da7
+- **original_pr_head**: 98368febae75236df5979ce17eef96498fcf4fc4
+- **published_head_proof**: published-evidence-archive
+- **base_revision**: 0535e68d49173672de0593b8e7899dc9d5789da7
+- **merged_revision**: d11d73872b642708e0bdbb6775ec59ed47ffdcc4
+- **effective_head**: d11d73872b642708e0bdbb6775ec59ed47ffdcc4
+- **merged_at**: 2026-11-20T15:58:06Z
+- **observed_at**: 2026-11-20T15:58:04.637369+00:00
+- **outcome_recorded_at**: 2026-11-20T15:58:04.637369+00:00
+- **verification_file**: .specify/delivery/llm-error-cause-chain-20261120/runtime/observed-pr.json
+- **merge_proof**: evidence-archive
+<!-- DELIVERY_CURRENT_OUTCOME_END -->
+
+## Historical validation snapshots
+
+<!-- Existing validation, review, CI, and limitation content below is retained verbatim as historical evidence. -->
+
 # 模型错误原因链修复证据
 
 - feature_id: llm-error-cause-chain
@@ -91,3 +119,57 @@ shell 超时发生在前三项成功之后，恢复未改变它们的原 ticket 
 本快照仅涵盖本机离线验证。真实 Provider 和发布后的跨平台 CI 在该快照尚未执行。
 本地分支为 `fix/llm-error-cause-chain`。发布时须重新确认实际 PR head、三文件 diff 和
 当前 Review/Quality/Standards 身份，远端终态由单独授权的合并或关闭后执行 Close。
+
+## 发布身份与合并核验补充
+
+本节追加实际发布后的观察，不替换上文提交前的历史身份、检查回执或限制。
+用户随后明确要求「帮我合并 并收尾」，授权本次 squash 合并、来源分支清理和终态归档。
+
+- **published_head**: 98368febae75236df5979ce17eef96498fcf4fc4
+- **reviewed_diff_archive**: runtime/published-diff-98368fe.patch
+- **reviewed_diff_archive_sha256**: 4b2916c40291acf85ee10df9db7a1905295f13e70feea6ae01ab5fde766b4a44
+- **reviewed_diff_archive_base**: 0535e68d49173672de0593b8e7899dc9d5789da7
+- **reviewed_diff_archive_head**: 98368febae75236df5979ce17eef96498fcf4fc4
+- **reviewed_diff_archive_reviewed_head**: 0535e68d49173672de0593b8e7899dc9d5789da7
+
+归档是实际 base-to-published-head 的完整 binary/full-index diff，包含两个产品文件和
+当时提交的持久 Evidence；不是基准 Git tree 的空 diff，也不是将旧 Review 改标成新 SHA。
+最初评审的工作区产品字节与实际提交 blob 在正常 CRLF→LF 规范化后相同；发布提交另有
+独立六维 Review，完整核对三文件 diff、产品身份、全部要求和新质量执行回执，零 findings。
+当前原生发布 Review 的 head 为 `98368febae75236df5979ce17eef96498fcf4fc4`，
+content fingerprint 为
+`ec626df0a8c67b57bd4a930ceadfa3f0b4b7b6e295ea36ae6aa21592a85a000a`；
+其与上文旧 Review 的要求指纹相同。没有将合并提交冒充任一次 Review 的输入。
+
+| 发布提交的原生阶段 | 实际 ticket | 结果 |
+| --- | --- | --- |
+| Quality | `5ce12786d96e4b0ba4e956f352d77244` | 五项重新执行均退出 0，包括 Agent 包 211 tests、格式/lint/strict 类型、构建隔离安装、原生图、文档/治理。 |
+| Standards | `a7d32b955297422787f9f64e69ea66b6` | pass，范围、拥有者、依赖和可维护性无偏差。 |
+| Independent Review | `41bc609f02114cd78c1eedfcc209f133` | 六维完整 pass，零 findings；校验新执行的输入、配置及日志哈希。 |
+
+发布 Review 报告 SHA-256：
+`9fee052c1f134981dcd3687065622f554046bf31ac776e98b3410d2b58a1885f`；
+native receipt SHA-256：
+`db6bca39241dd0d3a25771f59b2353c334344ec2f048b3b07b97e97d88ef1b7f`。
+这些本机 runtime/reviews 文件按 ephemeral 策略保留，不声称可从远端下载。
+
+[PR #68](https://github.com/YanZhiwei/spawn-join/pull/68) 的
+[Quality #44767964779](https://github.com/YanZhiwei/spawn-join/actions/runs/44767964779)
+经 `gh run watch 44767964779 --exit-status --interval 20` 监听完成，退出 0。
+实际 head 为发布 SHA；23/23 job 成功（21 个包矩阵、治理回归和 required `Quality Gate`）。
+`gh pr checks 68 --required` 独立确认 `Quality Gate: SUCCESS`。
+CI JSON 回执 SHA-256：
+`43a8bdd70a51594f9472897719ee6b7d9210594b87804e775b3939dcbd82f72e`。
+真实 Provider 的在线检查仍未执行。
+
+合并前再次核对 PR 为 OPEN、CLEAN、MERGEABLE，head 与通过检查的发布 SHA 相同；
+`gh pr merge 68 --squash --delete-branch --match-head-commit 98368febae75236df5979ce17eef96498fcf4fc4`
+退出 0。随后 GitHub API 确认 MERGED，
+合并提交为 `d11d73872b642708e0bdbb6775ec59ed47ffdcc4`，
+merge time 为 `2026-11-20T15:58:06Z`。
+本机 `main` 已快进到该提交，完整 tree、base-to-head 与 base-to-merged 的路径/模式/字节
+diff 均相同，且合并提交在 `origin/main` 可达。
+
+Close 初次被拒绝，原因是历史 reviewed head 与实际发布 head 不同而缺少显式绑定；
+该次失败未写终态、未删除工件。本节补齐真实发布身份和经逐字节核对的精确归档，
+不修改安装器管理的 runtime、不伪造旧基准 tree 包含修复。终态区块只由 Close guard 写入。
