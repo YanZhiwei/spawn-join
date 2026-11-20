@@ -1,13 +1,33 @@
-"""HITL interrupt and resume helper contracts."""
+"""HITL helper contracts and native streaming recovery."""
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any, Literal, cast
 
 import pytest
-from spawn_join_agent_deepagents.interrupts import (
+from langchain.agents.middleware import HumanInTheLoopMiddleware
+from langchain.agents.middleware.human_in_the_loop import (
+    HITLRequest,
+    InterruptOnConfig,
+    ToolApprovalRequest,
+)
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.tools import tool
+from langgraph.checkpoint.memory import InMemorySaver
+from spawn_join_agent_deepagents import (
+    MiddlewareConfiguration,
+    ModelBinding,
+    ModelBindings,
+    ModelPurpose,
     PendingInterrupt,
+    RecoveryContext,
+    SupervisorSpec,
     approve_decision,
+    build_supervisor,
     edit_decision,
     pending_interrupts,
     reject_decision,
@@ -88,3 +108,106 @@ def test_resume_helpers_build_native_commands() -> None:
     assert batched.resume == {"decisions": [{"type": "approve"}, {"type": "reject"}]}
     assert per_call.resume == {"a": {"type": "approve"}}
     assert raw.resume == {"decisions": []}
+
+
+@pytest.mark.parametrize("mode", ["batched", "per_call"])
+def test_streamed_hitl_resumes_only_the_approved_tool_call(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+    mode: Literal["batched", "per_call"],
+) -> None:
+    executed_values: list[str] = []
+
+    @tool
+    def record_value(value: str) -> str:
+        """Record a value so the test can observe tool execution."""
+        executed_values.append(value)
+        return f"Recorded {value}."
+
+    model = make_sequence_model(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "record_value",
+                        "args": {"value": value},
+                        "id": f"record-{value}",
+                        "type": "tool_call",
+                    }
+                    for value in ("keep", "skip")
+                ],
+            ),
+            AIMessage(content="Review complete."),
+        ]
+    )
+    interrupt_on: dict[str, bool | InterruptOnConfig] | None = {"record_value": True}
+    middleware = MiddlewareConfiguration()
+    if mode == "per_call":
+        middleware = MiddlewareConfiguration(
+            supervisor=(
+                HumanInTheLoopMiddleware(interrupt_on, interrupt_mode="per_call"),
+            ),
+        )
+        interrupt_on = None
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=ModelBindings(
+                catalog=None,
+                bindings=(
+                    ModelBinding(ModelPurpose.SUPERVISOR, model=model),
+                    ModelBinding(
+                        ModelPurpose.SUMMARIZATION, inherit_from=ModelPurpose.SUPERVISOR
+                    ),
+                ),
+            ),
+            control_default_subagent=False,
+            tools=(record_value,),
+            checkpointer=InMemorySaver(),
+            interrupt_on=interrupt_on,
+            middleware=middleware,
+        )
+    )
+    config = RecoveryContext("approval-stream").to_graph_config()
+
+    async def scenario() -> None:
+        pending: list[PendingInterrupt] = []
+        async for update in assembly.graph.astream(
+            {"messages": [HumanMessage(content="Review two values.")]},
+            config=config,
+            stream_mode="updates",
+            version="v1",
+        ):
+            pending.extend(pending_interrupts(update))
+        assert executed_values == []
+
+        if mode == "batched":
+            (interruption,) = pending
+            requests = cast(HITLRequest, interruption.value)["action_requests"]
+            requested_values = [request["args"]["value"] for request in requests]
+            assert requested_values == ["keep", "skip"]
+            command = resume_batched([approve_decision(), reject_decision()])
+        else:
+            assert len(pending) == 2
+            interrupt_ids: dict[str, str] = {}
+            for interruption in pending:
+                assert interruption.id is not None
+                request = cast(ToolApprovalRequest, interruption.value)
+                interrupt_ids[request["tool_call_id"]] = interruption.id
+            assert set(interrupt_ids) == {"record-keep", "record-skip"}
+            assert len(set(interrupt_ids.values())) == 2
+            command = resume_per_call(
+                {
+                    interrupt_ids["record-skip"]: reject_decision(),
+                    interrupt_ids["record-keep"]: approve_decision(),
+                }
+            )
+
+        result = cast(
+            dict[str, Any], await assembly.graph.ainvoke(command, config=config)
+        )
+        assert not pending_interrupts(result)
+        assert result["messages"][-1].content == "Review complete."
+        assert executed_values == ["keep"]
+
+    asyncio.run(scenario())

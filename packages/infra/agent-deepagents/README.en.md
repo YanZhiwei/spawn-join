@@ -641,30 +641,29 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 ## HITL interrupt helpers
 
-```python
-from spawn_join_agent_deepagents import (
-    approve_decision,
-    pending_interrupts,
-    reject_decision,
-    resume_batched,
-)
+Run the [offline streaming approval example](examples/hitl_streaming.py) from the repository root.
 
-interrupts = pending_interrupts(state)
-command = resume_batched([
-    approve_decision(),
-    reject_decision("keep the original"),
-])
-result = await assembly.graph.ainvoke(command, config)
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/hitl_streaming.py
 ```
 
-- `PendingInterrupt` and `pending_interrupts` are exported from the package root.
-- `pending_interrupts` only reads the native `__interrupt__` payload; approval stays host-owned,
-  and missing or malformed input yields an empty tuple.
-- Decision builders match LangChain HITL shapes.
-- `resume_batched` is for batched mode and decisions must match the count/order of
-  `action_requests`; `resume_per_call` answers per-interrupt IDs.
-- Resuming needs the same `thread_id` and a valid checkpointer; the helpers do not create
-  checkpointers, persist approvals, auto-approve, or promise exactly-once effects.
+The example reads native interrupts from `graph.astream(..., stream_mode="updates", version="v1")`.
+Two actions await approval while the list of executed calls stays empty. The example submits one
+approval and one rejection, then calls `graph.ainvoke()` with the same `thread_id` to resume.
+The list of executed calls after resume is `['keep']`.
+
+- `pending_interrupts(update)` reads pending reviews from the stream update's `__interrupt__` field.
+  When there are no valid interrupts, it returns an empty tuple. The host reads the requests,
+  collects decisions, and manages the checkpointer. The example uses `InMemorySaver` for in-process
+  recovery.
+- Use `resume_batched` with the batched mode configured by `SupervisorSpec.interrupt_on`. The
+  count and order of decisions must match `PendingInterrupt.value["action_requests"]`.
+- To review each tool call separately, supply native `HumanInTheLoopMiddleware` with
+  `interrupt_mode="per_call"` in `MiddlewareConfiguration.supervisor`. Pass a mapping from each
+  `PendingInterrupt.id` to its decision to `resume_per_call`. Use `value["tool_call_id"]` to match
+  the request to its tool call.
+- `approve_decision`, `edit_decision`, `reject_decision`, and `respond_decision` build LangChain HITL
+  decision dictionaries. The host owns approval records and their persistence.
 
 ## Public API
 
