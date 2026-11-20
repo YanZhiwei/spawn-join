@@ -4,7 +4,7 @@
 - **lane**: lightweight
 - **evidence_path**: .specify/delivery/deepagents-hitl-streaming-20261120/evidence.md
 - **base_revision**: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
-- **reviewed_head**: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
+- **historical_reviewed_head**: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
 - **original_pr_head**: 23bfc364c787c87b0fc94993ce685b09f342eae9
 - **content_fingerprint**: 80f3fe7609ec0bd65864be8fddb7c8c13e8a431858b7fe0fa43caf7ffa3c3de4
 - **requirements_fingerprint**: 52aa04d04bb342bebb8d59f76e501134479c371a73317963d7dab9b9b523ea58
@@ -57,7 +57,7 @@
 
 2026-11-20，用户授权「创建pr」。四个产品路径已提交为 `a06b4c344e4106d5fc2de4528db796e5ff92aa1c`，其父提交是本记录的 `base_revision`。逐文件复核显示，工作区原始字节与已批准 Review 清单相同，Git blob 与这些原始字节经 CRLF→LF 规范化后的内容完全一致。该转换来自仓库已有的 `core.autocrlf=true`，正文与运行行为保持一致。
 
-已保存从 base 到该产品提交的真实 Git binary diff，路径、模式、正文可由 Git 提交独立核验。归档 SHA-256 为 `be109f19f1abde86992635e8bcd5cb93d82ccea716a583f747e45047dbe061c9`，本地归档位置为 `runtime/reviewed-diff-prepublication.patch`。本记录的初始 `reviewed_head` 与原始评审报告保持不变；发布前会在最终提交上重新确认 Quality、Standards 与独立 Review，实际发布身份由观察到的 PR head 单独绑定。
+已保存从 base 到该产品提交的真实 Git binary diff，路径、模式、正文可由 Git 提交独立核验。归档 SHA-256 为 `be109f19f1abde86992635e8bcd5cb93d82ccea716a583f747e45047dbe061c9`，本地归档位置为 `runtime/reviewed-diff-prepublication.patch`。本记录的初始 `historical_reviewed_head` 与原始评审报告保持不变；发布前会在最终提交上重新确认 Quality、Standards 与独立 Review，实际发布身份由观察到的 PR head 单独绑定。
 
 ## 提交后复核与已观察的 PR 发布
 
@@ -94,9 +94,9 @@ GitHub 发布观察保存在本地 `runtime/published-pr-66.json`，SHA-256 为 
 
 ## CI 修复后的 Close 预备说明
 
-本 run 保留初始 `reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd` 及其历史 Review 身份；旧 `23bfc36` 发布快照的字段也已明确标为 historical。当前 PR 不提前写入终态 Close 的 active 发布字段，避免在最终 PR 内容尚未由 tracker 确认前绑定错误的 head。
+本 run 保留初始 `historical_reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd` 及其历史 Review 身份；旧 `23bfc36` 发布快照的字段也已明确标为 historical。当前证据不再以历史字段覆盖本次 native Review 的最终 head。
 
-待 PR #66 的 required gate 成功并由 tracker 报告 `MERGED` 后，先保存精确的 `observed-pr.json`，再以该观察中的 PR head/base 生成完整 binary diff 归档，最后调用标准 Close guard。Close 会保留历史 Review 身份，并只写入实际 `merged_revision`、`effective_head` 和验证过的合并证明。
+待 PR #66 的 required gate 成功并由 tracker 报告 `MERGED` 后，先保存精确的 `observed-pr.json`，再调用标准 Close guard。Close 会从当前 run 的 native Review receipt 取得最终 PR head；该 head 与 tracker 的 `original_pr_head` 相同，因此使用 `tracker-head-mapped`，随后校验实际 `merged_revision`、`effective_head` 和合并证明。
 
 ## CI 治理锚点修复与独立克隆回归
 
