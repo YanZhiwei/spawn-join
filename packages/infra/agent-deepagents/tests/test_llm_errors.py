@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Any, Never
 
 import pytest
 from langchain_core.exceptions import (
@@ -113,29 +113,32 @@ def test_normalized_message_hides_provider_details() -> None:
 
 def test_middleware_normalizes_sync_errors() -> None:
     middleware = LLMErrorNormalizationMiddleware()
+    provider_error = RuntimeError("429 too many requests: private provider detail")
 
-    def handler(request: Any) -> Any:
-        del request
-        raise RuntimeError("429 too many requests")
+    def handler(_: object) -> Never:
+        raise provider_error
 
     with pytest.raises(LLMCallError) as caught:
         middleware.wrap_model_call(object(), handler)
 
     assert caught.value.code is LLMErrorCode.RATE_LIMIT
-    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert caught.value.__cause__ is provider_error
+    assert "private provider detail" not in str(caught.value)
 
 
 def test_middleware_normalizes_async_errors() -> None:
     middleware = LLMErrorNormalizationMiddleware()
+    provider_error = RuntimeError("request timed out: private provider detail")
 
-    async def handler(request: Any) -> Any:
-        del request
-        raise RuntimeError("request timed out")
+    async def handler(_: object) -> Never:
+        raise provider_error
 
     with pytest.raises(LLMCallError) as caught:
         asyncio.run(middleware.awrap_model_call(object(), handler))
 
     assert caught.value.code is LLMErrorCode.TIMEOUT
+    assert caught.value.__cause__ is provider_error
+    assert "private provider detail" not in str(caught.value)
 
 
 def test_middleware_propagates_cancellation() -> None:
@@ -160,18 +163,37 @@ def test_middleware_propagates_graph_interrupt() -> None:
         middleware.wrap_model_call(object(), handler)
 
 
-def test_middleware_keeps_existing_llm_call_error() -> None:
+@pytest.mark.parametrize("asynchronous", [False, True], ids=["sync", "async"])
+@pytest.mark.parametrize(
+    "provider_error_type",
+    [None, RuntimeError, ContextOverflowError],
+    ids=["without-cause", "provider-error", "context-overflow"],
+)
+def test_middleware_preserves_existing_llm_call_error(
+    asynchronous: bool, provider_error_type: type[Exception] | None
+) -> None:
     middleware = LLMErrorNormalizationMiddleware()
-    original = LLMCallError(LLMErrorCode.AUTHENTICATION, "safe")
+    if provider_error_type is None:
+        original = LLMCallError(LLMErrorCode.AUTHENTICATION, "safe")
+        provider_error = None
+    else:
+        provider_error = provider_error_type("private provider detail")
+        original = normalize_llm_error(provider_error)
 
-    def handler(request: Any) -> Any:
-        del request
+    def handler(_: object) -> Never:
+        raise original
+
+    async def async_handler(_: object) -> Never:
         raise original
 
     with pytest.raises(LLMCallError) as caught:
-        middleware.wrap_model_call(object(), handler)
+        if asynchronous:
+            asyncio.run(middleware.awrap_model_call(object(), async_handler))
+        else:
+            middleware.wrap_model_call(object(), handler)
 
     assert caught.value is original
+    assert caught.value.__cause__ is provider_error
 
 
 def test_middleware_propagates_configuration_errors() -> None:
