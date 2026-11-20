@@ -92,18 +92,11 @@ GitHub 发布观察保存在本地 `runtime/published-pr-66.json`，SHA-256 为 
 
 本次 PR 已创建且保持开放。后续需单独修复历史治理证据，再由 CI 确认门禁；PR 结果尚未满足 Close 的终态条件。初始本地验证快照与已完成的独立评审保持其原始身份。
 
-## CI 修复的 Close 绑定
+## CI 修复后的 Close 预备说明
 
-本 run 保留初始 `reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd` 作为历史 Review 身份，并为本次已评审的治理修复提交建立当前发布证明。待 PR #66 以 `749b4e1939f59f08034b056d24c13fd690c40bd0` 发布并合并后，Close 使用以下字段校验其内容：
+本 run 保留初始 `reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd` 及其历史 Review 身份；旧 `23bfc36` 发布快照的字段也已明确标为 historical。当前 PR 不提前写入终态 Close 的 active 发布字段，避免在最终 PR 内容尚未由 tracker 确认前绑定错误的 head。
 
-- published_head: 749b4e1939f59f08034b056d24c13fd690c40bd0
-- reviewed_diff_archive: .specify/delivery/deepagents-hitl-streaming-20261120/runtime/reviewed-diff-ci-repair.patch
-- reviewed_diff_archive_sha256: 9650b8f6cff42fc547ef6c45fd84f51eef266dc44601ef44d8647e337e2e47ef
-- reviewed_diff_archive_base: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
-- reviewed_diff_archive_head: 749b4e1939f59f08034b056d24c13fd690c40bd0
-- reviewed_diff_archive_reviewed_head: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
-
-归档是从 PR base 到本次修复提交的完整 binary diff；它只证明已保留的历史 Review 内容与当前发布内容之间的可验证关系，不把修复提交重新标记为原始 Review。旧 `23bfc36` 发布快照已在上一节明确标为 historical，Close 不会把它当作当前证明。
+待 PR #66 的 required gate 成功并由 tracker 报告 `MERGED` 后，先保存精确的 `observed-pr.json`，再以该观察中的 PR head/base 生成完整 binary diff 归档，最后调用标准 Close guard。Close 会保留历史 Review 身份，并只写入实际 `merged_revision`、`effective_head` 和验证过的合并证明。
 
 ## CI 治理锚点修复与独立克隆回归
 
