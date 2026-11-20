@@ -1,3 +1,43 @@
+<!-- DELIVERY_CURRENT_OUTCOME_BEGIN -->
+## Current delivery outcome
+
+- **delivery_run**: deepagents-hitl-streaming-20261120
+- **lane**: lightweight
+- **status**: delivered
+- **outcome**: merged
+- **provider**: github
+- **repository**: yanzhiwei/spawn-join
+- **number**: 66
+- **pull_request**: https://github.com/yanzhiwei/spawn-join/pull/66
+- **reviewed_head**: 96e0a02c8af088bae83c62b5899c08fcd14f916e
+- **original_pr_head**: 96e0a02c8af088bae83c62b5899c08fcd14f916e
+- **published_head_proof**: tracker-head-mapped
+- **base_revision**: 069517e4956d4d4954ff62191bbd6aeaf3ed6dfd
+- **merged_revision**: 3f1d8c2a68cfc6633ad122131b6da3fc9014aebb
+- **effective_head**: 3f1d8c2a68cfc6633ad122131b6da3fc9014aebb
+- **merged_at**: 2026-11-20T14:44:35Z
+- **observed_at**: 2026-11-20T14:44:42.519885+00:00
+- **outcome_recorded_at**: 2026-11-20T14:44:42.519885+00:00
+- **verification_file**: .specify/delivery/deepagents-hitl-streaming-20261120/runtime/observed-pr.json
+- **merge_proof**: diff-equivalent
+<!-- DELIVERY_CURRENT_OUTCOME_END -->
+
+## 最终验证与 Close 记录
+
+本节记录 PR #66 最终发布快照的实际验证；当前终态以上方机器生成的 outcome block 为准。
+
+- 最终检查 head：`96e0a02c8af088bae83c62b5899c08fcd14f916e`；PR base：`069517e4956d4d4954ff62191bbd6aeaf3ed6dfd`。
+- GitHub Actions [44755980248](https://github.com/YanZhiwei/spawn-join/actions/runs/44755980248) 为 `success`，23 个 job 全部成功，包括 21 个包矩阵、`Governance and gate regression` 和 required `Quality Gate`。实际 JSON 观察保存在本地 `runtime/ci-44755980248-success.json`。
+- 本机最终 `QUALITY_VERDICT: pass`（ticket `1cdb894771da4c78884c01c8dac47a71`）、`STANDARDS_VERDICT: pass`（ticket `92cdf60544d34313ad199ff5cc3bbbbd`）。文档、治理和实际 PR diff 检查均退出 0；治理保留一条既有的历史 freshness warning。
+- 独立 `REVIEW_VERDICT: pass`，六维完整覆盖，`CI-REPAIR-CLOSE-001` 已解决。Review ticket 为 `5d670654765341dc9f304c0687c7014a`，内容指纹为 `183888c42098a4b3281ac6a1eb0607df9dc9a6f2b77a298e4d3ba26daf187deb`，需求指纹为 `6c723cfd0c3ea2e8142054eb1e2a8174721a4f9033ba338edaf710d0c2c825c4`。
+- 最终原始 Review 报告保存在本地 `reviews/outgoing-diff/ci-repair-review-5d670654765341dc9f304c0687c7014a.yml`，SHA-256 为 `e472f65612fc0d7bc047dab78de25c3038c79d8506e73824faeeda7ddd94e602`；native receipt SHA-256 为 `34ffd8455197002ee9e117ee3acb1f05224fdb4bd72e7319e43ebe035c7f3bbf`。
+- 在仓库根目录执行 `py -3 -B .specify/extensions/delivery/scripts/delivery_runtime.py close-record --run deepagents-hitl-streaming-20261120 --outcome merged --pr 66 --verified --file runtime/observed-pr.json`，退出 0，返回 `delivered`、`published_head_proof: tracker-head-mapped`、`merge_proof: diff-equivalent`。实际 squash 合并提交为 `3f1d8c2a68cfc6633ad122131b6da3fc9014aebb`。
+- 此 run 为已完成的 Lightweight；没有 Feature Tasks 需要关闭。按 merged Close 策略保留 runtime、Review 和历史证据；没有退休删除项。HITL 接入经验已体现在包的双语 README 与离线示例，本次收口不新增架构规则。
+
+## Historical validation snapshots
+
+<!-- Existing validation, review, CI, and limitation content below is retained verbatim as historical evidence. -->
+
 # DeepAgents 原生流式 HITL 交付证据
 
 - **delivery_run**: deepagents-hitl-streaming-20261120
