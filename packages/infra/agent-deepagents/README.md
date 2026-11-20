@@ -609,27 +609,26 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 
 ## HITL 中断辅助
 
-```python
-from spawn_join_agent_deepagents import (
-    approve_decision,
-    edit_decision,
-    pending_interrupts,
-    reject_decision,
-    resume_batched,
-)
+从仓库根目录运行[离线流式审批示例](examples/hitl_streaming.py)：
 
-interrupts = pending_interrupts(state)
-requests = interrupts[0].value["action_requests"]
-command = resume_batched([approve_decision() for _ in requests])
-result = await assembly.graph.ainvoke(command, config)
+```powershell
+uv run --locked --directory packages/infra/agent-deepagents python examples/hitl_streaming.py
 ```
 
-- `pending_interrupts` 只读取原生 `__interrupt__`，不替宿主做审批；缺失或畸形输入返回空 tuple。
-- `approve_decision` / `edit_decision` / `reject_decision` / `respond_decision` 生成 LangChain HITL 期望的 decision 形状。
-- `resume_batched` 用于 batched 模式，decision 的数量和顺序必须与 `action_requests` 对齐；
-  `resume_per_call` 用于按 interrupt id 回答的 per-call 模式。
-- 恢复需要同一 `thread_id` 和有效 checkpointer；这些 helper 不创建 Checkpointer、不持久化审批、
-  不会自动批准，也不承诺 exactly-once。
+示例用 `graph.astream(..., stream_mode="updates", version="v1")` 读取原生中断。两项操作等待审批时，
+工具执行列表为空。示例提交一项批准和一项拒绝，再用同一 `thread_id` 调用 `graph.ainvoke()` 恢复。
+恢复后的执行列表为 `['keep']`。
+
+- `pending_interrupts(update)` 从流更新的 `__interrupt__` 字段提取待审批项。没有有效中断项时，
+  返回空 tuple。宿主负责读取审批请求、收集决定并管理 checkpointer。示例使用 `InMemorySaver`
+  演示同进程恢复。
+- 通过 `SupervisorSpec.interrupt_on` 配置的 batched 模式使用 `resume_batched`。决定的数量和顺序
+  必须与 `PendingInterrupt.value["action_requests"]` 对齐。
+- 通过 `MiddlewareConfiguration.supervisor` 注入原生 `HumanInTheLoopMiddleware`，并设置
+  `interrupt_mode="per_call"`，可按工具分别审批。将 `PendingInterrupt.id` 映射到对应决定传给
+  `resume_per_call`。`value["tool_call_id"]` 用于关联工具调用。
+- `approve_decision`、`edit_decision`、`reject_decision` 和 `respond_decision` 构造 LangChain HITL
+  的决定字典。审批记录及其持久化由宿主负责。
 
 ## 公共 API
 

@@ -1,5 +1,12 @@
 # Evidence — Common package planning
 
+## 仓库校验锚点
+
+- base_revision: 6906acca67070e55b3153654d8a7addbee64f4b8
+- head_revision: 7dbc714e8d575ae326da81c92eca7459807a241d
+
+以上字段用于校验 PR #48 最终交付到 main 的区间，分别为真实 squash 合并提交的父节点及该合并提交。下方 Identity 和执行记录仍保留原始开发分支基线；原始分支基线与最终 main 基线不是同一提交。
+
 ## Identity
 
 - **delivery_run**: common-foundation-20261107

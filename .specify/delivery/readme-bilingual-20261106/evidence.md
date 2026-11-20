@@ -22,6 +22,12 @@
 - **merge_proof**: diff-equivalent
 <!-- DELIVERY_CURRENT_OUTCOME_END -->
 
+## 仓库校验锚点
+
+- head_revision: e4f12734936c5ed0b3089d66da460b0de85292c8
+
+仓库治理检查使用 PR #41 的实际 squash 合并提交校验已交付内容。原 PR head 与该合并提交的完整 Git tree 相同；上方 Close outcome 区的 Review/PR 身份与下方历史快照保持原样，干净检出无需保留已删除分支的 Git 对象。
+
 ## Historical validation snapshots
 
 <!-- Existing validation, review, CI, and limitation content below is retained verbatim as historical evidence. -->
