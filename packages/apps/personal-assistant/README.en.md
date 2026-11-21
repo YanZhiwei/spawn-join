@@ -14,10 +14,12 @@ scope for v1** (the seam is reserved; see ADR-0015).
 > the configuration boundary (`AppConfig`), the stable error taxonomy,
 > **work-item persistence** (sqlite3 state machine, idempotency keys,
 > recovery scan), **host assembly** (confined workspace backend,
-> permission gates, strict-msgpack SQLite checkpointer), and the
+> permission gates, strict-msgpack SQLite checkpointer), the
 > **due scheduler** (concurrency bound, deadline, cancellation
-> propagation, interrupted rerun); approvals and the CLI land in later
-> slices. This document describes only what is implemented.
+> propagation, interrupted rerun), and **HITL approvals** (native
+> interrupt/resume bridging with persisted approval records); the CLI
+> lands in a later slice. This document describes only what is
+> implemented.
 
 **Contents**
 
@@ -83,7 +85,19 @@ scope for v1** (the seam is reserved; see ADR-0015).
   an outcome. `WorkExecutor` is the executor contract type (receives the
   RUNNING item and persists its final state itself).
 
-Later slices (see the delivery queue): HITL approval persistence and the
+- `ApprovalBook`/`ApprovalRecord`: persisted approval requests (own SQLite
+  table with the action list, decision, and timestamps; decided records are
+  immutable). `pause_for_approval` saves the request and moves the work
+  item to `waiting_approval`; `apply_decision` records the human decision
+  and returns the **aligned** native resume command (`resume_batched`,
+  one decision per recorded action, in order; approve returns the item to
+  `running`, reject records `failed(rejected)` without executing the
+  refused actions); `interrupt_actions` rejects interrupt values without
+  actions. Callers must consume `astream(stream_mode="updates")` to
+  completion before resuming with `ainvoke(command)` on the same thread
+  (breaking early interrupts the underlying run's checkpointing).
+
+Later slices (see the delivery queue): the
 `accept`/`due`/`run`/`report`/`approve` CLI.
 
 ## Installation

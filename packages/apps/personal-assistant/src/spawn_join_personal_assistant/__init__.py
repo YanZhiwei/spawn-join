@@ -8,6 +8,15 @@ the delivery slices; every export is explicit and stable per version.
 
 from __future__ import annotations
 
+from .approvals import (
+    ApprovalBook,
+    ApprovalRecord,
+    apply_decision,
+    interrupt_actions,
+    pause_for_approval,
+    resume_approved,
+    resume_rejected,
+)
 from .config import AppConfig
 from .errors import (
     HostApprovalError,
@@ -23,6 +32,8 @@ from .work.models import WorkItem, WorkStatus
 from .work.store import WorkStore
 
 __all__ = [
+    "ApprovalBook",
+    "ApprovalRecord",
     "AppConfig",
     "HostApprovalError",
     "HostConfigError",
@@ -36,5 +47,10 @@ __all__ = [
     "WorkStatus",
     "WorkStore",
     "WorkTransitionError",
+    "apply_decision",
+    "interrupt_actions",
     "open_host_session",
+    "pause_for_approval",
+    "resume_approved",
+    "resume_rejected",
 ]

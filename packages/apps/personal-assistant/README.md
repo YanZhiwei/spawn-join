@@ -9,9 +9,9 @@ HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接�
 
 > 状态说明：本包处于按切片交付的开发过程中。当前已提供：配置边界（`AppConfig`）、
 > 稳定错误分类、**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）、**宿主装配**
-> （受限工作区 + 权限门禁 + strict msgpack checkpointer）与**due 调度**
-> （并发上限、deadline、取消传播、中断重入队）；审批与 CLI 在后续切片落地。
-> 本文只描述已实现的能力。
+> （受限工作区 + 权限门禁 + strict msgpack checkpointer）、**due 调度**（并发上限、
+> deadline、取消传播、中断重入队）与 **HITL 审批**（原生中断/恢复桥接、审批记录
+> 持久化）；CLI 在后续切片落地。本文只描述已实现的能力。
 
 **目录**
 
@@ -60,7 +60,15 @@ HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接�
   执行器未持久化结果时以 `failed(executor_incomplete)` 兜底。
   `WorkExecutor` 为执行器契约类型（接收 RUNNING 项、自行持久化最终状态）。
 
-后续切片（见任务队列）：HITL 审批持久化与 `accept/due/run/report/approve` CLI。
+- `ApprovalBook`/`ApprovalRecord`：审批请求持久化（独立 SQLite 表：动作列表、
+  决定、时间戳；已决记录不可变）。`pause_for_approval` 同时落请求并把工作项转为
+  `waiting_approval`；`apply_decision` 记录用户决定并返回**对齐的**原生恢复命令
+  （`resume_batched`，决定数与顺序严格对应 action 数；批准回 `running`，拒绝落
+  `failed(rejected)` 且不执行被拒动作）；`interrupt_actions` 在无 action 的中断值上
+  显式报错。恢复调用方需完整消费 `astream(stream_mode="updates")` 后再以同 thread
+  `ainvoke(command)` 续跑（提前 break 会中断底层运行的 checkpoint 落盘）。
+
+后续切片（见任务队列）：`accept/due/run/report/approve` CLI。
 
 ## 安装
 
