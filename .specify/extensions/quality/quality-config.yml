@@ -84,6 +84,13 @@ profiles:
       quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents"
     rules:
       complexity_max: 10
+  - id: spawn-join-personal-assistant
+    match: ["packages/apps/personal-assistant/**"]
+    discovery_files: [pyproject.toml, packages/apps/personal-assistant/pyproject.toml, packages/apps/personal-assistant/uv.lock]
+    commands:
+      quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant"
+    rules:
+      complexity_max: 10
   - id: project-automation
     match: ["scripts/**", ".github/workflows/**"]
     discovery_files: [scripts/quality.ps1, scripts/PSScriptAnalyzerSettings.psd1]

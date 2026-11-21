@@ -1,5 +1,8 @@
 adr_directories:
   - docs/decisions
+  - docs/decisions/agent
+  - docs/decisions/engineering
+  - docs/decisions/llm-provider
 context_files:
   - AGENTS.md
   - .specify/memory/constitution.md
