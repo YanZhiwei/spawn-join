@@ -1,3 +1,31 @@
+<!-- DELIVERY_CURRENT_OUTCOME_BEGIN -->
+## Current delivery outcome
+
+- **delivery_run**: deepagents-delegation-graph-20261121
+- **lane**: lightweight
+- **status**: delivered
+- **outcome**: merged
+- **provider**: github
+- **repository**: yanzhiwei/spawn-join
+- **number**: 70
+- **pull_request**: https://github.com/yanzhiwei/spawn-join/pull/70
+- **reviewed_head**: 4f5b79c734e027ecbad3c2d999819d529958c80e
+- **original_pr_head**: f208793db199c32326563922c33e658b29f7bd7d
+- **published_head_proof**: published-evidence-archive
+- **base_revision**: 4f5b79c734e027ecbad3c2d999819d529958c80e
+- **merged_revision**: 0c4b923e8abbfae662a982623461e78ac042611a
+- **effective_head**: 0c4b923e8abbfae662a982623461e78ac042611a
+- **merged_at**: 2026-11-21T06:04:00Z
+- **observed_at**: 2026-11-21T06:04:00.747265+00:00
+- **outcome_recorded_at**: 2026-11-21T06:04:00.747265+00:00
+- **verification_file**: .specify/delivery/deepagents-delegation-graph-20261121/runtime/observed-pr.json
+- **merge_proof**: evidence-archive
+<!-- DELIVERY_CURRENT_OUTCOME_END -->
+
+## Historical validation snapshots
+
+<!-- Existing validation, review, CI, and limitation content below is retained verbatim as historical evidence. -->
+
 # DeepAgents 原生图受控委派回归验证
 
 - feature_id: deepagents-delegation-graph-20261121
@@ -138,3 +166,61 @@ Simplify 无候选；Package README 对内部测试改动 no-op；不新增 ADR 
 发布前须将两个允许路径提交到独立分支，核对实际提交字节，
 在新的 HEAD 上刷新 Quality／Standards／独立 Review，并在 PR 正文记录真实发布身份。
 用户仅授权创建 PR；只有在另行授权且提供方报告实际结果后，才能执行 Close 写终态。
+
+## 发布身份、CI 与合并核验补充
+
+本节追加后续实际观察，不替换上文提交前的历史身份、命令、评审或限制。
+用户随后明确要求「帮我合并pr并收尾」，授权 PR #70 的 squash 合并、
+来源分支清理及本 run 终态归档。
+
+- **published_head**: f208793db199c32326563922c33e658b29f7bd7d
+- **reviewed_diff_archive**: runtime/published-diff-f208793.patch
+- **reviewed_diff_archive_sha256**: eb82671c166b28f471fc5851c7e918285caef015b4699e2b340430a754a05fe1
+- **reviewed_diff_archive_base**: 4f5b79c734e027ecbad3c2d999819d529958c80e
+- **reviewed_diff_archive_head**: f208793db199c32326563922c33e658b29f7bd7d
+- **reviewed_diff_archive_reviewed_head**: 4f5b79c734e027ecbad3c2d999819d529958c80e
+
+归档是实际 base-to-published-head 的完整 binary/full-index Git diff，包含已提交的
+测试与当时的持久 Evidence。它不是基准 tree 的空 diff，也不是由指纹伪造的补丁。
+新增测试原始字节与提交 blob 的 SHA-256 均为
+`21fddd1ee4074f36d5c4b0bb34fbab8965058c06b66adfbc137d5d38d5b914a7`。
+提交后独立 publication Review 完整检查两文件实际 diff，不将父提交改标为新 Review：
+
+- 最终 Review head：`f208793db199c32326563922c33e658b29f7bd7d`；
+- 最终两文件内容指纹：
+  `49b3ee8d6ace230483133e06bb269d5bf931d0a7904891ffd91a233b26df0ec5`；
+- 最终要求／政策／实际授权指纹：
+  `6c47acf3d4aea623f5f51b4db43c6d239bce24af0bef59c56c4d5d58ad90a403`；
+- publication Review report SHA-256：
+  `ef50d8c6be6464f65bd54d941693410eb1f28ff523c176f55b6695bcdd056080`；
+- publication native receipt SHA-256：
+  `2c26c7d08c00a16ccc91e7121cbf220360a6e6cbac03a4569d87c6b17af23e92`。
+
+实际发布 HEAD 上重新运行 Agent 包完整质量门（217 tests、格式、lint、严格类型、
+构建、隔离安装／依赖／导入）、文档／治理和完整 base-to-head diff 检查，
+全部退出 0；仍保留同一条历史治理告警。独立刷新六维均 pass，零 findings，
+核验原始检查回执及提交字节，确认可沿用同一内容／设计的实际人工批准。
+该刷新不是修复轮次，原始报告与预算未重置。
+
+GitHub Actions `44873371728` 对实际发布 SHA 执行完成，23/23 jobs 均为
+`success`：21 个包／平台组合、治理回归和 required `Quality Gate`。
+`gh pr checks 70 --required` 也独立确认通过。
+真实 Provider 在线调用仍未执行。
+
+合并前再次确认 PR #70 为 OPEN、CLEAN、MERGEABLE，base 仍为原基准，
+head 与上述通过 CI 和独立评审的发布 SHA 相同。执行：
+
+```text
+gh pr merge 70 --repo YanZhiwei/spawn-join --squash --delete-branch --match-head-commit f208793db199c32326563922c33e658b29f7bd7d
+```
+
+退出 0。GitHub 随后报告 MERGED，实际合并提交为
+`0c4b923e8abbfae662a982623461e78ac042611a`，
+合并时间为 `2026-11-21T06:04:00Z`。
+本机 main 已快进到该提交；发布 head 与合并提交的完整 tree 相同，
+两个 base-to-head／base-to-merged binary/full-index diff 逐字相同，
+且合并提交在 origin/main 可达。
+
+Close 首次拒绝了缺少显式 published-head 绑定的历史 Evidence，未写终态或删除工件。
+本节补齐真实发布身份与精确归档，保留该拒绝事实，不修改安装器管理的 runtime，
+不将旧基准 tree 冒充已包含测试。当前终态区块只由原生 Close guard 写入。
