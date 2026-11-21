@@ -22,12 +22,29 @@ scope for v1** (the seam is reserved; see
 - [Work items](#work-items)
   - [WorkItem fields](#workitem-fields)
   - [State machine](#state-machine)
+  - [Full example: accept→execute→complete](#full-example-acceptexecutecomplete)
+  - [Idempotency key replay](#idempotency-key-replay)
+  - [Illegal transition rejection](#illegal-transition-rejection)
+  - [Data survives restart](#data-survives-restart)
 - [Scheduling](#scheduling)
+  - [Example 1: basic cycle](#example-1-basic-cycle)
+  - [Example 2: deadline expiry](#example-2-deadline-expiry)
+  - [Example 3: executor exception (siblings unaffected)](#example-3-executor-exception-siblings-unaffected)
+  - [Example 4: hard-kill recovery](#example-4-hard-kill-recovery)
+  - [Example 5: parent cancellation](#example-5-parent-cancellation)
 - [Approvals](#approvals)
   - [ApprovalRecord fields](#approvalrecord-fields)
   - [Approval flow](#approval-flow)
+  - [Full example: approve path (file written)](#full-example-approve-path-file-written)
+  - [Full example: reject path (action skipped)](#full-example-reject-path-action-skipped)
+  - [Full example: decided records are immutable](#full-example-decided-records-are-immutable)
+  - [Full example: pending alignment after restart](#full-example-pending-alignment-after-restart)
 - [Assembly](#assembly)
+  - [Full example: assembly and resource cleanup](#full-example-assembly-and-resource-cleanup)
+  - [Full example: custom approval gates](#full-example-custom-approval-gates)
+  - [HostSession field assertions](#hostsession-field-assertions)
 - [CLI](#cli)
+  - [CLI full flow walkthrough](#cli-full-flow-walkthrough)
 - [Public API](#public-api)
 - [Errors and failure behavior](#errors-and-failure-behavior)
 - [Compatibility and limitations](#compatibility-and-limitations)
@@ -58,9 +75,7 @@ scope for v1** (the seam is reserved; see
   (rejecting `..`, `~`, and absolute paths outside the root), explicit
   `FilesystemPermission` policy, and no shell execution tools by default;
 - Strict-msgpack `AsyncSqliteSaver`: thread state survives process
-  restarts with a strict deserialization whitelist enabled by default
-  (equivalent to the documented `LANGGRAPH_STRICT_MSGPACK` switch without
-  mutating process environment);
+  restarts with a strict deserialization whitelist enabled by default;
 - HITL approval persistence: action lists, decisions, and timestamps in an
   own SQLite table; decided records are immutable; resume commands are
   structurally aligned with the action count;
@@ -179,29 +194,134 @@ cancel ←──┘  │       │
 ```
 
 - `transition_allowed(current, target)` is the single transition authority;
-- Illegal moves raise `WorkTransitionError` with zero side effects
-  (`queued -> completed` is rejected outright);
+- Illegal moves raise `WorkTransitionError` with zero side effects;
 - Terminal states (`completed/failed/cancelled`) reject every transition;
-- The `running -> queued` recovery edge is for interrupted reruns only: a
-  hard-killed process leaves the item RUNNING, and
-  `Scheduler.recover_interrupted()` requeues it exactly once at next start.
+- The `running -> queued` recovery edge is for interrupted reruns only.
 
-Code example:
+### Full example: accept→execute→complete
 
 ```python
-from spawn_join_personal_assistant import WorkStatus, WorkStore
 from pathlib import Path
 
+from spawn_join_personal_assistant import WorkStatus, WorkStore
+
 with WorkStore(Path("data/work.db")) as store:
-    item = store.accept("organize invoices", idempotency_key="invoices-001")
-
-    running = store.mark(item.id, WorkStatus.RUNNING, increment_attempt=True)
-    assert running.attempts == 1
-
-    done = store.mark(
-        running.id, WorkStatus.COMPLETED, result_summary="12 invoices filed"
+    # Accept (caller provides the idempotency key)
+    item = store.accept(
+        "organize this week's invoices into a table",
+        idempotency_key="invoices-week-47",
+        due_at="2026-11-24T09:00:00+00:00",
+        deadline_seconds=120.0,
     )
-    assert done.result_summary == "12 invoices filed"
+    print(f"accepted: {item.id} status={item.status}")
+
+    # Start (attempts increments)
+    running = store.mark(item.id, WorkStatus.RUNNING, increment_attempt=True)
+    print(f"running: attempts={running.attempts}")
+
+    # Needs approval → pause
+    waiting = store.mark(item.id, WorkStatus.WAITING_APPROVAL, thread_id="t-47")
+    print(f"paused: status={waiting.status} thread={waiting.thread_id}")
+
+    # Approved → resume
+    resumed = store.mark(waiting.id, WorkStatus.RUNNING)
+    print(f"resumed: status={resumed.status} attempts={resumed.attempts}")
+
+    # Complete (persist the result summary)
+    done = store.mark(
+        resumed.id, WorkStatus.COMPLETED, result_summary="12 invoices filed"
+    )
+    print(f"done: {done.result_summary}")
+```
+
+Output:
+
+```text
+accepted: 3a8f… status=WorkStatus.QUEUED
+running: attempts=1
+paused: status=WorkStatus.WAITING_APPROVAL thread=t-47
+resumed: status=WorkStatus.RUNNING attempts=1
+done: 12 invoices filed
+```
+
+### Idempotency key replay
+
+```python
+from pathlib import Path
+
+from spawn_join_personal_assistant import HostStoreError, WorkStore
+
+with WorkStore(Path("data/work.db")) as store:
+    first = store.accept("task A", idempotency_key="key-1")
+
+    # Replay the same key → stable error, no second item
+    try:
+        store.accept("task B", idempotency_key="key-1")
+    except HostStoreError as exc:
+        print(f"replay rejected: {exc}")  # idempotency_key: already exists: key-1
+
+    # The original item is untouched
+    assert store.get(first.id) == first
+    assert store.count_by_status(WorkStatus.QUEUED) == 1
+```
+
+### Illegal transition rejection
+
+```python
+from pathlib import Path
+
+import pytest
+
+from spawn_join_personal_assistant import WorkStatus, WorkStore, WorkTransitionError
+
+with WorkStore(Path("data/work.db")) as store:
+    item = store.accept("task A", idempotency_key="key-1")
+
+    # queued -> completed is illegal (must go through running)
+    with pytest.raises(WorkTransitionError, match="illegal transition"):
+        store.mark(item.id, WorkStatus.COMPLETED)
+
+    # The original item is unchanged (zero side effects)
+    assert store.get(item.id) == item
+
+    # Terminal states reject every transition
+    running = store.mark(item.id, WorkStatus.RUNNING)
+    failed = store.mark(running.id, WorkStatus.FAILED, failure_category="timeout")
+    for target in WorkStatus:
+        if target is not failed.status:
+            with pytest.raises(WorkTransitionError):
+                store.mark(failed.id, target)
+```
+
+### Data survives restart
+
+```python
+from pathlib import Path
+
+from spawn_join_personal_assistant import WorkStatus, WorkStore
+
+db_path = Path("data/work.db")
+
+# First "process": write items
+with WorkStore(db_path) as store:
+    store.accept("task A", idempotency_key="key-a")
+    store.accept("task B", idempotency_key="key-b")
+    store.accept("task C", idempotency_key="key-c")
+
+# Simulate a hard kill: task B left in RUNNING
+with WorkStore(db_path) as store:
+    item_b = store.get_by_idempotency_key("key-b")
+    store.mark(item_b.id, WorkStatus.RUNNING)
+
+# Second "process" restarts → data intact, schema idempotent
+with WorkStore(db_path) as store:
+    unfinished = store.pending_recovery()
+    # 2 queued + 1 running = 3 unfinished
+    assert len(unfinished) == 3
+
+    # Full history is queryable
+    all_items = store.list_all()
+    assert len(all_items) == 3
 ```
 
 ## Scheduling
@@ -215,36 +335,181 @@ concurrency with a semaphore, and enforces the deadline via
 | Due pickup | `queued` items where `due_at is None or due_at <= now` |
 | Concurrency bound | `asyncio.Semaphore(max_concurrency)`; excess items wait |
 | Deadline expiry | Lands as `failed` with category `deadline`; slot released immediately |
-| Executor exception | Lands as `failed` with the exception class name; **sibling items keep running** (the store is the record) |
+| Executor exception | Lands as `failed` with the exception class name; **sibling items keep running** |
 | Executor incomplete | Lands as `failed` with category `executor_incomplete` (contract backstop) |
 | Parent cancellation | Running item is requeued (`running -> queued`) and `CancelledError` propagates |
 | Restart recovery | `recover_interrupted()` requeues RUNNING items exactly once |
 
 The executor contract (`WorkExecutor`): an async callable receiving the
 RUNNING item that **persists its own final state**; the scheduler verifies
-the contract by reading back the stored outcome. In production the CLI's
-`_drive_to_outcome` is the reference implementation: it consumes the astream
-update stream fully, detects interrupts, and persists the final-state
-summary from `aget_state` when no interrupt fired.
+the contract by reading back the stored outcome.
 
-Code example:
+### Example 1: basic cycle
 
 ```python
 import asyncio
 from pathlib import Path
+
 from spawn_join_personal_assistant import Scheduler, WorkStatus, WorkStore
 
-async def scenario() -> None:
+async def main() -> None:
     with WorkStore(Path("data/work.db")) as store:
+        for i in range(4):
+            store.accept(f"task {i}", idempotency_key=f"key-{i}")
+
         async def execute(item) -> None:
-            store.mark(item.id, WorkStatus.COMPLETED, result_summary="done")
+            store.mark(item.id, WorkStatus.COMPLETED, result_summary=f"done {item.goal}")
 
-        scheduler = Scheduler(store, max_concurrency=2, deadline_seconds=120)
-        recovered = await scheduler.recover_interrupted()
+        scheduler = Scheduler(store, max_concurrency=2)
         outcomes = await scheduler.run_due(execute)
-        print(f"{len(outcomes)} item(s) processed")
+        print(f"{len(outcomes)} item(s) completed")
 
-asyncio.run(scenario())
+asyncio.run(main())
+# Output: 4 item(s) completed
+```
+
+### Example 2: deadline expiry
+
+```python
+import asyncio
+from pathlib import Path
+
+from spawn_join_personal_assistant import Scheduler, WorkStatus, WorkStore
+
+async def main() -> None:
+    with WorkStore(Path("data/work.db")) as store:
+        store.accept("slow task", idempotency_key="slow")
+        store.accept("fast task", idempotency_key="fast")
+
+        async def execute(item) -> None:
+            if item.idempotency_key == "slow":
+                await asyncio.sleep(10)  # exceeds the deadline
+            store.mark(item.id, WorkStatus.COMPLETED)
+
+        scheduler = Scheduler(store, max_concurrency=1, deadline_seconds=0.1)
+        outcomes = await scheduler.run_due(execute)
+
+        for o in outcomes:
+            if o.status is WorkStatus.FAILED:
+                print(f"{o.idempotency_key}: failed({o.failure_category})")
+            else:
+                print(f"{o.idempotency_key}: {o.status.value}")
+
+asyncio.run(main())
+# Output:
+# slow: failed(deadline)
+# fast: completed
+```
+
+### Example 3: executor exception (siblings unaffected)
+
+```python
+import asyncio
+from pathlib import Path
+
+from spawn_join_personal_assistant import Scheduler, WorkStatus, WorkStore
+
+async def main() -> None:
+    with WorkStore(Path("data/work.db")) as store:
+        store.accept("crashing task", idempotency_key="bad")
+        store.accept("normal task", idempotency_key="good")
+
+        async def execute(item) -> None:
+            if item.idempotency_key == "bad":
+                raise ValueError("something broke")
+            store.mark(item.id, WorkStatus.COMPLETED, result_summary="ok")
+
+        scheduler = Scheduler(store, max_concurrency=2)
+        outcomes = await scheduler.run_due(execute)
+
+        # bad → failed(ValueError), good → completed, siblings unaffected
+        by_key = {o.idempotency_key: o for o in outcomes}
+        assert by_key["bad"].status is WorkStatus.FAILED
+        assert by_key["bad"].failure_category == "ValueError"
+        assert by_key["good"].status is WorkStatus.COMPLETED
+
+asyncio.run(main())
+```
+
+### Example 4: hard-kill recovery
+
+```python
+import asyncio
+from pathlib import Path
+
+from spawn_join_personal_assistant import Scheduler, WorkStatus, WorkStore
+
+async def main() -> None:
+    db = Path("data/work.db")
+
+    # First "process": task started then hard-killed (left RUNNING)
+    with WorkStore(db) as store:
+        item = store.accept("long task", idempotency_key="long")
+        store.mark(item.id, WorkStatus.RUNNING, increment_attempt=True)
+        # ... process killed, no further mark
+
+    # Second "process": restart, recover, rerun
+    with WorkStore(db) as store:
+        scheduler = Scheduler(store, max_concurrency=1)
+
+        # Exactly-once requeue
+        requeued = await scheduler.recover_interrupted()
+        print(f"requeued: {len(requeued)} item(s)")
+        assert requeued[0].attempts == 1  # previous attempt preserved
+
+        # Second call is a no-op (idempotent)
+        assert await scheduler.recover_interrupted() == []
+
+        # Rerun
+        async def execute(item) -> None:
+            store.mark(item.id, WorkStatus.COMPLETED, result_summary="rerun done")
+
+        outcomes = await scheduler.run_due(execute)
+        final = store.get_by_idempotency_key("long")
+        assert final.status is WorkStatus.COMPLETED
+        assert final.attempts == 2  # 1 interrupted + 1 rerun
+
+asyncio.run(main())
+# Output: requeued: 1 item(s)
+```
+
+### Example 5: parent cancellation
+
+```python
+import asyncio
+from pathlib import Path
+
+from spawn_join_personal_assistant import Scheduler, WorkStatus, WorkStore
+
+async def main() -> None:
+    with WorkStore(Path("data/work.db")) as store:
+        item = store.accept("blocking task", idempotency_key="blocked")
+        started = asyncio.Event()
+
+        async def execute(item) -> None:
+            started.set()
+            await asyncio.Event().wait()  # blocks forever
+
+        scheduler = Scheduler(store, max_concurrency=1)
+        task = asyncio.create_task(scheduler.run_due(execute))
+        await started.wait()
+
+        # External cancel → running item is requeued
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            print("CancelledError propagated")
+
+        # Work item back to QUEUED, attempts preserved
+        recovered = store.get(item.id)
+        print(f"status={recovered.status} attempts={recovered.attempts}")
+        assert recovered.status is WorkStatus.QUEUED
+
+asyncio.run(main())
+# Output:
+# CancelledError propagated
+# status=WorkStatus.QUEUED attempts=1
 ```
 
 ## Approvals
@@ -267,27 +532,192 @@ asyncio.run(scenario())
    native interrupt, persists it, and moves the work item to
    `waiting_approval` (with the `thread_id` association);
 2. `apply_decision(..., approve=True)`: records the decision, returns the
-   work item to `running`, and returns the aligned `resume_batched` command
-   (approved actions execute on resume);
+   work item to `running`, and returns the aligned `resume_batched` command;
 3. `apply_decision(..., approve=False, message="...")`: records the decision,
    lands the work item as `failed(rejected)`, and returns the aligned reject
    command (**refused actions are never executed**);
 4. Decided records are immutable: a second decision raises
    `HostApprovalError`.
 
-Code example (the fully runnable version is in `tests/test_approvals.py`):
+### Full example: approve path (file written)
 
 ```python
-# After the run_due executor detects an interrupt:
-record = pause_for_approval(
-    store, book, work_item_id=item.id, thread_id="t-1", interrupt=found
+import asyncio
+from pathlib import Path
+from typing import Any, cast
+
+from langchain_core.messages import AIMessage, HumanMessage
+from langgraph.types import Command
+from spawn_join_agent_deepagents import pending_interrupts
+
+from spawn_join_personal_assistant import (
+    ApprovalBook,
+    AppConfig,
+    WorkStatus,
+    WorkStore,
+)
+from spawn_join_personal_assistant.approvals import (
+    apply_decision,
+    interrupt_actions,
+    pause_for_approval,
+)
+from spawn_join_personal_assistant.host import open_host_session
+
+# Offline fake model: first requests a file write, then replies "done"
+# (see tests/conftest.py for the full FakeChatModel implementation)
+model = FakeChatModel(
+    responses=[
+        AIMessage(content="", tool_calls=[{
+            "name": "write_file",
+            "args": {"file_path": "/notes.txt", "content": "note"},
+            "id": "call-1", "type": "tool_call",
+        }]),
+        AIMessage(content="note written"),
+    ]
 )
 
-# After the user approves:
-command = apply_decision(
-    store, book, record_id=record.id, work_item_id=item.id, approve=True
+config = AppConfig(
+    data_dir=Path("data"),
+    workspace_root=Path("workspace"),
+    model_catalog_path=Path("model.yaml"),
 )
-await graph.ainvoke(command, {"configurable": {"thread_id": "t-1"}})
+
+async def main() -> None:
+    with WorkStore(Path("data/work.db")) as store, \
+         ApprovalBook(Path("data/approvals.db")) as book:
+        item = store.accept("write a note", idempotency_key="notes-1")
+        store.mark(item.id, WorkStatus.RUNNING)
+
+        session = await open_host_session(
+            config, models=make_models(model),
+            interrupt_on={"write_file": True},
+        )
+        try:
+            thread_id = "thread-notes"
+            graph_config: dict[str, Any] = {
+                "configurable": {"thread_id": thread_id}
+            }
+
+            # 1. Consume the FULL astream update stream (do NOT break early!)
+            interrupt_found = None
+            async for update in session.assembly.graph.astream(
+                {"messages": [HumanMessage(content="write a note")]},
+                graph_config, stream_mode="updates", version="v1",
+            ):
+                found = pending_interrupts(update)
+                if found:
+                    interrupt_found = found[0]
+
+            # 2. Interrupt detected → pause
+            assert interrupt_found is not None
+            actions = interrupt_actions(interrupt_found)
+            print(f"pending action: {actions[0]['name']}")
+
+            record = pause_for_approval(
+                store, book,
+                work_item_id=item.id, thread_id=thread_id,
+                interrupt=interrupt_found,
+            )
+            print(f"work item status: {store.get(item.id).status}")
+            # Output: waiting_approval
+
+            # 3. User approves → aligned resume command
+            command = apply_decision(
+                store, book,
+                record_id=record.id, work_item_id=item.id, approve=True,
+            )
+            assert isinstance(command, Command)
+            resumed = cast(Any, command).resume
+            print(f"resume decision count: {len(resumed['decisions'])}")
+            # Output: 1 (aligned with action count)
+
+            # 4. Execute the resume → approved write actually runs
+            await session.assembly.graph.ainvoke(command, graph_config)
+
+            # The file was written to the workspace
+            assert (Path("workspace") / "notes.txt").is_file()
+            print(f"file content: {(Path('workspace') / 'notes.txt').read_text()}")
+            # Output: note
+
+            # Mark complete
+            store.mark(item.id, WorkStatus.COMPLETED, result_summary="note written")
+        finally:
+            await session.aclose()
+
+asyncio.run(main())
+```
+
+### Full example: reject path (action skipped)
+
+```python
+# ... same setup as above ...
+
+# User rejects → lands as failed(rejected), refused action never executes
+command = apply_decision(
+    store, book,
+    record_id=record.id, work_item_id=item.id,
+    approve=False, message="not allowed",
+)
+
+# Work item is already failed
+item_after = store.get(item.id)
+print(f"status={item_after.status} category={item_after.failure_category}")
+# Output: status=WorkStatus.FAILED category=rejected
+
+# The refused action never executed: no file was created
+assert not (Path("workspace") / "notes.txt").exists()
+```
+
+### Full example: decided records are immutable
+
+```python
+from spawn_join_personal_assistant import ApprovalBook, HostApprovalError
+from spawn_join_personal_assistant.approvals import apply_decision
+
+# ... first approve the record ...
+apply_decision(store, book, record_id=record.id,
+               work_item_id=item.id, approve=True)
+
+# Attempting a second decision → stable error
+try:
+    apply_decision(store, book, record_id=record.id,
+                   work_item_id=item.id, approve=False)
+except HostApprovalError as exc:
+    print(f"immutable: {exc}")
+    # Output: approval record <id>: already approved
+```
+
+### Full example: pending alignment after restart
+
+```python
+from pathlib import Path
+from spawn_join_personal_assistant import ApprovalBook, WorkStatus, WorkStore
+from spawn_join_personal_assistant.approvals import pause_for_approval
+
+db = Path("data")
+
+# First "process": pause for approval then hard-kill
+with WorkStore(db / "work.db") as store, \
+     ApprovalBook(db / "approvals.db") as book:
+    item = store.accept("task A", idempotency_key="key-1")
+    store.mark(item.id, WorkStatus.RUNNING)
+    record = pause_for_approval(
+        store, book,
+        work_item_id=item.id, thread_id="t-1",
+        interrupt=some_interrupt,
+    )
+
+# Second "process": restart → pending approvals and waiting items fully aligned
+with WorkStore(db / "work.db") as store, \
+     ApprovalBook(db / "approvals.db") as book:
+    pending = book.pending()
+    assert [r.id for r in pending] == [record.id]
+    assert len(pending[0].actions) == 1
+
+    unfinished = store.pending_recovery()
+    assert unfinished[0].status is WorkStatus.WAITING_APPROVAL
+    assert unfinished[0].thread_id == "t-1"
+    print("pending approvals and work items fully aligned after restart")
 ```
 
 **Two runtime facts verified by probe before landing** (recorded in this
@@ -304,23 +734,29 @@ rule 1.
 
 ## Assembly
 
-`open_host_session(config, models=...)` assembles the native supervisor:
+### Full example: assembly and resource cleanup
 
 ```python
 import asyncio
 from pathlib import Path
-from spawn_join_personal_assistant import AppConfig, HostSession
+
+from langchain_core.messages import HumanMessage
+
+from spawn_join_personal_assistant import AppConfig
 from spawn_join_personal_assistant.host import open_host_session
 
 config = AppConfig(
-    data_dir=Path("~/.spawn-join-personal-assistant/data").expanduser(),
-    workspace_root=Path("~/.spawn-join-personal-assistant/workspace").expanduser(),
+    data_dir=Path("data"),
+    workspace_root=Path("workspace"),
     model_catalog_path=Path("model.yaml"),
+    max_concurrency=2,
+    work_deadline_seconds=None,
 )
 
 async def main() -> None:
     session = await open_host_session(
-        config, models=models, interrupt_on={"write_file": True}
+        config, models=models,
+        interrupt_on={"write_file": True},
     )
     try:
         result = await session.assembly.graph.ainvoke(
@@ -334,15 +770,58 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-- All four `HostSession.spec/backend/checkpointer/connection` fields are
-  assertable: tests directly verify `spec.tools == ()`,
-  `backend.cwd == workspace_root`, and that `checkpointer.serde` is
-  behaviorally equivalent to the strict serializer;
-- Assembly only validates configuration and creates the graph; it **does not
-  execute the graph or open external model connections** (models are
-  consumed at runtime);
-- To change which tools are approval-gated, pass a different `interrupt_on`
-  Mapping.
+### Full example: custom approval gates
+
+```python
+# Which tools need human approval? Pass a different interrupt_on Mapping.
+
+# Gate only writes (the default policy)
+session = await open_host_session(
+    config, models=models,
+    interrupt_on={"write_file": True},
+)
+
+# Gate all file operations (reads and writes both need approval)
+session = await open_host_session(
+    config, models=models,
+    interrupt_on={"read_file": True, "write_file": True,
+                  "edit_file": True, "delete": True},
+)
+
+# Gate nothing (everything auto-executes)
+session = await open_host_session(
+    config, models=models,
+    interrupt_on=None,
+)
+```
+
+### HostSession field assertions
+
+```python
+from spawn_join_personal_assistant.host import (
+    open_host_session, workspace_permissions, strict_msgpack_serializer,
+)
+
+session = await open_host_session(config, models=models)
+
+# All assembly parameters are assertable
+assert session.backend.cwd == config.workspace_root  # workspace root
+assert session.spec.tools == ()                        # no shell tools by default
+assert tuple(session.spec.permissions) == workspace_permissions()
+assert session.spec.checkpointer is session.checkpointer
+
+# Serializer is behaviorally equivalent to the strict version
+serde = session.checkpointer.serde
+assert serde.pickle_fallback is False
+sample = {"kind": "host", "count": 2}
+strict = strict_msgpack_serializer()
+assert serde.dumps_typed(sample) == strict.dumps_typed(sample)
+
+# Assembly report confirms the confined workspace
+report = session.assembly.report
+assert report.resources.backend_kind == "filesystem"
+assert report.resources.permissions.allow == 1
+```
 
 ## CLI
 
@@ -366,10 +845,47 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
 | `approve --record ID` | Approve and resume execution | 0 / 1 on unknown or decided record |
 | `approve --record ID --reject` | Reject (action never executes) | 0 |
 
-- Output goes through `sys.stdout.write` (no `print`, no runtime log
-  mixing);
-- Errors are prefixed `personal-assistant:` on stderr;
-- v1 approval policy: `write_file` tool calls require human approval.
+### CLI full flow walkthrough
+
+```powershell
+# 1. Accept two tasks
+PS> spawn-join-personal-assistant --root . accept "organize invoices" --key inv-1
+accepted 3a8f… key=inv-1
+PS> spawn-join-personal-assistant --root . accept "write weekly report" --key wk-1
+accepted 9c2d… key=wk-1
+
+# 2. Check unfinished
+PS> spawn-join-personal-assistant --root . due
+[queued] 3a8f… due=- organize invoices
+[queued] 9c2d… due=- write weekly report
+due: 2 unfinished item(s)
+
+# 3. Run one cycle (approval-gated write pauses)
+PS> spawn-join-personal-assistant --root . run
+waiting_approval 3a8f…: needs human decision
+completed 9c2d…: weekly report generated
+run: 2 item(s) processed
+
+# 4. Check pending approvals
+PS> spawn-join-personal-assistant --root . approve --list
+record abc123 work=3a8f… thread=work-3a8f… actions=write_file
+approve: 1 pending record(s)
+
+# 5. Approve → the file is actually written
+PS> spawn-join-personal-assistant --root . approve --record abc123
+approved 3a8f…: completed
+
+# 6. Check final state
+PS> spawn-join-personal-assistant --root . report
+completed 9c2d…: weekly report generated
+completed 3a8f…: invoices organized
+report: 2 item(s)
+
+# 7. Error path: duplicate idempotency key
+PS> spawn-join-personal-assistant --root . accept "duplicate task" --key inv-1
+personal-assistant: idempotency_key: already exists: inv-1
+# exit code 1
+```
 
 ## Public API
 
