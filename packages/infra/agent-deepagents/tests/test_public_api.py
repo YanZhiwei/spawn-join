@@ -177,3 +177,18 @@ def test_mcp_dependencies_are_optional_and_bounded() -> None:
     assert not any(
         item.startswith(("fastmcp", "mcp")) and ";" not in item for item in requirements
     )
+
+
+def test_mcp_namespace_exports_only_implemented_types() -> None:
+    import spawn_join_agent_deepagents.mcp as mcp
+
+    assert set(mcp.__all__) == {
+        "McpCleanupError",
+        "McpConfigurationError",
+        "McpLoadError",
+        "McpLoadReport",
+        "McpServerReport",
+        "McpTools",
+    }
+    assert not hasattr(mcp, "open_mcp_tools")
+    assert not set(mcp.__all__).intersection(package.__all__)

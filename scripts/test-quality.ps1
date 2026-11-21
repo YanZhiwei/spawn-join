@@ -46,6 +46,7 @@ try {
         "$fixture/.specify/memory" | Out-Null
     Copy-Item -LiteralPath "$root/pyproject.toml" -Destination "$fixture/pyproject.toml"
     Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+
     $originalCore = Join-Path $root 'packages/core/spawn-join-core'
     foreach ($name in @('pyproject.toml', 'uv.lock')) {
         Copy-Item -LiteralPath (Join-Path $originalCore $name) -Destination $core
@@ -125,6 +126,13 @@ def test_official_mcp_dependencies_are_installed() -> None:
     Assert-GateResult 'isolated MCP wheel probe failure propagates' build $false `
         'mcp-extra-wheel-probe' 'spawn-join-agent-deepagents'
     Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+
+    $mcpTypes = Join-Path $fixture 'packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/mcp/_types.py'
+    Add-Content -LiteralPath $mcpTypes -Value "raise RuntimeError('mcp-types-wheel-probe')"
+    Assert-GateResult 'installed MCP namespace import failure propagates' build $false `
+        'mcp-types-wheel-probe' 'spawn-join-agent-deepagents'
+    Copy-Item -LiteralPath "$root/packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/mcp/_types.py" `
+        -Destination $mcpTypes
 
     Set-Content -LiteralPath $probe -Value "value=1`n" -NoNewline
     Assert-GateResult 'Black rejects bad formatting without rewriting' format $false 'would reformat'

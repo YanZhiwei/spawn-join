@@ -199,6 +199,8 @@ function Test-AgentInstallVariants {
 import importlib.util
 import sys
 import spawn_join_agent_deepagents
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert importlib.util.find_spec("fastmcp") is None, "base wheel installed FastMCP"
 assert importlib.util.find_spec("mcp") is None, "base wheel installed MCP"
 assert not any(
@@ -229,6 +231,8 @@ from fastmcp.client.group import ClientGroup
 from fastmcp.mcp_config import MCPConfig
 from langchain.mcp import MCPAdapter
 from spawn_join_common import FieldReader
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert MCPConfig.from_dict({"mcpServers": {}}).mcpServers == {}
 assert FieldReader().as_int(3, "count") == 3
 assert all(callable(item) for item in (Client, ClientGroup, MCPAdapter))
