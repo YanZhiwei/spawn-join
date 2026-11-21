@@ -27,6 +27,7 @@ from spawn_join_agent_deepagents.mcp import (
     McpCleanupError,
     McpConfigurationError,
     McpLoadError,
+    McpLoadReport,
 )
 from spawn_join_agent_deepagents.mcp._config import read_configuration
 from spawn_join_agent_deepagents.mcp._session import create_adapter, open_catalog
@@ -42,6 +43,8 @@ def _configuration(
     disabled: tuple[str, ...] = (),
     optional: tuple[str, ...] = (),
     remote_port: int | None = None,
+    startup_timeout: float = 30,
+    timeout_ms: float | None = None,
 ) -> Path:
     arguments = arguments or {}
     servers: dict[str, dict[str, object]] = {
@@ -62,11 +65,18 @@ def _configuration(
             "headers": {"X-Fixture": "synthetic"},
         }
     path = directory / "mcp.json"
+    if timeout_ms is not None:
+        for server in servers.values():
+            server["timeout"] = timeout_ms
     path.write_text(
         json.dumps(
             {
                 "mcpServers": servers,
-                "spawnJoin": {"disabledServers": disabled, "optionalServers": optional},
+                "spawnJoin": {
+                    "disabledServers": disabled,
+                    "optionalServers": optional,
+                    "startupTimeoutSeconds": startup_timeout,
+                },
             }
         ),
         encoding="utf-8",
@@ -347,6 +357,92 @@ def test_optional_configuration_and_cleanup_errors_are_not_degraded(
         assert isinstance(caught.value.__cause__, RuntimeError)
         assert not await _pids(tmp_path, "later")
         await _assert_stopped(await _pids(tmp_path, "failing"))
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("stage", ["connect", "discover"])
+@pytest.mark.parametrize("optional", [True, False])
+def test_startup_budget_covers_connection_and_discovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stage: Literal["connect", "discover"],
+    optional: bool,
+) -> None:
+    path = _configuration(
+        tmp_path,
+        ("failing",),
+        optional=("failing",) if optional else (),
+        startup_timeout=2 if stage == "connect" else 5,
+        arguments={"failing": ["--delay", "30"]} if stage == "connect" else None,
+    )
+    entered = asyncio.Event()
+
+    async def stalled_discovery(
+        group: ClientGroup,
+        *,
+        cache_mode: Literal["use", "refresh", "bypass"] = "refresh",
+    ) -> list[Tool]:
+        entered.set()
+        await asyncio.Event().wait()
+        return []
+
+    if stage == "discover":
+        monkeypatch.setattr(ClientGroup, "list_tools", stalled_discovery)
+
+    async def load() -> McpLoadReport:
+        async with open_catalog(await read_configuration(path)) as catalog:
+            return catalog.report
+
+    async def run() -> None:
+        # The outer guard also permits the SDK's process termination grace period.
+        async with asyncio.timeout(15):
+            if optional:
+                report = await load()
+            else:
+                with pytest.raises(McpLoadError) as caught:
+                    await load()
+                report = caught.value.report
+        row = report.servers[0]
+        assert (row.status, row.error_stage, row.error_code) == (
+            "failed",
+            stage,
+            "timeout",
+        )
+        assert entered.is_set() == (stage == "discover")
+        pids = await _pids(tmp_path, "failing")
+        assert pids
+        await _assert_stopped(pids)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("timeout_ms", [5000, 0])
+def test_request_timeout_survives_adapter_clone_and_ends_at_request(
+    tmp_path: Path,
+    timeout_ms: int,
+) -> None:
+    path = _configuration(
+        tmp_path, ("local",), startup_timeout=5, timeout_ms=timeout_ms
+    )
+
+    async def run() -> None:
+        async with open_catalog(await read_configuration(path)) as catalog:
+            pending = asyncio.create_task(
+                catalog.tools[("local", "echo_value")].ainvoke({"value": "wait"})
+            )
+            await _wait_text(tmp_path / "local.calls")
+            if timeout_ms:
+                with pytest.raises(Exception, match="(?i)timed out|timeout") as caught:
+                    await asyncio.wait_for(pending, 8)
+                assert not isinstance(caught.value, McpLoadError)
+            else:
+                await asyncio.sleep(5.2)
+                assert not pending.done()
+                pending.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await pending
+        await _assert_stopped(await _pids(tmp_path, "local"))
 
     asyncio.run(run())
 

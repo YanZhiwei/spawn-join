@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass
@@ -55,7 +56,11 @@ def create_adapter(
 
 
 async def _initialize(
-    name: str, required: bool, adapter: MCPAdapter, member: AsyncExitStack
+    name: str,
+    required: bool,
+    adapter: MCPAdapter,
+    member: AsyncExitStack,
+    startup_timeout: float,
 ) -> dict[str, BaseTool] | _Failure:
     from fastmcp.client.group import ClientGroup
     from langchain.mcp import as_langchain_tool
@@ -64,22 +69,24 @@ async def _initialize(
     assert isinstance(group, ClientGroup)
     stage: Literal["connect", "discover", "convert"] = "connect"
     try:
-        await member.enter_async_context(adapter)
-        stage = "discover"
-        discovered = await group.list_tools(cache_mode="use")
-        stage = "convert"
-        tools: dict[str, BaseTool] = {}
-        for remote in discovered:
-            tool = await as_langchain_tool(remote, group)
-            route = await group.resolve_tool(tool.name)
-            tools[route.upstream_name] = tool
-        return tools
+        async with asyncio.timeout(startup_timeout):
+            await member.enter_async_context(adapter)
+            stage = "discover"
+            discovered = await group.list_tools(cache_mode="use")
+            stage = "convert"
+            tools: dict[str, BaseTool] = {}
+            for remote in discovered:
+                tool = await as_langchain_tool(remote, group)
+                route = await group.resolve_tool(tool.name)
+                tools[route.upstream_name] = tool
+            return tools
     except AgentConfigurationError:
         raise
     except Exception as exc:
-        return _Failure(
-            McpServerReport(name, required, "failed", 0, stage, "upstream_error"), exc
+        code: Literal["timeout", "upstream_error"] = (
+            "timeout" if isinstance(exc, TimeoutError) else "upstream_error"
         )
+        return _Failure(McpServerReport(name, required, "failed", 0, stage, code), exc)
 
 
 def _load_report(reports: list[McpServerReport]) -> McpLoadReport:
@@ -129,7 +136,9 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
             member = AsyncExitStack()
             try:
-                initialized = await _initialize(name, required, adapter, member)
+                initialized = await _initialize(
+                    name, required, adapter, member, configuration.startup_timeout
+                )
             except BaseException as exc:
                 await _close_failed(member, exc)
                 raise
