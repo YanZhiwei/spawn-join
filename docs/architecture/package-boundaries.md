@@ -14,6 +14,7 @@
 | `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 模型工厂、协议选项映射和配置校验 |
 | `spawn-join-llm-model-sync` | `spawn_join_llm_model_sync` | [`packages/infra/llm-model-sync`](../../packages/infra/llm-model-sync/) | `infra` | 手动模型元数据同步、源注册和确定性快照生成 |
 | `spawn-join-agent-deepagents` | `spawn_join_agent_deepagents` | [`packages/infra/agent-deepagents`](../../packages/infra/agent-deepagents/) | `infra` | DeepAgents 产品装配、模型用途绑定、Middleware 作用域、受控委派、诊断和恢复边界 |
+| `spawn-join-personal-assistant` | `spawn_join_personal_assistant` | [`packages/apps/personal-assistant`](../../packages/apps/personal-assistant/) | `apps` | 个人助理宿主应用：工作项存储、due 调度、HITL 审批持久化、受限工作区装配与 CLI；组合 agent 与模型适配包 |
 
 当前 LLM 包已实现渠道/选项契约、真实 Provider channel transport、LangChain 模型工厂和
 手动元数据同步；agent 包负责 DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确认
@@ -41,12 +42,16 @@
     │       ├── spawn-join-common
     │       ├── platformdirs
     │       └── PyYAML
-    └── spawn-join-agent-deepagents
-            ├── deepagents
-            ├── langchain
-            ├── langchain-core
-            ├── langgraph
-            └── spawn-join-llm-provider-langchain
+    ├── spawn-join-agent-deepagents
+    │       ├── deepagents
+    │       ├── langchain
+    │       ├── langchain-core
+    │       ├── langgraph
+    │       └── spawn-join-llm-provider-langchain
+    └── spawn-join-personal-assistant
+            ├── spawn-join-agent-deepagents
+            ├── spawn-join-llm-provider-langchain
+            └── langgraph-checkpoint-sqlite
 
 spawn-join-llm-provider ──> spawn-join-core
                      ├──> spawn-join-common[validation]
@@ -97,12 +102,13 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 | `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common` 的相对路径源 |
 | `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common`、`spawn-join-llm-provider-langchain` 的相对路径源（后者仅 dev） |
 | `spawn-join-agent-deepagents` | `packages/infra/agent-deepagents/.venv/` | `packages/infra/agent-deepagents/uv.lock` | `spawn-join-llm-provider-langchain` 的相对路径源；Common 仅传递解析 |
+| `spawn-join-personal-assistant` | `packages/apps/personal-assistant/.venv/` | `packages/apps/personal-assistant/uv.lock` | `spawn-join-agent-deepagents`、`spawn-join-llm-provider-langchain` 的相对路径源 |
 
 包间的发布依赖仍然写在 `[project].dependencies` 中；仅开发期的本地路径解析写在对应
 `pyproject.toml` 的 `[tool.uv.sources]` 中。这样既保留 Distribution 的发布元数据，
 又允许每个包在自己的环境中以 editable 方式开发。
 
-七个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
+八个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
 属于本机或构建产物，不应提交。
 
 共享质量策略放在根 tool-only `pyproject.toml`，不创建根级 Python project 或共享环境。

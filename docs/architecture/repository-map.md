@@ -35,11 +35,13 @@ spawn-join/
 │   │   ├── spawn-join-core/          # 独立 uv project、环境和锁文件
 │   │   ├── common/                   # 公共辅助实现；默认零依赖、可选校验
 │   │   └── llm-provider/             # 独立 uv project、环境和锁文件
-│   └── infra/
-│       ├── agent-deepagents/           # 独立 uv project、环境和锁文件
-│       ├── llm-channel/                # 独立 uv project、环境和锁文件；真实 Provider channel transport
-│       ├── llm-model-sync/            # 独立 uv project、环境和锁文件
-│       └── llm-provider-langchain/    # 独立 uv project、环境和锁文件
+│   ├── infra/
+│   │   ├── agent-deepagents/           # 独立 uv project、环境和锁文件
+│   │   ├── llm-channel/                # 独立 uv project、环境和锁文件；真实 Provider channel transport
+│   │   ├── llm-model-sync/            # 独立 uv project、环境和锁文件
+│   │   └── llm-provider-langchain/    # 独立 uv project、环境和锁文件
+│   └── apps/                          # 可独立交付的宿主应用分组
+│       └── personal-assistant/        # 独立 uv project、环境和锁文件；个人助理宿主应用
 ├── AGENTS.md                      # Agent 工作约定和治理入口
 ├── pyproject.toml                 # tool-only 配置，不是根级 Python/uv project
 ├── README.md                      # 面向使用者的项目概览
@@ -96,7 +98,7 @@ ADR 回答“为何做长期取舍”；实际成功或失败只在 evidence 中
 
 ## 路径语义
 
-- `packages/core` 和 `packages/infra` 是架构分组，不是 Python Distribution。
+- `packages/core`、`packages/infra` 和 `packages/apps` 是架构分组，不是 Python Distribution。
 - 每个下层 Distribution 都拥有自己的 `pyproject.toml`、`src/` layout 和独立构建边界。
 - Distribution 名称使用连字符，例如 `spawn-join-core`；Python import package 使用下划线，
   例如 `spawn_join_core`。
@@ -107,7 +109,7 @@ ADR 回答“为何做长期取舍”；实际成功或失败只在 evidence 中
 - `.specify/` 维护 Spec Kit 自身的模板、脚本、集成和 workflow，不存放普通业务设计。
 - `.codegraph/` 是本机开发辅助数据，不是 Python 包，也不是业务源码。
 - 每个 Distribution 都是独立的 uv project，拥有自己的 `pyproject.toml`、`.venv` 和 `uv.lock`；仓库根目录不创建共享 uv workspace。
-- 根 `pyproject.toml` 只包含 tool 表；开发依赖仍由七个保留 Distribution 各自锁定。
+- 根 `pyproject.toml` 只包含 tool 表；开发依赖仍由八个保留 Distribution 各自锁定。
 - `scripts/` 只存放开发治理 PowerShell 脚本，不承载 Python 领域源码。
 - Python 构建产物不得进入版本控制，包括根目录或包目录下的 `build/`、`dist/`、`*.egg-info/`、缓存和临时报告；`harness/build/` 是应提交的治理文档目录。
 
