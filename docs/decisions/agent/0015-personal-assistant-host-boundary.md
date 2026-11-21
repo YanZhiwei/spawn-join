@@ -1,11 +1,11 @@
 # ADR-0015: 个人助理宿主应用边界与持久化基线
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-21
 - Domain: agent
 - Classification: 约束个人助理宿主 Distribution 的归属，以及 work 机制、审批与执行边界的所有权和持久化接缝，属于 agent 领域的组合层决策。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者 / 2026-11-21
 - Depends on: [ADR-0010](0010-deepagents-product-boundary.md)、[ADR-0006](../llm-provider/0006-langchain-first-llm-runtime.md)、[ADR-0008](../llm-provider/0008-model-file-and-env-boundary.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、[ADR-0009](../llm-provider/0009-model-metadata-and-sync.md)（无调度先例）、[ADR-0011](../engineering/0011-common-helper-package.md)
 - Supersedes: 无
@@ -81,8 +81,23 @@ CLI (accept|due|run|report|approve)
 
 ## Verification and implementation status
 
-本 ADR 为 **Proposed** 基线（plan gate 2026-11-21 呈现）。实现尚未开始；验证状态以 Delivery run `personal-assistant-20261121` 的 tasks/evidence 为准，未执行的检查不写成通过。
+本 ADR 已由仓库维护者于 2026-11-21 批准为 **Accepted**（最终 outgoing-diff Review
+`pass` + 人工 review gate 确认 accepted-self-review 降级后批准）。实现位于
+[`packages/apps/personal-assistant/`](../../../packages/apps/personal-assistant/)，公共契约以该包的
+[`README.md`](../../../packages/apps/personal-assistant/README.md) 和 `__init__.py` 为准；测试位于
+[`packages/apps/personal-assistant/tests/`](../../../packages/apps/personal-assistant/tests/)
+（60 用例含 e2e）。已审阅的交付 HEAD：`ff33326134c363cc3b06bd8097c6ed43113b1976`
+（Ralph 分支 `ralph/personal-assistant-host-20261121`，base `main 4f5b79c…`）。
+
+验证覆盖：spec 全部 9 条 FR 与 US1–US4/SC-001..005（e2e 真实文件副作用）；幂等重放、
+硬杀恢复（attempts 递增且重跑一次）、批准/拒绝两路径（批准写入、拒绝不执行）、
+越界写守卫（即使批准也被拦截）、thread 断点续跑；Pyright strict、隔离构建/安装/导入、
+门禁回归 15 场景。实际命令、退出码和残余风险记录在 Delivery evidence 中，不在本 ADR 复制。
+
+残余限制（如实）：真实 Provider 网络路径未测（离线边界，ADR-0008 语义内）；
+本 run 为 accepted-self-review（用户在最终 review gate 明确接受）。
 
 ## Revision history
 
 - 2026-11-21：提出个人助理宿主边界、work/审批所有权、v1 执行边界、SQLite 持久化基线、记忆留位与生产迁移接缝；状态为 Proposed。
+- 2026-11-21：实现与验证完成（七个任务、五个切片，60 用例含 e2e）；仓库维护者批准为 Accepted。
