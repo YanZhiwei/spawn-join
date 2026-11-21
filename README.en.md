@@ -114,7 +114,7 @@ host-owned tools, persistence, and recovery.
 | Synchronize pricing and capability metadata | [Model metadata synchronization](packages/infra/llm-model-sync/README.en.md) |
 | Compose supervisors and workers | [DeepAgents product assembly](packages/infra/agent-deepagents/README.en.md) |
 | Understand the architecture | [Package boundaries](docs/architecture/package-boundaries.md) · [ADR index](docs/decisions/README.en.md#decision-index) |
-| Configure multiple MCP peers and toolsets | [Agent MCP usage](packages/infra/agent-deepagents/README.en.md#installation) · [MCP resource ADR](docs/decisions/agent/0016-mcp-product-integration.md) |
+| Configure multiple MCP peers and toolsets | [Agent MCP usage](packages/infra/agent-deepagents/README.en.md#installation) · [MCP resource ADR](docs/decisions/agent/0017-mcp-product-integration.md) |
 | Run local or CI checks | [Quality gates](docs/development/quality-gates.md) |
 | Understand the delivery process | [Contributor rules](AGENTS.md) · [Delivery setup](docs/development/spec-kit-delivery.md) · [Harness](harness/README.en.md) |
 | Navigate code or create technical diagrams | [Repository map](docs/architecture/repository-map.md) · [Technical diagrams](docs/development/technical-diagrams.md) |
