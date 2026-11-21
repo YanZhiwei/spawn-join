@@ -86,7 +86,7 @@
 
 - 当前设计、入口、归属与依赖方向：`apps → infra → core` 单向；`spawn-join-personal-assistant` → {agent-deepagents, llm-provider-langchain, langgraph-checkpoint-sqlite}
 - 设计变化与原因：ADR-0010 排除项获得归宿（预期演进，非契约冲突）
-- ADR / 决策链接：[ADR-0015](docs/decisions/agent/0015-personal-assistant-host-boundary.md)（Accepted，记录已审阅 HEAD）
+- ADR / 决策链接：[ADR-0015](../../../docs/decisions/agent/0015-personal-assistant-host-boundary.md)（Accepted，记录已审阅 HEAD）
 - 设计图或接口说明：ADR-0015 内嵌数据流文字图
 
 ### Slice / Stack

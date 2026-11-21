@@ -37,6 +37,16 @@ pr_body_path: .specify/delivery/personal-assistant-20261121/pull-request.md
 - Reviewed head: `f14b14858714032c2804dc2fc139a338de42dfaa`
 - Branch: `ralph/personal-assistant-host-20261121`
 - Outgoing commits（10）：`64abf63`（ADR Proposed）、`87df7ef`（decision 配置对齐）、`3f79c13`（计划 packets）、`2305517`（T001）、`a439861`（T002）、`0e7e357`（T003）、`d975bd2`（T004）、`ae05190`（T005）、`ad6074b`（T006）、`ff33326`（T007）→`f14b148`（ADR Accepted）
+- feature_id: personal-assistant-20261121
+- phase_id: pre-publication-validation
+- base_revision: 4f5b79c734e027ecbad3c2d999819d529958c80e
+- head_revision: be49da98b1330af23769d3b9b3c6358a3423e19e
+- working_directory: D:/Repos/spawn-join
+- recorded_at: 2026-11-21
+- result: pass
+- limitations: 真实 Provider 网络路径未测（离线边界，ADR-0008 语义内）；accepted-self-review 降级已由用户 Q8 明确接受；test-governance.ps1 未单独执行（治理检查已在全门内通过）；多进程并发打开同一数据目录不支持（文档已声明）。
+
+机器字段说明：`head_revision` 采用合并结果头 `be49da9`（在全新 clone 中可达）；评审头 `f14b148` 与发布头 `143fe3c` 的完整身份链见顶部 Close 区块。
 
 ## 批准记录（哈希验证）
 
