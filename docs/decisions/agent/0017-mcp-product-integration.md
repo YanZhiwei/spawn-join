@@ -1,4 +1,4 @@
-# ADR-0016: DeepAgents 可选 MCP 产品接入与显式资源范围
+# ADR-0017: DeepAgents 可选 MCP 产品接入与显式资源范围
 
 - Status: Proposed
 - Date: 2026-11-21
