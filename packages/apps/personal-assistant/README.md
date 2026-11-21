@@ -8,6 +8,26 @@
 调度循环、HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接缝已留位，见
 [ADR-0015](../../../docs/decisions/agent/0015-personal-assistant-host-boundary.md)）。
 
+**为什么需要它。** 直接在 DeepAgents/LangGraph 上搭一个"个人助理"，很快会遇到一组
+反复出现的宿主问题：
+
+- 进程退出会话即丢——agent 的 thread 状态缺少跨重启的持久化；
+- 文件副作用没有边界——默认能写整个磁盘，也不该有 shell；
+- 危险动作缺少人工门禁——想"先批准再执行"，就要自己处理中断、决定与恢复命令
+  及其与动作数的对齐；
+- 任务缺少持久队列与幂等——每重试一次就重复一次副作用；
+- 想离线测试整个回路，却发现没有可注入的模型接缝。
+
+本包把这些问题收敛为五个可测试的宿主契约：durable 工作项（幂等键 + 状态机）、
+asyncio due 调度（并发上限 + deadline + 中断重跑）、HITL 审批簿（已决不可变 +
+恢复命令对齐）、受限工作区装配（路径守卫 + 显式权限 + 默认无 shell）和 strict
+msgpack checkpointer（跨重启 thread 恢复）。
+
+**怎么读这份文档。** 作为包使用者，从[安装](#安装)与[快速开始](#快速开始)读起，
+按[工作项](#工作项)→[调度](#调度)→[审批](#审批)→[CLI](#cli)的顺序理解领域语义；
+作为开发维护者，直接读[架构与模块边界](#架构与模块边界开发维护视角)与
+[开发与验证](#开发与验证)，再按需查阅各领域小节的完整示例。
+
 **目录**
 
 - [状态与兼容性](#状态与兼容性)
@@ -45,6 +65,13 @@
 - [公共 API](#公共-api)
 - [错误与失败行为](#错误与失败行为)
 - [兼容性与限制](#兼容性与限制)
+- [架构与模块边界（开发维护视角）](#架构与模块边界开发维护视角)
+  - [模块与职责](#模块与职责)
+  - [依赖方向](#依赖方向)
+  - [数据流（一次 run 周期）](#数据流一次-run-周期)
+  - [持久化布局](#持久化布局)
+  - [扩展接缝](#扩展接缝)
+  - [测试布局](#测试布局)
 - [开发与验证](#开发与验证)
 - [发布与版本](#发布与版本)
 - [维护与贡献](#维护与贡献)
@@ -905,6 +932,85 @@ personal-assistant: idempotency_key: already exists: inv-1
   （CLI 已内建此模式；提前 break 会中断底层运行的 checkpoint 落盘）。
 - 不实现多租户/授权/计费、IM 通道、Web UI、MCP Server、容器/远程沙箱与
   Postgres 部署；生产迁移路径只作为接缝文档（ADR-0015）。
+
+## 架构与模块边界（开发维护视角）
+
+### 模块与职责
+
+| 模块 | 职责 | 关键不变量 |
+| --- | --- | --- |
+| `config.py` | `AppConfig` 边界校验（路径、并发、deadline） | 凭据不进配置；校验在构造时一次完成 |
+| `errors.py` | 宿主稳定错误分类 | 不包装上游 Provider/框架错误 |
+| `work/models.py` | `WorkItem`/`WorkStatus` 状态机 | `transition_allowed` 是合法迁移唯一权威 |
+| `work/store.py` | SQLite 单写者工作项存储 | 幂等键 UNIQUE；非法迁移零副作用 |
+| `scheduler.py` | asyncio due 调度 | 执行器异常不中断兄弟项；父级取消先重排队再传播 |
+| `approvals.py` | HITL 审批簿与恢复命令 | 已决记录不可变；决定与动作严格按序对齐 |
+| `host.py` | supervisor 装配与宿主资源所有权 | `build_supervisor` 是唯一装配权威；资源由调用方关闭 |
+| `cli.py` | 五子命令入口 | 稳定退出码；`bindings` 是显式模型注入接缝 |
+
+### 依赖方向
+
+```text
+cli ─┬─ host ── spawn-join-agent-deepagents（装配）+ langgraph（checkpointer）
+    ├─ scheduler ── work（store/models）
+    ├─ approvals ── work + spawn-join-agent-deepagents（interrupt/resume）
+    └─ config / errors（全包共享）
+```
+
+依赖方向保持单向：本包位于 SpawnJoin 依赖图的终点（apps 层），不被任何
+SpawnJoin 包反向依赖；装配与模型契约归
+[`spawn-join-agent-deepagents`](../../infra/agent-deepagents/README.md) /
+[`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md)
+拥有，本包不重复解析 `model.yaml`、`.env` 或 Provider SDK。
+
+### 数据流（一次 run 周期）
+
+```text
+accept(goal, key) ──────────────── work_items(queued)
+run：
+  recover_interrupted：RUNNING → queued（中断重跑，恰好一次）
+  拾取到期 queued → RUNNING（attempts+1）
+  executor：astream 全流消费
+    ├─ 命中 interrupt → approval_records(pending) + WAITING_APPROVAL
+    └─ 自然结束 ──── COMPLETED（result_summary=末条 assistant 消息）
+approve：
+  record_decision(approved/rejected)
+    ├─ approved → RUNNING + resume_batched → 续跑到完成
+    └─ rejected → FAILED(rejected)，被拒动作不执行
+```
+
+### 持久化布局
+
+- `data/work.db`：工作项表 `work_items`（幂等键 UNIQUE，`CREATE TABLE IF NOT EXISTS`
+  幂等建表）。
+- `data/approvals.db`：审批记录表 `approval_records`（已决不可变，与工作项存储
+  分库，互不锁）。
+- `data/threads.db`：LangGraph thread checkpoint（strict msgpack 白名单，等价
+  `LANGGRAPH_STRICT_MSGPACK`，但不改进程环境）。
+- `workspace/`：agent 文件副作用的唯一合法目录（virtual-mode 路径守卫拒绝
+  `..`/`~`/根外绝对路径）。
+
+### 扩展接缝
+
+- **审批门禁**：`open_host_session(interrupt_on=...)` 声明哪些工具需要人工批准
+  （CLI 默认 `{"write_file": True}`，只门禁写操作）。
+- **模型注入**：`main(bindings=...)` 绕过模型目录，直接注入离线/替代模型——
+  测试与示例全部经此接缝运行。
+- **宿主工具**：`SupervisorSpec.tools` 默认为空；新增宿主工具属于本包装配范围，
+  必须同时声明其审批策略（`interrupt_on`）。
+- **存储迁移**：三个 SQLite 文件即持久化接口；Postgres 迁移只作为接缝文档
+  （ADR-0015），运行时不依赖任何云服务。
+
+### 测试布局
+
+- 单元：`test_work_store`（状态机/幂等/恢复）、`test_scheduler`（拾取/约束/取消/
+  硬杀恢复）、`test_approvals`(暂停/决定/重启对齐)、`test_config`（边界校验）。
+- 装配：`test_host_assembly`（资源所有权、路径守卫、strict 序列化器、fake 模型
+  冒烟执行）。
+- 端到端：`test_cli`（五子命令冒烟 + 稳定退出码）与 `test_e2e_offline`（US1–US4
+  全链路；以受控 tmpdir 内文件计数断言副作用）。
+- 全部 60 用例离线运行：不读真实密钥、不连接外部服务；新增行为必须先有失败
+  测试再实现（见仓库 `AGENTS.md`）。
 
 ## 开发与验证
 

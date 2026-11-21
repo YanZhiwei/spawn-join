@@ -1,10 +1,9 @@
-"""HITL approval bookkeeping bridging native interrupts and the work store.
+"""桥接原生中断与工作存储的 HITL 审批记账。
 
-The approval book owns its own SQLite table in the host data directory: one
-row per paused work item with the requested actions, the user decision, and
-timestamps. Resume commands are built from the native ``resume_batched``
-contract with exactly one decision per recorded action, in order. Nothing
-here approves by itself; the human decision always arrives from the host.
+审批簿在宿主数据目录中拥有自己的 SQLite 表：每个暂停的工作项一行，
+记录请求的动作、用户决定与时间戳。恢复命令按原生 ``resume_batched``
+契约构造——与已记录动作严格按顺序一一对应。这里没有任何自行批准的
+逻辑；人类决定始终来自宿主。
 """
 
 from __future__ import annotations
@@ -52,20 +51,20 @@ CREATE TABLE IF NOT EXISTS approval_records (
 
 
 def _utc_now_iso() -> str:
-    """Return the current UTC time as a sortable ISO-8601 string."""
+    """以可排序的 ISO-8601 字符串返回当前 UTC 时间。"""
 
     return datetime.now(UTC).isoformat()
 
 
 def _require_path(value: object) -> None:
-    """Reject non-Path input with a stable, assertable error."""
+    """拒绝非 Path 输入，抛出稳定、可断言的错误。"""
 
     if not isinstance(value, Path):
         raise HostApprovalError("db_path: must be a pathlib.Path")
 
 
 def interrupt_actions(interrupt: PendingInterrupt) -> tuple[dict[str, Any], ...]:
-    """Return the ``action_requests`` of one native interrupt as mappings."""
+    """以映射元组返回一个原生中断的 ``action_requests``。"""
 
     value: object = interrupt.value
     if isinstance(value, Mapping):
@@ -82,15 +81,15 @@ def interrupt_actions(interrupt: PendingInterrupt) -> tuple[dict[str, Any], ...]
 
 @dataclass(frozen=True, slots=True)
 class ApprovalRecord:
-    """One persisted approval request and its human decision.
+    """一条已持久化的审批请求及其人类决定。
 
-    Attributes:
-        id: Book-assigned unique identifier (UUID hex).
-        work_item_id / thread_id: The paused work item and its thread.
-        interrupt_id: The native interrupt id when present.
-        actions: The requested actions, in order; decisions must align.
-        decision: ``pending`` until the user approves or rejects.
-        created_at / decided_at: ISO-8601 UTC timestamps.
+    字段:
+        id: 审批簿分配的唯一标识（UUID hex）。
+        work_item_id / thread_id: 被暂停的工作项及其 thread。
+        interrupt_id: 存在时的原生中断 id。
+        actions: 按顺序请求的动作；决定必须与之对齐。
+        decision: 用户批准或拒绝前保持 ``pending``。
+        created_at / decided_at: ISO-8601 UTC 时间戳。
     """
 
     id: str
@@ -104,7 +103,7 @@ class ApprovalRecord:
 
 
 def _record_from_row(row: sqlite3.Row) -> ApprovalRecord:
-    """Narrow an untyped sqlite3 row into an ApprovalRecord at the boundary."""
+    """在存储边界把无类型的 sqlite3 行收窄为 ApprovalRecord。"""
 
     decided_at = row["decided_at"]
     actions = json.loads(str(row["actions_json"]))
@@ -123,7 +122,7 @@ def _record_from_row(row: sqlite3.Row) -> ApprovalRecord:
 
 
 class ApprovalBook:
-    """Durable approval-request persistence over one sqlite3 connection."""
+    """基于单个 sqlite3 连接的可持久化审批请求存储。"""
 
     def __init__(self, db_path: Path) -> None:
         _require_path(db_path)
@@ -145,7 +144,7 @@ class ApprovalBook:
         self.close()
 
     def close(self) -> None:
-        """Close the underlying connection; safe to call more than once."""
+        """关闭底层连接；可重复调用。"""
 
         self._connection.close()
 
@@ -156,7 +155,7 @@ class ApprovalBook:
         thread_id: str,
         interrupt: PendingInterrupt,
     ) -> ApprovalRecord:
-        """Persist one approval request extracted from a native interrupt."""
+        """持久化一条从原生中断提取的审批请求。"""
 
         actions = interrupt_actions(interrupt)
         now = _utc_now_iso()
@@ -191,12 +190,12 @@ class ApprovalBook:
         return record
 
     def get(self, record_id: str) -> ApprovalRecord | None:
-        """Return the approval record with the given id, or None."""
+        """返回给定 id 的审批记录，不存在则返回 None。"""
 
         return self._select_one("id = ?", (record_id,))
 
     def pending(self) -> list[ApprovalRecord]:
-        """Return pending approval records in creation order."""
+        """按创建顺序返回 pending 状态的审批记录。"""
 
         return self._select_all("decision = 'pending'")
 
@@ -205,7 +204,7 @@ class ApprovalBook:
         record_id: str,
         decision: Literal["approved", "rejected"],
     ) -> ApprovalRecord:
-        """Persist the human decision; decided records are immutable."""
+        """持久化人类决定；已决定的记录不可变。"""
 
         current = self.get(record_id)
         if current is None:
@@ -271,7 +270,7 @@ def pause_for_approval(
     thread_id: str,
     interrupt: PendingInterrupt,
 ) -> ApprovalRecord:
-    """Persist the request and move the work item to waiting_approval."""
+    """持久化请求并把工作项迁移到 waiting_approval。"""
 
     record = book.save_request(
         work_item_id=work_item_id,
@@ -283,7 +282,7 @@ def pause_for_approval(
 
 
 def resume_approved(record: ApprovalRecord) -> Command[Any]:
-    """Build the aligned resume command approving every recorded action."""
+    """构造与已记录动作逐一对应的批准恢复命令。"""
 
     return resume_batched([approve_decision() for _ in record.actions])
 
@@ -292,7 +291,7 @@ def resume_rejected(
     record: ApprovalRecord,
     message: str | None = None,
 ) -> Command[Any]:
-    """Build the aligned resume command rejecting every recorded action."""
+    """构造与已记录动作逐一对应的拒绝恢复命令。"""
 
     return resume_batched([reject_decision(message) for _ in record.actions])
 
@@ -306,11 +305,10 @@ def apply_decision(
     approve: bool,
     message: str | None = None,
 ) -> Command[Any]:
-    """Record the decision, move the work item, and build the resume command.
+    """记录决定、迁移工作项并构造恢复命令。
 
-    Approve returns the work item to ``running`` for the resumed execution;
-    reject records the durable ``failed(rejected)`` outcome without executing
-    the refused actions.
+    批准把工作项送回 ``running`` 继续执行；拒绝在不执行被拒动作的前提
+    下落盘持久的 ``failed(rejected)`` 结果。
     """
 
     decision: Literal["approved", "rejected"] = "approved" if approve else "rejected"

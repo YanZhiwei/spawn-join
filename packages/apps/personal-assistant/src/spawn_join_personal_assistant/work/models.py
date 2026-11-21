@@ -1,9 +1,8 @@
-"""Work-item state machine for the personal assistant host.
+"""个人助理宿主的工作项状态机。
 
-A work item is a durable, resumable unit of agent work. ``WorkStatus`` plus
-``transition_allowed`` are the only authority for legal transitions; the
-store enforces them on every mutation so an illegal move fails loudly
-instead of silently rewriting history.
+工作项是一个可持久化、可恢复的 agent 工作单元。``WorkStatus`` 与
+``transition_allowed`` 是合法迁移的唯一权威；store 在每次写入时强制
+执行它们，使非法迁移大声失败，而不是静默改写历史。
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ from enum import StrEnum
 
 
 class WorkStatus(StrEnum):
-    """Lifecycle states of a durable work item."""
+    """可持久化工作项的生命周期状态。"""
 
     QUEUED = "queued"
     RUNNING = "running"
@@ -27,8 +26,7 @@ _ALLOWED_TRANSITIONS: dict[WorkStatus, frozenset[WorkStatus]] = {
     WorkStatus.QUEUED: frozenset({WorkStatus.RUNNING, WorkStatus.CANCELLED}),
     WorkStatus.RUNNING: frozenset(
         {
-            # Interrupted rerun: a hard-killed or parent-cancelled run goes
-            # back to the queue so recovery executes it exactly once more.
+            # 中断重跑：被硬杀或父级取消的运行回到队列，恢复时恰好再执行一次。
             WorkStatus.QUEUED,
             WorkStatus.WAITING_APPROVAL,
             WorkStatus.COMPLETED,
@@ -50,28 +48,28 @@ _ALLOWED_TRANSITIONS: dict[WorkStatus, frozenset[WorkStatus]] = {
 
 
 def transition_allowed(current: WorkStatus, target: WorkStatus) -> bool:
-    """Report whether the state machine permits ``current`` -> ``target``."""
+    """报告状态机是否允许 ``current`` -> ``target``。"""
 
     return target in _ALLOWED_TRANSITIONS[current]
 
 
 @dataclass(frozen=True, slots=True)
 class WorkItem:
-    """A durable unit of agent work with its lifecycle fields.
+    """一个可持久化的 agent 工作单元及其生命周期字段。
 
-    Attributes:
-        id: Store-assigned unique identifier (UUID hex).
-        idempotency_key: Caller-supplied key, unique across items; replaying
-            the same key never creates a second item or side effect.
-        goal: Non-empty natural-language goal for the agent run.
-        status: Current lifecycle state.
-        created_at / updated_at: ISO-8601 UTC timestamps.
-        due_at: Optional ISO-8601 UTC time when the item becomes runnable.
-        deadline_seconds: Optional total runtime budget for one attempt.
-        attempts: Number of started runs; incremented on queued->running.
-        result_summary: Optional human-readable completion summary.
-        failure_category: Optional stable failure category (e.g. timeout).
-        thread_id: Optional checkpointer thread associated with this item.
+    字段:
+        id: store 分配的唯一标识（UUID hex）。
+        idempotency_key: 调用方提供的键，跨工作项唯一；重放同一键不会
+            创建第二个工作项或副作用。
+        goal: 交给 agent 运行的非空自然语言目标。
+        status: 当前生命周期状态。
+        created_at / updated_at: ISO-8601 UTC 时间戳。
+        due_at: 可选的 ISO-8601 UTC 到期时间，到期后工作项才可运行。
+        deadline_seconds: 单次尝试的可选总运行预算。
+        attempts: 已启动的运行次数；queued->running 时递增。
+        result_summary: 可选的人类可读完成摘要。
+        failure_category: 可选的稳定失败类别（如 timeout）。
+        thread_id: 与本工作项关联的可选 checkpointer thread。
     """
 
     id: str
