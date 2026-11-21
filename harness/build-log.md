@@ -1233,3 +1233,6 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
   Pyright strict、60 用例、构建、隔离安装与导入）；`-Check static` 为 0；`git diff --check`
   通过。远端 24 作业矩阵将由 PR CI 实测。详见
   [evidence](../.specify/delivery/ci-personal-assistant-matrix-20261121/evidence.md)。
+- Close：PR #80 的远端 run `44916810378` 实测 24 个包 job（8 包 × 3 组合）+ Governance +
+  Quality Gate 全部 pass；2026-11-21T15:02:32Z 已 squash 合并为
+  `f50486ad63f44b7cf2df98cda79202587347020d`，status: delivered。
