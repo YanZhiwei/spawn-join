@@ -19,7 +19,11 @@ class McpConfigurationError(AgentConfigurationError):
 
 
 class McpCleanupError(AgentConfigurationError):
-    """A resource owned by this MCP context could not be released."""
+    """An owned resource failed cleanup; its cause retains the raw failure.
+
+    With a primary error, this error becomes its cause and retains the previous
+    primary cause in its context, so controlled diagnostics can inspect both.
+    """
 
 
 @dataclass(frozen=True, slots=True)

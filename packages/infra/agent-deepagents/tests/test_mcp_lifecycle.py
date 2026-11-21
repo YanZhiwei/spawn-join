@@ -7,7 +7,7 @@ import os
 import signal
 import subprocess
 import sys
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import TracebackType
@@ -327,20 +327,6 @@ def test_optional_configuration_and_cleanup_errors_are_not_degraded(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     path = _configuration(tmp_path, ("failing", "later"), optional=("failing",))
-    original_exit = MCPAdapter.__aexit__
-
-    async def fail_exit(
-        adapter: MCPAdapter,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        await original_exit(adapter, exc_type, exc_value, traceback)
-        if (
-            isinstance(adapter.client, ClientGroup)
-            and "failing" in adapter.client.clients
-        ):
-            raise RuntimeError("synthetic cleanup failure")
 
     async def run() -> None:
         _inject_startup_failure(
@@ -350,13 +336,154 @@ def test_optional_configuration_and_cleanup_errors_are_not_degraded(
             async with open_catalog(await read_configuration(path)):
                 pytest.fail("configuration error was downgraded")
         _inject_startup_failure(monkeypatch, "convert")
-        monkeypatch.setattr(MCPAdapter, "__aexit__", fail_exit)
+        _inject_cleanup_failure(monkeypatch, [])
         with pytest.raises(McpCleanupError) as caught:
             async with open_catalog(await read_configuration(path)):
                 pytest.fail("cleanup error was downgraded")
         assert isinstance(caught.value.__cause__, RuntimeError)
         assert not await _pids(tmp_path, "later")
         await _assert_stopped(await _pids(tmp_path, "failing"))
+
+    asyncio.run(run())
+
+
+def _inject_cleanup_failure(monkeypatch: pytest.MonkeyPatch, closed: list[str]) -> None:
+    original_exit = MCPAdapter.__aexit__
+
+    async def fail_exit(
+        adapter: MCPAdapter,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await original_exit(adapter, exc_type, exc_value, traceback)
+        group = adapter.client
+        assert isinstance(group, ClientGroup)
+        assert all(not client.is_connected() for client in group.clients.values())
+        closed.extend(group.clients)
+        if "failing" in group.clients:
+            raise RuntimeError("synthetic secret-cleanup")
+
+    monkeypatch.setattr(MCPAdapter, "__aexit__", fail_exit)
+
+
+async def _observe_cleanup_failure(
+    operation: Callable[[], Coroutine[object, object, None]],
+    mode: str,
+    entered: asyncio.Event,
+) -> BaseException:
+    observed: BaseException
+    if mode.endswith("cancel"):
+        parent = asyncio.create_task(operation())
+        try:
+            async with asyncio.timeout(20):
+                await entered.wait()
+        finally:
+            parent.cancel("synthetic parent cancel")
+        with pytest.raises(asyncio.CancelledError) as cancelled:
+            await parent
+        observed = cancelled.value
+        assert observed.args == ("synthetic parent cancel",)
+    else:
+        expected = {
+            "normal": McpCleanupError,
+            "optional": McpCleanupError,
+            "required": McpLoadError,
+            "configuration": McpConfigurationError,
+            "body": ValueError,
+        }[mode]
+        with pytest.raises(expected) as caught:
+            await operation()
+        observed = caught.value
+    return observed
+
+
+def _assert_cleanup_failure(
+    mode: str, observed: BaseException, primary: Exception, upstream: Exception
+) -> None:
+    if mode in {"body", "configuration"}:
+        assert observed is primary
+    cleanup = observed if isinstance(observed, McpCleanupError) else observed.__cause__
+    assert isinstance(cleanup, McpCleanupError)
+    assert isinstance(cleanup.__cause__, RuntimeError)
+    if mode == "required":
+        assert isinstance(observed, McpLoadError)
+        assert [row.status for row in observed.report.servers] == [
+            "loaded",
+            "failed",
+            "not_attempted",
+        ]
+        assert cleanup.__context__ is upstream
+    if mode == "optional":
+        assert cleanup.__cause__.__context__ is upstream
+    assert "secret-" not in str(observed) + repr(cleanup)
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "normal",
+        "body",
+        "required",
+        "configuration",
+        "optional",
+        "startup_cancel",
+        "body_cancel",
+    ],
+)
+def test_combined_cleanup_preserves_primary_and_releases_all_members(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    startup_failure = mode in {"required", "configuration", "optional"}
+    during_startup = startup_failure or mode == "startup_cancel"
+    names = ("first", "failing", "later") if during_startup else ("first", "failing")
+    path = _configuration(
+        tmp_path, names, optional=("failing",) if mode == "optional" else ()
+    )
+    primary = (
+        McpConfigurationError("safe configuration")
+        if mode == "configuration"
+        else ValueError("synthetic primary")
+    )
+    upstream = ValueError("synthetic secret-load")
+    if startup_failure:
+        _inject_startup_failure(
+            monkeypatch, "convert", primary if mode == "configuration" else upstream
+        )
+    entered = asyncio.Event()
+    original_list = ClientGroup.list_tools
+    closed: list[str] = []
+
+    async def discover(
+        group: ClientGroup,
+        *,
+        cache_mode: Literal["use", "refresh", "bypass"] = "refresh",
+    ) -> list[Tool]:
+        if "failing" in group.clients:
+            entered.set()
+            await asyncio.Event().wait()
+        return await original_list(group, cache_mode=cache_mode)
+
+    if mode == "startup_cancel":
+        monkeypatch.setattr(ClientGroup, "list_tools", discover)
+    _inject_cleanup_failure(monkeypatch, closed)
+
+    async def operation() -> None:
+        async with open_catalog(await read_configuration(path)):
+            if mode == "body":
+                raise primary
+            if mode == "body_cancel":
+                entered.set()
+                await asyncio.Event().wait()
+
+    async def run() -> None:
+        observed = await _observe_cleanup_failure(operation, mode, entered)
+        _assert_cleanup_failure(mode, observed, primary, upstream)
+        assert closed == ["failing", "first"]
+        pids = await _pids(tmp_path, "first") + await _pids(tmp_path, "failing")
+        assert len(pids) == 2
+        assert not await _pids(tmp_path, "later")
+        await _assert_stopped(pids)
 
     asyncio.run(run())
 
@@ -550,25 +677,25 @@ def test_mixed_three_service_routing_headers_and_http_ownership(tmp_path: Path) 
             path = await asyncio.to_thread(
                 _configuration, tmp_path, ("first", "second"), remote_port=port
             )
-            async with open_catalog(await read_configuration(path)) as catalog:
-                assert len(catalog.tools) == catalog.report.tool_count == 3
-                for source in ("first", "second", "remote"):
-                    tool = catalog.tools[(source, "echo_value")]
-                    assert tool.name == f"{source}_echo_value"
-                    assert f"{source}:hello" in str(
-                        await tool.ainvoke({"value": "hello"})
-                    )
-                assert "remote:header:synthetic" in str(
-                    await catalog.tools[("remote", "echo_value")].ainvoke(
-                        {"value": "header"}
-                    )
-                )
-                assert len(await _pids(tmp_path, "remote")) == 1
-            await _assert_stopped(
-                await _pids(tmp_path, "first") + await _pids(tmp_path, "second")
-            )
-            assert remote.returncode is None
             async with Client(f"http://127.0.0.1:{port}/mcp") as probe:
+                async with open_catalog(await read_configuration(path)) as catalog:
+                    assert len(catalog.tools) == catalog.report.tool_count == 3
+                    for source in ("first", "second", "remote"):
+                        tool = catalog.tools[(source, "echo_value")]
+                        assert tool.name == f"{source}_echo_value"
+                        assert f"{source}:hello" in str(
+                            await tool.ainvoke({"value": "hello"})
+                        )
+                    assert "remote:header:synthetic" in str(
+                        await catalog.tools[("remote", "echo_value")].ainvoke(
+                            {"value": "header"}
+                        )
+                    )
+                    assert len(await _pids(tmp_path, "remote")) == 1
+                await _assert_stopped(
+                    await _pids(tmp_path, "first") + await _pids(tmp_path, "second")
+                )
+                assert remote.returncode is None and probe.is_connected()
                 assert "remote:after" in str(
                     await probe.call_tool("echo_value", {"value": "after"})
                 )
@@ -580,7 +707,11 @@ def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) 
     async def run() -> None:
         async with _http_service(tmp_path) as (remote, port):
             path = await asyncio.to_thread(
-                _configuration, tmp_path, ("local",), remote_port=port
+                _configuration,
+                tmp_path,
+                ("local",),
+                remote_port=port,
+                optional=("remote",),
             )
             observed_call_failure = False
             try:
@@ -595,14 +726,20 @@ def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) 
                         }
                     )
                     assert isinstance(failed, ToolMessage) and failed.status == "error"
+                    assert catalog.report.status == "ready" and not catalog.failures
+                    assert await _wait_text(tmp_path / "remote.calls") == "fail\n"
                     remote.terminate()
                     await remote.wait()
                     with pytest.raises(Exception, match="(?i)connect|closed|transport"):
                         await tool.ainvoke({"value": "transport-lost"})
                     observed_call_failure = True
-            except* (ConnectError, ReadError):
-                # The SDK may also surface its failed HTTP session on exit.
-                pass
+            except McpCleanupError as cleanup:
+                # Inspect only the known SDK exit failures inside the safe boundary.
+                assert cleanup.__cause__ is not None
+                try:
+                    raise cleanup.__cause__
+                except* (ConnectError, ReadError):
+                    pass
             assert observed_call_failure
             await _assert_stopped(await _pids(tmp_path, "local"))
 

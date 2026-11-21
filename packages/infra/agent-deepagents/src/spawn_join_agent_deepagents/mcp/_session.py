@@ -115,6 +115,30 @@ async def _close_failed(member: AsyncExitStack, cause: BaseException) -> None:
 
 
 @asynccontextmanager
+async def _owned_stack() -> AsyncGenerator[AsyncExitStack, None]:
+    """Close every owned member while retaining primary identity and diagnostics."""
+    resources = AsyncExitStack()
+    primary: BaseException | None = None
+    try:
+        yield resources
+    except BaseException as exc:
+        primary = exc
+    try:
+        await resources.aclose()
+    except Exception as cause:
+        cleanup = McpCleanupError("MCP resource cleanup failed")
+        cleanup.__cause__ = cause
+        if primary is None:
+            raise cleanup from cause
+        # Preserve the former load cause alongside the new cleanup cause, without
+        # overwriting the SDK's own chain of multiple cleanup failures.
+        cleanup.__context__ = primary.__cause__
+        primary.__cause__ = cleanup
+    if primary is not None:
+        raise primary
+
+
+@asynccontextmanager
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
     """Hold each adapter's actual context and yield original-identity native tools."""
     tools: dict[tuple[str, str], BaseTool] = {}
@@ -125,7 +149,7 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
         )
         for name in configuration.official.mcpServers
     ]
-    async with AsyncExitStack() as resources:
+    async with _owned_stack() as resources:
         for index, (name, server) in enumerate(
             configuration.official.mcpServers.items()
         ):
@@ -134,27 +158,25 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
                 reports[index] = McpServerReport(name, required, "disabled", 0)
                 continue
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
-            member = AsyncExitStack()
-            try:
+            async with _owned_stack() as member:
                 initialized = await _initialize(
                     name, required, adapter, member, configuration.startup_timeout
                 )
-            except BaseException as exc:
-                await _close_failed(member, exc)
-                raise
-            if isinstance(initialized, _Failure):
-                reports[index] = initialized.report
-                await _close_failed(member, initialized.cause)
-                if required:
-                    raise _load_error(initialized, _load_report(reports))
-                failures[name] = initialized
-                continue
-            # Transfer only complete members; the Adapter owns its actual clone.
-            resources.push_async_exit(member.pop_all())
-            tools.update(
-                ((name, original), tool) for original, tool in initialized.items()
-            )
-            reports[index] = McpServerReport(name, required, "loaded", len(initialized))
+                if isinstance(initialized, _Failure):
+                    reports[index] = initialized.report
+                    if required:
+                        raise _load_error(initialized, _load_report(reports))
+                    await _close_failed(member, initialized.cause)
+                    failures[name] = initialized
+                    continue
+                # Transfer only complete members; the Adapter owns its actual clone.
+                resources.push_async_exit(member.pop_all())
+                tools.update(
+                    ((name, original), tool) for original, tool in initialized.items()
+                )
+                reports[index] = McpServerReport(
+                    name, required, "loaded", len(initialized)
+                )
         report = _load_report(reports)
         yield _Catalog(
             MappingProxyType(tools),
