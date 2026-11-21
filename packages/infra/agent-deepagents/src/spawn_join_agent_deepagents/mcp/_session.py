@@ -10,13 +10,12 @@ from typing import TYPE_CHECKING
 
 from langchain_core.tools import BaseTool
 from spawn_join_agent_deepagents.mcp._types import (
-    McpConfigurationError,
     McpLoadReport,
     McpServerReport,
 )
 
 if TYPE_CHECKING:
-    from fastmcp.mcp_config import StdioMCPServer
+    from fastmcp.mcp_config import RemoteMCPServer, StdioMCPServer
     from langchain.mcp import MCPAdapter
 
     # Companion modules share this precise record without making it a public DTO.
@@ -32,7 +31,7 @@ class _Catalog:
 
 
 def create_adapter(
-    name: str, server: StdioMCPServer, timeout_ms: float | None
+    name: str, server: StdioMCPServer | RemoteMCPServer, timeout_ms: float | None
 ) -> MCPAdapter:
     from fastmcp import Client
     from fastmcp.client.group import ClientGroup
@@ -49,14 +48,6 @@ def create_adapter(
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
     """Hold each adapter's actual context and yield original-identity native tools."""
     from fastmcp.client.group import ClientGroup
-    from fastmcp.mcp_config import StdioMCPServer
-
-    # This independently usable prefix implements only stdio; HTTP is the next task.
-    for name, server in configuration.official.mcpServers.items():
-        if name not in configuration.disabled_servers and not isinstance(
-            server, StdioMCPServer
-        ):
-            raise McpConfigurationError("MCP transport: stdio required by this prefix")
 
     tools: dict[tuple[str, str], BaseTool] = {}
     reports: list[McpServerReport] = []
@@ -66,7 +57,6 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
             if name in configuration.disabled_servers:
                 reports.append(McpServerReport(name, required, "disabled", 0))
                 continue
-            assert isinstance(server, StdioMCPServer)
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
             # The adapter may clone the Client. Hold its own context, not the input
             # Client/Group, so tool callbacks reenter the same live singleton group.
