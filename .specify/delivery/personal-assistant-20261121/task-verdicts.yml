@@ -1,0 +1,150 @@
+# Ralph task verdicts — personal-assistant-20261121
+# Native receipt per task; machine associations live under runtime/task-closures/.
+
+T001:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: 3f79c13cc3590745183b304ef7e878f0256f84f8
+  gate_fingerprint: ba0aa179e6a1b3a9250f1aad3ef89bcefecab06569fffd7bd53f06c86575daba
+  owners:
+    quality: { ticket: 00b370aa38ba44a3b481426a0688a377, verdict: pass }
+    standards: { ticket: d4ed45dc1737429b8027a1bd78ccead5, verdict: pass }
+    review: { ticket: c54426a1a5274927adae088b38728125, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "lane-level docs-sync/package-readme and final gate regression own the doc checks" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T001-quality-gate.txt
+  notes: >
+    Scaffold for the eighth Distribution packages/apps/personal-assistant with
+    AppConfig boundary validation and the stable host error taxonomy; quality
+    profile added to quality-config.yml and the package enumerated in
+    scripts/quality.ps1; governance docs (repository-map, package-boundaries,
+    root README bilingual rows) synced. Package gate fully green including
+    isolated build/install/import.
+
+T002:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: 230551762a01ded55922b6c4e7111b6be2aa2453
+  gate_fingerprint: e1044ea5546fdae183dcd64f7f8edb6cb447635e8b386f4ed718813d28a2c4c2
+  owners:
+    quality: { ticket: e29acf1be1634328a29637703f0166c5, verdict: pass }
+    standards: { ticket: 7a2cea458e7648bcb991d8d9120786ea, verdict: pass }
+    review: { ticket: 2de47c12cb624688a851639eb8bdcb4b, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "README status lines synced in-task; full README verdict owned by docs-sync.package-readme" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T002-quality-gate.txt
+  notes: >
+    WorkStore over sqlite3: six-state machine (queued/running/waiting_approval/
+    completed/failed/cancelled) with transition_allowed as the single authority,
+    idempotent accept with UNIQUE key constraint, pending_recovery scan for
+    restarts, and WorkTransitionError on illegal moves with zero side effects.
+    12 new tests; package gate green (19 passed, Pyright strict 0 errors).
+
+T003:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: a4398615fb47e206122c7dac7c69892d6b63beae
+  gate_fingerprint: e972282a8e94fbd944d2e3f1032d165cabea2eace6b0f93e85d68dc08d65976d
+  owners:
+    quality: { ticket: 1a57f02395da436b93801b4067174a8a, verdict: pass }
+    standards: { ticket: c1ecaa20f6c844e99dc9e9c58f6477a8, verdict: pass }
+    review: { ticket: 81eb51f46b7f4b06864dae02f8619e42, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "README status lines synced in-task; full README verdict owned by docs-sync.package-readme" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T003-quality-gate.txt
+  notes: >
+    open_host_session wires the native supervisor: FilesystemBackend with
+    virtual-mode path guardrails, explicit workspace permissions, no shell
+    tools by default, and an AsyncSqliteSaver with a strict msgpack
+    deserialization whitelist (allowed_msgpack_modules=None, equivalent to
+    LANGGRAPH_STRICT_MSGPACK without process env mutation). Upstream APIs
+    verified by signature before integration. 7 new tests; package gate green
+    (26 passed, Pyright strict 0 errors).
+
+T004:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: 0e7e357fae2e9eb7b5c6d43ce4d9d3789cc66611
+  gate_fingerprint: 390a0a74936d542bdd2e5d3bd97ac0a60be10b79ae74b610c4be2b107b2d5f2e
+  owners:
+    quality: { ticket: 5d109711a5524300a5b866e18f643b47, verdict: pass }
+    standards: { ticket: b0fd32c089534153acaca47844f019d4, verdict: pass }
+    review: { ticket: 056478274d5047f781d7fe1aabf6100f, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "README status lines synced in-task; full README verdict owned by docs-sync.package-readme" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T004-quality-gate.txt
+  notes: >
+    Asyncio due scheduler: semaphore-bounded run_due cycles, asyncio.timeout
+    deadline landing as failed(deadline) with slot release, executor
+    exceptions recorded as failed with the exception class name (siblings
+    keep running), parent cancellation re-queuing RUNNING -> QUEUED with
+    CancelledError propagation, and recover_interrupted re-queuing hard
+    killed items exactly once. The state machine gains the FR-004
+    RUNNING -> QUEUED recovery edge with its own regression. 11 new tests;
+    package gate green (37 passed, Pyright strict 0 errors).
+
+T005:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: d975bd28a84150bd6d502e45b046bcc4cd7b5adf
+  gate_fingerprint: 1ad182b25c4b3aca1e1e900353e94b7335ee0a37b47fb910270f9c31bd410351
+  owners:
+    quality: { ticket: 3166aebfce9a40828946401315bfe6ae, verdict: pass }
+    standards: { ticket: 97478eda80f54a7ba40ce31a843405e8, verdict: pass }
+    review: { ticket: 42985447ddee4a28936308a32c2a3bed, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "README status lines synced in-task with two verified runtime facts; full README verdict owned by docs-sync.package-readme" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T005-quality-gate.txt
+  notes: >
+    ApprovalBook with an own SQLite table persists action lists, decisions,
+    and timestamps; decided records are immutable. pause_for_approval saves
+    the request and moves the item to waiting_approval; apply_decision
+    returns aligned resume_batched commands (approve -> running, reject ->
+    failed(rejected) with the refused action unexecuted). Two runtime facts
+    verified by probe before landing: astream must be fully consumed before
+    resuming, and the deepagents write_file parameter is file_path. 6 new
+    tests; package gate green (43 passed, Pyright strict 0 errors).
+
+T006:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: ae0519016c08fda4a4f89b51c7712bd8fa5f7d17
+  gate_fingerprint: e0971bc54a276435123b836823eab3135663f5e4a0d6d80ce68b9ceb1780d47d
+  owners:
+    quality: { ticket: 7589a67157f742ec8d1c41e241787cf3, verdict: pass }
+    standards: { ticket: b26bb4be53354be297efc575791d25c3, verdict: pass }
+    review: { ticket: 3a3ce00151694b0394c371b4faeb33b7, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "README final structure owned by T007 per tasks.md split" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T006-quality-gate.txt
+  notes: >
+    Five CLI subcommands (accept/due/run/report/approve) with stable exit
+    codes, stdout/stderr separation, and a model bindings injection seam.
+    _drive_to_outcome is the single execution tail shared by run and approve
+    resume; astream is fully consumed before decisions. Console script
+    registered. Offline example runs the full accept/run/approve/report loop
+    with a deterministic fake. 17 new tests (11 CLI + 6 e2e) covering US1-US4
+    main paths, idempotent replay, interrupted-rerun recovery (attempts=2),
+    approve/reject flows with real file side effects, and escape writes
+    confined even when approved. Package gate green (60 passed, Pyright
+    strict 0 errors).
+
+T007:
+  verdict: pass
+  date: 2026-11-21
+  branch: ralph/personal-assistant-host-20261121
+  pre_commit_head: ad6074b6d8bb4e0c3434e4e39642b3461c0e65b4
+  gate_fingerprint: 8c69a3fba60e0cfa2258ff4a543f83980854892370ba313614130b8fe6539949
+  owners:
+    quality: { ticket: fb40ef0bd98c4adcb43f8d1a6e884d99, verdict: pass }
+    standards: { ticket: 0ad0d1dcbd5e4f0c8d29fc27e89157b1, verdict: pass }
+    review: { ticket: b52fa043e8c54128bbe6aebdf2d78f7b, verdict: pass, independence: accepted-self-review }
+  docs_refresh: { required: false, reason: "this task IS the docs closure; lane package-readme re-judges before final review" }
+  checks_evidence: .specify/delivery/personal-assistant-20261121/runtime/checks/T007-quality-gate.txt
+  notes: >
+    ADR-0015 row registered in the Chinese decision index (the English index
+    links the authoritative table by convention). Bilingual package README
+    rewritten to final form: every command, export, exit code, approval
+    policy, and single-writer limitation cross-checked against actual
+    sources; root README rows verified unchanged since T001. docs +
+    governance + full package gate all green (60 passed regression).
