@@ -1,9 +1,8 @@
-"""Public API for the SpawnJoin personal assistant host application.
+"""SpawnJoin 个人助理宿主应用的公共 API。
 
-The host application composes the SpawnJoin distributions to run durable
-work items under a confined workspace: it owns the work-item store, the
-scheduler loop, HITL approvals, and the CLI. The public surface grows with
-the delivery slices; every export is explicit and stable per version.
+宿主应用组合 SpawnJoin 各 Distribution，在受限工作区下运行可持久化的
+工作项：它拥有工作项存储、调度循环、HITL 审批和 CLI。公共面随交付
+切片增长；每个导出都是显式且按版本稳定的。
 """
 
 from __future__ import annotations

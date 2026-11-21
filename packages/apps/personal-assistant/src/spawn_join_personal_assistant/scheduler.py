@@ -1,13 +1,11 @@
-"""Asyncio due scheduler for durable work items.
+"""面向可持久化工作项的 asyncio due 调度器。
 
-The scheduler owns the work-item side of one bounded execution cycle: it
-picks due queued items, marks them running under a concurrency bound, wraps
-each executor call in an optional deadline, enforces the executor's
-persisted outcome, and converts failures into stable ``failed`` states.
-Executor exceptions are recorded as failed items (the store is the record)
-instead of aborting sibling items; parent cancellation re-queues the
-running item and propagates. Interrupted runs (hard kill) are re-queued
-once at recovery via ``recover_interrupted``.
+调度器拥有单个有界执行周期内工作项侧的全部行为：拾取到期的排队项、
+在并发上限内把它们标记为 running、用可选 deadline 包裹每个执行器
+调用、强制执行器落盘其最终状态，并把失败转换为稳定的 ``failed``
+状态。执行器异常被记录为 failed 工作项（store 即记录），而不是中断
+兄弟项；父级取消把运行中的工作项重新排队并传播。被中断的运行（硬杀）
+在恢复时经 ``recover_interrupted`` 恰好重排队一次。
 """
 
 from __future__ import annotations
@@ -21,19 +19,19 @@ from .work.models import WorkItem, WorkStatus
 from .work.store import WorkStore
 
 WorkExecutor = Callable[[WorkItem], Awaitable[None]]
-"""Runs one RUNNING work item and persists its final store state itself."""
+"""执行一个 RUNNING 工作项，并自行持久化其最终 store 状态。"""
 
 _MIN_CONCURRENCY = 1
 
 
 def _utc_now_iso() -> str:
-    """Return the current UTC time as a sortable ISO-8601 string."""
+    """以可排序的 ISO-8601 字符串返回当前 UTC 时间。"""
 
     return datetime.now(UTC).isoformat()
 
 
 def _require_positive_int(label: str, value: object) -> None:
-    """Reject non-int, bool, or below-minimum concurrency input."""
+    """拒绝非 int、bool 或低于下限的并发输入。"""
 
     if not isinstance(value, int) or isinstance(value, bool):
         raise HostSchedulingError(f"{label}: must be an int")
@@ -42,7 +40,7 @@ def _require_positive_int(label: str, value: object) -> None:
 
 
 def _require_positive_number_or_none(label: str, value: object) -> None:
-    """Reject non-numeric (or non-positive) deadline input; None disables."""
+    """拒绝非数值（或非正数）的 deadline 输入；None 表示禁用。"""
 
     if value is None:
         return
@@ -53,7 +51,7 @@ def _require_positive_number_or_none(label: str, value: object) -> None:
 
 
 class Scheduler:
-    """Bounded due scheduler over a single-writer work store."""
+    """基于单写者工作存储的有界 due 调度器。"""
 
     def __init__(
         self,
@@ -69,11 +67,10 @@ class Scheduler:
         self._deadline_seconds = deadline_seconds
 
     async def recover_interrupted(self) -> list[WorkItem]:
-        """Requeue RUNNING items after a restart (interrupted rerun).
+        """重启后把 RUNNING 工作项重新排队（中断重跑）。
 
-        Each interrupted item is re-queued exactly once here; a later
-        ``run_due`` executes it once more, and the work item's idempotency
-        key keeps any external side effect from duplicating.
+        每个被中断的工作项在这里恰好重新排队一次；随后的 ``run_due``
+        会再执行它一次，工作项的幂等键保证任何外部副作用不会重复。
         """
 
         requeued: list[WorkItem] = []
@@ -88,12 +85,10 @@ class Scheduler:
         *,
         now: str | None = None,
     ) -> list[WorkItem]:
-        """Run one bounded cycle over due queued items.
+        """对到期的排队工作项运行一个有界周期。
 
-        Returns the persisted final state of every processed item. Items
-        that are queued without a due time, or whose due time has passed,
-        are eligible; parent cancellation propagates after re-queuing the
-        interrupted item.
+        返回每个被处理工作项已持久化的最终状态。无到期时间或到期时间
+        已过的排队项可被拾取；父级取消在重新排队被中断项之后传播。
         """
 
         current = now if now is not None else _utc_now_iso()
