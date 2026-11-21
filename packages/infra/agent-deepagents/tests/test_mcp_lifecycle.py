@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import TracebackType
+from typing import Literal
 
 import pytest
 from fastmcp import Client
@@ -20,6 +21,13 @@ from fastmcp.mcp_config import StdioMCPServer
 from httpx2 import ConnectError, ReadError
 from langchain.mcp import MCPAdapter
 from langchain_core.messages import ToolMessage
+from langchain_core.tools import BaseTool
+from mcp.types import Tool
+from spawn_join_agent_deepagents.mcp import (
+    McpCleanupError,
+    McpConfigurationError,
+    McpLoadError,
+)
 from spawn_join_agent_deepagents.mcp._config import read_configuration
 from spawn_join_agent_deepagents.mcp._session import create_adapter, open_catalog
 
@@ -32,6 +40,7 @@ def _configuration(
     *,
     arguments: dict[str, list[str]] | None = None,
     disabled: tuple[str, ...] = (),
+    optional: tuple[str, ...] = (),
     remote_port: int | None = None,
 ) -> Path:
     arguments = arguments or {}
@@ -54,7 +63,12 @@ def _configuration(
         }
     path = directory / "mcp.json"
     path.write_text(
-        json.dumps({"mcpServers": servers, "spawnJoin": {"disabledServers": disabled}}),
+        json.dumps(
+            {
+                "mcpServers": servers,
+                "spawnJoin": {"disabledServers": disabled, "optionalServers": optional},
+            }
+        ),
         encoding="utf-8",
     )
     return path
@@ -178,13 +192,22 @@ def test_empty_stdio_and_disabled_declarations(tmp_path: Path) -> None:
 
 def test_later_stdio_startup_failure_closes_earlier_service(tmp_path: Path) -> None:
     path = _configuration(
-        tmp_path, ("healthy", "failing"), arguments={"failing": ["--fail"]}
+        tmp_path, ("healthy", "failing", "later"), arguments={"failing": ["--fail"]}
     )
 
     async def run() -> None:
-        with pytest.raises(Exception, match="connect|closed|Failed|terminated"):
+        with pytest.raises(McpLoadError, match="connect/upstream_error") as caught:
             async with open_catalog(await read_configuration(path)):
                 pytest.fail("failed initialization produced a catalog")
+        assert [item.status for item in caught.value.report.servers] == [
+            "loaded",
+            "failed",
+            "not_attempted",
+        ]
+        assert (
+            caught.value.report.tool_count == 1 and caught.value.__cause__ is not None
+        )
+        assert not await _pids(tmp_path, "later")
         await _assert_stopped(
             await _pids(tmp_path, "healthy") + await _pids(tmp_path, "failing")
         )
@@ -192,14 +215,152 @@ def test_later_stdio_startup_failure_closes_earlier_service(tmp_path: Path) -> N
     asyncio.run(run())
 
 
+def _inject_startup_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    stage: Literal["connect", "discover", "convert"],
+    failure: Exception | None = None,
+) -> None:
+    from langchain import mcp
+
+    failure = failure or ValueError("synthetic secret-token")
+    original_list = ClientGroup.list_tools
+    original_convert = mcp.as_langchain_tool
+
+    async def discover(
+        group: ClientGroup,
+        *,
+        cache_mode: Literal["use", "refresh", "bypass"] = "refresh",
+    ) -> list[Tool]:
+        if "failing" in group.clients:
+            raise failure
+        return await original_list(group, cache_mode=cache_mode)
+
+    async def convert(tool: Tool, group: ClientGroup) -> BaseTool:
+        if tool.name.startswith("failing_"):
+            raise failure
+        return await original_convert(tool, group)
+
+    if stage == "discover":
+        monkeypatch.setattr(ClientGroup, "list_tools", discover)
+    elif stage == "convert":
+        monkeypatch.setattr(mcp, "as_langchain_tool", convert)
+
+
+@pytest.mark.parametrize("stage", ["connect", "discover", "convert"])
+def test_optional_failure_releases_member_and_continues(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stage: Literal["connect", "discover", "convert"],
+) -> None:
+    path = _configuration(
+        tmp_path,
+        ("failing", "healthy"),
+        optional=("failing",),
+        arguments={"failing": ["--fail"]} if stage == "connect" else None,
+    )
+    _inject_startup_failure(monkeypatch, stage)
+
+    async def run() -> None:
+        async with open_catalog(await read_configuration(path)) as catalog:
+            assert (
+                catalog.report.status == "degraded" and catalog.report.tool_count == 1
+            )
+            assert [item.status for item in catalog.report.servers] == [
+                "failed",
+                "loaded",
+            ]
+            assert catalog.report.servers[0].error_stage == stage
+            failure = catalog.failures["failing"]
+            assert failure.report is catalog.report and failure.__cause__ is not None
+            assert "secret-token" not in repr(catalog.report) + repr(catalog) + str(
+                failure
+            )
+            await _assert_stopped(await _pids(tmp_path, "failing"))
+            assert "healthy:ok" in str(
+                await catalog.tools[("healthy", "echo_value")].ainvoke({"value": "ok"})
+            )
+        await _assert_stopped(await _pids(tmp_path, "healthy"))
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("mode", ["empty", "disabled", "no_tools", "all_failed"])
+def test_empty_catalog_readiness_is_distinct_from_optional_failure(
+    tmp_path: Path, mode: str
+) -> None:
+    names = () if mode == "empty" else ("one", "two")
+    path = _configuration(
+        tmp_path,
+        names,
+        disabled=names if mode == "disabled" else (),
+        optional=names if mode == "all_failed" else (),
+        arguments={
+            name: ["--fail" if mode == "all_failed" else "--empty"] for name in names
+        },
+    )
+
+    async def run() -> None:
+        async with open_catalog(await read_configuration(path)) as catalog:
+            assert not catalog.tools and catalog.report.tool_count == 0
+            assert catalog.report.status == (
+                "degraded" if mode == "all_failed" else "ready"
+            )
+            assert tuple(catalog.failures) == (names if mode == "all_failed" else ())
+            assert tuple(item.name for item in catalog.report.servers) == names
+        for name in names:
+            await _assert_stopped(await _pids(tmp_path, name))
+
+    asyncio.run(run())
+
+
+def test_optional_configuration_and_cleanup_errors_are_not_degraded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _configuration(tmp_path, ("failing", "later"), optional=("failing",))
+    original_exit = MCPAdapter.__aexit__
+
+    async def fail_exit(
+        adapter: MCPAdapter,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await original_exit(adapter, exc_type, exc_value, traceback)
+        if (
+            isinstance(adapter.client, ClientGroup)
+            and "failing" in adapter.client.clients
+        ):
+            raise RuntimeError("synthetic cleanup failure")
+
+    async def run() -> None:
+        _inject_startup_failure(
+            monkeypatch, "convert", McpConfigurationError("safe config")
+        )
+        with pytest.raises(McpConfigurationError, match="safe config"):
+            async with open_catalog(await read_configuration(path)):
+                pytest.fail("configuration error was downgraded")
+        _inject_startup_failure(monkeypatch, "convert")
+        monkeypatch.setattr(MCPAdapter, "__aexit__", fail_exit)
+        with pytest.raises(McpCleanupError) as caught:
+            async with open_catalog(await read_configuration(path)):
+                pytest.fail("cleanup error was downgraded")
+        assert isinstance(caught.value.__cause__, RuntimeError)
+        assert not await _pids(tmp_path, "later")
+        await _assert_stopped(await _pids(tmp_path, "failing"))
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("during_startup", [True, False])
+@pytest.mark.parametrize("optional", [True, False])
 def test_parent_cancellation_releases_stdio(
-    tmp_path: Path, during_startup: bool
+    tmp_path: Path, during_startup: bool, optional: bool
 ) -> None:
     path = _configuration(
         tmp_path,
         ("cancelled",),
         arguments={"cancelled": ["--delay", "30"]} if during_startup else None,
+        optional=("cancelled",) if optional else (),
     )
 
     async def run() -> None:
