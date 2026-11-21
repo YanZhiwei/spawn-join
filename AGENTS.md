@@ -142,13 +142,13 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
     默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
     策略留在调用方，后续能力需有真实复用契约，不预建空模块。
 
-当前配置基线（2026-11-08）：七个保留包各自拥有独立 uv 锁文件、dev group 和 `tests/`，
-消费者通过本地开发源解析仓库依赖；
+当前配置基线（2026-11-21）：八个保留包（`core` 3、`infra` 4、`apps` 1）各自拥有独立
+uv 锁文件、dev group 和 `tests/`，消费者通过本地开发源解析仓库依赖；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
 活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
-新 agent 包和 channel 包已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
+所有保留包（含 `apps` 分组）已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
 不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
 发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
 以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：

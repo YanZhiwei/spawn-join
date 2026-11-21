@@ -1218,3 +1218,18 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
   `.git/info/exclude` 排除的本地运行工作区。其余 9 个 verification-required run 均为 legacy
   目录，未补造历史。详见 [evidence](evidence/personal-assistant-close-reconciliation.md)。
 - 纯治理记录，未运行包矩阵或回归套件；commit、push、PR 需单独授权。
+
+## 2026-11-21 — CI 矩阵补齐第 8 个包
+
+- Route: Lightweight（CI 矩阵条目与当前状态文档计数，无产品源码或行为变化）。
+- Base revision: `c2de6aed93c563c8830d45936425389f7c04294a`；工作目录 `D:\Repos\spawn-join`。
+- 缺口：`.github/workflows/quality.yml` 的 `matrix.package` 仍只列 7 个包，
+  `packages/apps/personal-assistant` 有质量 Profile 却没有任何 CI job；改该包的 PR 可以在
+  未构建、未测试的情况下保持 `Quality Gate` 为绿。
+- 变更：矩阵增加 `spawn-join-personal-assistant`（7×3 → 8×3，24 组合）；同步
+  `docs/development/quality-gates.md` 的包数/组合数/覆盖表述、`spec-kit-delivery.md` 的
+  Profile 计数，以及 `AGENTS.md` 的 2026-11-21 配置基线快照。
+- 验证：`quality.ps1 -Package spawn-join-personal-assistant` 为 0（lock/sync、格式、lint、
+  Pyright strict、60 用例、构建、隔离安装与导入）；`-Check static` 为 0；`git diff --check`
+  通过。远端 24 作业矩阵将由 PR CI 实测。详见
+  [evidence](../.specify/delivery/ci-personal-assistant-matrix-20261121/evidence.md)。
