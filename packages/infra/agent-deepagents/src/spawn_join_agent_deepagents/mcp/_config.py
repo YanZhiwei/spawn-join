@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +25,7 @@ _READER = FieldReader(
         message.split(":", 1)[0] + ": invalid configuration"
     )
 )
+_ENVIRONMENT_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +72,32 @@ def _string_mapping(value: object, path: str) -> dict[str, str]:
     }
 
 
+def _expanded_mapping(
+    value: object, path: str, environ: Mapping[str, str]
+) -> dict[str, str]:
+    def replacement(match: re.Match[str]) -> str:
+        try:
+            return environ[match[1]]
+        except KeyError as exc:
+            raise McpConfigurationError(
+                path + ": missing environment variable"
+            ) from exc
+
+    values = _string_mapping(value, path)
+    for key, text in values.items():
+        if "${" in _ENVIRONMENT_REFERENCE.sub("", text):
+            _READER.fail(path + ": malformed environment reference")
+        values[key] = _ENVIRONMENT_REFERENCE.sub(replacement, text)
+    return values
+
+
+def _resolved_cwd(value: str, directory: Path) -> str:
+    try:
+        return str((directory / value).resolve())
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise McpConfigurationError("mcpServers.cwd: invalid directory") from exc
+
+
 def _number(value: object, path: str) -> float:
     try:
         return _READER.as_non_negative_number(value, path)
@@ -107,7 +136,9 @@ def _toolsets(value: object, available: set[str]) -> Mapping[str, _ToolSelection
     return MappingProxyType(selections)
 
 
-def _server(value: object) -> tuple[dict[str, object], float | None]:
+def _server(
+    value: object, directory: Path, environ: Mapping[str, str]
+) -> tuple[dict[str, object], float | None]:
     from fastmcp.mcp_config import infer_transport_type_from_url
 
     server = _READER.as_mapping(value, "mcpServers.entry")
@@ -128,9 +159,13 @@ def _server(value: object) -> tuple[dict[str, object], float | None]:
     if local:
         _name(server["command"], "mcpServers.command")
         server["args"] = list(_strings(server.get("args", []), "mcpServers.args"))
-        server["env"] = _string_mapping(server.get("env", {}), "mcpServers.env")
+        server["env"] = _expanded_mapping(
+            server.get("env", {}), "mcpServers.env", environ
+        )
         if "cwd" in server:
-            server["cwd"] = _READER.as_str(server["cwd"], "mcpServers.cwd")
+            server["cwd"] = _resolved_cwd(
+                _READER.as_str(server["cwd"], "mcpServers.cwd"), directory
+            )
         server["keep_alive"] = False
     else:
         url = _READER.as_str(server["url"], "mcpServers.url")
@@ -148,8 +183,8 @@ def _server(value: object) -> tuple[dict[str, object], float | None]:
             raise McpConfigurationError("mcpServers.url: invalid HTTP URL") from exc
         if transport not in {"http", "streamable-http"}:
             _READER.fail("mcpServers.transport: unsupported transport")
-        server["headers"] = _string_mapping(
-            server.get("headers", {}), "mcpServers.headers"
+        server["headers"] = _expanded_mapping(
+            server.get("headers", {}), "mcpServers.headers", environ
         )
     # Official server models accept only integer milliseconds. Public Client accepts
     # fractional seconds; preserve the validated numeric option outside that model.
@@ -169,7 +204,7 @@ def _reject_constant(_: str) -> NoReturn:
     raise McpConfigurationError("MCP JSON: non-finite number")
 
 
-def _read(path: Path) -> _Configuration:
+def _read(path: Path, environ: Mapping[str, str]) -> _Configuration:
     try:
         raw: object = json.loads(
             path.read_text(encoding="utf-8-sig"),
@@ -214,7 +249,7 @@ def _read(path: Path) -> _Configuration:
     timeouts: dict[str, float | None] = {}
     for name, definition in servers.items():
         _name(name, "mcpServers.name")
-        normalized[name], timeouts[name] = _server(definition)
+        normalized[name], timeouts[name] = _server(definition, path.parent, environ)
     try:
         official = MCPConfig.from_dict({"mcpServers": normalized})
     except ValueError as exc:
@@ -226,6 +261,11 @@ def _read(path: Path) -> _Configuration:
     )
 
 
-async def read_configuration(path: str | Path) -> _Configuration:
+async def read_configuration(
+    path: str | Path, *, environ: Mapping[str, str] | None = None
+) -> _Configuration:
     """Validate a local file off the event loop without opening clients or processes."""
-    return await asyncio.to_thread(_read, Path(path))
+    snapshot = _string_mapping(
+        os.environ if environ is None else environ, "MCP environment"
+    )
+    return await asyncio.to_thread(_read, Path(path), snapshot)

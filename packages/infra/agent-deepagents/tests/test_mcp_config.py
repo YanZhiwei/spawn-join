@@ -7,7 +7,7 @@ from typing import NoReturn
 
 import pytest
 from fastmcp import Client
-from fastmcp.mcp_config import MCPConfig
+from fastmcp.mcp_config import MCPConfig, RemoteMCPServer, StdioMCPServer
 from spawn_join_agent_deepagents.mcp import McpConfigurationError
 from spawn_join_agent_deepagents.mcp._config import read_configuration
 
@@ -119,3 +119,82 @@ def test_static_reference_conflicts_fail_before_effects(
     )
     with pytest.raises(McpConfigurationError):
         asyncio.run(read_configuration(path))
+
+
+@pytest.mark.parametrize("explicit", [True, False])
+def test_environment_expands_only_values_and_cwd_uses_config_parent(
+    tmp_path: Path, explicit: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "mcp.json"
+    path.write_text(
+        """{"mcpServers":{
+        "local":{"command":"${BIN}","args":["${TOKEN}"],"cwd":"data",
+                 "env":{"TOKEN":"prefix-${TOKEN}"}},
+        "remote":{"url":"https://private.example/${TOKEN}",
+                  "headers":{"Authorization":"Bearer ${TOKEN}"}}
+    }}""",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("TOKEN", "secret-value")
+    config = asyncio.run(
+        read_configuration(
+            path, environ={"TOKEN": "secret-value"} if explicit else None
+        )
+    )
+    local = config.official.mcpServers["local"]
+    remote = config.official.mcpServers["remote"]
+    assert isinstance(local, StdioMCPServer) and isinstance(remote, RemoteMCPServer)
+    assert local.env["TOKEN"] == "prefix-secret-value"
+    assert local.command == "${BIN}" and local.args == ["${TOKEN}"]
+    assert local.cwd == str((tmp_path / "data").resolve())
+    assert remote.url == "https://private.example/${TOKEN}"
+    assert remote.headers["Authorization"] == "Bearer secret-value"
+    assert "secret-value" not in repr(config) and "private.example" not in repr(config)
+
+
+@pytest.mark.parametrize("reference", ["${MISSING}", "${bad-name}", "${}", "${OPEN"])
+def test_invalid_environment_is_global_even_for_disabled(
+    tmp_path: Path, reference: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("MISSING", "secret-from-process")
+    path = tmp_path / "mcp.json"
+    for policy in ({"optionalServers": ["s"]}, {"disabledServers": ["s"]}):
+        server = {"command": "python", "env": {"TOKEN": reference}}
+        path.write_text(json.dumps({"mcpServers": {"s": server}, "spawnJoin": policy}))
+        with pytest.raises(McpConfigurationError) as caught:
+            asyncio.run(read_configuration(path, environ={}))
+        assert "secret-from-process" not in str(caught.value)
+
+
+def test_interpolation_uses_one_nonrecursive_snapshot(tmp_path: Path) -> None:
+    path = tmp_path / "mcp.json"
+    path.write_text('{"mcpServers":{"s":{"command":"python","env":{"X":"${TOKEN}"}}}}')
+    environment = {"TOKEN": "${LITERAL}"}
+
+    async def load() -> None:
+        task = asyncio.create_task(read_configuration(path, environ=environment))
+        await asyncio.sleep(0)
+        environment["TOKEN"] = "changed"
+        config = await task
+        server = config.official.mcpServers["s"]
+        assert isinstance(server, StdioMCPServer) and server.env["X"] == "${LITERAL}"
+
+    asyncio.run(load())
+
+
+def test_cwd_symlink_loop_is_safe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "mcp.json"
+    path.write_text('{"mcpServers":{"s":{"command":"python","cwd":"loop"}}}')
+
+    def loop(_: Path) -> NoReturn:
+        raise RuntimeError("Symlink loop from private-directory")
+
+    monkeypatch.setattr(Path, "resolve", loop)
+    with pytest.raises(McpConfigurationError) as caught:
+        asyncio.run(read_configuration(path))
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert str(caught.value) == "mcpServers.cwd: invalid directory"
+    assert "private-directory" not in str(caught.value)
+    assert "private-directory" not in repr(caught.value)
