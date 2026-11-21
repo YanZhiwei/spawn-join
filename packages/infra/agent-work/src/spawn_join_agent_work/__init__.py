@@ -21,11 +21,14 @@ from .models import (
     WorkState,
 )
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
+from .protocols import Clock, Notifier, WorkExecutor, WorkStore
 
 __all__ = [
+    "Clock",
     "ConcurrencyPolicy",
     "LeaseLostError",
     "LeasePolicy",
+    "Notifier",
     "NotifierError",
     "RetryPolicy",
     "StoreError",
@@ -33,6 +36,7 @@ __all__ = [
     "WorkConflictError",
     "WorkError",
     "WorkEvent",
+    "WorkExecutor",
     "WorkItem",
     "WorkLease",
     "WorkNotFoundError",
@@ -40,4 +44,5 @@ __all__ = [
     "WorkResult",
     "WorkSpec",
     "WorkState",
+    "WorkStore",
 ]
