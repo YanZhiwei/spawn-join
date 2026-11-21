@@ -1,0 +1,113 @@
+---
+name: speckit-review-standards
+description: Review a task or batch diff against project standards and return a closure verdict
+compatibility: Requires spec-kit project structure with .specify/ directory
+metadata:
+  author: Yan Zhiwei
+  source: review:commands/speckit.review.standards.md
+---
+
+# Standards Review
+
+## Input
+
+```text
+$ARGUMENTS
+```
+
+When `runtime_stage=standards` and `runtime_result=<path>` are supplied, require
+`delivery_run=<id>` and read the installed
+`.specify/extensions/delivery/templates/runtime.md` plus
+`.specify/delivery/<delivery_run>/runtime/input-standards.json` before the native
+review. Preserve this native standards report under the same run with its explicit
+`STANDARDS_VERDICT` header. Use the runtime `owner-result` helper with this report
+and a stage data JSON, or write the machine `native_receipt` and the exact
+normalized envelope at the supplied path, copying the pending `scope`, ticket, and
+input fingerprint and referencing the real report bytes. The native receipt must
+bind the same report/data/evidence. The runtime envelope is transport validation
+only; this command's semantic standards verdict remains authoritative. Missing,
+stale, or incomplete native evidence must be represented as blocked/incomplete,
+never upgraded because the host exited zero. Without both runtime arguments, do
+not create runtime state.
+
+Resolve the live base, HEAD, task or batch scope, and changed paths. Read only
+the applicable policy sources configured in
+`.specify/extensions/quality/quality-config.yml`, relevant ADRs, and the
+changed code's owning-module documentation. Do not repeat executable checks
+owned by `speckit.quality.check`.
+
+Honor the supplied lane and run; do not infer Feature from unrelated files or
+branch state. For an explicitly identified Feature, resolve the exact plan from
+the supplied canonical exploration packet or scope-bound plan/excerpts and
+validate its recorded approved identity. Read applicable `Architecture constraints`,
+follow the cited binding sources, and report findings by constraint ID. Check only the task's applicable rows at task scope;
+final review must cover the outgoing change's full set. Include these plan rows
+in the policy fingerprint. Missing required context, ownership, verification
+work, or evidence blocks the relevant scope. A planned check is not a passing
+receipt; semantic-only or unsupported automation stays explicit. External skill
+preferences alone are not binding rules. Bugfix/Lightweight use their existing
+contracts without creating a Feature plan.
+
+Bind this semantic verdict to the actual reviewed contents (including staged,
+unstaged, deleted, and relevant untracked paths) and applicable policy inputs.
+Record deterministic fingerprint methods/manifests. Reuse only an original
+exact-content/policy receipt; same HEAD/paths alone is insufficient. If reviewed
+inputs change during analysis, refresh it or return blocked with the gap.
+
+Exclude paths matching `excluded_paths` in the quality configuration and report
+them as outside the governed scope; do not review them as production work.
+
+Review semantic standards that require judgment: unnecessary duplicate logic,
+ownership and directory boundaries, layer direction, single responsibility,
+public-surface growth, comment intent, and whether the change alters an ADR.
+Include these discipline checks:
+
+- **Behavior, not implementation.** Tests must exercise the user-visible
+  behavior. A test that still passes when every function returns nothing does
+  not cover the change.
+- **Cause, not symptom.** A guard or fallback that only hides a reproduced
+  failure is blocking; the change must fix the cause and pin it with a test.
+- **Subtract before adding.** New branching, state, or indirection without a
+  reason the previous design could not express is a finding, not a style
+  preference.
+- **Verifiable units.** The task must be checkable on its own at the reported
+  HEAD; work that only succeeds together with a later task is not closable.
+
+A completed repair reports `DOCS_REFRESH` for its README-affecting surface
+(public API/CLI/config/default, compatibility, dependencies, error behavior,
+development/test commands, release/versioning, ownership). A required refresh
+that is `blocked`, missing, or covers different contents is a blocking evidence
+gap; a not-applicable result needs a concrete reason. Do not
+claim documentation correctness from an internal-only or stale result.
+
+Treat a documented project rule as blocking unless an approved, durable
+exception applies. Treat a heuristic finding as blocking only when its impact
+and remediation are evidenced; otherwise return it as a follow-up rather than
+inventing a violation.
+
+Return this exact report:
+
+```text
+STANDARDS_VERDICT: pass | blocked
+HEAD: <sha>
+SCOPE: <task-id, batch-id, or outgoing-diff>
+PATHS: <repository-relative paths>
+CONTENT_FINGERPRINT: <hash/method and reviewed-input manifest reference>
+POLICY_FINGERPRINT: <hash/method for applicable policy inputs>
+EXCLUDED_PATHS: <paths or none>
+POLICY_SOURCES: <paths read>
+FINDINGS:
+- <id>: pass | blocked | follow-up — <rule, evidence, impact, remediation>
+ADR_IMPACT: none | revise-proposed | propose | supersede
+BLOCKERS:
+- <id or none>: <reason>
+FOLLOW_UP:
+- <task, ADR action, or none>
+```
+
+For a task invocation, Ralph may close the task only when the verdict is
+`pass`, the reported HEAD and original content/policy identities remain current,
+and the scope covers every changed path. Never stamp current hashes on an old
+verdict to imply its analysis covered new contents.
+This command does not edit `tasks.md`; it reports its verdict to the
+orchestrator.
