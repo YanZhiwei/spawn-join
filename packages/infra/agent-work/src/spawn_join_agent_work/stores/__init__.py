@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .memory import InMemoryWorkStore
 from .sqlite import SqliteWorkStore
 
-__all__ = ["SqliteWorkStore"]
+__all__ = ["InMemoryWorkStore", "SqliteWorkStore"]
