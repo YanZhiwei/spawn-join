@@ -13,10 +13,11 @@ scope for v1** (the seam is reserved; see ADR-0015).
 > Status note: this package is delivered in slices. Currently provided:
 > the configuration boundary (`AppConfig`), the stable error taxonomy,
 > **work-item persistence** (sqlite3 state machine, idempotency keys,
-> recovery scan), and **host assembly** (confined workspace backend,
-> permission gates, strict-msgpack SQLite checkpointer); scheduling,
-> approvals, and the CLI land in later slices. This document describes
-> only what is implemented.
+> recovery scan), **host assembly** (confined workspace backend,
+> permission gates, strict-msgpack SQLite checkpointer), and the
+> **due scheduler** (concurrency bound, deadline, cancellation
+> propagation, interrupted rerun); approvals and the CLI land in later
+> slices. This document describes only what is implemented.
 
 **Contents**
 
@@ -69,8 +70,21 @@ scope for v1** (the seam is reserved; see ADR-0015).
   models arrive as constructed `BaseChatModel` instances or a caller-owned
   `ModelCatalog` binding (ADR-0008).
 
-Later slices (see the delivery queue): the asyncio due scheduler, HITL
-approval persistence, and the `accept`/`due`/`run`/`report`/`approve` CLI.
+- `Scheduler`: the asyncio due scheduler — `run_due` picks due queued items
+  for one cycle, bounds concurrency with a semaphore, enforces an optional
+  deadline via `asyncio.timeout` (expiry lands as `failed` with category
+  `deadline` and releases the slot), converts executor exceptions into
+  `failed` items (category = exception class name; the store is the record
+  and sibling items keep running), re-queues the running item on parent
+  cancellation (`RUNNING -> QUEUED`) while propagating `CancelledError`,
+  re-queues interrupted runs exactly once after a restart via
+  `recover_interrupted` (waiting-approval items are untouched), and marks
+  `failed(executor_incomplete)` when an executor returns without persisting
+  an outcome. `WorkExecutor` is the executor contract type (receives the
+  RUNNING item and persists its final state itself).
+
+Later slices (see the delivery queue): HITL approval persistence and the
+`accept`/`due`/`run`/`report`/`approve` CLI.
 
 ## Installation
 

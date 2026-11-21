@@ -155,6 +155,23 @@ def test_mark_unknown_item_reports_not_found(tmp_path: Path) -> None:
             store.mark("missing-id", WorkStatus.RUNNING)
 
 
+def test_requeue_edge_supports_interrupted_rerun(tmp_path: Path) -> None:
+    with WorkStore(tmp_path / "work.db") as store:
+        item = store.accept("中断任务", idempotency_key="key-x")
+        store.mark(item.id, WorkStatus.RUNNING, increment_attempt=True)
+
+        requeued = store.mark(item.id, WorkStatus.QUEUED)
+
+        assert requeued.status is WorkStatus.QUEUED
+        assert requeued.attempts == 1
+
+        rerun = store.mark(requeued.id, WorkStatus.RUNNING, increment_attempt=True)
+        done = store.mark(rerun.id, WorkStatus.COMPLETED, result_summary="重跑完成")
+
+        assert rerun.attempts == 2
+        assert done.status is WorkStatus.COMPLETED
+
+
 def test_work_item_fields_default(tmp_path: Path) -> None:
     item = WorkItem(
         id="id-1",

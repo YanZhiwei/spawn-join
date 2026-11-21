@@ -8,9 +8,10 @@
 HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接缝已留位，见 ADR-0015）。
 
 > 状态说明：本包处于按切片交付的开发过程中。当前已提供：配置边界（`AppConfig`）、
-> 稳定错误分类、**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）与**宿主装配**
-> （受限工作区 backend + 权限门禁 + strict msgpack SQLite checkpointer）；调度、
-> 审批与 CLI 在后续切片落地。本文只描述已实现的能力。
+> 稳定错误分类、**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）、**宿主装配**
+> （受限工作区 + 权限门禁 + strict msgpack checkpointer）与**due 调度**
+> （并发上限、deadline、取消传播、中断重入队）；审批与 CLI 在后续切片落地。
+> 本文只描述已实现的能力。
 
 **目录**
 
@@ -51,8 +52,15 @@ HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接�
   凭据不经过装配层：模型以构造好的 `BaseChatModel` 或调用方持有的
   `ModelCatalog` 绑定注入（ADR-0008）。
 
-后续切片（见任务队列）：asyncio due 调度、HITL 审批持久化与
-`accept/due/run/report/approve` CLI。
+- `Scheduler`：asyncio due 调度——`run_due` 单周期拾取到期排队项，信号量约束
+  并发上限，`asyncio.timeout` 实施 deadline（到期落 `failed`，类别 `deadline`，
+  槽位释放）；执行器异常转 `failed`（类别=异常类名，存储即记录，不中断兄弟项）；
+  父级取消把运行项重排队（`RUNNING → QUEUED`）并传播 `CancelledError`；
+  `recover_interrupted` 在重启后把中断项**恰好一次**重入队（等待审批项不受影响）；
+  执行器未持久化结果时以 `failed(executor_incomplete)` 兜底。
+  `WorkExecutor` 为执行器契约类型（接收 RUNNING 项、自行持久化最终状态）。
+
+后续切片（见任务队列）：HITL 审批持久化与 `accept/due/run/report/approve` CLI。
 
 ## 安装
 

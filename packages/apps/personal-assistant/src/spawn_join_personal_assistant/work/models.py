@@ -27,6 +27,9 @@ _ALLOWED_TRANSITIONS: dict[WorkStatus, frozenset[WorkStatus]] = {
     WorkStatus.QUEUED: frozenset({WorkStatus.RUNNING, WorkStatus.CANCELLED}),
     WorkStatus.RUNNING: frozenset(
         {
+            # Interrupted rerun: a hard-killed or parent-cancelled run goes
+            # back to the queue so recovery executes it exactly once more.
+            WorkStatus.QUEUED,
             WorkStatus.WAITING_APPROVAL,
             WorkStatus.COMPLETED,
             WorkStatus.FAILED,

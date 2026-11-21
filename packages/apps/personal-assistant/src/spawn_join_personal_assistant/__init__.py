@@ -18,6 +18,7 @@ from .errors import (
     WorkTransitionError,
 )
 from .host import HostSession, open_host_session
+from .scheduler import Scheduler, WorkExecutor
 from .work.models import WorkItem, WorkStatus
 from .work.store import WorkStore
 
@@ -29,6 +30,8 @@ __all__ = [
     "HostSchedulingError",
     "HostSession",
     "HostStoreError",
+    "Scheduler",
+    "WorkExecutor",
     "WorkItem",
     "WorkStatus",
     "WorkStore",
