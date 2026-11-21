@@ -1236,3 +1236,15 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - Close：PR #80 的远端 run `44916810378` 实测 24 个包 job（8 包 × 3 组合）+ Governance +
   Quality Gate 全部 pass；2026-11-21T15:02:32Z 已 squash 合并为
   `f50486ad63f44b7cf2df98cda79202587347020d`，status: delivered。
+
+## 2026-11-21 — 可复用运行时包桌面优先策略（ADR-0016）
+
+- Route: Lightweight（架构决策与治理约束，不创建包、不改产品代码）。
+- Base revision: `e7dde80c2a9389ab588016059d1385e1bd74c754`；工作目录 `D:\Repos\spawn-join`。
+- 背景：计划同时支持桌面与 SaaS；默认实现必须能在无外部服务的桌面环境运行，公共契约
+  必须可通过端口/适配器切换到服务端存储与消息队列。
+- 变更：新增 ADR-0016（Proposed）并登记决策索引；`AGENTS.md` §1.2 增加第 12 条约束并
+  链接 ADR，明确服务端档位不得部署 SQLite、SaaS 能力归宿主与可选适配器。
+- 验证：`-Check docs`、`-Check governance` 与 `git diff --check` 的实际结果见
+  [evidence](../.specify/delivery/desktop-first-package-policy-20261121/evidence.md)。
+- 未创建 `spawn-join-agent-work`，未改产品源码；实现与 ADR `Accepted` 状态留给后续 Feature。
