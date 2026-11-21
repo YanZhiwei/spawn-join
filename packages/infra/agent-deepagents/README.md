@@ -71,14 +71,51 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 该 extra 包含 LangChain MCP、FastMCP 和 Common；默认安装不包含 MCP SDK。
-当前具备结果类型和内部静态配置校验，尚无公开加载入口；包质量入口检查 extra 和两种 wheel 安装。
+`open_mcp_tools(path, *, environ=None)` 从显式文件加载原生工具；宿主用 `async with` 保持资源有效。
 文件轮廓是严格 JSON 的 `mcpServers` 与可选 `spawnJoin`，支持 stdio 与 Streamable HTTP 声明。
 默认服务必需、逐服务启动预算 30 秒；可配置 optional/disabled 和命名工具集，静态错误整体失败。
 请求 timeout 使用非负有限毫秒数，与启动预算分开；官方配置模型与 Common 读取器负责实际校验。
 校验会拒绝重复键、未知字段、非法引用和不支持的传输，并在工作线程读取本地 UTF-8/BOM 文件。
 只在 env/header 值单次展开 `${ENV_VAR}`，缺失或畸形引用使整个配置失败（含 optional/disabled）。
 默认取一次进程环境快照；显式 `environ` 完全替代插值快照，不读取 `.env`。
-相对 cwd 以配置文件父目录解析；command/args/URL/cwd 不做变量展开。当前仍不执行服务连接。
+相对 cwd 以配置文件父目录解析；command/args/URL/cwd 不做变量展开。
+
+在包目录将下面保存为 `demo_mcp.py`，从仓库根运行
+`uv run --locked --extra mcp --directory packages/infra/agent-deepagents python demo_mcp.py`。
+它使用仓库自带测试服务，无需模型密钥；配置和 PID 记录写入临时目录。生产宿主应配置自己的服务。
+
+```python
+import asyncio
+import json
+import sys
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from spawn_join_agent_deepagents.mcp import open_mcp_tools
+
+
+async def main() -> None:
+    server = Path("tests/fixtures/mcp_server.py").resolve()
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        path = root / "mcp.json"
+        path.write_text(json.dumps({"mcpServers": {"local": {
+            "command": sys.executable,
+            "args": [str(server), str(root / "local.pids"), "local"],
+        }}}), encoding="utf-8")
+        async with open_mcp_tools(path) as mcp:
+            tool = mcp.tools_for("supervisor")[0]
+            print(await tool.ainvoke({"value": "hello"}))
+
+
+asyncio.run(main())
+```
+
+在同一上下文中，将工具集显式传给 `SupervisorSpec.tools` 或 `SubAgentDefinition.tools`。
+子代理标签须在 JSON 的 `spawnJoin.toolsets` 中声明；工具集表达可见性，宿主仍负责权限。
+缺省工具集是 `supervisor` 全集；显式 `{}` 不产生命名集，命名选择 `{}` 是空 tuple。
+原有 `None`／空工具序列继承语义保持。退出会关闭本次连接和 stdio 进程；远端服务由其宿主保持。
+工具与图调用必须在上下文内完成，取出的工具不提供退出后自动撤销。
 
 运行时依赖：
 
@@ -614,6 +651,7 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 ```
 
 - Store、Checkpointer、MCP Session、沙箱、业务工具和宿主提供的 Backend 由宿主创建、保持有效并关闭；
+  宿主可用 `open_mcp_tools` 显式委托本次 MCP 资源生命周期，其他资源仍由宿主拥有。
 - `ResourceReport.backend_kind` 和 `permissions` 只输出稳定标签与 allow/deny/interrupt/other 计数，
   不输出路径或规则；`backend_kind()` / `permission_report()` 是内部实现，不是公共导出；
 - 宿主省略 `backend` 时，包会创建一个无外部关闭路径的内存 `StateBackend`，报告为 `default_state`；
@@ -670,13 +708,17 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/hitl
   `ProfileConfigurationError`、`RubricConfigurationError`）。
 
 可选命名空间 `spawn_join_agent_deepagents.mcp` 单独导出 `McpTools`、`McpLoadReport`、
-`McpServerReport`、`McpConfigurationError`、`McpLoadError` 和 `McpCleanupError`。
+`McpServerReport`、`McpConfigurationError`、`McpLoadError`、`McpCleanupError` 和 `open_mcp_tools`。
 `McpTools.tools_for(name)` 返回已有选择，未知名称抛出 `McpConfigurationError`；外层集合只读，
-不深冻结原生工具。报告是安全启动快照，原始异常原因仅供受控诊断；当前尚无公开连接入口。
+不深冻结原生工具。报告是安全启动快照，原始异常原因仅供受控诊断。
 内部模块不会因为可导入就自动成为公共契约。
 
 ## 错误与失败行为
 
+- MCP 静态错误整体抛出 `McpConfigurationError`；必需服务加载失败抛出 `McpLoadError`，
+  可选服务失败先清理再返回 `degraded`，通过 `failures` 和逐服务报告说明。取消直接传播。
+- MCP 清理失败抛出 `McpCleanupError`；已有主异常时保留主异常，清理错误在其 cause，
+  清理错误的 context 保留原加载原因。原始 SDK 原因只供受控诊断；执行期错误保留官方语义。
 - `AgentConfigurationError` 是装配期配置错误基类；模型、子代理、Middleware、恢复、Memory/
   Skills 和 Profile 各有稳定子类，便于调用方区分失败类别。
 - 配置错误在 `create_deep_agent` 前抛出，不会返回半配置图；上游装配/注册异常保留 `__cause__`。
@@ -704,7 +746,7 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/hitl
 
 ```powershell
 uv lock --check --directory packages/infra/agent-deepagents
-uv sync --locked --directory packages/infra/agent-deepagents
+uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ```
 

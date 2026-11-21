@@ -1,4 +1,4 @@
-"""Private, sequential official MCP resource composition; no public loader yet."""
+"""Private, sequential official MCP resource composition."""
 
 from __future__ import annotations
 

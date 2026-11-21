@@ -127,6 +127,12 @@ def test_official_mcp_dependencies_are_installed() -> None:
         'mcp-extra-wheel-probe' 'spawn-join-agent-deepagents'
     Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
 
+    $brokenCall = $qualityText.Replace('assert "wheel:call" in str(response)', 'assert False')
+    Set-Content -LiteralPath $runner -Value $brokenCall
+    Assert-GateResult 'installed MCP tool call failure propagates' build $false `
+        'mcp-wheel-call-probe' 'spawn-join-agent-deepagents'
+    Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+
     $mcpTypes = Join-Path $fixture 'packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/mcp/_types.py'
     Add-Content -LiteralPath $mcpTypes -Value "raise RuntimeError('mcp-types-wheel-probe')"
     Assert-GateResult 'installed MCP namespace import failure propagates' build $false `
