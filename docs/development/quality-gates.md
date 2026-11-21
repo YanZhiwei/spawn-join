@@ -60,6 +60,8 @@ Package 是七个保留 Distribution 名称之一，省略则检查全部。`all
 工具缺失、锁不一致、安装失败都不会被跳过。
 
 每个包先执行 `uv lock --check` 和 `uv sync --locked`，随后使用该包环境中的工具。
+Agent 包同步时显式添加 `--extra mcp`，使格式、类型和测试使用实际 MCP 依赖；
+CI 的 Agent 矩阵调用同一入口，不能通过跳过可选依赖代替覆盖。
 所有工具显式引用根配置；类型检查显式绑定该包解释器。若要验证指定的已安装 Python，
 可设置 `UV_PYTHON`（例如 `3.11`）再运行入口，不会自动回退到其他版本。
 
@@ -89,6 +91,11 @@ Common 额外验证两种安装：基础 wheel 环境不含 Pydantic 或领域�
 独立的 `validation` extra 环境从锁导出可选依赖，安装本次 wheel 后实际执行校验结果与
 异常转换、原因链检查。包的 dev 环境中有 Pydantic，不能用它代替默认安装隔离验证。
 
+Agent 同样使用两个全新 wheel 环境：基础安装验证没有 FastMCP/MCP 且默认根可导入；
+`mcp` 安装从锁导出可选依赖，安装本次构建的本地 wheels，实际导入官方
+Client、ClientGroup、MCPConfig、MCPAdapter 并执行空配置和 Common 读取探针。
+此阶段不表示项目配置加载器已经实现；后续入口与协议调用需要独立行为证据。
+
 临时目录父路径默认使用系统临时目录；本机可设置 `SPAWN_JOIN_TEMP_DIR` 为已存在路径。
 成功或失败都会在 finally 中删除本次创建的唯一子目录，不清理整个父目录或用户源树。
 七个保留包均维护包级 README、LICENSE 与 `license` 元数据；构建不再产生
@@ -117,6 +124,7 @@ Common 额外验证两种安装：基础 wheel 环境不含 Pydantic 或领域�
 各自的全流程成功，以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、
 坏链接的拒绝场景。Common 还验证基础包意外导入 Pydantic、可选校验导入失败和已安装
 helper 未执行操作时，构建门禁都必须失败。
+Agent 回归还验证测试入口实际安装 MCP extra，以及隔离 extra wheel 的官方导入探针失败会传递为门禁失败。
 `scripts/test-governance.ps1` 用独立 fixture 覆盖 26 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded

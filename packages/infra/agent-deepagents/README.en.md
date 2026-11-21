@@ -71,6 +71,16 @@ uv lock --check --directory packages/infra/agent-deepagents
 uv sync --locked --directory packages/infra/agent-deepagents
 ```
 
+Install the official MCP dependencies with the optional `mcp` extra:
+
+```powershell
+uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
+```
+
+The extra includes LangChain MCP, FastMCP, and Common; the default install excludes MCP SDKs.
+Only dependency installation is available at this stage; the configuration loader is not implemented.
+The package quality entry checks the extra and both wheel installation variants.
+
 Runtime dependencies:
 
 - `deepagents>=0.7.32,<0.8`

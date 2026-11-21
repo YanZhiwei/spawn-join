@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from importlib.metadata import requires
+from importlib.metadata import metadata, requires
 
 import pytest
 import spawn_join_agent_deepagents as package
@@ -164,3 +164,16 @@ def test_direct_dependencies_are_declared_and_bounded() -> None:
     assert "spawn-join-llm-provider-langchain" in lowered
     assert "spawn-join-llm-model-sync" not in lowered
     assert "spawn-join-observability" not in lowered
+
+
+def test_mcp_dependencies_are_optional_and_bounded() -> None:
+    distribution = metadata("spawn-join-agent-deepagents")
+    assert "mcp" in distribution.get_all("Provides-Extra", [])
+    requirements = requires("spawn-join-agent-deepagents") or []
+    optional = [item for item in requirements if 'extra == "mcp"' in item]
+    assert any(item.startswith("langchain[mcp]") for item in optional)
+    assert any(item.startswith("fastmcp<5.0,>=4.0.11") for item in optional)
+    assert any(item.startswith("spawn-join-common<0.2.0,>=0.1.0") for item in optional)
+    assert not any(
+        item.startswith(("fastmcp", "mcp")) and ";" not in item for item in requirements
+    )

@@ -96,6 +96,36 @@ try {
         'validation-extra-success-probe' 'spawn-join-common'
     Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common/validation/__init__.py" -Destination $commonValidation
 
+    # Use real package sources/locks so --extra and wheel probes cannot be mocked green.
+    foreach ($relative in @('core/llm-provider', 'infra/llm-provider-langchain',
+            'infra/agent-deepagents')) {
+        $original = Join-Path $root "packages/$relative"
+        $destination = Join-Path $fixture "packages/$relative"
+        New-Item -ItemType Directory -Path "$destination/src", "$destination/tests" -Force | Out-Null
+        foreach ($file in @('pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
+            Copy-Item -LiteralPath (Join-Path $original $file) -Destination $destination
+        }
+        Get-ChildItem -LiteralPath "$original/src" -Directory |
+            Copy-Item -Destination "$destination/src" -Recurse
+    }
+    $agentProbe = Join-Path $fixture 'packages/infra/agent-deepagents/tests/test_mcp_extra.py'
+    $mcpProbe = @'
+from fastmcp import Client
+from langchain.mcp import MCPAdapter
+
+
+def test_official_mcp_dependencies_are_installed() -> None:
+    assert callable(Client) and callable(MCPAdapter)
+'@
+    Set-Content -LiteralPath $agentProbe -Value $mcpProbe
+    Assert-GateResult 'Agent test gate installs the MCP extra' test $true '' 'spawn-join-agent-deepagents'
+    $brokenProbe = $qualityText.Replace('from langchain.mcp import MCPAdapter',
+        "raise RuntimeError('mcp-extra-wheel-probe')")
+    Set-Content -LiteralPath $runner -Value $brokenProbe
+    Assert-GateResult 'isolated MCP wheel probe failure propagates' build $false `
+        'mcp-extra-wheel-probe' 'spawn-join-agent-deepagents'
+    Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+
     Set-Content -LiteralPath $probe -Value "value=1`n" -NoNewline
     Assert-GateResult 'Black rejects bad formatting without rewriting' format $false 'would reformat'
 
