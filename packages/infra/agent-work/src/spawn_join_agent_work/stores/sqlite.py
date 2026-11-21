@@ -243,6 +243,7 @@ class SqliteWorkStore:
                 ).fetchall()
                 ids = [row["id"] for row in rows]
                 if not ids:
+                    connection.commit()
                     return []
                 token = secrets.token_hex(16)
                 for work_id in ids:
