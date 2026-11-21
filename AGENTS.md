@@ -16,7 +16,7 @@
   不手工修改安装器管理的命令或 runtime 协议来掩盖漂移。
 - 项目配置由项目拥有，组件/命令由安装器管理；`.specify/extensions.yml` 保持
   `auto_execute_hooks: false`、`hooks: {}`。有质量脚本和 CI 不表示有自动 Spec Kit Hook。
-- `package_readme: auto`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
+- `package_readme: required`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
   手动 squash 到 `main`。PR 模板使用随包中文模板与 `.github/pull_request_template.md`
   静态副本；Slice、任务门禁和 Handoff 规则见下文。
 - `delivery_run` 的恢复、检查点、owner transport 和 Close 由已安装契约负责；Close 区分
@@ -276,8 +276,22 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 - 复杂设计理由写在 README、设计说明或 ADR 中，不把长篇架构讨论塞进函数体注释。
 - 任何会影响使用者的导入路径、依赖、配置、错误语义或运行命令变化，都要更新对应文档。
 - 仓库自有 README 必须使用 UTF-8 Markdown，并在同一目录维护两份独立文件：`README.md` 为完整简体中文版（GitHub 与包元数据默认入口），`README.en.md` 为完整英文版；不在同一文件串接两种语言正文。两份文件标题下均提供 `[简体中文](README.md) | [English](README.en.md)` 导航，正文优先链接同语言 README。
-- README 应达到可直接使用的 GitHub 项目文档水平：开头用短段落说明用途、适用人群与价值，优先展示能力、安装和最短可运行示例，再按适用性提供 API/CLI/配置、错误与限制、兼容性、目录布局、开发与测试、版本发布、帮助/贡献和许可证。长文提供目录；首页用包选择表和权威文档链接分流细节，避免把执行日志、安装历史或内部治理全文堆在首页。不得虚构功能、发布状态、徽章、性能数据或许可证。
-- README 中的命令、示例、默认值、依赖、错误和兼容性声明必须对照实际 manifest、源码导出、CLI、配置和测试；两种语言在同一次变更中同步更新，语义与示例保持一致。迁移时更新仓库内的标题锚点和本地链接；机器消费的权威索引只保留一份，另一语言链接该索引，避免双重维护。禁止写入密钥、私有 URL 或未执行检查的“通过”结论。
+- README 必须同时服务两类读者，并按“使用者 → 维护者”顺序组织：使用者关心用途、适用与不适用、
+  状态与兼容性、安装、最短可运行示例、公开 API/CLI/配置（真实名称与默认值）、错误与限制、
+  与相邻包的关系；维护者关心职责与不负责的事、依赖方向、目录布局、开发/测试/质量命令、
+  版本与发布、所有权与贡献、许可证。缺失的小节必须写明“不适用”及理由；不得留下空模板、
+  占位符或只写“见源码”。
+- 包 README 以 `.specify/extensions/docs-sync/templates/package-readme.md` 为结构基线，由
+  `speckit.docs-sync.package-readme` 在 Review 前逐包判定。新建包或公共面变化的包必须与实现
+  在同一次变更中更新 README，不得留到“后续补文档”。本项目配置为 `package_readme: required`：
+  受影响包的 README 缺口是交付阻塞，不是警告。
+- README 应达到可直接使用的 GitHub 项目文档水平：开头用短段落说明用途、适用人群与价值，
+  优先展示能力、安装和最短可运行示例。长文提供目录；首页用包选择表和权威文档链接分流细节，
+  避免把执行日志、安装历史或内部治理全文堆在首页。不得虚构功能、发布状态、徽章、性能数据或许可证。
+- README 中的命令、示例、默认值、依赖、错误和兼容性声明必须对照实际 manifest、源码导出、
+  CLI、配置和测试；两种语言在同一次变更中同步更新，语义与示例保持一致。迁移时更新仓库内的
+  标题锚点和本地链接；机器消费的权威索引只保留一份，另一语言链接该索引，避免双重维护。
+  禁止写入密钥、私有 URL 或未执行检查的“通过”结论。
 - 安装器管理的 `.specify/extensions/**` 与固定上游 `.agents/skills/**` 文档归各自来源所有，不套用本规则，除非项目明确接管其维护责任。
 
 ## 5. 测试与验证
