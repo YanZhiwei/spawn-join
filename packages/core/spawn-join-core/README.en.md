@@ -8,9 +8,11 @@ Stable contracts and foundational primitives shared across the SpawnJoin ecosyst
 
 - [Status and compatibility](#status-and-compatibility)
 - [Installation and shortest use](#installation-and-shortest-use)
+- [Errors and limits](#errors-and-limits)
 - [Boundaries and non-goals](#boundaries-and-non-goals)
 - [Layout, development, and quality](#layout-development-and-quality)
-- [Maintenance, versioning, and license](#maintenance-versioning-and-license)
+- [Maintenance and releases](#maintenance-and-releases)
+- [License](#license)
 
 ## Status and compatibility
 
@@ -47,6 +49,17 @@ Expected output: `0.1.0`. No credentials or network requests are needed.
 There is no callable public API, CLI, or configuration surface; do not infer runtime
 capabilities that are not implemented.
 
+## Errors and limits
+
+- The package root exports only `__version__`; importing it performs no I/O, network
+  request, or environment-variable read.
+- With no callable public API, the package defines no runtime exception types and makes
+  no business error-semantics promise.
+- `config`, `exceptions`, `protocols`, and `types` contain contracts only; importing their
+  internal modules is not a public contract.
+- Interfaces may change in documented ways during `0.x`; do not infer unimplemented
+  configuration or error handling from this README.
+
 ## Boundaries and non-goals
 
 - Must not depend on another SpawnJoin package.
@@ -68,10 +81,18 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core
 The quality command runs Black, isort, Ruff, Pyright strict, pytest, wheel/sdist, isolated
 installation, `pip check`, and an isolated import check.
 
-## Maintenance, versioning, and license
+## Maintenance and releases
 
+This package is owned by the SpawnJoin repository maintainers; the author is Yan Zhiwei.
 Public capabilities must first pass the Feature delivery route with a documented reuse
 rationale, dependency direction, and verification method; synchronize tests, package
-boundaries, and repository docs when adding or removing modules. This package uses an
-independent version and is not published; publication requires separate authorization.
-See [LICENSE](LICENSE).
+boundaries, and repository docs when adding or removing modules. Changes follow the
+[contribution rules](../../../AGENTS.md) and
+[quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). The
+package uses an independent version; `0.1.0` is unpublished. Publication requires separate
+authorization, and no automated release or package changelog is configured.
+
+## License
+
+This package is proprietary software. Use and distribution require authorization under
+[LICENSE](LICENSE).

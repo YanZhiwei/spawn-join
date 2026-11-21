@@ -1199,3 +1199,69 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 项目治理检查为 0 errors / 1 历史 warning；本次 7 份文档、132 个本地链接与差异空白
   检查通过。全局 docs 在未升级备份与目标均被原 Tasks 尾随空白阻断，双语 README
   结构守卫另报告原 ADR-0015 未登记首页索引；未修改既有 MCP 工件掩盖这些结果。
+
+## 2026-11-21 — 包 README 双视角契约与阻断
+
+- Route: Lightweight（治理规则、Delivery 配置与包文档，无运行时行为；不创建 Feature 工件）。
+- Base revision: `53acefc4841cdd04f9620641f3d21e29db3f325a`；工作目录 `D:\Repos\spawn-join`。
+- 用户反馈多次 README 未同时从“package 使用者”和“仓库维护者”角度撰写。调查确认契约已存在
+  （`speckit.docs-sync.package-readme` 与随包模板），缺口在于 `package_readme: auto` 只报告
+  不阻断，且 `AGENTS.md` 的 README 规则没有可判定的双视角清单。
+- 变更：`AGENTS.md` §4.4 增加“使用者 → 维护者”清单和“与实现同批更新”要求，并同步 §0 的配置
+  摘要；`docs-sync-config.yml` 改为 `package_readme: required`；更新 `spec-kit-delivery.md` 的配置
+  记录；补齐 `spawn-join-core`、`common`、`llm-channel` 中英文 README 的错误/限制、发布、
+  所有权和许可证小节。其余五个包已具备对应内容，未做无依据改写。
+- 验证：`pwsh -NoProfile -File scripts/quality.ps1 -Check governance` 为 0 errors / 1 历史
+  freshness warning（`delivery-v022-upgrade.md`，与本次范围无关）；`-Check docs` 通过
+  （75 files / 369 local targets）；`git diff --check` 通过。纯文档/配置改动，未运行包矩阵、
+  `-Check static` 或回归套件。已在用户授权后提交、push 并创建 PR #77；2026-11-21T14:22:20Z
+  已 squash 合并到 `c7dc968f8de047158f3cbf18eaf4e74912fb1415`（status: delivered）。
+- Close 记录：[evidence](../.specify/delivery/readme-dual-audience-20261121/evidence.md)。
+- 预存工作区改动 `.specify/delivery/personal-assistant-20261121/slices.md` 不属于本次范围，
+  未修改。
+
+## 2026-11-21 — personal-assistant Close 终态收敛
+
+- Route: Lightweight（Delivery 运行态与本地指纹收敛，无源码或持久记录字节变化）。
+- Base revision: `9ce1a1f1eb08a68a15289d3a7298d6278248f7eb`；工作目录 `D:\Repos\spawn-join`。
+- 现象：`personal-assistant-20261121` 的持久记录已声明 delivered / PR #73 合并，但运行态停在
+  handoff，`status` 为 verification-required，blocker 为 canonical Evidence 指纹变化；根因是
+  当次 Close 直接改写了 `evidence.md`，未经过机器写入器。
+- 处置：用 `delivery_runtime.py close-record --outcome merged --pr 73 --verified` 复核既有事实
+  （Close 块 `changed: false`，未改写），并刷新 hash 绑定的 Evidence observation；
+  `status` 变为 delivered、blockers 为空。预存 `slices.md` 的“修改”经字节比对与 `HEAD` 相同
+  （仅 stat 缓存脏），已用单路径 `git checkout --` 复原。
+- 验证：`git diff --check` 通过；本次无 tracked 变更，`runtime/state.json` 位于
+  `.git/info/exclude` 排除的本地运行工作区。其余 9 个 verification-required run 均为 legacy
+  目录，未补造历史。详见 [evidence](evidence/personal-assistant-close-reconciliation.md)。
+- 纯治理记录，未运行包矩阵或回归套件；commit、push、PR 需单独授权。
+
+## 2026-11-21 — CI 矩阵补齐第 8 个包
+
+- Route: Lightweight（CI 矩阵条目与当前状态文档计数，无产品源码或行为变化）。
+- Base revision: `c2de6aed93c563c8830d45936425389f7c04294a`；工作目录 `D:\Repos\spawn-join`。
+- 缺口：`.github/workflows/quality.yml` 的 `matrix.package` 仍只列 7 个包，
+  `packages/apps/personal-assistant` 有质量 Profile 却没有任何 CI job；改该包的 PR 可以在
+  未构建、未测试的情况下保持 `Quality Gate` 为绿。
+- 变更：矩阵增加 `spawn-join-personal-assistant`（7×3 → 8×3，24 组合）；同步
+  `docs/development/quality-gates.md` 的包数/组合数/覆盖表述、`spec-kit-delivery.md` 的
+  Profile 计数，以及 `AGENTS.md` 的 2026-11-21 配置基线快照。
+- 验证：`quality.ps1 -Package spawn-join-personal-assistant` 为 0（lock/sync、格式、lint、
+  Pyright strict、60 用例、构建、隔离安装与导入）；`-Check static` 为 0；`git diff --check`
+  通过。远端 24 作业矩阵将由 PR CI 实测。详见
+  [evidence](../.specify/delivery/ci-personal-assistant-matrix-20261121/evidence.md)。
+- Close：PR #80 的远端 run `44916810378` 实测 24 个包 job（8 包 × 3 组合）+ Governance +
+  Quality Gate 全部 pass；2026-11-21T15:02:32Z 已 squash 合并为
+  `f50486ad63f44b7cf2df98cda79202587347020d`，status: delivered。
+
+## 2026-11-21 — 可复用运行时包桌面优先策略（ADR-0016）
+
+- Route: Lightweight（架构决策与治理约束，不创建包、不改产品代码）。
+- Base revision: `e7dde80c2a9389ab588016059d1385e1bd74c754`；工作目录 `D:\Repos\spawn-join`。
+- 背景：计划同时支持桌面与 SaaS；默认实现必须能在无外部服务的桌面环境运行，公共契约
+  必须可通过端口/适配器切换到服务端存储与消息队列。
+- 变更：新增 ADR-0016（Proposed）并登记决策索引；`AGENTS.md` §1.2 增加第 12 条约束并
+  链接 ADR，明确服务端档位不得部署 SQLite、SaaS 能力归宿主与可选适配器。
+- 验证：`-Check docs`、`-Check governance` 与 `git diff --check` 的实际结果见
+  [evidence](../.specify/delivery/desktop-first-package-policy-20261121/evidence.md)。
+- 未创建 `spawn-join-agent-work`，未改产品源码；实现与 ADR `Accepted` 状态留给后续 Feature。

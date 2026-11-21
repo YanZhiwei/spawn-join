@@ -1,4 +1,4 @@
-"""Deterministic offline test helpers for the host package."""
+"""宿主包的确定性离线测试辅助。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ FAKE_RESPONSE = "host assembly fake response"
 
 
 class FakeChatModel(BaseChatModel):
-    """Return one fixed assistant message without any provider."""
+    """不依赖任何 Provider，返回一条固定的 assistant 消息。"""
 
     @property
     def _llm_type(self) -> str:
@@ -53,7 +53,7 @@ class FakeChatModel(BaseChatModel):
 
 
 class SequenceFakeChatModel(BaseChatModel):
-    """Return a fixed sequence of assistant messages without a provider."""
+    """不依赖 Provider，返回固定序列的 assistant 消息。"""
 
     responses: list[AIMessage]
     index: int = 0
@@ -89,7 +89,7 @@ class SequenceFakeChatModel(BaseChatModel):
 
 
 def _make_models(model: BaseChatModel) -> ModelBindings:
-    """Bind one deterministic model to every purpose without credentials."""
+    """把一个确定性模型绑定到每个用途，全程不需要凭据。"""
 
     return ModelBindings(
         catalog=None,
@@ -106,7 +106,7 @@ def _make_models(model: BaseChatModel) -> ModelBindings:
 
 @pytest.fixture
 def make_sequence_model() -> Callable[[list[AIMessage]], BaseChatModel]:
-    """Provide a factory for deterministic multi-response fake models."""
+    """提供构造确定性多响应假模型的工厂。"""
 
     def make(responses: list[AIMessage]) -> BaseChatModel:
         return SequenceFakeChatModel(responses=responses)
@@ -116,21 +116,21 @@ def make_sequence_model() -> Callable[[list[AIMessage]], BaseChatModel]:
 
 @pytest.fixture
 def make_models() -> Callable[[BaseChatModel], ModelBindings]:
-    """Provide a factory binding any deterministic model to all purposes."""
+    """提供把任意确定性模型绑定到全部用途的工厂。"""
 
     return _make_models
 
 
 @pytest.fixture
 def fake_response() -> str:
-    """The exact content the offline fake model always returns."""
+    """离线假模型始终返回的确切内容。"""
 
     return FAKE_RESPONSE
 
 
 @pytest.fixture
 def host_config(tmp_path: Path) -> AppConfig:
-    """A validated offline host configuration under a temp directory."""
+    """临时目录下已校验的离线宿主配置。"""
 
     catalog = tmp_path / "model.yaml"
     catalog.write_text("schema_version: 1\n", encoding="utf-8")
@@ -143,6 +143,6 @@ def host_config(tmp_path: Path) -> AppConfig:
 
 @pytest.fixture
 def host_models() -> ModelBindings:
-    """Model bindings that need no catalog, provider, or credentials."""
+    """不需要目录、Provider 或凭据的模型绑定。"""
 
     return _make_models(FakeChatModel())

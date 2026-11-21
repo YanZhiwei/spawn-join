@@ -19,6 +19,8 @@
 - [测试](#测试)
 - [设计边界](#设计边界)
 - [相关包](#相关包)
+- [发布、版本与维护](#发布版本与维护)
+- [许可证](#许可证)
 
 ## 为什么用这个包
 
@@ -202,4 +204,15 @@ uv run --locked --project packages/infra/llm-channel pytest packages/infra/llm-c
   `ChatModelConfig.from_channel`、`ModelSummary.from_model_info` 和原生模型工厂。
 - [`spawn-join-llm-model-sync`](../llm-model-sync/README.md)：模型元数据快照同步。
 
-许可证见 [LICENSE](LICENSE)。
+## 发布、版本与维护
+
+本包版本独立管理，当前为 `0.1.0`，尚未发布，也未配置自动发布或包级 changelog；发布必须
+通过包级质量门、独立评审和单独授权。源码位于 `src/spawn_join_llm_channel/`，测试位于
+`tests/`，公共导出由 `tests/test_public_api.py` 固定。本包由 SpawnJoin 仓库维护者拥有，作者为
+Yan Zhiwei；变更遵循[贡献规则](../../../AGENTS.md) 和
+[质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。报告连接问题时请提供
+脱敏的 `endpoint`、协议和错误类别，不要提供密钥。
+
+## 许可证
+
+本包为专有软件，使用和分发须遵守仓库授权条款，详见 [LICENSE](LICENSE)。

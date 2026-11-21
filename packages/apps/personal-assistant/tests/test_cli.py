@@ -1,4 +1,4 @@
-"""CLI smoke tests: subcommands, output, and stable exit codes."""
+"""CLI 冒烟测试：子命令、输出与稳定退出码。"""
 
 from __future__ import annotations
 

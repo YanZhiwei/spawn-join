@@ -1,4 +1,4 @@
-"""Offline tests for host assembly wiring, resources, and smoke execution."""
+"""宿主装配接线的离线测试：资源、装配与冒烟执行。"""
 
 from __future__ import annotations
 

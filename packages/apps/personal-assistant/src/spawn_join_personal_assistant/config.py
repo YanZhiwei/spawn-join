@@ -1,14 +1,13 @@
-"""Application configuration for the personal assistant host.
+"""个人助理宿主的应用配置。
 
-`AppConfig` is the public boundary object for host-side configuration. It
-validates paths and scheduler bounds eagerly so later stages receive only
-narrowed, typed inputs. Credentials are never part of configuration: model
-authentication stays in the environment and is resolved by
-`spawn-join-llm-provider-langchain` (ADR-0008 boundary).
+``AppConfig`` 是宿主侧配置的公共边界对象：它在校验阶段就急切校验
+路径与调度约束，让后续阶段只接收已收窄的类型化输入。凭据从不属于
+配置：模型认证保留在环境中，由 ``spawn-join-llm-provider-langchain``
+解析（ADR-0008 环境边界）。
 
-Validation helpers accept ``object`` on purpose: they narrow untyped dynamic
-input at the boundary (Constitution IV) without making the type checker
-report statically provable isinstance calls.
+校验辅助函数有意接收 ``object``：它们在边界处收窄无类型的动态输入
+（Constitution IV），同时避免类型检查器对静态可证明的 isinstance
+调用报错。
 """
 
 from __future__ import annotations
@@ -22,14 +21,14 @@ _MIN_CONCURRENCY = 1
 
 
 def _require_path(label: str, value: object) -> None:
-    """Reject non-Path input with a stable, assertable error."""
+    """拒绝非 Path 输入，抛出稳定、可断言的错误。"""
 
     if not isinstance(value, Path):
         raise HostConfigError(f"{label}: must be a pathlib.Path")
 
 
 def _require_positive_int(label: str, value: object) -> None:
-    """Reject non-int, bool, or below-minimum concurrency input."""
+    """拒绝非 int、bool 或低于下限的并发输入。"""
 
     if not isinstance(value, int) or isinstance(value, bool):
         raise HostConfigError(f"{label}: must be an int")
@@ -38,7 +37,7 @@ def _require_positive_int(label: str, value: object) -> None:
 
 
 def _require_positive_number_or_none(label: str, value: object) -> None:
-    """Reject non-numeric (or non-positive) deadline input; None disables it."""
+    """拒绝非数值（或非正数）的 deadline 输入；None 表示禁用。"""
 
     if value is None:
         return
@@ -50,17 +49,16 @@ def _require_positive_number_or_none(label: str, value: object) -> None:
 
 @dataclass(frozen=True, slots=True)
 class AppConfig:
-    """Validated host-application configuration.
+    """已校验的宿主应用配置。
 
-    Attributes:
-        data_dir: Directory for host-owned persistence (SQLite database).
-        workspace_root: The only directory tree where agent file side
-            effects are allowed.
-        model_catalog_path: Path to the model catalog file consumed via
-            ``ModelCatalog``; credentials come from the environment.
-        max_concurrency: Maximum number of work items running at once.
-        work_deadline_seconds: Optional total deadline for one work item
-            run; ``None`` disables the deadline.
+    字段:
+        data_dir: 宿主自有持久化（SQLite 数据库）所在目录。
+        workspace_root: 唯一允许 agent 文件副作用的目录树。
+        model_catalog_path: 经 ``ModelCatalog`` 消费的模型目录文件路径；
+            凭据来自环境。
+        max_concurrency: 同时处于 running 的工作项上限。
+        work_deadline_seconds: 单个工作项一次运行的可选总 deadline；
+            ``None`` 表示禁用 deadline。
     """
 
     data_dir: Path

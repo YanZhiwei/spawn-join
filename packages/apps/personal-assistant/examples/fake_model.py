@@ -1,4 +1,4 @@
-"""Deterministic offline fake model for the runnable example."""
+"""为可运行示例提供的确定性离线假模型。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 
 
 class FakeChatModel(BaseChatModel):
-    """Return a fixed sequence of assistant messages without any provider."""
+    """不依赖任何 Provider，返回固定序列的 assistant 消息。"""
 
     responses: list[AIMessage]
     index: int = 0

@@ -1,4 +1,4 @@
-"""Offline tests for HITL approvals: pause, decide, resume, restart."""
+"""HITL 审批的离线测试：暂停、决定、恢复、重启。"""
 
 from __future__ import annotations
 

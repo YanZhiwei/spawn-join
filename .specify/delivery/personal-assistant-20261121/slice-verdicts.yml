@@ -1,0 +1,70 @@
+# Ralph slice verdicts — personal-assistant-20261121
+# Internal review boundaries; tasks.md remains the only execution queue.
+
+S1:
+  verdict: SLICE_READY
+  date: 2026-11-21
+  tasks: [T001]
+  commits: ["230551762a01ded55922b6c4e7111b6be2aa2453"]
+  declared_verification: "package quality gate green incl. isolated build/install/import (T001 quality-report)"
+  trunk_safe: standalone (new Distribution paths plus additive governance rows only)
+  publication_group: P1
+
+S2:
+  verdict: SLICE_READY
+  date: 2026-11-21
+  tasks: [T002, T003]
+  commits:
+    - "a4398615fb47e206122c7dac7c69892d6b63beae"
+    - "0e7e357fae2e9eb7b5c6d43ce4d9d3789cc66611"
+  declared_verification: >
+    Package quality gate green at each task close (T002: 19 passed;
+    T003: 26 passed; Pyright strict 0 errors both) plus task-scoped
+    Quality/Standards/Review passes recorded in task-verdicts.yml.
+    No flag or integration checkpoint applies to these standalone slices.
+  trunk_safe: standalone (all behavior paths inside the new Distribution)
+  publication_group: P1
+
+S3:
+  verdict: SLICE_READY
+  date: 2026-11-21
+  tasks: [T004, T005]
+  commits:
+    - "d975bd28a84150bd6d502e45b046bcc4cd7b5adf"
+    - "ae0519016c08fda4a4f89b51c7712bd8fa5f7d17"
+  declared_verification: >
+    Package quality gate green at each task close (T004: 37 passed;
+    T005: 43 passed; Pyright strict 0 errors both) plus task-scoped
+    Quality/Standards/Review passes recorded in task-verdicts.yml.
+  trunk_safe: standalone (all behavior paths inside the new Distribution)
+  publication_group: P1
+
+S4:
+  verdict: SLICE_READY
+  date: 2026-11-21
+  tasks: [T006]
+  commits: ["ad6074b6d8bb4e0c3434e4e39642b3461c0e65b4"]
+  declared_verification: >
+    Package quality gate green at task close (60 passed, Pyright strict 0
+    errors) plus task-scoped Quality/Standards/Review passes recorded in
+    task-verdicts.yml. The offline example executes the full
+    accept/run/approve/report loop with a deterministic fake (notes.txt
+    exists: True). Six e2e tests cover US1-US4 main paths with real file
+    side effects and store outcomes. No flag or integration checkpoint
+    applies to this standalone slice.
+  trunk_safe: standalone (all behavior paths inside the new Distribution)
+  publication_group: P1
+
+S5:
+  verdict: SLICE_READY
+  date: 2026-11-21
+  tasks: [T007]
+  commits: ["ff33326134c363cc3b06bd8097c6ed43113b1976"]
+  declared_verification: >
+    Documentation closure: docs + governance + full package gate all green
+    (60 passed regression; Pyright strict 0 errors). ADR-0015 index row
+    registered; bilingual package README cross-checked against actual
+    sources; root README rows verified unchanged since T001. No flag or
+    integration checkpoint applies to this standalone slice.
+  trunk_safe: standalone (documentation-only changes)
+  publication_group: P1

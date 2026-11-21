@@ -1,4 +1,4 @@
-"""Offline tests for the due scheduler: pickup, bounds, cancellation, recovery."""
+"""due 调度器的离线测试：拾取、约束、取消、恢复。"""
 
 from __future__ import annotations
 

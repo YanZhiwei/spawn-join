@@ -16,7 +16,7 @@
   不手工修改安装器管理的命令或 runtime 协议来掩盖漂移。
 - 项目配置由项目拥有，组件/命令由安装器管理；`.specify/extensions.yml` 保持
   `auto_execute_hooks: false`、`hooks: {}`。有质量脚本和 CI 不表示有自动 Spec Kit Hook。
-- `package_readme: auto`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
+- `package_readme: required`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
   手动 squash 到 `main`。PR 模板使用随包中文模板与 `.github/pull_request_template.md`
   静态副本；Slice、任务门禁和 Handoff 规则见下文。
 - `delivery_run` 的恢复、检查点、owner transport 和 Close 由已安装契约负责；Close 区分
@@ -141,14 +141,21 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
 11. `spawn-join-common` 承载按职责组织的跨领域公共辅助实现，不依赖其他 SpawnJoin 包；
     默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
     策略留在调用方，后续能力需有真实复用契约，不预建空模块。
+12. 可复用的运行时/基础设施包在拥有持久化状态、队列/后台执行或自身常驻进程/守护循环时，
+    默认实现必须能在无外部服务的桌面环境运行；纯协议、类型或辅助包不适用，调用方拥有的
+    资源装配（如 ADR-0010 的 backend/checkpointer）也不属于本条的进程生命周期。此类包的
+    公共契约不得固化桌面专属语义（单机路径、单进程、单租户假设），必须可通过端口/适配器
+    切换为服务端存储与消息队列。SaaS/多租户能力由宿主与可选适配器提供，不进入默认实现；
+    服务端档位不得部署 SQLite。产品宿主（`apps`）自行选择档位并依赖这些包。决策与触发条件见
+    [ADR-0016](docs/decisions/engineering/0016-desktop-first-service-ready-packages.md)。
 
-当前配置基线（2026-11-08）：七个保留包各自拥有独立 uv 锁文件、dev group 和 `tests/`，
-消费者通过本地开发源解析仓库依赖；
+当前配置基线（2026-11-21）：八个保留包（`core` 3、`infra` 4、`apps` 1）各自拥有独立
+uv 锁文件、dev group 和 `tests/`，消费者通过本地开发源解析仓库依赖；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
 flagged 切片按 stacked 顺序 squash 到 `main`。
 活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
-新 agent 包和 channel 包已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
+所有保留包（含 `apps` 分组）已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
 不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
 发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
 以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：
@@ -276,8 +283,22 @@ flagged 切片按 stacked 顺序 squash 到 `main`。
 - 复杂设计理由写在 README、设计说明或 ADR 中，不把长篇架构讨论塞进函数体注释。
 - 任何会影响使用者的导入路径、依赖、配置、错误语义或运行命令变化，都要更新对应文档。
 - 仓库自有 README 必须使用 UTF-8 Markdown，并在同一目录维护两份独立文件：`README.md` 为完整简体中文版（GitHub 与包元数据默认入口），`README.en.md` 为完整英文版；不在同一文件串接两种语言正文。两份文件标题下均提供 `[简体中文](README.md) | [English](README.en.md)` 导航，正文优先链接同语言 README。
-- README 应达到可直接使用的 GitHub 项目文档水平：开头用短段落说明用途、适用人群与价值，优先展示能力、安装和最短可运行示例，再按适用性提供 API/CLI/配置、错误与限制、兼容性、目录布局、开发与测试、版本发布、帮助/贡献和许可证。长文提供目录；首页用包选择表和权威文档链接分流细节，避免把执行日志、安装历史或内部治理全文堆在首页。不得虚构功能、发布状态、徽章、性能数据或许可证。
-- README 中的命令、示例、默认值、依赖、错误和兼容性声明必须对照实际 manifest、源码导出、CLI、配置和测试；两种语言在同一次变更中同步更新，语义与示例保持一致。迁移时更新仓库内的标题锚点和本地链接；机器消费的权威索引只保留一份，另一语言链接该索引，避免双重维护。禁止写入密钥、私有 URL 或未执行检查的“通过”结论。
+- README 必须同时服务两类读者，并按“使用者 → 维护者”顺序组织：使用者关心用途、适用与不适用、
+  状态与兼容性、安装、最短可运行示例、公开 API/CLI/配置（真实名称与默认值）、错误与限制、
+  与相邻包的关系；维护者关心职责与不负责的事、依赖方向、目录布局、开发/测试/质量命令、
+  版本与发布、所有权与贡献、许可证。缺失的小节必须写明“不适用”及理由；不得留下空模板、
+  占位符或只写“见源码”。
+- 包 README 以 `.specify/extensions/docs-sync/templates/package-readme.md` 为结构基线，由
+  `speckit.docs-sync.package-readme` 在 Review 前逐包判定。新建包或公共面变化的包必须与实现
+  在同一次变更中更新 README，不得留到“后续补文档”。本项目配置为 `package_readme: required`：
+  受影响包的 README 缺口是交付阻塞，不是警告。
+- README 应达到可直接使用的 GitHub 项目文档水平：开头用短段落说明用途、适用人群与价值，
+  优先展示能力、安装和最短可运行示例。长文提供目录；首页用包选择表和权威文档链接分流细节，
+  避免把执行日志、安装历史或内部治理全文堆在首页。不得虚构功能、发布状态、徽章、性能数据或许可证。
+- README 中的命令、示例、默认值、依赖、错误和兼容性声明必须对照实际 manifest、源码导出、
+  CLI、配置和测试；两种语言在同一次变更中同步更新，语义与示例保持一致。迁移时更新仓库内的
+  标题锚点和本地链接；机器消费的权威索引只保留一份，另一语言链接该索引，避免双重维护。
+  禁止写入密钥、私有 URL 或未执行检查的“通过”结论。
 - 安装器管理的 `.specify/extensions/**` 与固定上游 `.agents/skills/**` 文档归各自来源所有，不套用本规则，除非项目明确接管其维护责任。
 
 ## 5. 测试与验证
