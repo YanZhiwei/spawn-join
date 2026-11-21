@@ -21,6 +21,8 @@ application catalog. It does **not** depend on LangChain and does **not** wrap
 - [Testing](#testing)
 - [Design boundaries](#design-boundaries)
 - [Related packages](#related-packages)
+- [Release, versioning, and maintenance](#release-versioning-and-maintenance)
+- [License](#license)
 
 ## Why this package
 
@@ -222,4 +224,19 @@ A skip is not a pass; delivery evidence marks it as unexecuted.
 - [`spawn-join-llm-model-sync`](../llm-model-sync/README.en.md): model metadata
   snapshot sync.
 
-License: [LICENSE](LICENSE).
+## Release, versioning, and maintenance
+
+This package is versioned independently; it is currently `0.1.0`, unpublished, with no
+automated release or package changelog. Publication requires passing the package quality
+gate, independent review, and separate authorization. Source lives in
+`src/spawn_join_llm_channel/`, tests in `tests/`, and `tests/test_public_api.py` fixes the
+public exports. The package is owned by the SpawnJoin repository maintainers; the author is
+Yan Zhiwei. Changes follow the [contribution rules](../../../AGENTS.md) and
+[quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). When
+reporting a connection problem, provide the sanitized `endpoint`, protocol, and error
+category; never provide keys.
+
+## License
+
+This package is proprietary software. Use and distribution require authorization under
+[LICENSE](LICENSE).
