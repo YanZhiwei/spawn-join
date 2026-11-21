@@ -34,6 +34,7 @@ jobs:
           - spawn-join-llm-model-sync
           - spawn-join-agent-deepagents
           - spawn-join-personal-assistant
+          - spawn-join-agent-work
         platform:
           - {os: ubuntu-latest, python: '3.11'}
           - {os: ubuntu-latest, python: '3.14'}

@@ -8,7 +8,7 @@ param(
     [ValidateSet('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
         'spawn-join-llm-provider-langchain', 'spawn-join-llm-channel',
         'spawn-join-llm-model-sync', 'spawn-join-agent-deepagents',
-        'spawn-join-personal-assistant')]
+        'spawn-join-personal-assistant', 'spawn-join-agent-work')]
     [string]$Package,
 
     [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs', 'governance', 'static')]
@@ -59,6 +59,11 @@ $packages = [ordered]@{
         Import = 'spawn_join_agent_deepagents'
         Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain', 'spawn-join-agent-deepagents')
+    }
+    'spawn-join-agent-work' = @{
+        Path = 'packages/infra/agent-work'
+        Import = 'spawn_join_agent_work'
+        Build = @('spawn-join-agent-work')
     }
     'spawn-join-personal-assistant' = @{
         Path = 'packages/apps/personal-assistant'
