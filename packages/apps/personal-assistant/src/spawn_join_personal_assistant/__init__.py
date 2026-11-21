@@ -17,6 +17,7 @@ from .errors import (
     HostStoreError,
     WorkTransitionError,
 )
+from .host import HostSession, open_host_session
 from .work.models import WorkItem, WorkStatus
 from .work.store import WorkStore
 
@@ -26,9 +27,11 @@ __all__ = [
     "HostConfigError",
     "HostError",
     "HostSchedulingError",
+    "HostSession",
     "HostStoreError",
     "WorkItem",
     "WorkStatus",
     "WorkStore",
     "WorkTransitionError",
+    "open_host_session",
 ]

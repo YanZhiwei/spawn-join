@@ -11,10 +11,12 @@ scheduler loop, HITL approval persistence, and the CLI. **Memory is out of
 scope for v1** (the seam is reserved; see ADR-0015).
 
 > Status note: this package is delivered in slices. Currently provided:
-> the configuration boundary (`AppConfig`), the stable error taxonomy, and
+> the configuration boundary (`AppConfig`), the stable error taxonomy,
 > **work-item persistence** (sqlite3 state machine, idempotency keys,
-> recovery scan); scheduling, approvals, and the CLI land in later slices.
-> This document describes only what is implemented.
+> recovery scan), and **host assembly** (confined workspace backend,
+> permission gates, strict-msgpack SQLite checkpointer); scheduling,
+> approvals, and the CLI land in later slices. This document describes
+> only what is implemented.
 
 **Contents**
 
@@ -54,11 +56,21 @@ scope for v1** (the seam is reserved; see ADR-0015).
   `pending_recovery` scans unfinished items after restart, and
   `count_by_status` reports totals; `WorkItem`/`WorkStatus` are the public
   data types.
+- `open_host_session`: assembles the native supervisor — a
+  `FilesystemBackend(workspace_root, virtual_mode=True)` with path
+  guardrails (rejecting `..`, `~`, and absolute paths outside the root),
+  an explicit `FilesystemPermission` workspace policy, `tools=()` so no shell
+  execution tools are exposed by default, and an `AsyncSqliteSaver` that
+  persists thread state with a strict deserialization whitelist by default
+  (`allowed_msgpack_modules=None`, equivalent to the documented
+  `LANGGRAPH_STRICT_MSGPACK` switch without mutating process environment).
+  It returns a `HostSession` whose idempotent `aclose` closes the
+  host-owned connection. Credentials never pass through the assembly:
+  models arrive as constructed `BaseChatModel` instances or a caller-owned
+  `ModelCatalog` binding (ADR-0008).
 
-Later slices (see the delivery queue): the asyncio due scheduler,
-confined-workspace assembly (`FilesystemBackend` plus permission gates and a
-strict-msgpack checkpointer), HITL approval persistence, and the
-`accept`/`due`/`run`/`report`/`approve` CLI.
+Later slices (see the delivery queue): the asyncio due scheduler, HITL
+approval persistence, and the `accept`/`due`/`run`/`report`/`approve` CLI.
 
 ## Installation
 

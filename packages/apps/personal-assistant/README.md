@@ -8,8 +8,9 @@
 HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接缝已留位，见 ADR-0015）。
 
 > 状态说明：本包处于按切片交付的开发过程中。当前已提供：配置边界（`AppConfig`）、
-> 稳定错误分类与**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）；调度、审批与
-> CLI 在后续切片落地。本文只描述已实现的能力。
+> 稳定错误分类、**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）与**宿主装配**
+> （受限工作区 backend + 权限门禁 + strict msgpack SQLite checkpointer）；调度、
+> 审批与 CLI 在后续切片落地。本文只描述已实现的能力。
 
 **目录**
 
@@ -41,10 +42,17 @@ HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接�
   `mark` 状态机迁移（`queued/running/waiting_approval/completed/failed/cancelled`，
   非法迁移抛 `WorkTransitionError` 且零副作用）、`pending_recovery` 重启恢复扫描、
   按状态计数；`WorkItem`/`WorkStatus` 为公共数据类型。
+- `open_host_session`：装配原生 supervisor——`FilesystemBackend(workspace_root,
+  virtual_mode=True)` 路径守卫（拒绝 `..`/`~`/根外绝对路径）、显式
+  `FilesystemPermission` 工作区策略、`tools=()` 默认不暴露 shell 执行工具、
+  `AsyncSqliteSaver` 持久 thread 状态且反序列化白名单默认严格
+  （`allowed_msgpack_modules=None`，等价于文档化 `LANGGRAPH_STRICT_MSGPACK` 开关，
+  不修改进程环境）；返回 `HostSession`（`aclose` 幂等关闭宿主拥有的连接）。
+  凭据不经过装配层：模型以构造好的 `BaseChatModel` 或调用方持有的
+  `ModelCatalog` 绑定注入（ADR-0008）。
 
-后续切片（见任务队列）：asyncio due 调度、受限工作区装配
-（`FilesystemBackend` + 权限门禁 + strict msgpack checkpointer）、
-HITL 审批持久化与 `accept/due/run/report/approve` CLI。
+后续切片（见任务队列）：asyncio due 调度、HITL 审批持久化与
+`accept/due/run/report/approve` CLI。
 
 ## 安装
 
