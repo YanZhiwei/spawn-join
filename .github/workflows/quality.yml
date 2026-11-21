@@ -33,6 +33,7 @@ jobs:
           - spawn-join-llm-channel
           - spawn-join-llm-model-sync
           - spawn-join-agent-deepagents
+          - spawn-join-personal-assistant
         platform:
           - {os: ubuntu-latest, python: '3.11'}
           - {os: ubuntu-latest, python: '3.14'}
