@@ -1202,3 +1202,19 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - Close 记录：[evidence](../.specify/delivery/readme-dual-audience-20261121/evidence.md)。
 - 预存工作区改动 `.specify/delivery/personal-assistant-20261121/slices.md` 不属于本次范围，
   未修改。
+
+## 2026-11-21 — personal-assistant Close 终态收敛
+
+- Route: Lightweight（Delivery 运行态与本地指纹收敛，无源码或持久记录字节变化）。
+- Base revision: `9ce1a1f1eb08a68a15289d3a7298d6278248f7eb`；工作目录 `D:\Repos\spawn-join`。
+- 现象：`personal-assistant-20261121` 的持久记录已声明 delivered / PR #73 合并，但运行态停在
+  handoff，`status` 为 verification-required，blocker 为 canonical Evidence 指纹变化；根因是
+  当次 Close 直接改写了 `evidence.md`，未经过机器写入器。
+- 处置：用 `delivery_runtime.py close-record --outcome merged --pr 73 --verified` 复核既有事实
+  （Close 块 `changed: false`，未改写），并刷新 hash 绑定的 Evidence observation；
+  `status` 变为 delivered、blockers 为空。预存 `slices.md` 的“修改”经字节比对与 `HEAD` 相同
+  （仅 stat 缓存脏），已用单路径 `git checkout --` 复原。
+- 验证：`git diff --check` 通过；本次无 tracked 变更，`runtime/state.json` 位于
+  `.git/info/exclude` 排除的本地运行工作区。其余 9 个 verification-required run 均为 legacy
+  目录，未补造历史。详见 [evidence](evidence/personal-assistant-close-reconciliation.md)。
+- 纯治理记录，未运行包矩阵或回归套件；commit、push、PR 需单独授权。
