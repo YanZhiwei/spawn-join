@@ -29,9 +29,9 @@
 
 ## Decision
 
-- 使用满足 Bundle 最低要求的 Specify CLI（本次现场为 1.2.3），使用 v0.4.8 发布 Catalog；
+- 使用满足 Bundle 最低要求的 Specify CLI（本次现场为 1.2.3），使用 v0.4.9 发布 Catalog；
   Bug 按 Bundle pin 安装为 1.0.1。历史 1.4.0 / Bug 1.0.2 观察不作为当前版本依据。
-- 当前交付组件由 v0.4.8 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
+- 当前交付组件由 v0.4.9 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
 - OpenCode 作为当前默认集成，Codex Delivery Skills 与 OpenCode 命令均由安装器注册；
   保留项目任务模板/核心技能定制，不另建路由门面。
 - 删除本项目手工拷贝的 sd、speckit-delivery 门面；不删除用户级共享文件或 Fireworks。
@@ -116,6 +116,12 @@ registry 拥有的 Skills（含 `speckit-sd` alias），OpenCode 保留 40 个�
 探针通过。安装、运行时探针与真实模型交付的边界见
 [v0.4.8 evidence](../../../harness/evidence/delivery-v048-upgrade.md)。
 
+v0.4.9 通过正式 Release 的 Bundle 更新路径安装，修复领域子目录 ADR 与设计已批准
+配套文档的检查点准入。安装器执行前后，1,461 个受保护的配置、定制、Feature 和运行
+文件逐字节保留，76 个安装负载与固定 Tag 一致；之后同步项目版本文档并单独记录
+治理输入的新鲜度变化。详情见
+[v0.4.9 evidence](../../../harness/evidence/delivery-v049-upgrade.md)。
+
 ## Revision history
 
 - 2026-10-28：根据用户要求提出固定 Release 组件安装方案，记录 Bundle 的实际失败路径。
@@ -156,3 +162,6 @@ registry 拥有的 Skills（含 `speckit-sd` alias），OpenCode 保留 40 个�
 - 2026-11-21：按维护者要求升级至 v0.4.8，并通过安装器补齐 Codex Delivery Skills；
   保留 OpenCode 默认集成、配置与核心定制。现场 CLI 1.2.3，Bug 依 Bundle pin 为 1.0.1；
   版本差异与验证结果记录在 v0.4.8 evidence。
+- 2026-11-21：按维护者要求合并上游修复并发布 v0.4.9，再经临时副本演练更新当前
+  项目。来源固定、配置与运行记录保留、OpenCode 默认集成和原有授权边界保持；
+  分层 ADR 与配套文档准入修复的安装验证记录在 v0.4.9 evidence。
