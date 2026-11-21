@@ -1,3 +1,31 @@
+<!-- DELIVERY_CURRENT_OUTCOME_BEGIN -->
+## Current delivery outcome
+
+- **delivery_run**: ci-personal-assistant-matrix-20261121
+- **lane**: lightweight
+- **status**: delivered
+- **outcome**: merged
+- **provider**: github
+- **repository**: yanzhiwei/spawn-join
+- **number**: 80
+- **pull_request**: https://github.com/yanzhiwei/spawn-join/pull/80
+- **reviewed_head**: b7b43b8a2bf7b0e785699098d818a15e53ca76dc
+- **original_pr_head**: b7b43b8a2bf7b0e785699098d818a15e53ca76dc
+- **published_head_proof**: tracker-head-mapped
+- **base_revision**: c2de6aed93c563c8830d45936425389f7c04294a
+- **merged_revision**: f50486ad63f44b7cf2df98cda79202587347020d
+- **effective_head**: f50486ad63f44b7cf2df98cda79202587347020d
+- **merged_at**: 2026-11-21T15:02:32Z
+- **observed_at**: 2026-11-21T23:03:00+08:00
+- **outcome_recorded_at**: 2026-11-21T23:03:00+08:00
+- **verification_file**: .specify/delivery/ci-personal-assistant-matrix-20261121/runtime/observed-pr.json
+- **merge_proof**: tracker-head-mapped
+<!-- DELIVERY_CURRENT_OUTCOME_END -->
+
+## Historical validation snapshots
+
+<!-- Validation content below is retained verbatim as the historical snapshot recorded before Close. -->
+
 # Delivery Evidence — CI 矩阵补齐个人助理包
 
 ## Lane and scope
