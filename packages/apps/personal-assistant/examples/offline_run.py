@@ -1,6 +1,6 @@
-"""Run the personal assistant CLI end to end without any model service.
+"""不连接任何模型服务，端到端运行个人助理 CLI。
 
-From the repository root:
+从仓库根目录执行：
 
     uv run --locked --directory packages/apps/personal-assistant \
         python examples/offline_run.py
@@ -63,7 +63,7 @@ def main_example() -> int:
 
         main(_argv(root, "accept", "写一条笔记并保存", "--key", "notes-1"))
         code = main(_argv(root, "run"), bindings=bindings)
-        # The write is approval-gated, so the run pauses; approve it.
+        # 写入受审批门禁约束，因此运行会暂停；这里批准它。
         with ApprovalBook(root / "data" / "approvals.db") as book:
             record_id = book.pending()[0].id
         code = main(

@@ -1,4 +1,4 @@
-"""Offline tests for AppConfig boundary validation."""
+"""AppConfig 边界校验的离线测试。"""
 
 from __future__ import annotations
 

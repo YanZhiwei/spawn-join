@@ -1,4 +1,4 @@
-"""Offline tests for the work-item store: state machine, idempotency, recovery."""
+"""工作项存储的离线测试：状态机、幂等、恢复。"""
 
 from __future__ import annotations
 
@@ -132,7 +132,7 @@ def test_store_survives_restart_with_schema_idempotent(tmp_path: Path) -> None:
 
         assert len(items) == 2
         assert store.get_by_idempotency_key("key-1") is not None
-        # Schema setup is idempotent; the second open added no duplicate rows.
+        # Schema 建立是幂等的；第二次打开没有产生重复行。
         assert store.count_by_status(WorkStatus.QUEUED) == 2
 
 

@@ -1199,3 +1199,23 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 项目治理检查为 0 errors / 1 历史 warning；本次 7 份文档、132 个本地链接与差异空白
   检查通过。全局 docs 在未升级备份与目标均被原 Tasks 尾随空白阻断，双语 README
   结构守卫另报告原 ADR-0015 未登记首页索引；未修改既有 MCP 工件掩盖这些结果。
+
+## 2026-11-21 — 包 README 双视角契约与阻断
+
+- Route: Lightweight（治理规则、Delivery 配置与包文档，无运行时行为；不创建 Feature 工件）。
+- Base revision: `53acefc4841cdd04f9620641f3d21e29db3f325a`；工作目录 `D:\Repos\spawn-join`。
+- 用户反馈多次 README 未同时从“package 使用者”和“仓库维护者”角度撰写。调查确认契约已存在
+  （`speckit.docs-sync.package-readme` 与随包模板），缺口在于 `package_readme: auto` 只报告
+  不阻断，且 `AGENTS.md` 的 README 规则没有可判定的双视角清单。
+- 变更：`AGENTS.md` §4.4 增加“使用者 → 维护者”清单和“与实现同批更新”要求，并同步 §0 的配置
+  摘要；`docs-sync-config.yml` 改为 `package_readme: required`；更新 `spec-kit-delivery.md` 的配置
+  记录；补齐 `spawn-join-core`、`common`、`llm-channel` 中英文 README 的错误/限制、发布、
+  所有权和许可证小节。其余五个包已具备对应内容，未做无依据改写。
+- 验证：`pwsh -NoProfile -File scripts/quality.ps1 -Check governance` 为 0 errors / 1 历史
+  freshness warning（`delivery-v022-upgrade.md`，与本次范围无关）；`-Check docs` 通过
+  （75 files / 369 local targets）；`git diff --check` 通过。纯文档/配置改动，未运行包矩阵、
+  `-Check static` 或回归套件。已在用户授权后提交、push 并创建 PR #77；2026-11-21T14:22:20Z
+  已 squash 合并到 `c7dc968f8de047158f3cbf18eaf4e74912fb1415`（status: delivered）。
+- Close 记录：[evidence](../.specify/delivery/readme-dual-audience-20261121/evidence.md)。
+- 预存工作区改动 `.specify/delivery/personal-assistant-20261121/slices.md` 不属于本次范围，
+  未修改。

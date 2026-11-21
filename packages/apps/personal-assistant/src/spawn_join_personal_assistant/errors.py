@@ -1,32 +1,32 @@
-"""Stable error taxonomy for the personal assistant host application."""
+"""个人助理宿主应用的稳定错误分类。"""
 
 from __future__ import annotations
 
 
 class HostError(Exception):
-    """Base class for stable, host-application errors.
+    """宿主应用稳定错误的基类。
 
-    Host errors describe which host concern failed (configuration, storage,
-    scheduling, approvals). They deliberately do not wrap model-provider or
-    framework errors; those keep their own taxonomy in the owning packages.
+    宿主错误描述宿主侧哪个关注点失败（配置、存储、调度、审批）；它们
+    有意不包装模型 Provider 或框架错误——后者的错误分类保留在各自的
+    拥有包中。
     """
 
 
 class HostConfigError(HostError):
-    """Application configuration is missing, malformed, or invalid."""
+    """应用配置缺失、格式非法或取值无效。"""
 
 
 class HostStoreError(HostError):
-    """Work-item or approval persistence failed."""
+    """工作项或审批持久化失败。"""
 
 
 class WorkTransitionError(HostStoreError):
-    """A work-item state transition is not permitted by the state machine."""
+    """工作项状态迁移未被状态机允许。"""
 
 
 class HostSchedulingError(HostError):
-    """The scheduler could not start or bound a work item."""
+    """调度器无法启动或约束某个工作项。"""
 
 
 class HostApprovalError(HostError):
-    """Approval bookkeeping or resume failed."""
+    """审批记账或恢复执行失败。"""

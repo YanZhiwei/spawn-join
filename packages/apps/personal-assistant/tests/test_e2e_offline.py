@@ -1,4 +1,4 @@
-"""Offline end-to-end: user stories US1-US4 through the real CLI loop."""
+"""离线端到端：经真实 CLI 回路跑通用户故事 US1–US4。"""
 
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ def test_us2_interrupted_run_recovered_exactly_once(
     assert main(_argv(root, "accept", "长任务", "--key", "k1")) == 0
     capsys.readouterr()
 
-    # Simulate a hard-killed process: the item stays RUNNING in the store.
+    # 模拟进程被硬杀：工作项在存储中留在 RUNNING。
     with WorkStore(root / "data" / "work.db") as store:
         item = store.get_by_idempotency_key("k1")
         assert item is not None

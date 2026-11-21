@@ -11,6 +11,35 @@ scheduler loop, HITL approval persistence, and the CLI. **Memory is out of
 scope for v1** (the seam is reserved; see
 [ADR-0015](../../../docs/decisions/agent/0015-personal-assistant-host-boundary.md)).
 
+**Why you need it.** Building a "personal assistant" directly on
+DeepAgents/LangGraph runs into the same host problems every time:
+
+- The conversation dies with the process — agent thread state has no
+  persistence across restarts.
+- File side effects have no boundary — by default the agent can write the
+  whole disk, and it should not have a shell.
+- Dangerous actions have no human gate — "approve first, execute later"
+  means handling interrupts, decisions, and resume-command alignment
+  yourself.
+- Tasks have no durable queue or idempotency — every retry repeats the side
+  effect.
+- Testing the loop offline is impossible without a model injection seam.
+
+This package collapses those problems into five testable host contracts:
+durable work items (idempotency key + state machine), an asyncio due
+scheduler (concurrency bound + deadline + interrupted rerun), a HITL approval
+book (decided records immutable + aligned resume commands), confined-workspace
+assembly (path guardrails + explicit permissions + no shell by default), and a
+strict-msgpack checkpointer (thread recovery across restarts).
+
+**How to read this document.** As a package consumer, start with
+[Installation](#installation) and [Quick start](#quick-start), then follow
+[Work items](#work-items) → [Scheduling](#scheduling) → [Approvals](#approvals)
+→ [CLI](#cli) for the domain semantics. As a maintainer, read
+[Architecture and module boundaries](#architecture-and-module-boundaries-maintainer-view)
+and [Development and verification](#development-and-verification) first, and
+consult the per-domain examples as needed.
+
 **Contents**
 
 - [Status and compatibility](#status-and-compatibility)
@@ -48,6 +77,13 @@ scope for v1** (the seam is reserved; see
 - [Public API](#public-api)
 - [Errors and failure behavior](#errors-and-failure-behavior)
 - [Compatibility and limitations](#compatibility-and-limitations)
+- [Architecture and module boundaries (maintainer view)](#architecture-and-module-boundaries-maintainer-view)
+  - [Modules and responsibilities](#modules-and-responsibilities)
+  - [Dependency direction](#dependency-direction)
+  - [Data flow (one run cycle)](#data-flow-one-run-cycle)
+  - [Persistence layout](#persistence-layout)
+  - [Extension seams](#extension-seams)
+  - [Test layout](#test-layout)
 - [Development and verification](#development-and-verification)
 - [Release and versioning](#release-and-versioning)
 - [Maintenance and contributing](#maintenance-and-contributing)
@@ -936,6 +972,95 @@ become public contracts just because they are importable.
 - No multi-tenancy/auth/billing, IM channels, web UI, MCP server,
   container/remote sandbox, or Postgres deployment; production migration is
   documented as seams only (ADR-0015).
+
+## Architecture and module boundaries (maintainer view)
+
+### Modules and responsibilities
+
+| Module | Responsibility | Key invariant |
+| --- | --- | --- |
+| `config.py` | `AppConfig` boundary validation (paths, concurrency, deadline) | Credentials never in config; validation completes at construction |
+| `errors.py` | Stable host error taxonomy | Never wraps upstream provider/framework errors |
+| `work/models.py` | `WorkItem`/`WorkStatus` state machine | `transition_allowed` is the only transition authority |
+| `work/store.py` | Single-writer SQLite work-item store | UNIQUE idempotency key; illegal transitions have zero side effects |
+| `scheduler.py` | asyncio due scheduler | Executor exceptions never abort siblings; parent cancellation requeues, then propagates |
+| `approvals.py` | HITL approval book and resume commands | Decided records are immutable; decisions align with actions in order |
+| `host.py` | Supervisor assembly and host resource ownership | `build_supervisor` is the only assembly authority; the caller closes resources |
+| `cli.py` | Five-subcommand entry point | Stable exit codes; `bindings` is the explicit model injection seam |
+
+### Dependency direction
+
+```text
+cli ─┬─ host ── spawn-join-agent-deepagents (assembly) + langgraph (checkpointer)
+    ├─ scheduler ── work (store/models)
+    ├─ approvals ── work + spawn-join-agent-deepagents (interrupt/resume)
+    └─ config / errors (shared package-wide)
+```
+
+Dependencies stay one-way: this package sits at the end of the SpawnJoin
+dependency graph (apps layer) and no SpawnJoin package depends on it in
+return. Assembly and model contracts belong to
+[`spawn-join-agent-deepagents`](../../infra/agent-deepagents/README.md) and
+[`spawn-join-llm-provider-langchain`](../../infra/llm-provider-langchain/README.md);
+this package does not re-parse `model.yaml`, `.env`, or provider SDKs.
+
+### Data flow (one run cycle)
+
+```text
+accept(goal, key) ──────────────── work_items(queued)
+run:
+  recover_interrupted: RUNNING -> queued (interrupted rerun, exactly once)
+  pick due queued -> RUNNING (attempts+1)
+  executor: consume the full astream
+    ├─ interrupt hit -> approval_records(pending) + WAITING_APPROVAL
+    └─ natural end ── COMPLETED (result_summary = last assistant message)
+approve:
+  record_decision(approved/rejected)
+    ├─ approved -> RUNNING + resume_batched -> runs to completion
+    └─ rejected -> FAILED(rejected); refused actions never execute
+```
+
+### Persistence layout
+
+- `data/work.db`: the `work_items` table (UNIQUE idempotency key;
+  `CREATE TABLE IF NOT EXISTS` keeps schema setup idempotent).
+- `data/approvals.db`: the `approval_records` table (decided records are
+  immutable; a separate database so approvals and work items never lock each
+  other).
+- `data/threads.db`: LangGraph thread checkpoints (strict msgpack whitelist —
+  equivalent to `LANGGRAPH_STRICT_MSGPACK` without mutating the process
+  environment).
+- `workspace/`: the only directory tree where agent file side effects are
+  legal (virtual-mode guardrails reject `..`, `~`, and absolute paths outside
+  the root).
+
+### Extension seams
+
+- **Approval gates**: `open_host_session(interrupt_on=...)` declares which
+  tools need human approval (the CLI defaults to `{"write_file": True}` —
+  writes only).
+- **Model injection**: `main(bindings=...)` bypasses the catalog and injects
+  offline/alternative models — every test and example runs through this seam.
+- **Host tools**: `SupervisorSpec.tools` stays empty by default; adding host
+  tools is this package's assembly concern and must declare their approval
+  policy (`interrupt_on`) at the same time.
+- **Storage migration**: the three SQLite files are the persistence interface;
+  the Postgres migration is seam documentation only (ADR-0015) and the runtime
+  never depends on a cloud service.
+
+### Test layout
+
+- Unit: `test_work_store` (state machine/idempotency/recovery),
+  `test_scheduler` (pickup/bounds/cancel/hard-kill recovery),
+  `test_approvals` (pause/decide/restart alignment), `test_config`
+  (boundary validation).
+- Assembly: `test_host_assembly` (resource ownership, path guardrails, the
+  strict serializer, fake-model smoke execution).
+- End to end: `test_cli` (five-subcommand smoke + stable exit codes) and
+  `test_e2e_offline` (US1–US4 through the real loop; side effects asserted by
+  counting files inside a controlled tmpdir).
+- All 60 cases run offline: no real secrets, no external services; new
+  behavior needs a failing test first (see the repository `AGENTS.md`).
 
 ## Development and verification
 
