@@ -8,9 +8,11 @@ SpawnJoin 生态共享的稳定契约与基础原语。
 
 - [当前状态](#当前状态)
 - [使用与验证](#使用与验证)
+- [错误与限制](#错误与限制)
 - [边界](#边界)
 - [目录、开发与质量](#目录开发与质量)
-- [维护、版本与许可证](#维护版本与许可证)
+- [维护与发布](#维护与发布)
+- [许可证](#许可证)
 
 ## 当前状态
 
@@ -44,6 +46,13 @@ uv run --locked --directory packages/core/spawn-join-core python -c "import spaw
 
 不存在可调用的公共 API、CLI 或配置项；阅读本 README 后不应推断出尚未实现的运行时能力。
 
+## 错误与限制
+
+- 包根当前只导出 `__version__`；导入不会发起 I/O、网络请求或读取环境变量。
+- 没有可调用的公共 API，因此本包当前不定义运行时异常类型，也不承诺业务错误语义。
+- `config`、`exceptions`、`protocols` 和 `types` 只有模块契约；直接导入其内部模块不是公开契约。
+- `0.x` 期间接口可能按文档化变更调整；不要基于本 README 推断尚未实现的配置或错误处理能力。
+
 ## 边界
 
 - 不依赖其他 SpawnJoin 包。
@@ -65,8 +74,14 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core
 质量命令执行 Black、isort、Ruff、Pyright strict、pytest、wheel/sdist、隔离安装、
 `pip check` 和隔离导入检查。
 
-## 维护、版本与许可证
+## 维护与发布
 
-公共能力必须先通过 Feature 交付路由说明复用理由、依赖方向和验证方式；新增或删除模块时
-同步测试、包边界和仓库文档。本包使用独立版本号，尚未发布；发布需要单独授权。许可证见
-[LICENSE](LICENSE)。
+本包由 SpawnJoin 仓库维护者拥有，作者为 Yan Zhiwei。公共能力必须先通过 Feature 交付路由
+说明复用理由、依赖方向和验证方式；新增或删除模块时同步测试、包边界和仓库文档。变更遵循
+[贡献规则](../../../AGENTS.md) 和
+[质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。本包使用独立版本号，
+当前 `0.1.0` 尚未发布；发布需要单独授权，当前没有自动发布或包级 changelog。
+
+## 许可证
+
+本包为专有软件，使用和分发须遵守仓库授权条款，详见 [LICENSE](LICENSE)。

@@ -1,9 +1,8 @@
-"""SQLite-backed work-item store with idempotent acceptance.
+"""带幂等接收的 SQLite 工作项存储。
 
-The store is the single writer for work-item persistence: one connection,
-explicit transactions, and a UNIQUE idempotency-key constraint. It assumes
-one host process per data directory (a documented limitation); it does not
-attempt cross-process coordination.
+store 是工作项持久化的唯一写者：单连接、显式事务和幂等键 UNIQUE
+约束。它假设每个数据目录一个宿主进程（文档化的限制），不做跨进程
+协调。
 """
 
 from __future__ import annotations
@@ -47,27 +46,27 @@ _UNFINISHED_STATUSES = (
 
 
 def _utc_now_iso() -> str:
-    """Return the current UTC time as a sortable ISO-8601 string."""
+    """以可排序的 ISO-8601 字符串返回当前 UTC 时间。"""
 
     return datetime.now(UTC).isoformat()
 
 
 def _require_path(value: object) -> None:
-    """Reject non-Path input with a stable, assertable error."""
+    """拒绝非 Path 输入，抛出稳定、可断言的错误。"""
 
     if not isinstance(value, Path):
         raise HostStoreError("db_path: must be a pathlib.Path")
 
 
 def _require_non_empty_str(label: str, value: object) -> None:
-    """Reject non-string or blank input with a stable, assertable error."""
+    """拒绝非字符串或空白输入，抛出稳定、可断言的错误。"""
 
     if not isinstance(value, str) or not value.strip():
         raise HostStoreError(f"{label}: must be a non-empty string")
 
 
 def _item_from_row(row: sqlite3.Row) -> WorkItem:
-    """Narrow an untyped sqlite3 row into a WorkItem at the storage boundary."""
+    """在存储边界把无类型的 sqlite3 行收窄为 WorkItem。"""
 
     due_at = row["due_at"]
     deadline = row["deadline_seconds"]
@@ -94,7 +93,7 @@ def _item_from_row(row: sqlite3.Row) -> WorkItem:
 
 
 class WorkStore:
-    """Durable work-item persistence over a single sqlite3 connection."""
+    """基于单个 sqlite3 连接的可持久化工作项存储。"""
 
     def __init__(self, db_path: Path) -> None:
         _require_path(db_path)
@@ -116,7 +115,7 @@ class WorkStore:
         self.close()
 
     def close(self) -> None:
-        """Close the underlying connection; safe to call more than once."""
+        """关闭底层连接；可重复调用。"""
 
         self._connection.close()
 
@@ -128,7 +127,7 @@ class WorkStore:
         due_at: str | None = None,
         deadline_seconds: float | None = None,
     ) -> WorkItem:
-        """Insert a new queued work item; reject replayed idempotency keys."""
+        """插入一个新的排队工作项；拒绝重放的幂等键。"""
 
         _require_non_empty_str("goal", goal)
         _require_non_empty_str("idempotency_key", idempotency_key)
@@ -172,12 +171,12 @@ class WorkStore:
         return item
 
     def get(self, item_id: str) -> WorkItem | None:
-        """Return the work item with the given id, or None."""
+        """返回给定 id 的工作项，不存在则返回 None。"""
 
         return self._select_one("id = ?", (item_id,))
 
     def get_by_idempotency_key(self, key: str) -> WorkItem | None:
-        """Return the work item accepted with the given key, or None."""
+        """返回以给定幂等键接收的工作项，不存在则返回 None。"""
 
         return self._select_one("idempotency_key = ?", (key,))
 
@@ -191,11 +190,10 @@ class WorkStore:
         thread_id: str | None = None,
         increment_attempt: bool = False,
     ) -> WorkItem:
-        """Apply one validated state transition and persist optional fields.
+        """应用一次已校验的状态迁移并持久化可选字段。
 
-        Passing a non-None optional field updates it; None keeps the stored
-        value. Illegal transitions raise ``WorkTransitionError`` and never
-        change persisted state.
+        传入非 None 的可选字段会更新它；None 保留已存值。非法迁移抛出
+        ``WorkTransitionError``，且绝不改变已持久化状态。
         """
 
         current = self.get(item_id)
@@ -248,7 +246,7 @@ class WorkStore:
         return updated
 
     def pending_recovery(self) -> list[WorkItem]:
-        """Return unfinished items (queued/running/waiting) for restart scans."""
+        """返回未完成项（queued/running/waiting），供重启扫描使用。"""
 
         placeholders = ", ".join("?" for _ in _UNFINISHED_STATUSES)
         return self._select_all(
@@ -257,12 +255,12 @@ class WorkStore:
         )
 
     def list_all(self) -> list[WorkItem]:
-        """Return every work item in creation order."""
+        """按创建顺序返回全部工作项。"""
 
         return self._select_all("1 = 1", ())
 
     def count_by_status(self, status: WorkStatus) -> int:
-        """Return how many items currently hold the given status."""
+        """返回当前持有给定状态的工作项数量。"""
 
         try:
             cursor = self._connection.execute(

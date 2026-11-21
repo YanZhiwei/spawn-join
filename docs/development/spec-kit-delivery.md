@@ -166,7 +166,7 @@ v0.1.4 → v0.4.9 的配置差异需要项目明确处理，而不是让安装�
 工作区（`exploration.md`、`slices.md`、receipts、verdicts、reviews、渲染后的 PR 正文）的
 保留方式，`evidence.md` 始终是持久记录，并由 `speckit.delivery.close` 记录
 `delivered`/`abandoned`/`superseded`；v0.3.1 在 Docs Sync 配置新增 `package_readme`
-（`auto`/`required`/`off`）与 `package_roots`，本项目显式选择 `auto`；v0.3.2 新增方法适配和
+（`auto`/`required`/`off`）与 `package_roots`，本项目当时显式选择 `auto`；v0.3.2 新增方法适配和
 更严格的 Plan/Slice/Evidence 上下文与证据刷新契约；v0.4.1 增加 `sd` alias、便携式
 runtime coordinator、`delivery_run` 恢复/检查点和条件式 owner dispatch；v0.4.2 增加
 逐任务关闭 transport、Close outcome 的 reviewed/original/merged revision 证明和 publication
@@ -209,8 +209,9 @@ v0.3.0 起，交付在 PR 结果确定后执行 `/speckit.delivery.close`：合�
 
 v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之前运行
 `/speckit.docs-sync.package-readme`。已有包 README 不会被自动重写；节点在下次包变更时
-按变更面输出 `updated`、`unchanged-with-reason` 或 `gap`。本项目选择 `auto`，因此缺口只
-报告、不阻断。
+按变更面输出 `updated`、`unchanged-with-reason` 或 `gap`。本项目自 2026-11-21 起选择
+`required`，受影响包的 README 缺口阻断 Review，不再只报告；判定清单见
+[AGENTS §4.4](../../AGENTS.md)。
 
 ## 项目配置
 
@@ -239,9 +240,10 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
 - [Decision](../../.specify/extensions/decision/decision-config.yml)：唯一 ADR 根 `docs/decisions/`。
 - [Ralph](../../.specify/extensions/ralph/ralph-config.yml)：Specs 为 ephemeral、单任务串行。
 - [Docs Sync](../../.specify/extensions/docs-sync/docs-sync-config.yml)：手工维护权威文档并执行链接检查；
-  当前没有生成投影，因此不虚构 generator 或 publication manifest。v0.3.1 显式设置
-  `package_readme: auto`：包 README 在下次包变更时刷新，缺口报告但不阻断；`package_roots`
-  留空，由 manifest 检测。v0.4.6 显式设置 `project_readme: auto`：根 README 按索引执行
+  当前没有生成投影，因此不虚构 generator 或 publication manifest。v0.3.1 引入
+  `package_readme`，本项目当时设为 `auto`；自 2026-11-21 起改为 `required`：包 README 在包
+  变更时刷新，受影响包的缺口阻断 Review，判定清单见 [AGENTS §4.4](../../AGENTS.md)；
+  `package_roots` 留空，由 manifest 检测。v0.4.6 显式设置 `project_readme: auto`：根 README 按索引执行
   结构守卫，缺口报告但不阻断；`readme_paths`、`readme_max_lines`、`readme_sections` 和
   `readme_docs_root` 使用随包默认值。
 - [扩展设置](../../.specify/extensions.yml)：`auto_execute_hooks: false`，`hooks: {}`。

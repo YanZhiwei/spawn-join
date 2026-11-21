@@ -10,8 +10,10 @@ SpawnJoin 中与领域无关、可独立安装的公共辅助能力包。当前�
 - [安装](#安装)
 - [快速开始](#快速开始)
 - [公共 API](#公共-api)
+- [错误与限制](#错误与限制)
 - [开发与验证](#开发与验证)
-- [维护与许可证](#维护与许可证)
+- [维护与发布](#维护与发布)
+- [许可证](#许可证)
 
 ## 状态与边界
 
@@ -116,6 +118,17 @@ except ValueError as exc:
 
 该子包是唯一的可选 Pydantic 入口；导入 `spawn_join_common` 本身不会加载 Pydantic。
 
+## 错误与限制
+
+- `FieldReader` 对非法值抛出带字段路径的 `ValueError`；调用方可通过错误工厂替换异常类型，
+  消息只包含路径与期望，不回显未脱敏的原始值。
+- 数字字符串不会被当作数字，布尔值不会被当作整数；`as_number` 只接受整数或浮点数并返回 `float`。
+- `optional` 只跳过缺失字段；显式 `None` 仍交给调用方 parser，因此 null 策略由调用方决定。
+- `validate_with` 只捕获 Pydantic `ValidationError`，其他异常原样传播；安全消息由调用方提供，
+  原始校验异常保留为 `__cause__`。
+- 基础包不提供 I/O、网络、缓存、重试、并发或日志能力；需要 Pydantic 校验时必须安装
+  `validation` extra。
+
 ## 开发与验证
 
 在仓库根目录执行以下独立包检查：
@@ -130,8 +143,14 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-common
 
 包使用 `src/` layout，源码位于 `src/spawn_join_common/`，测试位于 `tests/`。默认运行时依赖保持为空；Pydantic 只在 `validation` extra 和开发测试环境中声明。
 
-## 维护与许可证
+## 维护与发布
 
-公共能力必须保持领域无关、依赖方向单向，并在新增 API 时同步测试、双语文档和独立安装验证。当前包版本独立管理，发布需要单独授权。
+公共能力必须保持领域无关、依赖方向单向，并在新增 API 时同步测试、双语文档和独立安装验证。
+本包由 SpawnJoin 仓库维护者拥有，作者为 Yan Zhiwei；变更遵循
+[贡献规则](../../../AGENTS.md) 和
+[质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。当前包版本独立管理，
+`0.1.0` 尚未发布；发布需要单独授权，并且必须通过包级质量门和两种语言 README 检查。
+
+## 许可证
 
 本包为专有软件，使用和分发须遵守仓库授权条款，详见 [LICENSE](LICENSE)。

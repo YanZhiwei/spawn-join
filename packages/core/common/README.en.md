@@ -10,8 +10,10 @@ A standalone package for domain-independent helper capabilities in SpawnJoin. Th
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Public API](#public-api)
+- [Errors and limits](#errors-and-limits)
 - [Development and verification](#development-and-verification)
-- [Maintenance and license](#maintenance-and-license)
+- [Maintenance and releases](#maintenance-and-releases)
+- [License](#license)
 
 ## Status and boundaries
 
@@ -116,6 +118,14 @@ The public helper never renders validation input itself; message formatting rema
 
 This subpackage is the only optional Pydantic entry point; importing `spawn_join_common` itself does not load Pydantic.
 
+## Errors and limits
+
+- `FieldReader` raises a path-bearing `ValueError` for invalid values; callers can replace the exception type through the error factory, and messages contain only the path and expectation, never unsanitized input.
+- Numeric strings are not treated as numbers and booleans are not treated as integers; `as_number` accepts only an integer or float and returns a `float`.
+- `optional` skips only absent fields; an explicit `None` is still passed to the caller's parser, so the null policy belongs to the caller.
+- `validate_with` catches only Pydantic `ValidationError`; all other exceptions propagate unchanged, the safe message is caller-supplied, and the original validation exception is preserved as `__cause__`.
+- The base package provides no I/O, networking, caching, retries, concurrency, or logging; Pydantic validation requires the `validation` extra.
+
 ## Development and verification
 
 Run these independent-package checks from the repository root:
@@ -130,8 +140,10 @@ The shared entry point explicitly uses the repository tool policy for Black/isor
 
 The package uses a `src/` layout, with runtime code under `src/spawn_join_common/` and tests under `tests/`. Runtime dependencies remain empty for the base package; Pydantic is declared only for the `validation` extra and development tests.
 
-## Maintenance and license
+## Maintenance and releases
 
-Public capabilities must remain domain-independent with one-way dependencies. Adding an API requires synchronized tests, bilingual documentation, and independent installation evidence. The package version is managed independently; publication requires separate authorization.
+Public capabilities must remain domain-independent with one-way dependencies. Adding an API requires synchronized tests, bilingual documentation, and independent installation evidence. This package is owned by the SpawnJoin repository maintainers; the author is Yan Zhiwei. Changes follow the [contribution rules](../../../AGENTS.md) and [quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). The package version is managed independently; `0.1.0` is unpublished. Publication requires separate authorization and must pass the package quality gate and bilingual README checks.
+
+## License
 
 This package is proprietary software. Use and distribution require authorization under [LICENSE](LICENSE).

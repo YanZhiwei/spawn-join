@@ -1,15 +1,13 @@
-"""Command-line interface for the personal assistant host.
+"""个人助理宿主的命令行接口。
 
-Five subcommands drive the durable work loop: ``accept`` records a goal,
-``due`` lists unfinished items, ``run`` executes one bounded scheduling
-cycle (recovering interrupted runs first), ``report`` shows outcomes, and
-``approve`` lists or decides pending HITL requests. Model bindings are a
-host-owned resource: by default they are built from the model catalog
-(ADR-0008 environment boundary), and the ``bindings`` parameter of ``main``
-is the explicit injection seam for offline/alternative execution.
+五个子命令驱动可持久化的工作回路：``accept`` 录入目标，``due`` 列出
+未完成项，``run`` 执行一个有界调度周期（先恢复被中断的运行），
+``report`` 展示结果，``approve`` 列出或决定 pending 的 HITL 请求。
+模型绑定是宿主自有的资源：默认从模型目录构造（ADR-0008 环境边界），
+``main`` 的 ``bindings`` 参数是离线/替代执行的显式注入接缝。
 
-Exit codes: 0 success, 1 for host errors (stable ``personal-assistant:``
-prefix on stderr), 1 for usage errors.
+退出码：0 成功；宿主错误为 1（stderr 带稳定的 ``personal-assistant:``
+前缀）；用法错误同为 1。
 """
 
 from __future__ import annotations
@@ -44,14 +42,14 @@ from .work.store import WorkStore
 
 _DEFAULT_ROOT = Path.home() / ".spawn-join-personal-assistant"
 
-# v1 approval policy: writes into the workspace need human approval.
+# v1 审批策略：对工作区内的写入操作要求人工批准。
 _GATED_TOOLS: dict[str, bool] = {"write_file": True}
 
 _SUMMARY_LIMIT = 200
 
 
 class _ArgumentParser(argparse.ArgumentParser):
-    """Argparse parser that maps usage errors to exit code 1."""
+    """把 argparse 用法错误映射为退出码 1 的解析器。"""
 
     def error(self, message: str) -> NoReturn:
         self.print_usage(sys.stderr)
@@ -59,7 +57,7 @@ class _ArgumentParser(argparse.ArgumentParser):
 
 
 def _write(text: str, *, error: bool = False) -> None:
-    """Write one user-facing line to stdout or stderr (no print, no logs)."""
+    """向 stdout 或 stderr 写一行面向用户的文本（不用 print、不记日志）。"""
 
     stream = sys.stderr if error else sys.stdout
     stream.write(text if text.endswith("\n") else text + "\n")
@@ -156,7 +154,7 @@ def _app_config(args: argparse.Namespace) -> AppConfig:
 
 
 def _catalog_bindings(config: AppConfig, args: argparse.Namespace) -> ModelBindings:
-    """Build production model bindings from the catalog (ADR-0008)."""
+    """从模型目录构造生产模型绑定（ADR-0008）。"""
 
     try:
         catalog = ModelCatalog.from_file(str(config.model_catalog_path))
@@ -176,7 +174,7 @@ def _catalog_bindings(config: AppConfig, args: argparse.Namespace) -> ModelBindi
 
 
 def _describe(item: WorkItem) -> str:
-    """One stable, secret-free status line for a work item."""
+    """为工作项生成一行稳定、不含秘密的状态描述。"""
 
     if item.status is WorkStatus.COMPLETED:
         return f"completed {item.id}: {item.result_summary or ''}"
@@ -235,12 +233,11 @@ async def _drive_to_outcome(
     thread_id: str,
     invoke_input: Any,
 ) -> str:
-    """Stream one graph run to a pause or a persisted completion.
+    """把一次图运行流式驱动到暂停或已持久化的完成。
 
-    The update stream must be fully consumed before any decision: breaking
-    early interrupts the underlying run and its checkpoint. An interrupt
-    pauses the item for approval; otherwise the final assistant message
-    becomes the persisted result summary.
+    在做出任何决定之前必须完整消费 update 流：提前 break 会中断底层
+    运行及其 checkpoint。中断使工作项暂停等待审批；否则最后一条
+    assistant 消息成为已持久化的结果摘要。
     """
 
     graph: Any = session.assembly.graph
@@ -374,7 +371,7 @@ def main(
     *,
     bindings: ModelBindings | None = None,
 ) -> int:
-    """Run the CLI; ``bindings`` is the explicit model injection seam."""
+    """运行 CLI；``bindings`` 是显式的模型注入接缝。"""
 
     parser = _build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
