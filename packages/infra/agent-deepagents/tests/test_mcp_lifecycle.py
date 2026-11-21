@@ -17,7 +17,7 @@ from fastmcp import Client
 from fastmcp.client.group import ClientGroup
 from fastmcp.client.transports import StdioTransport
 from fastmcp.mcp_config import StdioMCPServer
-from httpx2 import ConnectError
+from httpx2 import ConnectError, ReadError
 from langchain.mcp import MCPAdapter
 from langchain_core.messages import ToolMessage
 from spawn_join_agent_deepagents.mcp._config import read_configuration
@@ -343,7 +343,7 @@ def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) 
                     with pytest.raises(Exception, match="(?i)connect|closed|transport"):
                         await tool.ainvoke({"value": "transport-lost"})
                     observed_call_failure = True
-            except* ConnectError:
+            except* (ConnectError, ReadError):
                 # The SDK may also surface its failed HTTP session on exit.
                 pass
             assert observed_call_failure
