@@ -1197,6 +1197,6 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 验证：`pwsh -NoProfile -File scripts/quality.ps1 -Check governance` 为 0 errors / 1 历史
   freshness warning（`delivery-v022-upgrade.md`，与本次范围无关）；`-Check docs` 通过
   （75 files / 369 local targets）；`git diff --check` 通过。纯文档/配置改动，未运行包矩阵、
-  `-Check static` 或回归套件；未提交、push 或创建 PR。
+  `-Check static` 或回归套件。已在用户授权后提交、push 并创建 PR #77；未合并。
 - 预存工作区改动 `.specify/delivery/personal-assistant-20261121/slices.md` 不属于本次范围，
   未修改。
