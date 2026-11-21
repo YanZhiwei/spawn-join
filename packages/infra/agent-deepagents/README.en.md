@@ -78,8 +78,14 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 The extra includes LangChain MCP, FastMCP, and Common; the default install excludes MCP SDKs.
-Only dependency installation is available at this stage; the configuration loader is not implemented.
+Result types and internal static configuration validation are available; no public loading entry exists.
 The package quality entry checks the extra and both wheel installation variants.
+The file profile is strict JSON with `mcpServers` and optional `spawnJoin`, for stdio and Streamable HTTP.
+Services are required by default, with a 30-second per-service startup budget; optional/disabled lists
+and named toolsets are validated globally. Request timeouts use finite nonnegative milliseconds,
+separate from startup budgets. Validation reuses official models and Common readers, rejects duplicate
+keys/unknown fields/invalid references/unsupported transports, and reads local UTF-8/BOM files in a thread.
+This stage validates fields only; it does not connect, expand environment references, or resolve cwd.
 
 Runtime dependencies:
 

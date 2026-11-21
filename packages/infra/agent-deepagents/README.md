@@ -71,7 +71,12 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 该 extra 包含 LangChain MCP、FastMCP 和 Common；默认安装不包含 MCP SDK。
-当前只提供依赖安装，配置加载入口尚未实现。包质量入口实际检查 extra 和两种 wheel 安装。
+当前具备结果类型和内部静态配置校验，尚无公开加载入口；包质量入口检查 extra 和两种 wheel 安装。
+文件轮廓是严格 JSON 的 `mcpServers` 与可选 `spawnJoin`，支持 stdio 与 Streamable HTTP 声明。
+默认服务必需、逐服务启动预算 30 秒；可配置 optional/disabled 和命名工具集，静态错误整体失败。
+请求 timeout 使用非负有限毫秒数，与启动预算分开；官方配置模型与 Common 读取器负责实际校验。
+校验会拒绝重复键、未知字段、非法引用和不支持的传输，并在工作线程读取本地 UTF-8/BOM 文件。
+此阶段仅校验字段轮廓，未执行服务连接、环境引用展开或相对 cwd 解析。
 
 运行时依赖：
 
