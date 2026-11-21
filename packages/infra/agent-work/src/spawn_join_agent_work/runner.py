@@ -79,8 +79,17 @@ class WorkRunner:
         )
         result: WorkResult | None = None
         error: str | None = None
+        deadline = item.spec.deadline_seconds
         try:
-            result = await self._executor(item)
+            if deadline is None:
+                result = await self._executor(item)
+            else:
+                try:
+                    result = await asyncio.wait_for(
+                        self._executor(item), timeout=deadline
+                    )
+                except TimeoutError:
+                    error = f"TimeoutError: deadline exceeded after {deadline}s"
         except Exception as exc:  # host failures become a stable terminal failure
             error = self._describe_error(exc)
         finally:
