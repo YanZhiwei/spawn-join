@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Sequence
+from contextlib import suppress
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from .stores._support import SystemClock, require_aware
 from .errors import LeaseLostError, WorkConfigurationError
 from .models import WorkItem, WorkOutcome, WorkResult
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
 from .protocols import Clock, WorkExecutor, WorkStore
+from .stores._support import SystemClock, require_aware
 
 _MAX_ERROR_CHARS = 500
 
@@ -67,12 +69,54 @@ class WorkRunner:
         return len(claimed)
 
     async def _execute(self, item: WorkItem) -> None:
+        lease = item.lease
+        if lease is None:
+            raise LeaseLostError(f"{item.id}: claimed item has no lease")
+        lease_lost = asyncio.Event()
+        loss_reason: list[str] = []
+        heartbeat = asyncio.create_task(
+            self._heartbeat(item.id, lease.token, lease_lost, loss_reason)
+        )
+        result: WorkResult | None = None
+        error: str | None = None
         try:
             result = await self._executor(item)
         except Exception as exc:  # host failures become a stable terminal failure
-            await self._finalize_failure(item, self._describe_error(exc))
+            error = self._describe_error(exc)
+        finally:
+            heartbeat.cancel()
+            with suppress(asyncio.CancelledError):
+                await heartbeat
+        if lease_lost.is_set():
+            reason = loss_reason[0] if loss_reason else "renewal rejected"
+            raise LeaseLostError(f"{item.id}: lease renewal failed ({reason})")
+        if error is not None:
+            await self._finalize_failure(item, error)
             return
+        if result is None:
+            raise WorkConfigurationError(f"{item.id}: executor returned no result")
         await self._finalize(item, result)
+
+    async def _heartbeat(
+        self,
+        work_id: str,
+        token: str,
+        lease_lost: asyncio.Event,
+        loss_reason: list[str],
+    ) -> None:
+        while True:
+            await asyncio.sleep(self._lease.heartbeat_seconds)
+            try:
+                until = self._now() + timedelta(seconds=self._lease.seconds)
+                renewed = await self._store.heartbeat(
+                    work_id=work_id, token=token, lease_until=until
+                )
+            except Exception as exc:  # a failed renewal means the lease is gone
+                loss_reason.append(self._describe_error(exc))
+                renewed = False
+            if not renewed:
+                lease_lost.set()
+                return
 
     @staticmethod
     def _describe_error(exc: Exception) -> str:

@@ -13,10 +13,10 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from ._support import SystemClock, require_aware, require_positive_seconds
 from ..errors import StoreError, WorkConfigurationError, WorkConflictError
 from ..models import WorkItem, WorkLease, WorkSpec, WorkState
 from ..protocols import Clock
+from ._support import SystemClock, require_aware, require_positive_seconds
 
 
 @dataclass(slots=True)
