@@ -20,6 +20,9 @@ dependencies = [
 [project.urls]
 Repository = "https://github.com/YanZhiwei/spawn-join"
 
+[project.scripts]
+spawn-join-personal-assistant = "spawn_join_personal_assistant.cli:main"
+
 [dependency-groups]
 dev = [
     "black>=26.10.1,<27",

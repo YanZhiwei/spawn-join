@@ -17,6 +17,7 @@ from .approvals import (
     resume_approved,
     resume_rejected,
 )
+from .cli import main
 from .config import AppConfig
 from .errors import (
     HostApprovalError,
@@ -49,6 +50,7 @@ __all__ = [
     "WorkTransitionError",
     "apply_decision",
     "interrupt_actions",
+    "main",
     "open_host_session",
     "pause_for_approval",
     "resume_approved",

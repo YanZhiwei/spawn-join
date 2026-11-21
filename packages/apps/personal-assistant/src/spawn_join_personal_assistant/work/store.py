@@ -256,6 +256,11 @@ class WorkStore:
             tuple(status.value for status in _UNFINISHED_STATUSES),
         )
 
+    def list_all(self) -> list[WorkItem]:
+        """Return every work item in creation order."""
+
+        return self._select_all("1 = 1", ())
+
     def count_by_status(self, status: WorkStatus) -> int:
         """Return how many items currently hold the given status."""
 
