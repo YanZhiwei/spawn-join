@@ -20,6 +20,10 @@
 手动元数据同步；agent 包负责 DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确认
 它属于哪个 Distribution、由哪个包拥有，以及是否真的需要形成跨组件复用。
 
+## MCP 接入设计提案
+
+[ADR-0016](../decisions/agent/0016-mcp-product-integration.md)（Proposed）提出在 Agent 包内提供可选 MCP 配置接入：由宿主显式持有上下文，组合官方客户端、加载策略与命名工具集。该提案尚未实现，也未改变上表的现有依赖或资源契约；其对 ADR-0010 资源文字的限定增补需经设计评审批准。
+
 ## Dependency Direction
 
 ```text
