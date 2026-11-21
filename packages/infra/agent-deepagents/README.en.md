@@ -129,6 +129,23 @@ Omitted toolsets produce the full `supervisor` set; explicit `{}` produces no na
 Exit releases this context's connections and stdio processes; the remote service belongs to its host.
 Complete tools and graph calls inside the context; extracted tools are not automatically revoked on exit.
 
+Complete no-key mixed demo: `uv run --locked --extra mcp --directory packages/infra/agent-deepagents python examples/mcp_tools.py`.
+It reads [mcp.example.json](examples/mcp.example.json), writes this run's configuration in a temporary directory,
+starts controlled stdio/loopback HTTP peers, and demonstrates optional failure/disabled reports, native routing,
+and FakeChatModel supervisor/worker graphs. The demo host separately stops its HTTP peer.
+
+- Services start in file order. Each 30-second startup budget covers connection, discovery and conversion;
+  execution uses independent millisecond `timeout`, where 0 disables request timeout and omission keeps the SDK default.
+  Cleanup can include SDK grace periods, so startup budgets do not guarantee hard wall-clock return times.
+- `report.status` is `ready` or `degraded`; `tool_count` is the total. Ordered `servers` rows contain
+  `name`, `required`, `status`, `tool_count`, `error_stage` and `error_code`. States are `loaded`, `failed`,
+  `disabled` or `not_attempted`. Healthy empty/all-disabled loads are `ready`; all optional failures give zero-tool `degraded`.
+- Select by service and original name; deduplicated unions follow service order then final tool name. Global name collisions fail.
+  Unknown tools on a healthy optional service remain configuration errors; only actually failed optional references are omitted with reports.
+- The first version supports an explicit stdio/Streamable HTTP field subset. It provides no OAuth/token storage, SSE,
+  resources/prompts/sampling, hot reload, fully lazy discovery, continuous health monitoring, gateway or automatic reconnect/retry.
+  Local commands belong to a trusted host; this helper is not a sandbox.
+
 Runtime dependencies:
 
 - `deepagents>=0.7.32,<0.8`

@@ -107,6 +107,7 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/basi
 | 配置模型思考参数 | [思考与思考强度](packages/infra/llm-provider-langchain/README.md#思考与思考强度) |
 | 同步价格与能力元数据 | [模型元数据同步](packages/infra/llm-model-sync/README.md) |
 | 组合 supervisor 与 worker | [DeepAgents 产品装配](packages/infra/agent-deepagents/README.md) |
+| 配置多个 MCP 与工具集 | [Agent MCP 用法](packages/infra/agent-deepagents/README.md#安装) · [MCP 资源边界 ADR](docs/decisions/agent/0016-mcp-product-integration.md) |
 | 理解架构 | [包边界](docs/architecture/package-boundaries.md) · [ADR 入口](docs/decisions/README.md#决策索引) |
 | 执行本地与 CI 检查 | [质量门](docs/development/quality-gates.md) |
 | 理解交付流程 | [协作规则](AGENTS.md) · [Delivery 安装](docs/development/spec-kit-delivery.md) · [Harness](harness/README.md) |

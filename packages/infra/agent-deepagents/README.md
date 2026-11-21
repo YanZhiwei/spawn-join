@@ -117,6 +117,20 @@ asyncio.run(main())
 原有 `None`／空工具序列继承语义保持。退出会关闭本次连接和 stdio 进程；远端服务由其宿主保持。
 工具与图调用必须在上下文内完成，取出的工具不提供退出后自动撤销。
 
+完整无密钥混合演示：`uv run --locked --extra mcp --directory packages/infra/agent-deepagents python examples/mcp_tools.py`。
+它实际读取 [mcp.example.json](examples/mcp.example.json)，在临时目录生成本次配置，启动受控 stdio／loopback HTTP 服务，
+展示可选失败与禁用报告、两种原生工具路由和 FakeChatModel 主／子图；HTTP 服务由演示宿主单独结束。
+
+- 服务按配置顺序启动；30 秒预算逐服务覆盖连接、发现和转换，工具执行使用独立的毫秒 `timeout`，0 禁用请求超时。
+  清理可包含 SDK 宽限期，启动预算不是硬墙钟返回保证。未给 `timeout` 时沿用官方默认值。
+- `report.status` 为 `ready` 或 `degraded`，`tool_count` 是总工具数；`servers` 按配置顺序给出
+  `name`、`required`、`status`、`tool_count`、`error_stage`、`error_code`。
+  服务状态是 `loaded`／`failed`／`disabled`／`not_attempted`；健康空目录、全禁用为 `ready`，全部可选失败为零工具的 `degraded`。
+- 工具选择按服务及原工具名匹配，并集去重后按配置服务顺序、最终工具名排序；全目录名称冲突整体失败。
+  健康可选服务的未知工具仍是配置错误；只省略实际失败的可选服务引用，通过报告说明。
+- 首版仅支持 stdio 与 Streamable HTTP 的明确字段子集；不提供 OAuth/token 存储、SSE、资源/提示/采样、
+  热更新、完全延迟发现、持续健康监控、网关或自动重连/重试。配置中的本地命令由可信宿主决定，不提供沙箱。
+
 运行时依赖：
 
 - `deepagents>=0.7.32,<0.8`

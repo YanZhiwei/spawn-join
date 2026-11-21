@@ -93,8 +93,10 @@ Common 额外验证两种安装：基础 wheel 环境不含 Pydantic 或领域�
 
 Agent 同样使用两个全新 wheel 环境：基础安装验证没有 FastMCP/MCP 且默认根可导入；
 `mcp` 安装从锁导出可选依赖，安装本次构建的本地 wheels，实际导入官方
-Client、ClientGroup、MCPConfig、MCPAdapter 并执行空配置和 Common 读取探针。
-此阶段不表示项目配置加载器已经实现；后续入口与协议调用需要独立行为证据。
+Client、ClientGroup、MCPConfig、MCPAdapter，并通过公开入口执行实际 stdio 工具调用；基础 wheel 也验证缺少 extra 的安装提示。
+无密钥混合协议与离线原生图示例：`uv run --locked --extra mcp --directory packages/infra/agent-deepagents python examples/mcp_tools.py`。
+示例使用自有 stdio／loopback HTTP 服务和临时配置，不连接生产服务。
+配置、失败策略、工具选择和资源清理由包内测试验证；分发消费者验证安装后的公开入口与实际协议调用。
 
 临时目录父路径默认使用系统临时目录；本机可设置 `SPAWN_JOIN_TEMP_DIR` 为已存在路径。
 成功或失败都会在 finally 中删除本次创建的唯一子目录，不清理整个父目录或用户源树。
@@ -124,7 +126,7 @@ Client、ClientGroup、MCPConfig、MCPAdapter 并执行空配置和 Common 读�
 各自的全流程成功，以及 Black、isort、Ruff、类型、失败测试、wheel 导入失败、零测试、
 坏链接的拒绝场景。Common 还验证基础包意外导入 Pydantic、可选校验导入失败和已安装
 helper 未执行操作时，构建门禁都必须失败。
-Agent 回归还验证测试入口实际安装 MCP extra，以及隔离 extra wheel 的官方导入探针失败会传递为门禁失败。
+Agent 回归还验证测试入口实际安装 MCP extra，以及隔离 extra wheel 的官方导入、实际工具调用探针失败会传递为门禁失败。
 `scripts/test-governance.ps1` 用独立 fixture 覆盖 26 个治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
