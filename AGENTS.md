@@ -6,12 +6,13 @@
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-当前使用固定 Release Delivery Bundle v0.4.7（13 个组件），Constitution 为 `v1.0.0`。
+当前使用固定 Release Delivery Bundle v0.4.8（13 个组件），Constitution 为 `v1.0.0`。
 安装方式、版本能力与升级历史只维护在 [Delivery 安装说明](docs/development/spec-kit-delivery.md)
 和 [ADR-0004](docs/decisions/engineering/0004-release-managed-delivery-installation.md)，不在本文件复制。
 
 - 默认宿主 OpenCode，使用 `/sd` 或 `/speckit.delivery.route`；`sd.md` 由 Bundle manifest
-  从同一路由源生成。保留 Codex 核心技能及项目模板定制；不复制门面、不转发用户级旧技能，
+  从同一路由源生成。Codex 使用安装器生成的 `$speckit-sd` 或 `$speckit-delivery-route`，
+  与 OpenCode 共用项目配置。保留核心技能及项目模板定制；不复制门面、不转发用户级旧技能，
   不手工修改安装器管理的命令或 runtime 协议来掩盖漂移。
 - 项目配置由项目拥有，组件/命令由安装器管理；`.specify/extensions.yml` 保持
   `auto_execute_hooks: false`、`hooks: {}`。有质量脚本和 CI 不表示有自动 Spec Kit Hook。

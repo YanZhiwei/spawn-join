@@ -29,10 +29,11 @@
 
 ## Decision
 
-- 保留 Specify CLI 1.4.0（本机现场核对版本），使用 v0.4.7 发布 Catalog；Bug 使用该 CLI
-  随附的 1.0.2（Bundle pin 1.0.1，安装器记录实际版本）。
-- 当前交付组件由 v0.4.7 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
-- OpenCode 作为当前默认集成，保留已安装 Codex 与项目任务模板/技能定制。
+- 使用满足 Bundle 最低要求的 Specify CLI（本次现场为 1.2.3），使用 v0.4.8 发布 Catalog；
+  Bug 按 Bundle pin 安装为 1.0.1。历史 1.4.0 / Bug 1.0.2 观察不作为当前版本依据。
+- 当前交付组件由 v0.4.8 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
+- OpenCode 作为当前默认集成，Codex Delivery Skills 与 OpenCode 命令均由安装器注册；
+  保留项目任务模板/核心技能定制，不另建路由门面。
 - 删除本项目手工拷贝的 sd、speckit-delivery 门面；不删除用户级共享文件或 Fireworks。
 - 配置由项目拥有，组件与原生命令由安装器/Bundle 管理；升级须重查来源、差异和定制保留情况。
 - Specs 继续本地化，ADR 根保持不变；串行 Ralph、证据要求和禁止自动远端写入不变。
@@ -109,6 +110,12 @@ v0.4.7 经临时副本升级验证，13 个组件和 165 个受保护路径保�
 [v0.4.7 evidence](../../../harness/evidence/delivery-v047-upgrade.md)。
 本 ADR 的 Accepted 只表示决策获批；不声明真实 Ralph 循环已运行。
 
+v0.4.8 经临时副本演练后安装，165 个受保护文件逐字节保留；Codex 新增 30 个由扩展
+registry 拥有的 Skills（含 `speckit-sd` alias），OpenCode 保留 40 个命令。使用原生
+`integration use` 依次注册两套入口并恢复 OpenCode 默认集成；固定 Tag 的 Codex 生命周期
+探针通过。安装、运行时探针与真实模型交付的边界见
+[v0.4.8 evidence](../../../harness/evidence/delivery-v048-upgrade.md)。
+
 ## Revision history
 
 - 2026-10-28：根据用户要求提出固定 Release 组件安装方案，记录 Bundle 的实际失败路径。
@@ -146,3 +153,6 @@ v0.4.7 经临时副本升级验证，13 个组件和 165 个受保护路径保�
 - 2026-11-18：按维护者要求升级固定 Release 至 v0.4.7；来源、运行时权限和配置边界不变，
   新增专项审计指导与 Explore/Review/Simplify 指导式契约；本机 CLI 为 1.4.0、Bug 实际
   1.0.2，记录在 v0.4.7 evidence。
+- 2026-11-21：按维护者要求升级至 v0.4.8，并通过安装器补齐 Codex Delivery Skills；
+  保留 OpenCode 默认集成、配置与核心定制。现场 CLI 1.2.3，Bug 依 Bundle pin 为 1.0.1；
+  版本差异与验证结果记录在 v0.4.8 evidence。

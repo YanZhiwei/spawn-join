@@ -1171,3 +1171,14 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 本次 Proportional 检查：README 结构守卫通过，`-Check governance` 为 0 errors / 1 历史
   warning，`-Check docs` 通过，`git diff --check` 通过。未改包，不跑包矩阵、`-Check static`
   或回归套件；未创建 PR，远端 CI、Doctor、Ralph 与模型 eval 均未执行。
+
+## 2026-11-21 — Delivery v0.4.8 与 Codex 接入
+
+- Route: Lightweight。用户要求固定 Release 升级、Codex 支持，并授权 PR、CI 成功后合并。
+- Base revision: `53c741e2fee7bd37419ad0f8b496a1cb898d1c81`；工作目录 `D:\Repos\Github\spawn-join`。
+- 临时副本演练后通过官方 Bundle update 升级 13 个组件；原生 integration use 补齐
+  Codex 30 个扩展 Skills，OpenCode 保留 40 个命令并仍为默认集成。
+- 目标 165 个保护文件哈希全部保留；76 个发布负载归一化文本与固定 Tag 一致。
+- CLI 现场为 1.2.3，Bug 按 Bundle pin 为 1.0.1；未使用旧记录推断当前版本。
+- 固定 Tag 的干净项目 Codex 生命周期探针通过；范围、命令、检查和限制见
+  [v0.4.8 evidence](evidence/delivery-v048-upgrade.md)。安装不表示真实模型 SD/Ralph 已验证。

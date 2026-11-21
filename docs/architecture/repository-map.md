@@ -10,7 +10,7 @@
 spawn-join/
 ├── .github/workflows/             # GitHub Actions 质量检查；无发布或远端设置
 ├── .agents/
-│   └── skills/                    # Spec Kit 与固定版本 Fireworks 技能
+│   └── skills/                    # Codex 核心/Delivery 与固定版本 Fireworks 技能
 ├── .codegraph/                    # 本机源码索引；只提交 .gitignore
 ├── .opencode/commands/             # CLI 生成的项目原生命令，当前默认宿主
 ├── .specify/                      # Spec Kit 基础设施
