@@ -149,7 +149,7 @@ Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.
     服务端档位不得部署 SQLite。产品宿主（`apps`）自行选择档位并依赖这些包。决策与触发条件见
     [ADR-0016](docs/decisions/engineering/0016-desktop-first-service-ready-packages.md)。
 
-当前配置基线（2026-11-21）：八个保留包（`core` 3、`infra` 4、`apps` 1）各自拥有独立
+当前配置基线（2026-11-22）：九个保留包（`core` 3、`infra` 5、`apps` 1）各自拥有独立
 uv 锁文件、dev group 和 `tests/`，消费者通过本地开发源解析仓库依赖；
 共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
 静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或

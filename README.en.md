@@ -37,6 +37,7 @@ published to PyPI. Core is currently a scaffold.
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.en.md) | Supervisor assembly, model bindings, middleware, delegation, and recovery seams | `build_supervisor` |
+| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Reusable durable work runtime: desktop SQLite + ZeroMQ, replaceable storage/queue ports (Phase 1 skeleton, planned capability) | No public API (Phase 1 skeleton) |
 | [spawn-join-personal-assistant](packages/apps/personal-assistant/README.en.md) | Personal assistant host application: work items, scheduling, approvals, and confined-workspace execution (delivered in slices) | `AppConfig` |
 | [spawn-join-core](packages/core/spawn-join-core/README.en.md) | Shared foundations; currently a scaffold with no callable public API | `__version__` |
 
@@ -167,7 +168,7 @@ in [ADRs](docs/decisions/README.en.md); delivery records belong in [Harness](har
 
 ## License
 
-SpawnJoin and its eight Distributions are **proprietary software**, with all rights reserved.
+SpawnJoin and its nine Distributions are **proprietary software**, with all rights reserved.
 Use, copying, modification, publication, distribution, sublicensing, and sale require written
 permission from the copyright holder. See [LICENSE](LICENSE). Vendored tools retain their
 own licenses and provenance.
