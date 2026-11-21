@@ -327,6 +327,233 @@ class SqliteWorkStore:
             ),
         )
 
+    async def heartbeat(
+        self, *, work_id: str, token: str, lease_until: datetime
+    ) -> bool:
+        _require_aware("lease_until", lease_until)
+        if lease_until <= self._now():
+            raise WorkConfigurationError("lease_until: must be in the future")
+        return await asyncio.to_thread(
+            self._update,
+            """
+            UPDATE work_items
+               SET lease_until = ?, updated_at = ?
+             WHERE id = ? AND lease_token = ? AND state = ?
+               AND lease_until IS NOT NULL AND lease_until < ?
+            """,
+            (
+                _to_text(lease_until),
+                _to_text(self._now()),
+                work_id,
+                token,
+                WorkState.RUNNING.value,
+                _to_text(lease_until),
+            ),
+            "failed to extend the lease",
+        )
+
+    async def complete(self, *, work_id: str, token: str, summary: str | None) -> bool:
+        now = self._now()
+        return await asyncio.to_thread(
+            self._update,
+            """
+            UPDATE work_items
+               SET state = ?, result = ?, completed_at = ?, updated_at = ?,
+                   lease_owner = NULL, lease_token = NULL, lease_until = NULL
+             WHERE id = ? AND lease_token = ? AND state = ?
+            """,
+            (
+                WorkState.COMPLETED.value,
+                summary,
+                _to_text(now),
+                _to_text(now),
+                work_id,
+                token,
+                WorkState.RUNNING.value,
+            ),
+            "failed to complete the work item",
+        )
+
+    async def fail(
+        self,
+        *,
+        work_id: str,
+        token: str,
+        error: str,
+        retry_at: datetime | None,
+        terminal: bool,
+    ) -> bool:
+        if not error.strip():
+            raise WorkConfigurationError("error: must be non-empty")
+        if terminal and retry_at is not None:
+            raise WorkConfigurationError(
+                "retry_at: must be None for a terminal failure"
+            )
+        if not terminal and retry_at is None:
+            raise WorkConfigurationError("retry_at: required for a retryable failure")
+        if retry_at is not None:
+            _require_aware("retry_at", retry_at)
+        return await asyncio.to_thread(
+            self._fail, work_id, token, error, retry_at, terminal
+        )
+
+    def _fail(
+        self,
+        work_id: str,
+        token: str,
+        error: str,
+        retry_at: datetime | None,
+        terminal: bool,
+    ) -> bool:
+        now = self._now()
+        if terminal:
+            statement = """
+                UPDATE work_items
+                   SET state = CASE WHEN attempts >= max_attempts
+                                    THEN ? ELSE ? END,
+                       last_error = ?, completed_at = ?, updated_at = ?,
+                       lease_owner = NULL, lease_token = NULL, lease_until = NULL
+                 WHERE id = ? AND lease_token = ? AND state = ?
+            """
+            params: tuple[object, ...] = (
+                WorkState.DEAD.value,
+                WorkState.FAILED.value,
+                error,
+                _to_text(now),
+                _to_text(now),
+                work_id,
+                token,
+                WorkState.RUNNING.value,
+            )
+        else:
+            statement = """
+                UPDATE work_items
+                   SET state = CASE WHEN attempts >= max_attempts
+                                    THEN ? ELSE ? END,
+                       available_at = CASE WHEN attempts >= max_attempts
+                                           THEN available_at ELSE ? END,
+                       last_error = ?,
+                       completed_at = CASE WHEN attempts >= max_attempts
+                                           THEN ? ELSE NULL END,
+                       updated_at = ?, lease_owner = NULL, lease_token = NULL,
+                       lease_until = NULL
+                 WHERE id = ? AND lease_token = ? AND state = ?
+            """
+            params = (
+                WorkState.DEAD.value,
+                WorkState.QUEUED.value,
+                _to_text(retry_at) if retry_at is not None else _to_text(now),
+                error,
+                _to_text(now),
+                _to_text(now),
+                work_id,
+                token,
+                WorkState.RUNNING.value,
+            )
+        return self._update(statement, params, "failed to record the failure")
+
+    async def defer(self, *, work_id: str, token: str, until: datetime) -> bool:
+        _require_aware("until", until)
+        if until <= self._now():
+            raise WorkConfigurationError("until: must be in the future")
+        return await asyncio.to_thread(
+            self._update,
+            """
+            UPDATE work_items
+               SET state = ?, available_at = ?, updated_at = ?,
+                   lease_owner = NULL, lease_token = NULL, lease_until = NULL
+             WHERE id = ? AND lease_token = ? AND state = ?
+            """,
+            (
+                WorkState.WAITING.value,
+                _to_text(until),
+                _to_text(self._now()),
+                work_id,
+                token,
+                WorkState.RUNNING.value,
+            ),
+            "failed to defer the work item",
+        )
+
+    async def resume(self, work_id: str) -> bool:
+        now = self._now()
+        return await asyncio.to_thread(
+            self._update,
+            """
+            UPDATE work_items
+               SET state = ?, available_at = ?, updated_at = ?
+             WHERE id = ? AND state = ?
+            """,
+            (
+                WorkState.QUEUED.value,
+                _to_text(now),
+                _to_text(now),
+                work_id,
+                WorkState.WAITING.value,
+            ),
+            "failed to resume the work item",
+        )
+
+    async def cancel(self, work_id: str) -> bool:
+        now = self._now()
+        return await asyncio.to_thread(
+            self._update,
+            """
+            UPDATE work_items
+               SET state = ?, completed_at = ?, updated_at = ?,
+                   lease_owner = NULL, lease_token = NULL, lease_until = NULL
+             WHERE id = ? AND state IN (?, ?, ?)
+            """,
+            (
+                WorkState.CANCELLED.value,
+                _to_text(now),
+                _to_text(now),
+                work_id,
+                WorkState.QUEUED.value,
+                WorkState.RUNNING.value,
+                WorkState.WAITING.value,
+            ),
+            "failed to cancel the work item",
+        )
+
+    async def prune(self, *, before: datetime) -> int:
+        _require_aware("before", before)
+        if before >= self._now():
+            raise WorkConfigurationError("before: must be in the past")
+        return await asyncio.to_thread(self._prune, before)
+
+    def _prune(self, before: datetime) -> int:
+        try:
+            with closing(self._connect()) as connection:
+                cursor = connection.execute(
+                    """
+                    DELETE FROM work_items
+                     WHERE state IN (?, ?, ?, ?)
+                       AND completed_at IS NOT NULL
+                       AND completed_at < ?
+                    """,
+                    (
+                        WorkState.COMPLETED.value,
+                        WorkState.FAILED.value,
+                        WorkState.DEAD.value,
+                        WorkState.CANCELLED.value,
+                        _to_text(before),
+                    ),
+                )
+                connection.commit()
+                return cursor.rowcount
+        except sqlite3.Error as exc:
+            raise StoreError("failed to prune work items") from exc
+
+    def _update(self, statement: str, params: tuple[object, ...], label: str) -> bool:
+        try:
+            with closing(self._connect()) as connection:
+                cursor = connection.execute(statement, params)
+                connection.commit()
+                return cursor.rowcount == 1
+        except sqlite3.Error as exc:
+            raise StoreError(label) from exc
+
     async def get(self, work_id: str) -> WorkItem | None:
         return await asyncio.to_thread(self._get, work_id)
 
