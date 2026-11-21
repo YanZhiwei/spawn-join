@@ -20,6 +20,10 @@ class HostStoreError(HostError):
     """Work-item or approval persistence failed."""
 
 
+class WorkTransitionError(HostStoreError):
+    """A work-item state transition is not permitted by the state machine."""
+
+
 class HostSchedulingError(HostError):
     """The scheduler could not start or bound a work item."""
 

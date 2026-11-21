@@ -7,8 +7,9 @@
 审批 → 汇报 → 重启恢复"收敛成一个可测试的本地产品。它拥有工作项存储、调度循环、
 HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接缝已留位，见 ADR-0015）。
 
-> 状态说明：本包处于按切片交付的开发过程中。当前切片提供配置与稳定错误分类；
-> 工作项存储、调度、审批与 CLI 在后续切片落地。本文只描述已实现的能力。
+> 状态说明：本包处于按切片交付的开发过程中。当前已提供：配置边界（`AppConfig`）、
+> 稳定错误分类与**工作项存储**（sqlite3 状态机、幂等键、恢复扫描）；调度、审批与
+> CLI 在后续切片落地。本文只描述已实现的能力。
 
 **目录**
 
@@ -34,10 +35,15 @@ HITL 审批持久化和 CLI 入口；**记忆能力不在 v1 范围内**（接�
 - `AppConfig`：宿主配置边界对象，急切校验数据目录、工作区根、模型目录文件与
   调度上限/deadline；凭据一律不进入配置（走环境变量，ADR-0008）。
 - 稳定错误分类：`HostError` 及其 `HostConfigError` / `HostStoreError` /
-  `HostSchedulingError` / `HostApprovalError` 子类，用于区分宿主侧失败类别。
+  `HostSchedulingError` / `HostApprovalError` / `WorkTransitionError` 子类，
+  用于区分宿主侧失败类别。
+- `WorkStore`：sqlite3 单写者持久化——`accept` 录入（幂等键唯一，重放拒绝）、
+  `mark` 状态机迁移（`queued/running/waiting_approval/completed/failed/cancelled`，
+  非法迁移抛 `WorkTransitionError` 且零副作用）、`pending_recovery` 重启恢复扫描、
+  按状态计数；`WorkItem`/`WorkStatus` 为公共数据类型。
 
-后续切片（见任务队列）：sqlite3 工作项状态机与幂等键、asyncio due 调度、
-受限工作区装配（`FilesystemBackend` + 权限门禁 + strict msgpack checkpointer）、
+后续切片（见任务队列）：asyncio due 调度、受限工作区装配
+（`FilesystemBackend` + 权限门禁 + strict msgpack checkpointer）、
 HITL 审批持久化与 `accept/due/run/report/approve` CLI。
 
 ## 安装

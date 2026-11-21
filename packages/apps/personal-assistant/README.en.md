@@ -10,10 +10,11 @@ results, and recovers after restarts. It owns the work-item store, the
 scheduler loop, HITL approval persistence, and the CLI. **Memory is out of
 scope for v1** (the seam is reserved; see ADR-0015).
 
-> Status note: this package is delivered in slices. The current slice provides
-> configuration and the stable error taxonomy; work-item storage, scheduling,
-> approvals, and the CLI land in later slices. This document describes only
-> what is implemented.
+> Status note: this package is delivered in slices. Currently provided:
+> the configuration boundary (`AppConfig`), the stable error taxonomy, and
+> **work-item persistence** (sqlite3 state machine, idempotency keys,
+> recovery scan); scheduling, approvals, and the CLI land in later slices.
+> This document describes only what is implemented.
 
 **Contents**
 
@@ -44,13 +45,20 @@ scope for v1** (the seam is reserved; see ADR-0015).
   bounds/deadline. Credentials never enter configuration (environment only,
   ADR-0008).
 - Stable error taxonomy: `HostError` with `HostConfigError`,
-  `HostStoreError`, `HostSchedulingError`, and `HostApprovalError`
-  subclasses for host-side failure categories.
+  `HostStoreError`, `HostSchedulingError`, `HostApprovalError`, and
+  `WorkTransitionError` subclasses for host-side failure categories.
+- `WorkStore`: single-writer sqlite3 persistence — `accept` inserts with a
+  unique idempotency key (replays are rejected), `mark` applies state-machine
+  transitions (`queued/running/waiting_approval/completed/failed/cancelled`;
+  illegal moves raise `WorkTransitionError` with zero side effects),
+  `pending_recovery` scans unfinished items after restart, and
+  `count_by_status` reports totals; `WorkItem`/`WorkStatus` are the public
+  data types.
 
-Later slices (see the delivery queue): the sqlite3 work-item state machine
-with idempotency keys, the asyncio due scheduler, confined-workspace assembly
-(`FilesystemBackend` plus permission gates and a strict-msgpack checkpointer),
-HITL approval persistence, and the `accept`/`due`/`run`/`report`/`approve` CLI.
+Later slices (see the delivery queue): the asyncio due scheduler,
+confined-workspace assembly (`FilesystemBackend` plus permission gates and a
+strict-msgpack checkpointer), HITL approval persistence, and the
+`accept`/`due`/`run`/`report`/`approve` CLI.
 
 ## Installation
 
