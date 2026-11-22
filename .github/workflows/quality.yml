@@ -53,7 +53,7 @@ jobs:
           version: '0.13.5'
           enable-cache: true
           cache-dependency-glob: 'packages/**/uv.lock'
-      - name: Check distribution
+      - name: Check distribution (Agent includes MCP extra and wheel variants)
         env:
           PACKAGE_DIST: ${{ matrix.package }}
           UV_PYTHON: ${{ matrix.platform.python }}

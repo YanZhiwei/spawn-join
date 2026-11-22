@@ -19,6 +19,13 @@ dependencies = [
     "spawn-join-llm-provider-langchain>=0.1.0,<0.2.0",
 ]
 
+[project.optional-dependencies]
+mcp = [
+    "langchain[mcp]>=1.4.8,<2.0",
+    "fastmcp>=4.0.11,<5.0",
+    "spawn-join-common>=0.1.0,<0.2.0",
+]
+
 [project.urls]
 Repository = "https://github.com/YanZhiwei/spawn-join"
 
@@ -32,6 +39,7 @@ dev = [
 ]
 
 [tool.uv.sources]
+spawn-join-common = { path = "../../core/common", editable = true }
 spawn-join-llm-provider-langchain = { path = "../llm-provider-langchain", editable = true }
 
 [tool.setuptools.packages.find]

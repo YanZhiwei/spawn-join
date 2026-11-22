@@ -95,6 +95,7 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0014 | agent | [DeepAgents 官方 P1 能力的公共边界](agent/0014-deepagents-p1-capabilities.md) | Proposed |
 | ADR-0015 | agent | [个人助理宿主边界与持久化基线](agent/0015-personal-assistant-host-boundary.md) | Accepted |
 | ADR-0016 | engineering | [桌面优先、服务端可替换的可复用运行时包](engineering/0016-desktop-first-service-ready-packages.md) | Proposed |
+| ADR-0017 | agent | [DeepAgents 可选 MCP 产品接入与显式资源范围](agent/0017-mcp-product-integration.md) | Proposed |
 
 新增或变更 ADR 时同时更新索引、关联链接和当前架构视图。模板不是有效决策，不参与编号。
 

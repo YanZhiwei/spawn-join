@@ -1719,11 +1719,15 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "deepagents", specifier = ">=0.7.32,<0.8" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=4.0.11,<5.0" },
     { name = "langchain", specifier = ">=1.4.7,<2.0" },
+    { name = "langchain", extras = ["mcp"], marker = "extra == 'mcp'", specifier = ">=1.4.8,<2.0" },
     { name = "langchain-core", specifier = ">=1.7.0,<2.0" },
     { name = "langgraph", specifier = ">=1.2,<2" },
+    { name = "spawn-join-common", marker = "extra == 'mcp'", editable = "../../core/common" },
     { name = "spawn-join-llm-provider-langchain", editable = "../../infra/llm-provider-langchain" },
 ]
+provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
 dev = [

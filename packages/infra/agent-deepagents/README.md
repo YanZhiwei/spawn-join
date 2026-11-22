@@ -64,6 +64,15 @@ uv lock --check --directory packages/infra/agent-deepagents
 uv sync --locked --directory packages/infra/agent-deepagents
 ```
 
+MCP 的官方依赖通过可选 `mcp` extra 安装：
+
+```powershell
+uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
+```
+
+该 extra 包含 LangChain MCP、FastMCP 和 Common；默认安装不包含 MCP SDK。
+当前只提供依赖安装，配置加载入口尚未实现。包质量入口实际检查 extra 和两种 wheel 安装。
+
 运行时依赖：
 
 - `deepagents>=0.7.32,<0.8`

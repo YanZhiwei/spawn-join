@@ -1183,6 +1183,23 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 固定 Tag 的干净项目 Codex 生命周期探针通过；范围、命令、检查和限制见
   [v0.4.8 evidence](evidence/delivery-v048-upgrade.md)。安装不表示真实模型 SD/Ralph 已验证。
 
+## 2026-11-21 — Delivery v0.4.9 发布与安装
+
+- Route: Lightweight 安装维护。用户授权合并上游 PR #29、正式发布 v0.4.9，并安装到当前项目。
+- Base revision: `c7fe16d91d07812d854512f6b4719608fcba379b`；工作目录 `D:\Repos\Github\spawn-join`。
+- 上游 PR 在 14/14 检查通过后合并为 `94837b03772ee632e62eca29dd751355e0497229`，
+  原有 Release distribution 对该固定 SHA 的六宿主 Windows/Linux 矩阵及正式发布均成功。
+- 正式 Release 的 10 个 ZIP digest/大小全部核验；临时副本演练通过后，目标通过原生
+  Bundle update 升至 0.4.9（13 组件），重注册 Codex/OpenCode 并保留 OpenCode 默认。
+- 安装器执行前后 1,461 个保护文件哈希不变，76 个负载与发布 Tag 一致；安装后的 helper
+  已验证原 MCP 运行的三个规划文档不再被路径准入规则拒绝。
+- 项目版本文档同步单独记录 AGENTS 声明变化；原 Spec/Plan/Tasks、运行和审批历史保留，
+  不重签旧快照或提前批准 MCP 执行。来源、命令、检查和限制见
+  [v0.4.9 evidence](evidence/delivery-v049-upgrade.md)。
+- 项目治理检查为 0 errors / 1 历史 warning；本次 7 份文档、132 个本地链接与差异空白
+  检查通过。全局 docs 在未升级备份与目标均被原 Tasks 尾随空白阻断，双语 README
+  结构守卫另报告原 ADR-0015 未登记首页索引；未修改既有 MCP 工件掩盖这些结果。
+
 ## 2026-11-21 — 包 README 双视角契约与阻断
 
 - Route: Lightweight（治理规则、Delivery 配置与包文档，无运行时行为；不创建 Feature 工件）。

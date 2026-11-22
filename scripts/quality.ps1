@@ -193,6 +193,53 @@ else:
     Invoke-Checked $extraPython @('-I', '-c', $extraProbe)
 }
 
+function Test-AgentInstallVariants {
+    param([string]$Directory, [string]$Python, [string]$BasePython, [string[]]$Wheels)
+    $baseProbe = @'
+import importlib.util
+import sys
+import spawn_join_agent_deepagents
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
+assert importlib.util.find_spec("fastmcp") is None, "base wheel installed FastMCP"
+assert importlib.util.find_spec("mcp") is None, "base wheel installed MCP"
+assert not any(
+    name == "fastmcp" or name.startswith("fastmcp.")
+    or name == "mcp" or name.startswith("mcp.")
+    for name in sys.modules
+), "root import loaded optional MCP SDKs"
+'@
+    Invoke-Checked $BasePython @('-I', '-c', $baseProbe)
+
+    $requirements = Join-Path $Directory 'mcp-requirements.txt'
+    $export = @('export', '--locked', '--directory', $packages['spawn-join-agent-deepagents'].Path,
+        '--extra', 'mcp', '--no-dev', '--no-emit-project', '--format', 'requirements-txt',
+        '--output-file', $requirements)
+    foreach ($localName in $packages.Keys) {
+        $export += @('--no-emit-package', $localName)
+    }
+    Invoke-Checked 'uv' $export
+    $extraDirectory = Join-Path $Directory 'installed-mcp'
+    Invoke-Checked 'uv' @('venv', '--python', $Python, $extraDirectory)
+    $extraPython = Get-VenvPython $extraDirectory
+    Invoke-Checked 'uv' (@('pip', 'install', '--python', $extraPython,
+            '--no-deps', '-r', $requirements) + $Wheels)
+    Invoke-Checked 'uv' @('pip', 'check', '--python', $extraPython)
+    $extraProbe = @'
+from fastmcp import Client
+from fastmcp.client.group import ClientGroup
+from fastmcp.mcp_config import MCPConfig
+from langchain.mcp import MCPAdapter
+from spawn_join_common import FieldReader
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
+assert MCPConfig.from_dict({"mcpServers": {}}).mcpServers == {}
+assert FieldReader().as_int(3, "count") == 3
+assert all(callable(item) for item in (Client, ClientGroup, MCPAdapter))
+'@
+    Invoke-Checked $extraPython @('-I', '-c', $extraProbe)
+}
+
 function Test-DistributionBuild {
     param([string]$Name, [string]$Python)
     $parent = if ($env:SPAWN_JOIN_TEMP_DIR) {
@@ -237,6 +284,10 @@ function Test-DistributionBuild {
             Test-CommonInstallVariants -Directory $temporary -Python $Python `
                 -BasePython $installedPython -Wheel $wheels[0]
         }
+        if ($Name -eq 'spawn-join-agent-deepagents') {
+            Test-AgentInstallVariants -Directory $temporary -Python $Python `
+                -BasePython $installedPython -Wheels $wheels
+        }
     } finally {
         # This exact unique directory is created and owned by this invocation only.
         Remove-Item -LiteralPath $temporary -Recurse -Force
@@ -272,7 +323,9 @@ try {
             $tests = Join-Path $directory 'tests'
             Write-Host "Checking $name ($Check)"
             Invoke-Checked 'uv' @('lock', '--check', '--directory', $directory)
-            Invoke-Checked 'uv' @('sync', '--locked', '--directory', $directory)
+            $sync = @('sync', '--locked', '--directory', $directory)
+            if ($name -eq 'spawn-join-agent-deepagents') { $sync += @('--extra', 'mcp') }
+            Invoke-Checked 'uv' $sync
             $run = @('run', '--locked', '--no-sync', '--directory', $directory)
             if ($Check -in @('all', 'format')) {
                 Invoke-Checked 'uv' ($run + @('black', '--check', '--config',
