@@ -110,7 +110,9 @@ except ValueError as exc:
 - `FieldReader`
 - `__version__`（当前为 `"0.1.0"`）
 
-`FieldReader` 提供 `fail`、`as_mapping`、`require_keys`、`as_str`、`as_int`、`as_non_negative_int`、`as_number`、`as_non_negative_number`、`as_bool`、`as_list` 和 `optional`。它是 frozen/slotted dataclass，没有 I/O、日志、全局注册或对输入映射的原地修改。
+`FieldReader` 提供 `fail`、`as_mapping`、`require_keys`、`as_str`、`as_string_tuple`、`as_int`、`as_non_negative_int`、`as_number`、`as_non_negative_number`、`as_bool`、`as_list` 和 `optional`。它是 frozen/slotted dataclass，没有 I/O、日志、全局注册或对输入映射的原地修改。
+
+`as_string_tuple(value, path, *, allow_empty=True, indexed_errors=True)` 只接受字符串列表，返回 tuple；保留顺序、重复项和空白，不修改输入。默认允许空字符串，`allow_empty=False` 拒绝空字符串；空列表仍有效。元素错误默认使用 `path[index]`，`indexed_errors=False` 使用集合字段路径。容器错误为 `must be a list of strings`，元素错误为 `must be a string` 或 `must be a non-empty string`；异常始终通过调用方错误工厂生成，不回显输入。
 
 ### `spawn_join_common.validation`
 
