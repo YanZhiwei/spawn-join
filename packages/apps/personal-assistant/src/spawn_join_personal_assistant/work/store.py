@@ -5,6 +5,9 @@ store 是工作项持久化的唯一写者：单连接、显式事务和幂等�
 协调。
 """
 
+# 兼容层：审批流与既有 CLI 仍使用此同步 store；新的目标队列使用
+# work.runtime.GoalRuntime（spawn-join-agent-work 的 SqliteWorkStore）。
+
 from __future__ import annotations
 
 import sqlite3

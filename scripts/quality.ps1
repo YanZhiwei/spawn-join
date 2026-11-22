@@ -70,7 +70,7 @@ $packages = [ordered]@{
         Import = 'spawn_join_personal_assistant'
         Build = @('spawn-join-core', 'spawn-join-common', 'spawn-join-llm-provider',
             'spawn-join-llm-provider-langchain', 'spawn-join-agent-deepagents',
-            'spawn-join-personal-assistant')
+            'spawn-join-agent-work', 'spawn-join-personal-assistant')
     }
 }
 
