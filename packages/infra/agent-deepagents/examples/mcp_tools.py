@@ -1,4 +1,4 @@
-"""Run controlled stdio/loopback MCP services and an offline native agent graph."""
+"""运行本地 MCP 服务与离线 Agent 图示例。"""
 
 import argparse
 import asyncio
@@ -29,7 +29,7 @@ def _server(name: str) -> FastMCP:
 
     @server.tool()
     def echo(value: str) -> str:
-        """Return this demo service's identity and input."""
+        """返回示例服务标识和输入。"""
         suffix = ":" + get_http_headers()["x-demo"] if name == "remote" else ""
         return f"{name}:{value}{suffix}"
 
@@ -120,8 +120,7 @@ async def main() -> None:
             script.with_name("mcp.example.json").read_text, encoding="utf-8"
         )
     )
-    # This checked-in demo template is trusted; the public loader validates the
-    # complete generated file before any configured service is opened.
+    # 示例模板来自仓库；加载器仍会在启动服务前校验生成的完整配置。
     servers = cast(dict[str, dict[str, object]], configuration["mcpServers"])
     servers["local"].update(command=sys.executable, args=[str(script), "--stdio"])
     servers["unavailable"]["command"] = sys.executable
