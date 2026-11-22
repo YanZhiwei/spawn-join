@@ -55,7 +55,7 @@ class FieldReader:
         required: frozenset[str] = frozenset(),
         optional: frozenset[str] = frozenset(),
     ) -> dict[str, object]:
-        """Copy a strict mapping and validate its complete allowed field set."""
+        """复制严格映射，并校验必需字段和允许字段。"""
         fields = self.as_mapping(value, path)
         self.require_keys(fields, required=required, optional=optional, path=path)
         return fields
@@ -66,7 +66,7 @@ class FieldReader:
         return value
 
     def as_string_mapping(self, value: object, path: str) -> dict[str, str]:
-        """Copy a string mapping without including its keys or values in errors."""
+        """复制字符串映射，错误信息不包含实际键值。"""
         return {
             key: self.as_str(item, path)
             for key, item in self.as_mapping(value, path).items()
@@ -80,7 +80,7 @@ class FieldReader:
         allow_empty: bool = True,
         indexed_errors: bool = True,
     ) -> tuple[str, ...]:
-        """Read a strict list with caller-selected empty-string and path policies."""
+        """严格读取字符串列表，由调用方指定空串和错误路径策略。"""
         if not isinstance(value, list):
             self.fail(f"{path}: must be a list of strings")
         items: list[str] = []

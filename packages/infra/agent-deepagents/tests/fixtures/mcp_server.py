@@ -1,4 +1,4 @@
-"""Local stdio/HTTP fixture with observable process and request boundaries."""
+"""提供可观测进程与请求边界的本地 stdio/HTTP 夹具。"""
 
 import argparse
 import asyncio
@@ -35,7 +35,7 @@ def main() -> None:
 
         @server.tool(name="echo_value")
         async def echo(value: str) -> str:
-            """Echo a value with this fixture's source identity."""
+            """携带夹具来源标识回显输入。"""
             await asyncio.to_thread(
                 _append, options.record.with_suffix(".calls"), value
             )
