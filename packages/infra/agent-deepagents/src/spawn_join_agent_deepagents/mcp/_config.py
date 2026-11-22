@@ -62,7 +62,7 @@ def _name(value: object, path: str) -> str:
 
 
 def _strings(value: object, path: str) -> tuple[str, ...]:
-    return tuple(_READER.as_str(item, path) for item in _READER.as_list(value, path))
+    return _READER.as_string_tuple(value, path, indexed_errors=False)
 
 
 def _string_mapping(value: object, path: str) -> dict[str, str]:
