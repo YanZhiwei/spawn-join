@@ -80,6 +80,9 @@ task = asyncio.create_task(runner.serve(stop))
 await runner.astop()   # stop claiming, release in-flight leases, close notifier, <=10s
 ```
 
+`WorkRunner.serve()` is a one-shot lifecycle: after `astop()` the same runner will not start
+another loop; create a new runner for a new continuous session.
+
 ## Public API
 
 | Kind | Name | Purpose |
@@ -104,7 +107,9 @@ await runner.astop()   # stop claiming, release in-flight leases, close notifier
 - Every execution write-back (heartbeat/complete/fail/defer) must carry the matching lease token;
   stale writers are rejected (fencing). `resume`/`cancel` are host control-plane operations and
   take no token.
-- Retries follow `RetryPolicy`; exhaustion becomes `dead`, non-retryable failure becomes `failed`.
+- Retries follow `RetryPolicy`; the effective stop is
+  `min(WorkSpec.max_attempts, RetryPolicy.max_attempts)`: spec exhaustion becomes `dead`,
+  an earlier policy stop becomes `failed`, and non-retryable failures become `failed`.
 - `waiting` is never claimed automatically; the host must call `resume`.
 - Exactly-once is not promised; executors should use the idempotency key or their own key.
 - Shutdown stops claiming, cancels and awaits in-flight work, requeues released items, and is idempotent.

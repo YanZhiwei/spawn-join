@@ -34,6 +34,7 @@ class WorkRunner:
 
     Durable retries stop at ``min(WorkSpec.max_attempts, RetryPolicy.max_attempts)``:
     the spec bounds the item's lifetime, the policy bounds this runner's retries.
+    ``serve`` is a one-shot lifecycle: after ``astop`` create a new runner.
     """
 
     def __init__(

@@ -96,9 +96,9 @@ msgpack checkpointer（跨重启 thread 恢复）。
   启用（等价于 `LANGGRAPH_STRICT_MSGPACK` 开关，但不修改进程环境）；
 - HITL 审批持久化：动作列表/决定/时间戳落独立 SQLite 表，已决不可变，
   恢复命令与动作数结构性对齐；
-- 五子命令 CLI（`accept/due/run/report/approve`）：稳定退出码 0/1，
-  凭据仅走 `LLM_API_KEY` 环境变量；
-- 60 个离线测试（含 e2e）+ 可运行示例 + 独立 wheel/sdist、`py.typed`、质量 profile。
+- 六子命令 CLI（`accept/due/run/serve/report/approve`）：稳定退出码 0/1；
+  `serve` 常驻执行并由 SIGINT/SIGTERM 优雅停止；凭据仅走 `LLM_API_KEY` 环境变量；
+- 75 个离线测试（含 e2e）+ 可运行示例 + 独立 wheel/sdist、`py.typed`、质量 profile。
 
 ## 安装
 
@@ -112,6 +112,7 @@ uv sync --locked --directory packages/apps/personal-assistant
 运行时依赖：
 
 - `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
+- `spawn-join-agent-work>=0.1.0,<0.2.0`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
@@ -165,16 +166,23 @@ models:
     api_key_env: LLM_API_KEY
 ```
 
-模型需要支持工具调用。然后在进程环境中设置 `LLM_API_KEY`，用 CLI 驱动完整闭环：
+模型需要支持工具调用。然后在进程环境中设置 `LLM_API_KEY`，用 CLI 驱动完整闭环。省略
+`--root` 时默认使用平台数据目录（Windows `%LOCALAPPDATA%`、macOS Application Support、
+Linux `$XDG_DATA_HOME` 或 `~/.local/share`）下的 `spawn-join/personal-assistant`：
 
 ```powershell
 $env:LLM_API_KEY = "<your-key>"
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> accept "帮我整理这周的发票" --key invoices-week-47
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> run --supervisor-model supervisor --worker-model worker
+spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> serve --poll-interval 1
 spawn-join-personal-assistant --root <data-dir> report
 spawn-join-personal-assistant --root <data-dir> approve --list
 spawn-join-personal-assistant --root <data-dir> approve --record <record-id>
 ```
+
+`serve` 默认常驻，`Ctrl+C`/SIGTERM 停止；`--max-cycles N` 用于冒烟与测试。`run` 仍是单周期命令，
+行为不变。旧版本默认根 `~/.spawn-join-personal-assistant` 不再自动读取；需要旧数据时请显式
+`--root` 指向该目录。
 
 ## 工作项
 
@@ -839,6 +847,9 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
     due
     run [--max-concurrency N] [--deadline SECONDS]
         [--supervisor-model NAME] [--worker-model NAME]
+    serve [--max-concurrency N] [--deadline SECONDS]
+        [--supervisor-model NAME] [--worker-model NAME]
+        [--poll-interval SECONDS] [--max-cycles N]
     report [--status STATUS]
     approve --list | approve --record ID [--reject] [--message MSG]
 ```
@@ -848,6 +859,7 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
 | `accept` | 录入 + 幂等键唯一 | 0 成功 / 1 键重复或空 goal |
 | `due` | 列出未完成项（含 due 状态） | 0 |
 | `run` | 先恢复中断项，再执行一个 due 周期 | 0 / 1 目录缺 catalog |
+| `serve` | 常驻执行；SIGINT/SIGTERM 停止；`--max-cycles` 有界冒烟 | 0 / 1（含 130 中断） |
 | `report` | 列出全部历史（可按状态过滤） | 0 |
 | `approve --list` | 列出待审批记录 | 0 |
 | `approve --record ID` | 批准并恢复执行 | 0 / 1 未知或已决记录 |

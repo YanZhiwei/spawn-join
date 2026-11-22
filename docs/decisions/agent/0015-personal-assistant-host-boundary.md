@@ -37,7 +37,7 @@
 1. **拥有者**：长任务存储、租约、重试、唤醒与 runner 由 `spawn-join-agent-work` 拥有（ADR-0017）；
    宿主保留 HITL 审批持久化（复用原生 `pending_interrupts`/`resume_batched` 契约）、工作区装配、
    CLI 入口（`accept/due/run/serve/report/approve`）与全部资源生命周期（backend/checkpointer 的
-   创建、保持、关闭）。Phase 1 中 `GoalRuntime` 为迁移接缝，`accept/approve` 仍走宿主兼容层。
+   创建、保持、关闭）。Phase 1 中 `GoalRuntime` 为迁移接缝，全部 CLI 子命令仍走宿主兼容层。
 2. **依赖方向**：仅依赖 `spawn-join-agent-deepagents`、`spawn-join-agent-work` 与
    `spawn-join-llm-provider-langchain`（经 `ModelCatalog.create_chat_model` 消费模型，不读
    `model.yaml` 原文与凭据，遵循 ADR-0008）；`apps → infra → core` 单向。
@@ -97,7 +97,8 @@ CLI (accept|due|run|serve|report|approve)
 [`packages/apps/personal-assistant/`](../../../packages/apps/personal-assistant/)，公共契约以该包的
 [`README.md`](../../../packages/apps/personal-assistant/README.md) 和 `__init__.py` 为准；测试位于
 [`packages/apps/personal-assistant/tests/`](../../../packages/apps/personal-assistant/tests/)
-（75 用例含 e2e）。已审阅的交付 HEAD：`ff33326134c363cc3b06bd8097c6ed43113b1976`
+（2026-11-21 交付时 60 用例；2026-11-22 迁移后 75 用例）。2026-11-21 交付审阅 HEAD：
+`ff33326134c363cc3b06bd8097c6ed43113b1976`
 （Ralph 分支 `ralph/personal-assistant-host-20261121`，base `main 4f5b79c…`）。
 
 验证覆盖：spec 全部 9 条 FR 与 US1–US4/SC-001..005（e2e 真实文件副作用）；幂等重放、
