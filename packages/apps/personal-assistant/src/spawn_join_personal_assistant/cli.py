@@ -33,14 +33,14 @@ from spawn_join_llm_provider import ConfigurationError
 from spawn_join_llm_provider_langchain import ModelCatalog
 
 from .approvals import ApprovalBook, apply_decision, pause_for_approval
-from .config import AppConfig
+from .config import AppConfig, default_data_dir
 from .errors import HostError
 from .host import HostSession, open_host_session
 from .scheduler import Scheduler
 from .work.models import WorkItem, WorkStatus
 from .work.store import WorkStore
 
-_DEFAULT_ROOT = Path.home() / ".spawn-join-personal-assistant"
+_DEFAULT_ROOT = default_data_dir()
 
 # v1 审批策略：对工作区内的写入操作要求人工批准。
 _GATED_TOOLS: dict[str, bool] = {"write_file": True}
