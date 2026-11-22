@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+import asyncio
 from collections.abc import Callable
 from pathlib import Path
 
@@ -11,6 +13,10 @@ from langchain_core.messages import AIMessage
 from pytest import CaptureFixture
 from spawn_join_agent_deepagents import ModelBindings
 from spawn_join_personal_assistant import WorkStatus, WorkStore, main
+from spawn_join_personal_assistant.cli import (
+    _serve,  # pyright: ignore[reportPrivateUsage]
+)
+from spawn_join_personal_assistant.config import AppConfig
 
 
 def _root(tmp_path: Path) -> Path:
@@ -160,3 +166,68 @@ def test_run_with_injected_bindings_smoke(
     out = capsys.readouterr().out
     assert "completed" in out
     assert "1 item(s) processed" in out
+
+
+def test_serve_bounded_smoke_with_injected_bindings(
+    tmp_path: Path,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+    make_models: Callable[[BaseChatModel], ModelBindings],
+    capsys: CaptureFixture[str],
+) -> None:
+    root = _root(tmp_path)
+    assert main(_argv(root, "accept", "总结一句话", "--key", "k1")) == 0
+    capsys.readouterr()
+
+    bindings = make_models(make_sequence_model([AIMessage(content="整理完成：1 项")]))
+
+    assert (
+        main(
+            _argv(root, "serve", "--max-cycles", "1", "--poll-interval", "0.01"),
+            bindings=bindings,
+        )
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "completed" in out
+    assert "serve: 1 cycle(s), 1 item(s) processed" in out
+
+
+def test_serve_rejects_invalid_poll_interval(
+    tmp_path: Path, capsys: CaptureFixture[str]
+) -> None:
+    root = _root(tmp_path)
+    assert main(_argv(root, "serve", "--poll-interval", "0")) == 1
+    err = capsys.readouterr().err
+    assert "--poll-interval" in err
+
+
+def test_serve_rejects_zero_cycles(tmp_path: Path, capsys: CaptureFixture[str]) -> None:
+    root = _root(tmp_path)
+    assert main(_argv(root, "serve", "--max-cycles", "0")) == 1
+    err = capsys.readouterr().err
+    assert "--max-cycles" in err
+
+
+def test_serve_stops_when_event_is_set(
+    tmp_path: Path,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+    make_models: Callable[[BaseChatModel], ModelBindings],
+) -> None:
+    root = _root(tmp_path)
+    config = AppConfig(
+        data_dir=root / "data",
+        workspace_root=root / "workspace",
+        model_catalog_path=root / "model.yaml",
+    )
+    bindings = make_models(make_sequence_model([]))
+    args = argparse.Namespace(
+        max_concurrency=1,
+        deadline=None,
+        supervisor_model="supervisor",
+        worker_model="worker",
+        poll_interval=0.01,
+        max_cycles=None,
+    )
+    stop = asyncio.Event()
+    stop.set()
+    assert asyncio.run(_serve(config, bindings, args, stop=stop)) == 0

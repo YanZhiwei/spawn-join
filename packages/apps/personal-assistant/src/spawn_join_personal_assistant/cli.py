@@ -1,8 +1,9 @@
 """个人助理宿主的命令行接口。
 
-五个子命令驱动可持久化的工作回路：``accept`` 录入目标，``due`` 列出
+六个子命令驱动可持久化的工作回路：``accept`` 录入目标，``due`` 列出
 未完成项，``run`` 执行一个有界调度周期（先恢复被中断的运行），
-``report`` 展示结果，``approve`` 列出或决定 pending 的 HITL 请求。
+``serve`` 常驻执行并在 SIGINT/SIGTERM 时优雅停止，``report`` 展示结果，
+``approve`` 列出或决定 pending 的 HITL 请求。
 模型绑定是宿主自有的资源：默认从模型目录构造（ADR-0008 环境边界），
 ``main`` 的 ``bindings`` 参数是离线/替代执行的显式注入接缝。
 
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import signal
 import sys
 import uuid
 from collections.abc import Sequence
@@ -116,6 +118,42 @@ def _build_parser() -> argparse.ArgumentParser:
         "--worker-model",
         default="worker",
         help="Catalog entry used for the worker purpose",
+    )
+
+    serve = subparsers.add_parser("serve", help="Run the continuous work loop")
+    serve.add_argument(
+        "--max-concurrency",
+        type=int,
+        default=2,
+        help="Maximum simultaneously running items",
+    )
+    serve.add_argument(
+        "--deadline",
+        type=float,
+        default=None,
+        help="Total runtime budget per item in seconds",
+    )
+    serve.add_argument(
+        "--supervisor-model",
+        default="supervisor",
+        help="Catalog entry used for the supervisor purpose",
+    )
+    serve.add_argument(
+        "--worker-model",
+        default="worker",
+        help="Catalog entry used for the worker purpose",
+    )
+    serve.add_argument(
+        "--poll-interval",
+        type=float,
+        default=1.0,
+        help="Seconds between scheduling cycles",
+    )
+    serve.add_argument(
+        "--max-cycles",
+        type=int,
+        default=None,
+        help="Stop after N cycles (smoke/testing bound; default runs until stopped)",
     )
 
     report = subparsers.add_parser("report", help="Show outcomes")
@@ -265,6 +303,31 @@ async def _drive_to_outcome(
     return "completed"
 
 
+def _make_scheduler(store: WorkStore, args: argparse.Namespace) -> Scheduler:
+    return Scheduler(
+        store,
+        max_concurrency=int(args.max_concurrency),
+        deadline_seconds=(float(args.deadline) if args.deadline is not None else None),
+    )
+
+
+async def _execute_work_item(
+    session: HostSession,
+    store: WorkStore,
+    book: ApprovalBook,
+    item: WorkItem,
+) -> None:
+    thread_id = item.thread_id or f"work-{item.id}"
+    await _drive_to_outcome(
+        session,
+        store,
+        book,
+        item_id=item.id,
+        thread_id=thread_id,
+        invoke_input={"messages": [HumanMessage(content=item.goal)]},
+    )
+
+
 async def _run(
     config: AppConfig,
     bindings: ModelBindings | None,
@@ -275,31 +338,15 @@ async def _run(
         WorkStore(config.data_dir / "work.db") as store,
         ApprovalBook(config.data_dir / "approvals.db") as book,
     ):
-        scheduler = Scheduler(
-            store,
-            max_concurrency=int(args.max_concurrency),
-            deadline_seconds=(
-                float(args.deadline) if args.deadline is not None else None
-            ),
-        )
+        scheduler = _make_scheduler(store, args)
         requeued = await scheduler.recover_interrupted()
         session = await open_host_session(
             config, models=models, interrupt_on=_GATED_TOOLS
         )
         try:
-
-            async def execute(item: WorkItem) -> None:
-                thread_id = item.thread_id or f"work-{item.id}"
-                await _drive_to_outcome(
-                    session,
-                    store,
-                    book,
-                    item_id=item.id,
-                    thread_id=thread_id,
-                    invoke_input={"messages": [HumanMessage(content=item.goal)]},
-                )
-
-            outcomes = await scheduler.run_due(execute)
+            outcomes = await scheduler.run_due(
+                lambda item: _execute_work_item(session, store, book, item)
+            )
         finally:
             await session.aclose()
     for item in requeued:
@@ -308,6 +355,76 @@ async def _run(
         _write(_describe(item))
     _write(f"run: {len(outcomes)} item(s) processed")
     return 0
+
+
+async def _serve(
+    config: AppConfig,
+    bindings: ModelBindings | None,
+    args: argparse.Namespace,
+    *,
+    stop: asyncio.Event | None = None,
+) -> int:
+    poll_interval = float(args.poll_interval)
+    if not poll_interval > 0:
+        raise HostError("--poll-interval: must be > 0")
+    max_cycles = int(args.max_cycles) if args.max_cycles is not None else None
+    if max_cycles is not None and max_cycles < 1:
+        raise HostError("--max-cycles: must be >= 1")
+    models = bindings if bindings is not None else _catalog_bindings(config, args)
+    stop = stop or asyncio.Event()
+    processed = 0
+    cycles = 0
+    with (
+        WorkStore(config.data_dir / "work.db") as store,
+        ApprovalBook(config.data_dir / "approvals.db") as book,
+    ):
+        scheduler = _make_scheduler(store, args)
+        requeued = await scheduler.recover_interrupted()
+        session = await open_host_session(
+            config, models=models, interrupt_on=_GATED_TOOLS
+        )
+        try:
+            while not stop.is_set():
+                outcomes = await scheduler.run_due(
+                    lambda item: _execute_work_item(session, store, book, item)
+                )
+                processed += len(outcomes)
+                cycles += 1
+                for item in outcomes:
+                    _write(_describe(item))
+                if max_cycles is not None and cycles >= max_cycles:
+                    break
+                try:
+                    await asyncio.wait_for(stop.wait(), timeout=poll_interval)
+                except TimeoutError:
+                    continue
+        finally:
+            await session.aclose()
+    for item in requeued:
+        _write(f"requeued {item.id}: interrupted run recovered")
+    _write(f"serve: {cycles} cycle(s), {processed} item(s) processed")
+    return 0
+
+
+async def _serve_with_signals(
+    config: AppConfig,
+    bindings: ModelBindings | None,
+    args: argparse.Namespace,
+) -> int:
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    installed: list[int] = []
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(signum, stop.set)
+        except (NotImplementedError, RuntimeError, AttributeError):
+            continue
+        installed.append(signum)
+    try:
+        return await _serve(config, bindings, args, stop=stop)
+    finally:
+        for signum in installed:
+            loop.remove_signal_handler(signum)
 
 
 async def _approve(
@@ -385,6 +502,12 @@ def main(
             return _report(config, args)
         if args.command == "run":
             return asyncio.run(_run(config, bindings, args))
+        if args.command == "serve":
+            try:
+                return asyncio.run(_serve_with_signals(config, bindings, args))
+            except KeyboardInterrupt:
+                _write("personal-assistant: stopped")
+                return 130
         if args.command == "approve":
             return asyncio.run(_approve(config, bindings, args))
     except HostError as exc:
