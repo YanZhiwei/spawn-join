@@ -78,8 +78,17 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 The extra includes LangChain MCP, FastMCP, and Common; the default install excludes MCP SDKs.
-Only dependency installation is available at this stage; the configuration loader is not implemented.
+Result types and internal static configuration validation are available; no public loading entry exists.
 The package quality entry checks the extra and both wheel installation variants.
+The file profile is strict JSON with `mcpServers` and optional `spawnJoin`, for stdio and Streamable HTTP.
+Services are required by default, with a 30-second per-service startup budget; optional/disabled lists
+and named toolsets are validated globally. Request timeouts use finite nonnegative milliseconds,
+separate from startup budgets. Validation reuses official models and Common readers, rejects duplicate
+keys/unknown fields/invalid references/unsupported transports, and reads local UTF-8/BOM files in a thread.
+Only env/header values expand `${ENV_VAR}` once; missing/malformed references fail the whole file,
+including optional/disabled entries. Process environment is snapshotted once; explicit `environ`
+replaces that interpolation snapshot, and `.env` is never read. Relative cwd uses the config parent;
+command/args/URL/cwd are not interpolated. This stage still does not connect to services.
 
 Runtime dependencies:
 
@@ -698,6 +707,11 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
 - stable error types (`AgentConfigurationError` and subclasses, including
   `ContextConfigurationError`, `ProfileConfigurationError`, and `RubricConfigurationError`).
 
+The optional `spawn_join_agent_deepagents.mcp` namespace separately exports `McpTools`,
+`McpLoadReport`, `McpServerReport`, `McpConfigurationError`, `McpLoadError`, and `McpCleanupError`.
+`McpTools.tools_for(name)` returns an existing selection and raises `McpConfigurationError` for an
+unknown name. Outer collections are read-only; native tools are not deeply frozen. Reports are safe
+startup snapshots; original causes are for controlled diagnostics. No public connection entry exists yet.
 Internal modules do not become public contracts merely because they are importable.
 
 ## Errors and failure behavior

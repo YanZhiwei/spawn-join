@@ -71,7 +71,14 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 该 extra 包含 LangChain MCP、FastMCP 和 Common；默认安装不包含 MCP SDK。
-当前只提供依赖安装，配置加载入口尚未实现。包质量入口实际检查 extra 和两种 wheel 安装。
+当前具备结果类型和内部静态配置校验，尚无公开加载入口；包质量入口检查 extra 和两种 wheel 安装。
+文件轮廓是严格 JSON 的 `mcpServers` 与可选 `spawnJoin`，支持 stdio 与 Streamable HTTP 声明。
+默认服务必需、逐服务启动预算 30 秒；可配置 optional/disabled 和命名工具集，静态错误整体失败。
+请求 timeout 使用非负有限毫秒数，与启动预算分开；官方配置模型与 Common 读取器负责实际校验。
+校验会拒绝重复键、未知字段、非法引用和不支持的传输，并在工作线程读取本地 UTF-8/BOM 文件。
+只在 env/header 值单次展开 `${ENV_VAR}`，缺失或畸形引用使整个配置失败（含 optional/disabled）。
+默认取一次进程环境快照；显式 `environ` 完全替代插值快照，不读取 `.env`。
+相对 cwd 以配置文件父目录解析；command/args/URL/cwd 不做变量展开。当前仍不执行服务连接。
 
 运行时依赖：
 
@@ -662,6 +669,10 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/hitl
 - 稳定错误类型（`AgentConfigurationError` 及其子类，包括 `ContextConfigurationError`、
   `ProfileConfigurationError`、`RubricConfigurationError`）。
 
+可选命名空间 `spawn_join_agent_deepagents.mcp` 单独导出 `McpTools`、`McpLoadReport`、
+`McpServerReport`、`McpConfigurationError`、`McpLoadError` 和 `McpCleanupError`。
+`McpTools.tools_for(name)` 返回已有选择，未知名称抛出 `McpConfigurationError`；外层集合只读，
+不深冻结原生工具。报告是安全启动快照，原始异常原因仅供受控诊断；当前尚无公开连接入口。
 内部模块不会因为可导入就自动成为公共契约。
 
 ## 错误与失败行为
