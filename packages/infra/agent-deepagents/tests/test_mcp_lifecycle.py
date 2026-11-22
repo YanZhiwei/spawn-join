@@ -395,7 +395,7 @@ def test_startup_budget_covers_connection_and_discovery(
             return catalog.report
 
     async def run() -> None:
-        # The outer guard also permits the SDK's process termination grace period.
+        # 外层超时须涵盖 SDK 的进程退出宽限期。
         async with asyncio.timeout(15):
             if optional:
                 report = await load()
