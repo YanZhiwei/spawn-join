@@ -218,3 +218,23 @@ def test_string_tuple_adapter_preserves_its_original_errors(
     with pytest.raises(ConfigurationError) as caught:
         _load(tmp_path, "chat_completions", {"stop": stop}, loader)
     assert str(caught.value) == message
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (None, "config: must be a mapping"),
+        ({}, "config: missing required field(s): count"),
+        ({"count": 3, "extra": "private-value"}, "config: unknown field(s): extra"),
+        (
+            {"extra": "private-value"},
+            "config: missing required field(s): count; unknown field(s): extra",
+        ),
+    ],
+)
+def test_closed_field_adapter_preserves_original_errors(
+    payload: object, message: str
+) -> None:
+    with pytest.raises(ConfigurationError) as caught:
+        validate_input(_StrictInput, payload, "config")
+    assert str(caught.value) == message

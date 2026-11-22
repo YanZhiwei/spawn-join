@@ -44,32 +44,11 @@ class _Configuration:
     toolsets: Mapping[str, _ToolSelection] | None
 
 
-def _fields(
-    value: object, path: str, required: tuple[str, ...], optional: tuple[str, ...]
-) -> dict[str, object]:
-    fields = _READER.as_mapping(value, path)
-    _READER.require_keys(
-        fields, required=frozenset(required), optional=frozenset(optional), path=path
-    )
-    return fields
-
-
 def _name(value: object, path: str) -> str:
     name = _READER.as_str(value, path)
     if not name or name != name.strip():
         _READER.fail(path + ": invalid identifier")
     return name
-
-
-def _strings(value: object, path: str) -> tuple[str, ...]:
-    return _READER.as_string_tuple(value, path, indexed_errors=False)
-
-
-def _string_mapping(value: object, path: str) -> dict[str, str]:
-    return {
-        key: _READER.as_str(item, path)
-        for key, item in _READER.as_mapping(value, path).items()
-    }
 
 
 def _expanded_mapping(
@@ -83,7 +62,7 @@ def _expanded_mapping(
                 path + ": missing environment variable"
             ) from exc
 
-    values = _string_mapping(value, path)
+    values = _READER.as_string_mapping(value, path)
     for key, text in values.items():
         if "${" in _ENVIRONMENT_REFERENCE.sub("", text):
             _READER.fail(path + ": malformed environment reference")
@@ -106,7 +85,7 @@ def _number(value: object, path: str) -> float:
 
 
 def _policy_servers(value: object, path: str, servers: set[str]) -> frozenset[str]:
-    names = _strings(value, path)
+    names = _READER.as_string_tuple(value, path, indexed_errors=False)
     if len(names) != len(set(names)) or set(names) - servers:
         _READER.fail(path + ": duplicate or unknown server")
     return frozenset(names)
@@ -116,15 +95,25 @@ def _toolsets(value: object, available: set[str]) -> Mapping[str, _ToolSelection
     selections: dict[str, _ToolSelection] = {}
     for label, raw in _READER.as_mapping(value, "spawnJoin.toolsets").items():
         _name(label, "spawnJoin.toolsets.name")
-        selection = _fields(
-            raw, "spawnJoin.toolsets.selection", (), ("servers", "tools")
+        selection = _READER.as_fields(
+            raw,
+            "spawnJoin.toolsets.selection",
+            optional=frozenset({"servers", "tools"}),
         )
-        servers = _strings(selection.get("servers", []), "spawnJoin.toolsets.servers")
+        servers = _READER.as_string_tuple(
+            selection.get("servers", []),
+            "spawnJoin.toolsets.servers",
+            indexed_errors=False,
+        )
         references: list[tuple[str, str]] = []
         for raw_ref in _READER.as_list(
             selection.get("tools", []), "spawnJoin.toolsets.tools"
         ):
-            ref = _fields(raw_ref, "spawnJoin.toolsets.tools", ("server", "name"), ())
+            ref = _READER.as_fields(
+                raw_ref,
+                "spawnJoin.toolsets.tools",
+                required=frozenset({"server", "name"}),
+            )
             server = _READER.as_str(ref["server"], "spawnJoin.toolsets.tools.server")
             name = _READER.as_str(ref["name"], "spawnJoin.toolsets.tools.name")
             if server not in available or not name:
@@ -148,8 +137,11 @@ def _server(
         if local
         else ("headers", "timeout", "transport")
     )
-    server = _fields(
-        server, "mcpServers.entry", ("command" if local else "url",), allowed
+    server = _READER.as_fields(
+        server,
+        "mcpServers.entry",
+        required=frozenset({"command" if local else "url"}),
+        optional=frozenset(allowed),
     )
     timeout = (
         _number(server.pop("timeout"), "mcpServers.timeout")
@@ -158,7 +150,11 @@ def _server(
     )
     if local:
         _name(server["command"], "mcpServers.command")
-        server["args"] = list(_strings(server.get("args", []), "mcpServers.args"))
+        server["args"] = list(
+            _READER.as_string_tuple(
+                server.get("args", []), "mcpServers.args", indexed_errors=False
+            )
+        )
         server["env"] = _expanded_mapping(
             server.get("env", {}), "mcpServers.env", environ
         )
@@ -213,13 +209,19 @@ def _read(path: Path, environ: Mapping[str, str]) -> _Configuration:
         )
     except (OSError, UnicodeError, ValueError) as exc:
         raise McpConfigurationError("MCP file: cannot read strict JSON") from exc
-    root = _fields(raw, "MCP root", ("mcpServers",), ("spawnJoin",))
+    root = _READER.as_fields(
+        raw,
+        "MCP root",
+        required=frozenset({"mcpServers"}),
+        optional=frozenset({"spawnJoin"}),
+    )
     servers = _READER.as_mapping(root["mcpServers"], "mcpServers")
-    policy = _fields(
+    policy = _READER.as_fields(
         root.get("spawnJoin", {}),
         "spawnJoin",
-        (),
-        ("optionalServers", "disabledServers", "startupTimeoutSeconds", "toolsets"),
+        optional=frozenset(
+            {"optionalServers", "disabledServers", "startupTimeoutSeconds", "toolsets"}
+        ),
     )
     optional = _policy_servers(
         policy.get("optionalServers", []), "spawnJoin.optionalServers", set(servers)
@@ -265,7 +267,7 @@ async def read_configuration(
     path: str | Path, *, environ: Mapping[str, str] | None = None
 ) -> _Configuration:
     """Validate a local file off the event loop without opening clients or processes."""
-    snapshot = _string_mapping(
+    snapshot = _READER.as_string_mapping(
         os.environ if environ is None else environ, "MCP environment"
     )
     return await asyncio.to_thread(_read, Path(path), snapshot)
