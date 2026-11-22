@@ -27,13 +27,15 @@ def test_official_models_defaults_and_fractional_request_timeout(
 ) -> None:
     path = tmp_path / "mcp.json"
     path.write_text(
-        '{"mcpServers":{"local":{"command":"python","timeout":1.5},'
+        '{"mcpServers":{"local":{"command":"python","timeout":1.5,"args":[""]},'
         '"remote":{"url":"https://example.com/mcp"}}}',
         encoding="utf-8-sig",
     )
     configuration = asyncio.run(read_configuration(path))
     assert isinstance(configuration.official, MCPConfig)
     assert list(configuration.official.mcpServers) == ["local", "remote"]
+    local = configuration.official.mcpServers["local"]
+    assert isinstance(local, StdioMCPServer) and local.args == [""]
     assert configuration.request_timeouts["local"] == 1.5
     assert configuration.startup_timeout == 30
     assert not configuration.optional_servers and not configuration.disabled_servers
@@ -91,6 +93,8 @@ def test_optional_and_disabled_entries_are_statically_validated(
             asyncio.run(read_configuration(path))
         assert "private.example" not in str(caught.value)
         assert "secret-" not in repr(caught.value)
+        if server.get("args") == [1]:
+            assert str(caught.value) == "mcpServers.args: invalid configuration"
 
 
 def test_missing_file_is_a_safe_configuration_error_with_cause(tmp_path: Path) -> None:
