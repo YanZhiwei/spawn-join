@@ -97,7 +97,7 @@ try {
         'validation-extra-success-probe' 'spawn-join-common'
     Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common/validation/__init__.py" -Destination $commonValidation
 
-    # Use real package sources/locks so --extra and wheel probes cannot be mocked green.
+    # 使用真实源码和锁文件，防止 extra 与 wheel 检查被桩替换后误报成功。
     foreach ($relative in @('core/llm-provider', 'infra/llm-provider-langchain',
             'infra/agent-deepagents')) {
         $original = Join-Path $root "packages/$relative"

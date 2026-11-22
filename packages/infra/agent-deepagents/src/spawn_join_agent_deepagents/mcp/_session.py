@@ -1,4 +1,4 @@
-"""Private, sequential official MCP resource composition."""
+"""按服务顺序装配官方 MCP 客户端并管理资源。"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from fastmcp.mcp_config import RemoteMCPServer, StdioMCPServer
     from langchain.mcp import MCPAdapter
 
-    # Companion modules share this precise record without making it a public DTO.
+    # 内部模块共享配置记录，避免新增公共类型。
     from spawn_join_agent_deepagents.mcp._config import (
         _Configuration,  # pyright: ignore[reportPrivateUsage]
     )
@@ -48,8 +48,8 @@ def create_adapter(
     from fastmcp.client.group import ClientGroup
     from langchain.mcp import MCPAdapter
 
-    # Explicit Client preserves fractional milliseconds and the zero-disable option
-    # on supported FastMCP versions whose Group.from_config omits timeout.
+    # 显式创建 Client，保留小数毫秒和零值禁用超时的语义。
+    # 部分受支持版本的 Group.from_config 不传递 timeout。
     timeout = None if timeout_ms is None else timeout_ms / 1000
     client = Client(server.to_transport(), timeout=timeout)
     return MCPAdapter(ClientGroup({name: client}))
@@ -109,14 +109,14 @@ async def _close_failed(member: AsyncExitStack, cause: BaseException) -> None:
     try:
         await member.aclose()
     except Exception as cleanup:
-        # Keep both original SDK failures available only through controlled causes.
+        # 原始 SDK 异常仅通过原因链供受控诊断。
         cleanup.__context__ = cause
         raise McpCleanupError("MCP service cleanup failed") from cleanup
 
 
 @asynccontextmanager
 async def _owned_stack() -> AsyncGenerator[AsyncExitStack, None]:
-    """Close every owned member while retaining primary identity and diagnostics."""
+    """释放所有自有资源，保留主异常身份与原因链。"""
     resources = AsyncExitStack()
     primary: BaseException | None = None
     try:
@@ -130,8 +130,7 @@ async def _owned_stack() -> AsyncGenerator[AsyncExitStack, None]:
         cleanup.__cause__ = cause
         if primary is None:
             raise cleanup from cause
-        # Preserve the former load cause alongside the new cleanup cause, without
-        # overwriting the SDK's own chain of multiple cleanup failures.
+        # 保留加载与清理异常，避免覆盖 SDK 的多重清理异常链。
         cleanup.__context__ = primary.__cause__
         primary.__cause__ = cleanup
     if primary is not None:
@@ -140,7 +139,7 @@ async def _owned_stack() -> AsyncGenerator[AsyncExitStack, None]:
 
 @asynccontextmanager
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
-    """Hold each adapter's actual context and yield original-identity native tools."""
+    """持有适配器上下文，提供保留原始身份的原生工具。"""
     tools: dict[tuple[str, str], BaseTool] = {}
     failures: dict[str, _Failure] = {}
     reports = [
@@ -169,7 +168,7 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
                     await _close_failed(member, initialized.cause)
                     failures[name] = initialized
                     continue
-                # Transfer only complete members; the Adapter owns its actual clone.
+                # 仅移交初始化完成的资源；适配器负责其内部克隆。
                 resources.push_async_exit(member.pop_all())
                 tools.update(
                     ((name, original), tool) for original, tool in initialized.items()

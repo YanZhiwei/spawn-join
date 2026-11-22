@@ -1,4 +1,4 @@
-"""Native tools and safe, immutable outer snapshots of one MCP startup."""
+"""原生工具及启动结果的安全只读快照。"""
 
 from __future__ import annotations
 
@@ -15,20 +15,19 @@ _ErrorCode = Literal["timeout", "upstream_error"]
 
 
 class McpConfigurationError(AgentConfigurationError):
-    """Invalid MCP input or selection; raisers provide only safe field context."""
+    """MCP 配置或选择无效，错误仅包含安全字段信息。"""
 
 
 class McpCleanupError(AgentConfigurationError):
-    """An owned resource failed cleanup; its cause retains the raw failure.
+    """自有资源清理失败，原始异常保留在原因链中。
 
-    With a primary error, this error becomes its cause and retains the previous
-    primary cause in its context, so controlled diagnostics can inspect both.
+    存在主异常时，将本异常接入其原因链，并用 context 保留原原因。
     """
 
 
 @dataclass(frozen=True, slots=True)
 class McpServerReport:
-    """One configured service's safe startup result, including empty success."""
+    """单个服务的安全启动结果；零工具也可表示成功。"""
 
     name: str
     required: bool
@@ -40,7 +39,7 @@ class McpServerReport:
 
 @dataclass(frozen=True, slots=True)
 class McpLoadReport:
-    """Ordered startup history; ready permits zero tools and is not health monitoring."""
+    """按配置顺序记录启动结果；ready 允许零工具，不表示持续健康。"""
 
     status: Literal["ready", "degraded"]
     servers: tuple[McpServerReport, ...]
@@ -51,7 +50,7 @@ class McpLoadReport:
 
 
 class McpLoadError(AgentConfigurationError):
-    """Safe service failure with an immutable report and separately retained cause."""
+    """安全的服务失败信息，附只读报告并单独保留原始原因。"""
 
     def __init__(
         self,
@@ -69,7 +68,7 @@ class McpLoadError(AgentConfigurationError):
 
 @dataclass(frozen=True, slots=True)
 class McpTools:
-    """Read-only outer tool collections; native tools remain mutable and context-bound."""
+    """工具集合外层只读；原生工具可变且仅在上下文内有效。"""
 
     tools: tuple[BaseTool, ...] = field(repr=False)
     toolsets: Mapping[str, tuple[BaseTool, ...]] = field(repr=False)
@@ -90,7 +89,7 @@ class McpTools:
         object.__setattr__(self, "failures", MappingProxyType(dict(self.failures)))
 
     def tools_for(self, name: str) -> tuple[BaseTool, ...]:
-        """Return an existing selection without connecting, refreshing or calling a model."""
+        """返回已有工具集，不建立连接、刷新工具或调用模型。"""
         try:
             return self.toolsets[name]
         except KeyError:
