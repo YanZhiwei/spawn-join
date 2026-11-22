@@ -52,15 +52,7 @@ def _boolean(value: object, info: ValidationInfo) -> bool:
 
 
 def _string_tuple(value: object, info: ValidationInfo) -> tuple[str, ...]:
-    path = _field_path(info)
-    if not isinstance(value, list):
-        raise ConfigurationError(f"{path}: must be a list of strings")
-    items: list[str] = []
-    for index, item in enumerate(cast("list[object]", value)):
-        if not isinstance(item, str) or item == "":
-            raise ConfigurationError(f"{path}[{index}]: must be a non-empty string")
-        items.append(item)
-    return tuple(items)
+    return reader.as_string_tuple(value, _field_path(info), allow_empty=False)
 
 
 # Validators surround the nullable annotation: omitted defaults are allowed, but

@@ -110,7 +110,9 @@ The public helper never renders validation input itself; message formatting rema
 - `FieldReader`
 - `__version__` (currently `"0.1.0"`)
 
-`FieldReader` provides `fail`, `as_mapping`, `require_keys`, `as_str`, `as_int`, `as_non_negative_int`, `as_number`, `as_non_negative_number`, `as_bool`, `as_list`, and `optional`. It is a frozen/slotted dataclass with no I/O, logging, global registration, or in-place mutation of the supplied mapping.
+`FieldReader` provides `fail`, `as_mapping`, `require_keys`, `as_str`, `as_string_tuple`, `as_int`, `as_non_negative_int`, `as_number`, `as_non_negative_number`, `as_bool`, `as_list`, and `optional`. It is a frozen/slotted dataclass with no I/O, logging, global registration, or in-place mutation of the supplied mapping.
+
+`as_string_tuple(value, path, *, allow_empty=True, indexed_errors=True)` accepts only lists of strings and returns a tuple, preserving order, duplicates, and whitespace without changing the input. Empty strings are allowed by default; `allow_empty=False` rejects them while empty lists remain valid. Element errors use `path[index]` by default, or the collection field path when `indexed_errors=False`. Container errors say `must be a list of strings`; element errors say `must be a string` or `must be a non-empty string`. All errors use the caller's error factory without rendering input values.
 
 ### `spawn_join_common.validation`
 

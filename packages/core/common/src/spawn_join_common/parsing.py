@@ -52,6 +52,26 @@ class FieldReader:
             self.fail(f"{path}: must be a string")
         return value
 
+    def as_string_tuple(
+        self,
+        value: object,
+        path: str,
+        *,
+        allow_empty: bool = True,
+        indexed_errors: bool = True,
+    ) -> tuple[str, ...]:
+        """Read a strict list with caller-selected empty-string and path policies."""
+        if not isinstance(value, list):
+            self.fail(f"{path}: must be a list of strings")
+        items: list[str] = []
+        for index, item in enumerate(cast("list[object]", value)):
+            item_path = f"{path}[{index}]" if indexed_errors else path
+            if not isinstance(item, str) or (not allow_empty and item == ""):
+                expected = "a string" if allow_empty else "a non-empty string"
+                self.fail(f"{item_path}: must be {expected}")
+            items.append(item)
+        return tuple(items)
+
     def as_int(self, value: object, path: str) -> int:
         if isinstance(value, bool) or not isinstance(value, int):
             self.fail(f"{path}: must be an integer")
