@@ -74,17 +74,15 @@ class FileInput(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _mapping(cls, value: object, info: ValidationInfo) -> dict[str, object]:
-        fields = reader.as_mapping(value, input_path(info))
         required = frozenset(
             name for name, field in cls.model_fields.items() if field.is_required()
         )
-        reader.require_keys(
-            fields,
+        return reader.as_fields(
+            value,
+            input_path(info),
             required=required,
             optional=frozenset(cls.model_fields).difference(required),
-            path=input_path(info),
         )
-        return fields
 
 
 InputT = TypeVar("InputT", bound=FileInput)
