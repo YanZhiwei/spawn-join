@@ -1,4 +1,4 @@
-"""Pure selection preserves native identity, strict references and empty semantics."""
+"""验证工具选择保留原生身份、严格引用与空集语义。"""
 
 import asyncio
 import json
@@ -23,7 +23,7 @@ from spawn_join_agent_deepagents.mcp._selection import select_tools
 def _native(public_name: str) -> BaseTool:
     @tool(public_name)
     def forbidden(value: str) -> str:
-        """A private-tool-description that selection must not inspect or execute."""
+        """private-tool-description：选择工具时不得读取或执行。"""
         raise AssertionError("selection called a tool")
 
     return forbidden
