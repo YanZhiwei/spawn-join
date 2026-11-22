@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError
 from math import inf
+from types import MappingProxyType
 
 import pytest
 
@@ -171,3 +172,70 @@ def test_string_tuple_keeps_the_callers_error_and_field_path_policies() -> None:
     with pytest.raises(InputError) as caught:
         reader.as_string_tuple(["", 1], "args", indexed_errors=False)
     assert str(caught.value) == "args: must be a string"
+
+
+def test_fields_copy_values_and_preserve_required_optional_contract() -> None:
+    original = {"optional": None, "required": "value"}
+    copied = FieldReader().as_fields(
+        MappingProxyType(original),
+        "config",
+        required=frozenset({"required"}),
+        optional=frozenset({"optional"}),
+    )
+    assert copied == original and list(copied) == ["optional", "required"]
+    copied["required"] = "changed"
+    assert original["required"] == "value"
+    assert FieldReader().as_fields({}, "config") == {}
+
+
+def test_fields_preserve_combined_sorted_errors_and_caller_factory() -> None:
+    with pytest.raises(ReaderError) as caught:
+        FieldReader(make_reader_error).as_fields(
+            {"z": "private-value", "extra": 1},
+            "config",
+            required=frozenset({"beta", "alpha"}),
+        )
+    assert str(caught.value) == (
+        "config: missing required field(s): alpha, beta; unknown field(s): extra, z"
+    )
+
+
+@pytest.mark.parametrize("value", [None, [], "private-value"])
+def test_fields_validate_mapping_before_field_presence(value: object) -> None:
+    with pytest.raises(ValueError) as caught:
+        FieldReader().as_fields(value, "config", required=frozenset({"required"}))
+    assert str(caught.value) == "config: must be a mapping"
+    with pytest.raises(ValueError) as caught:
+        FieldReader().as_fields({1: "private-value"}, "config")
+    assert str(caught.value) == "config: keys must be strings"
+
+
+def test_string_mapping_copies_mapping_without_normalizing_values() -> None:
+    original = {"z": "", "a": " value "}
+    copied = FieldReader().as_string_mapping(MappingProxyType(original), "headers")
+    assert copied == original and list(copied) == ["z", "a"]
+    copied["z"] = "changed"
+    assert original["z"] == ""
+    assert FieldReader().as_string_mapping({}, "headers") == {}
+
+
+@pytest.mark.parametrize("value", [None, [], "private-value", 1])
+def test_string_mapping_rejects_non_mapping_containers(value: object) -> None:
+    with pytest.raises(ValueError) as caught:
+        FieldReader().as_string_mapping(value, "headers")
+    assert str(caught.value) == "headers: must be a mapping"
+
+
+def test_string_mapping_validates_keys_before_values() -> None:
+    with pytest.raises(ValueError) as caught:
+        FieldReader().as_string_mapping({"private-key": 1, 2: "value"}, "headers")
+    assert str(caught.value) == "headers: keys must be strings"
+
+
+@pytest.mark.parametrize("value", [None, 1, True, ["private-value"]])
+def test_string_mapping_uses_field_only_errors_and_caller_factory(
+    value: object,
+) -> None:
+    with pytest.raises(ReaderError) as caught:
+        FieldReader(make_reader_error).as_string_mapping({"private-key": value}, "env")
+    assert str(caught.value) == "env: must be a string"

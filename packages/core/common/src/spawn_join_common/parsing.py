@@ -47,10 +47,30 @@ class FieldReader:
         if problems:
             self.fail(f"{path}: {'; '.join(problems)}")
 
+    def as_fields(
+        self,
+        value: object,
+        path: str,
+        *,
+        required: frozenset[str] = frozenset(),
+        optional: frozenset[str] = frozenset(),
+    ) -> dict[str, object]:
+        """Copy a strict mapping and validate its complete allowed field set."""
+        fields = self.as_mapping(value, path)
+        self.require_keys(fields, required=required, optional=optional, path=path)
+        return fields
+
     def as_str(self, value: object, path: str) -> str:
         if not isinstance(value, str):
             self.fail(f"{path}: must be a string")
         return value
+
+    def as_string_mapping(self, value: object, path: str) -> dict[str, str]:
+        """Copy a string mapping without including its keys or values in errors."""
+        return {
+            key: self.as_str(item, path)
+            for key, item in self.as_mapping(value, path).items()
+        }
 
     def as_string_tuple(
         self,
