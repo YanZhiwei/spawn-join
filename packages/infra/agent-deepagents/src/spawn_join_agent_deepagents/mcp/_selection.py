@@ -1,4 +1,4 @@
-"""Pure native-tool selection over a completed MCP startup snapshot."""
+"""基于启动快照选择原生工具，不产生外部副作用。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from spawn_join_agent_deepagents.mcp._types import (
 )
 
 if TYPE_CHECKING:
-    # Reuse the validated companion record without exposing another public DTO.
+    # 复用内部配置记录，避免新增公共类型。
     from spawn_join_agent_deepagents.mcp._config import (
         _Configuration,  # pyright: ignore[reportPrivateUsage]
     )
@@ -28,7 +28,7 @@ def select_tools(
     report: McpLoadReport,
     failures: Mapping[str, McpLoadError],
 ) -> McpTools:
-    """Select original identities without invoking tools or assigning host roles."""
+    """按原始服务和工具身份选择，不调用工具或分配宿主角色。"""
     positions = {
         name: index for index, name in enumerate(configuration.official.mcpServers)
     }
