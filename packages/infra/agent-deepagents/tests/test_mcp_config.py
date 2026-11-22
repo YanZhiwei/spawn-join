@@ -95,6 +95,10 @@ def test_optional_and_disabled_entries_are_statically_validated(
         assert "secret-" not in repr(caught.value)
         if server.get("args") == [1]:
             assert str(caught.value) == "mcpServers.args: invalid configuration"
+        if server.get("env") == {"TOKEN": 1}:
+            assert str(caught.value) == "mcpServers.env: invalid configuration"
+        if server.get("headers") == {"Token": 1}:
+            assert str(caught.value) == "mcpServers.headers: invalid configuration"
 
 
 def test_missing_file_is_a_safe_configuration_error_with_cause(tmp_path: Path) -> None:
