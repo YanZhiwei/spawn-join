@@ -198,3 +198,23 @@ def test_validation_helper_does_not_render_foreign_error_input() -> None:
     assert str(error.value) == "models.demo: invalid configuration"
     assert isinstance(error.value.__cause__, ValidationError)
     assert "secret-sentinel" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("stop", "message"),
+    [
+        (None, "models.demo.options.stop: must be a list of strings"),
+        ("secret-sentinel", "models.demo.options.stop: must be a list of strings"),
+        (["ok", ""], "models.demo.options.stop[1]: must be a non-empty string"),
+        (["ok", 3], "models.demo.options.stop[1]: must be a non-empty string"),
+    ],
+)
+def test_string_tuple_adapter_preserves_its_original_errors(
+    tmp_path: Path,
+    loader: Literal["function", "classmethod"],
+    stop: object,
+    message: str,
+) -> None:
+    with pytest.raises(ConfigurationError) as caught:
+        _load(tmp_path, "chat_completions", {"stop": stop}, loader)
+    assert str(caught.value) == message
