@@ -1,4 +1,4 @@
-"""Strict local configuration validation must precede external effects."""
+"""验证配置校验先于外部副作用。"""
 
 import asyncio
 import json

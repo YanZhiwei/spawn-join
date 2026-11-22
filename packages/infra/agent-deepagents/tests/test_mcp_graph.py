@@ -1,4 +1,4 @@
-"""Public file-to-native-graph behavior with offline models and real MCP calls."""
+"""用离线模型和真实 MCP 调用验证配置到原生图的公开入口。"""
 
 import asyncio
 import json

@@ -1,4 +1,4 @@
-"""Optional configuration-driven MCP tools, held by an explicit host context."""
+"""按配置加载 MCP 工具，由宿主上下文管理资源。"""
 
 from collections.abc import AsyncGenerator, Mapping
 from contextlib import asynccontextmanager
@@ -29,10 +29,10 @@ __all__ = [
 async def open_mcp_tools(
     path: str | Path, *, environ: Mapping[str, str] | None = None
 ) -> AsyncGenerator[McpTools, None]:
-    """Load native tools and keep owned resources valid throughout the host body.
+    """加载原生工具，并在宿主上下文内持有资源。
 
-    Install the ``mcp`` extra before activation. Call tools and agent graphs inside
-    this context; the host explicitly assigns each named toolset to its consumer.
+    使用前安装 ``mcp`` extra；工具调用和图执行须在上下文内完成。
+    命名工具集由宿主显式分配。
     """
     try:
         from spawn_join_agent_deepagents.mcp._config import read_configuration
