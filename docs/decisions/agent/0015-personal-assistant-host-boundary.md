@@ -28,13 +28,13 @@
 
 1. **不建包，以 examples 脚本验证闭环**：成本最低，但产品代码没有构建/测试/发布边界，违反 Distribution 为边界的仓库规则。拒绝。
 2. **新增单一宿主 Distribution `packages/apps/personal-assistant`**（采用）：一次固定成本（锁文件、CI、quality profile、双语 README），换明确的产品边界与可验证交付；work/sandbox 作为组合层内部模块，各自单一职责。
-3. **立即拆分 `spawn-join-agent-work` + `spawn-join-agent-sandbox` 独立包**：无第二个消费者，违反 Constitution III 提升条件；ADR-0010:181 的"第二个宿主"触发条件未出现。拒绝（当下），保留为提取路径（ADR-0017 已触发 `agent-work` 提取）。
+3. **立即拆分 `spawn-join-agent-work` + `spawn-join-agent-sandbox` 独立包**：无第二个消费者，违反 Constitution III 提升条件；ADR-0010:181 的"第二个宿主"触发条件未出现。拒绝（当下），保留为提取路径（ADR-0018 已触发 `agent-work` 提取）。
 
 ## Decision
 
 新增 `spawn-join-personal-assistant`（路径 `packages/apps/personal-assistant/`，import package `spawn_join_personal_assistant`，新 `apps` 架构分组），作为个人助理宿主应用组合现有九个 Distribution，并确定以下边界：
 
-1. **拥有者**：长任务存储、租约、重试、唤醒与 runner 由 `spawn-join-agent-work` 拥有（ADR-0017）；
+1. **拥有者**：长任务存储、租约、重试、唤醒与 runner 由 `spawn-join-agent-work` 拥有（ADR-0018）；
    宿主保留 HITL 审批持久化（复用原生 `pending_interrupts`/`resume_batched` 契约）、工作区装配、
    CLI 入口（`accept/due/run/serve/report/approve`）与全部资源生命周期（backend/checkpointer 的
    创建、保持、关闭）。Phase 1 中 `GoalRuntime` 为迁移接缝，全部 CLI 子命令仍走宿主兼容层。
@@ -54,7 +54,7 @@
 
 ## Key design and diagrams
 
-以下为 v1 基线；work 所有权已由 ADR-0017 迁移到 `spawn-join-agent-work`（`GoalRuntime` 接缝）。
+以下为 v1 基线；work 所有权已由 ADR-0018 迁移到 `spawn-join-agent-work`（`GoalRuntime` 接缝）。
 
 ```text
 CLI (accept|due|run|serve|report|approve)
@@ -113,5 +113,5 @@ CLI (accept|due|run|serve|report|approve)
 
 - 2026-11-21：提出个人助理宿主边界、work/审批所有权、v1 执行边界、SQLite 持久化基线、记忆留位与生产迁移接缝；状态为 Proposed。
 - 2026-11-21：实现与验证完成（七个任务、五个切片，60 用例含 e2e）；仓库维护者批准为 Accepted。
-- 2026-11-22：work 存储/调度所有权迁移到 `spawn-join-agent-work`（ADR-0017）；宿主保留 HITL
+- 2026-11-22：work 存储/调度所有权迁移到 `spawn-join-agent-work`（ADR-0018）；宿主保留 HITL
   审批与 CLI，`GoalRuntime` 为迁移接缝；测试增至 75 用例。

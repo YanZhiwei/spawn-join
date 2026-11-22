@@ -6,7 +6,7 @@
 桌面默认不要求任何外部服务；存储与通知通过端口替换，为后续 Postgres/MQ 服务端档位保留接缝。
 
 > 状态：Phase 1，版本 `0.1.0`，要求 Python `>=3.11`；尚未发布到 PyPI。包边界决策见
-> [ADR-0017](../../../docs/decisions/engineering/0017-agent-work-package-boundary.md)。
+> [ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md)。
 
 ## 适用与不适用
 

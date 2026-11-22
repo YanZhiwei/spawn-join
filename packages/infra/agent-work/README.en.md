@@ -7,7 +7,7 @@ ZeroMQ wake-ups, and a long-running runner. The desktop default needs no externa
 storage and notification are ports so a Postgres/MQ service tier can be added later.
 
 > Status: Phase 1, version `0.1.0`, Python `>=3.11`; not yet published to PyPI. See
-> [ADR-0017](../../../docs/decisions/engineering/0017-agent-work-package-boundary.md) for the boundary decision.
+> [ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md) for the boundary decision.
 
 ## When to use it
 
