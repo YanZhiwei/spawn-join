@@ -20,6 +20,7 @@ from .models import (
     WorkSpec,
     WorkState,
 )
+from .notify import ZmqNotifier
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
 from .protocols import Clock, Notifier, WorkExecutor, WorkStore
 from .runner import WorkRunner
@@ -50,4 +51,5 @@ __all__ = [
     "WorkSpec",
     "WorkState",
     "WorkStore",
+    "ZmqNotifier",
 ]
