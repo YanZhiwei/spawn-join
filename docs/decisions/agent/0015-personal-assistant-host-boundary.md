@@ -28,16 +28,25 @@
 
 1. **不建包，以 examples 脚本验证闭环**：成本最低，但产品代码没有构建/测试/发布边界，违反 Distribution 为边界的仓库规则。拒绝。
 2. **新增单一宿主 Distribution `packages/apps/personal-assistant`**（采用）：一次固定成本（锁文件、CI、quality profile、双语 README），换明确的产品边界与可验证交付；work/sandbox 作为组合层内部模块，各自单一职责。
-3. **立即拆分 `spawn-join-agent-work` + `spawn-join-agent-sandbox` 独立包**：无第二个消费者，违反 Constitution III 提升条件；ADR-0010:181 的"第二个宿主"触发条件未出现。拒绝（当下），保留为提取路径。
+3. **立即拆分 `spawn-join-agent-work` + `spawn-join-agent-sandbox` 独立包**：无第二个消费者，违反 Constitution III 提升条件；ADR-0010:181 的"第二个宿主"触发条件未出现。拒绝（当下），保留为提取路径（ADR-0017 已触发 `agent-work` 提取）。
 
 ## Decision
 
-新增 `spawn-join-personal-assistant`（路径 `packages/apps/personal-assistant/`，import package `spawn_join_personal_assistant`，新 `apps` 架构分组），作为个人助理宿主应用组合现有七个 Distribution，并确定以下边界：
+新增 `spawn-join-personal-assistant`（路径 `packages/apps/personal-assistant/`，import package `spawn_join_personal_assistant`，新 `apps` 架构分组），作为个人助理宿主应用组合现有九个 Distribution，并确定以下边界：
 
-1. **拥有者**：work 存储（stdlib `sqlite3`，单写者、显式事务、幂等键唯一约束、状态机 `queued/running/waiting_approval/completed/failed/cancelled`）、due 调度循环（单进程 asyncio、并发上限、取消/deadline、重启恢复扫描）、HITL 审批持久化（复用原生 `pending_interrupts`/`resume_batched` 契约）、CLI 入口（`accept/due/run/report/approve`）与全部资源生命周期（backend/checkpointer 的创建、保持、关闭）。
-2. **依赖方向**：仅依赖 `spawn-join-agent-deepagents` 与 `spawn-join-llm-provider-langchain`（经 `ModelCatalog.create_chat_model` 消费模型，不读 `model.yaml` 原文与凭据，遵循 ADR-0008）；`apps → infra → core` 单向。**不修改任何现有 Distribution 的公共契约。**
+1. **拥有者**：长任务存储、租约、重试、唤醒与 runner 由 `spawn-join-agent-work` 拥有（ADR-0017）；
+   宿主保留 HITL 审批持久化（复用原生 `pending_interrupts`/`resume_batched` 契约）、工作区装配、
+   CLI 入口（`accept/due/run/serve/report/approve`）与全部资源生命周期（backend/checkpointer 的
+   创建、保持、关闭）。Phase 1 中 `GoalRuntime` 为迁移接缝，`accept/approve` 仍走宿主兼容层。
+2. **依赖方向**：仅依赖 `spawn-join-agent-deepagents`、`spawn-join-agent-work` 与
+   `spawn-join-llm-provider-langchain`（经 `ModelCatalog.create_chat_model` 消费模型，不读
+   `model.yaml` 原文与凭据，遵循 ADR-0008）；`apps → infra → core` 单向。
+   **不修改任何现有 Distribution 的公共契约。**
 3. **执行边界（v1 沙箱级别）**：`FilesystemBackend` 限定工作区根 + 显式 `FilesystemPermission` allow/deny/interrupt 规则；默认不暴露 shell 执行工具。不实现进程/容器/远程沙箱；升级路径为对上游 `BackendProtocol` 的可插拔后端实现，出现独立依赖面或第二个宿主时再评估拆包。
-4. **持久化基线**：三类数据全部落宿主数据目录 SQLite——工作项与审批记录（自有 schema）、thread 状态（`langgraph-checkpoint-sqlite` 的 `AsyncSqliteSaver`，strict msgpack 反序列化白名单默认启用）。
+4. **持久化基线**：长任务工作项由 `spawn-join-agent-work` 的 SQLite schema 拥有；宿主数据目录中的
+   审批记录与 thread 状态分别由宿主 SQLite 与 `langgraph-checkpoint-sqlite` 的
+   `AsyncSqliteSaver` 拥有（strict msgpack 反序列化白名单默认启用）。Phase 1 不为旧 `work.db`
+   提供迁移，首次启动创建当前 schema。
 5. **记忆留位**：v1 不实现任何记忆能力；`SupervisorSpec.store`/`memory` 透传接缝保留，后续讨论（候选参照 langmem 证据已留档于 Delivery run packet）落地时不需要重构装配层。
 6. **生产迁移接缝（只记录、不实现）**：checkpointer → `AsyncPostgresSaver`；work 表 → Postgres 迁移策略；均以接口抽象为界，v1 不交付迁移工具。
 
@@ -45,9 +54,11 @@
 
 ## Key design and diagrams
 
+以下为 v1 基线；work 所有权已由 ADR-0017 迁移到 `spawn-join-agent-work`（`GoalRuntime` 接缝）。
+
 ```text
-CLI (accept|due|run|report|approve)
-  → AppConfig 校验 → WorkStore(sqlite3, 单写者)
+CLI (accept|due|run|serve|report|approve)
+  → AppConfig 校验 → WorkStore(SQLite, 单写者; 兼容层)
   → Scheduler(asyncio) → HostAssembly: build_supervisor(
         models ← ModelCatalog, backend=FilesystemBackend(workspace_root),
         permissions=allow/deny/interrupt, interrupt_on=审批动作,
@@ -86,7 +97,7 @@ CLI (accept|due|run|report|approve)
 [`packages/apps/personal-assistant/`](../../../packages/apps/personal-assistant/)，公共契约以该包的
 [`README.md`](../../../packages/apps/personal-assistant/README.md) 和 `__init__.py` 为准；测试位于
 [`packages/apps/personal-assistant/tests/`](../../../packages/apps/personal-assistant/tests/)
-（60 用例含 e2e）。已审阅的交付 HEAD：`ff33326134c363cc3b06bd8097c6ed43113b1976`
+（75 用例含 e2e）。已审阅的交付 HEAD：`ff33326134c363cc3b06bd8097c6ed43113b1976`
 （Ralph 分支 `ralph/personal-assistant-host-20261121`，base `main 4f5b79c…`）。
 
 验证覆盖：spec 全部 9 条 FR 与 US1–US4/SC-001..005（e2e 真实文件副作用）；幂等重放、
@@ -101,3 +112,5 @@ CLI (accept|due|run|report|approve)
 
 - 2026-11-21：提出个人助理宿主边界、work/审批所有权、v1 执行边界、SQLite 持久化基线、记忆留位与生产迁移接缝；状态为 Proposed。
 - 2026-11-21：实现与验证完成（七个任务、五个切片，60 用例含 e2e）；仓库维护者批准为 Accepted。
+- 2026-11-22：work 存储/调度所有权迁移到 `spawn-join-agent-work`（ADR-0017）；宿主保留 HITL
+  审批与 CLI，`GoalRuntime` 为迁移接缝；测试增至 75 用例。
