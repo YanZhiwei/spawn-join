@@ -27,7 +27,7 @@ def main() -> None:
 
         @server.tool(name="echo_value")
         def echo(value: str) -> str:
-            """Echo a value with this fixture's source identity."""
+            """携带夹具来源标识回显输入。"""
             return f"{options.source}:{value}"
 
     server.run(transport="stdio", show_banner=False)

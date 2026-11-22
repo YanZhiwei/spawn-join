@@ -1,4 +1,4 @@
-"""Optional MCP snapshots; loading is introduced only when its full contract exists."""
+"""可选 MCP 快照与错误类型。"""
 
 from ._types import (
     McpCleanupError,

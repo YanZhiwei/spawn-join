@@ -1,4 +1,4 @@
-"""Private, sequential official MCP resource composition; no public loader yet."""
+"""按服务顺序装配官方 MCP 客户端并管理资源。"""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from fastmcp.mcp_config import StdioMCPServer
     from langchain.mcp import MCPAdapter
 
-    # Companion modules share this precise record without making it a public DTO.
+    # 内部模块共享配置记录，避免新增公共类型。
     from spawn_join_agent_deepagents.mcp._config import (
         _Configuration,  # pyright: ignore[reportPrivateUsage]
     )
@@ -38,8 +38,8 @@ def create_adapter(
     from fastmcp.client.group import ClientGroup
     from langchain.mcp import MCPAdapter
 
-    # Explicit Client preserves fractional milliseconds and the zero-disable option
-    # on supported FastMCP versions whose Group.from_config omits timeout.
+    # 显式创建 Client，保留小数毫秒和零值禁用超时的语义。
+    # 部分受支持版本的 Group.from_config 不传递 timeout。
     timeout = None if timeout_ms is None else timeout_ms / 1000
     client = Client(server.to_transport(), timeout=timeout)
     return MCPAdapter(ClientGroup({name: client}))
@@ -47,11 +47,10 @@ def create_adapter(
 
 @asynccontextmanager
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
-    """Hold each adapter's actual context and yield original-identity native tools."""
+    """持有适配器上下文，提供保留原始身份的原生工具。"""
     from fastmcp.client.group import ClientGroup
     from fastmcp.mcp_config import StdioMCPServer
 
-    # This independently usable prefix implements only stdio; HTTP is the next task.
     for name, server in configuration.official.mcpServers.items():
         if name not in configuration.disabled_servers and not isinstance(
             server, StdioMCPServer
@@ -68,8 +67,7 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
                 continue
             assert isinstance(server, StdioMCPServer)
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
-            # The adapter may clone the Client. Hold its own context, not the input
-            # Client/Group, so tool callbacks reenter the same live singleton group.
+            # 适配器可能克隆 Client；持有其自身上下文，让工具复用同一活动连接。
             await resources.enter_async_context(adapter)
             converted = await adapter.list_tools()
             group = adapter.client

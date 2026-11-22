@@ -1,4 +1,4 @@
-"""Actual local protocols and OS process observations for the private loader."""
+"""通过本地协议和进程观测验证加载器的资源边界。"""
 
 import asyncio
 import csv
@@ -88,7 +88,7 @@ async def _assert_stopped(pids: tuple[int, ...]) -> None:
             while await asyncio.to_thread(_any_alive, pids):
                 await asyncio.sleep(0.05)
     except TimeoutError:
-        # A failing leak regression must still clean its own fixture processes.
+        # 泄漏断言失败时也须清理夹具进程。
         for pid in pids:
             try:
                 os.kill(pid, signal.SIGTERM)
