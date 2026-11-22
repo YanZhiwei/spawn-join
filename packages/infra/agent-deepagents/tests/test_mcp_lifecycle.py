@@ -344,7 +344,7 @@ def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) 
                         await tool.ainvoke({"value": "transport-lost"})
                     observed_call_failure = True
             except* (ConnectError, ReadError):
-                # The SDK may also surface its failed HTTP session on exit.
+                # SDK 也可能在退出时暴露 HTTP 会话异常。
                 pass
             assert observed_call_failure
             await _assert_stopped(await _pids(tmp_path, "local"))
