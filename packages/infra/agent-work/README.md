@@ -79,6 +79,8 @@ task = asyncio.create_task(runner.serve(stop))
 await runner.astop()   # 停止领取、释放在飞租约、关闭 notifier，≤10s
 ```
 
+`WorkRunner.serve()` 是单次生命周期：`astop()` 后该 runner 不再启动新循环；再次常驻请新建 runner。
+
 ## 公开 API
 
 | 类别 | 名称 | 说明 |
@@ -102,7 +104,8 @@ await runner.astop()   # 停止领取、释放在飞租约、关闭 notifier，�
 - `claim` 在 SQLite 中通过 `BEGIN IMMEDIATE` 原子领取；同一任务同一时刻只有一个有效租约；
 - 所有执行写回（heartbeat/complete/fail/defer）必须携带匹配的 lease token；过期执行者的写回被拒绝
   （fencing）。`resume`/`cancel` 是宿主控制面操作，不需要 token；
-- 重试按 `RetryPolicy` 退避；attempts 耗尽进入 `dead`，不可重试失败进入 `failed`；
+- 重试按 `RetryPolicy` 退避；实际停止点为 `min(WorkSpec.max_attempts, RetryPolicy.max_attempts)`：
+  spec 耗尽进入 `dead`，policy 提前停止进入 `failed`；不可重试失败进入 `failed`；
 - `waiting` 不会被自动领取，宿主必须调用 `resume`；
 - 不承诺 exactly-once；执行器应使用 `idempotency_key` 或外部幂等键；
 - 关闭停止 claim、取消并等待在途任务、重新排队已释放任务，幂等。

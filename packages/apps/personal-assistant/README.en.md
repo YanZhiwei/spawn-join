@@ -115,9 +115,10 @@ consult the per-domain examples as needed.
 - HITL approval persistence: action lists, decisions, and timestamps in an
   own SQLite table; decided records are immutable; resume commands are
   structurally aligned with the action count;
-- Five CLI subcommands (`accept/due/run/report/approve`): stable exit
-  codes 0/1; credentials only via the `LLM_API_KEY` environment variable;
-- 60 offline tests (including e2e) plus a runnable example, independent
+- Six CLI subcommands (`accept/due/run/serve/report/approve`): stable exit
+  codes 0/1; `serve` runs continuously and stops on SIGINT/SIGTERM;
+  credentials only via the `LLM_API_KEY` environment variable;
+- 75 offline tests (including e2e) plus a runnable example, independent
   wheel/sdist, `py.typed`, and a quality profile.
 
 ## Installation
@@ -132,6 +133,7 @@ uv sync --locked --directory packages/apps/personal-assistant
 Runtime dependencies:
 
 - `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
+- `spawn-join-agent-work>=0.1.0,<0.2.0`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
@@ -188,16 +190,24 @@ models:
 ```
 
 Models must support tool calling. Then set `LLM_API_KEY` in the process
-environment and drive the full loop with the CLI:
+environment and drive the full loop with the CLI. Without `--root`, the
+platform data root is used (Windows `%LOCALAPPDATA%`, macOS Application
+Support, Linux `$XDG_DATA_HOME` or `~/.local/share`):
 
 ```powershell
 $env:LLM_API_KEY = "<your-key>"
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> accept "organize this week's invoices" --key invoices-week-47
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> run --supervisor-model supervisor --worker-model worker
+spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> serve --poll-interval 1
 spawn-join-personal-assistant --root <data-dir> report
 spawn-join-personal-assistant --root <data-dir> approve --list
 spawn-join-personal-assistant --root <data-dir> approve --record <record-id>
 ```
+
+`serve` is continuous by default and stops on `Ctrl+C`/SIGTERM; `--max-cycles N`
+bounds it for smoke tests. `run` remains the single-cycle command. The old
+default root `~/.spawn-join-personal-assistant` is no longer read implicitly;
+point `--root` there if you need its data.
 
 ## Work items
 
@@ -867,6 +877,9 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
     due
     run [--max-concurrency N] [--deadline SECONDS]
         [--supervisor-model NAME] [--worker-model NAME]
+    serve [--max-concurrency N] [--deadline SECONDS]
+        [--supervisor-model NAME] [--worker-model NAME]
+        [--poll-interval SECONDS] [--max-cycles N]
     report [--status STATUS]
     approve --list | approve --record ID [--reject] [--message MSG]
 ```
@@ -876,6 +889,7 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
 | `accept` | Insert with unique idempotency key | 0 / 1 on duplicate key or blank goal |
 | `due` | List unfinished items with due status | 0 |
 | `run` | Recover interrupted items, then one due cycle | 0 / 1 on missing catalog |
+| `serve` | Continuous loop; stops on SIGINT/SIGTERM; `--max-cycles` for smoke | 0 / 1 (130 on interrupt) |
 | `report` | List all history (filterable by status) | 0 |
 | `approve --list` | List pending approval records | 0 |
 | `approve --record ID` | Approve and resume execution | 0 / 1 on unknown or decided record |
