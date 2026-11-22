@@ -1,4 +1,4 @@
-"""Actual local protocols and OS process observations for the private loader."""
+"""通过本地协议和进程观测验证加载器的资源边界。"""
 
 import asyncio
 import csv
@@ -122,7 +122,7 @@ async def _assert_stopped(pids: tuple[int, ...]) -> None:
             while await asyncio.to_thread(_any_alive, pids):
                 await asyncio.sleep(0.05)
     except TimeoutError:
-        # A failing leak regression must still clean its own fixture processes.
+        # 泄漏断言失败时也须清理夹具进程。
         for pid in pids:
             try:
                 os.kill(pid, signal.SIGTERM)
@@ -395,7 +395,7 @@ def test_startup_budget_covers_connection_and_discovery(
             return catalog.report
 
     async def run() -> None:
-        # The outer guard also permits the SDK's process termination grace period.
+        # 外层超时须涵盖 SDK 的进程退出宽限期。
         async with asyncio.timeout(15):
             if optional:
                 report = await load()
@@ -601,7 +601,7 @@ def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) 
                         await tool.ainvoke({"value": "transport-lost"})
                     observed_call_failure = True
             except* (ConnectError, ReadError):
-                # The SDK may also surface its failed HTTP session on exit.
+                # SDK 也可能在退出时暴露 HTTP 会话异常。
                 pass
             assert observed_call_failure
             await _assert_stopped(await _pids(tmp_path, "local"))

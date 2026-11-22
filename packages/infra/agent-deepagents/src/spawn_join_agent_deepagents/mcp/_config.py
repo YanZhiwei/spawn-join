@@ -1,4 +1,4 @@
-"""Strict local file profile and static policy; never creates MCP resources."""
+"""校验本地 MCP 配置与静态策略，不创建外部资源。"""
 
 from __future__ import annotations
 
@@ -169,7 +169,7 @@ def _server(
             parsed = urlsplit(url)
             if parsed.scheme not in {"http", "https"} or not parsed.hostname:
                 raise ValueError("unsupported HTTP URL")
-            _ = parsed.port  # Validate malformed/out-of-range ports before effects.
+            _ = parsed.port  # 在建立连接前校验端口格式和范围。
             transport = (
                 _READER.as_str(server["transport"], "mcpServers.transport")
                 if "transport" in server
@@ -182,8 +182,7 @@ def _server(
         server["headers"] = _expanded_mapping(
             server.get("headers", {}), "mcpServers.headers", environ
         )
-    # Official server models accept only integer milliseconds. Public Client accepts
-    # fractional seconds; preserve the validated numeric option outside that model.
+    # 官方配置模型仅接受整数毫秒；另存超时值以保留 Client 的小数秒精度。
     return server, timeout
 
 
@@ -266,7 +265,7 @@ def _read(path: Path, environ: Mapping[str, str]) -> _Configuration:
 async def read_configuration(
     path: str | Path, *, environ: Mapping[str, str] | None = None
 ) -> _Configuration:
-    """Validate a local file off the event loop without opening clients or processes."""
+    """在线程中校验配置文件，不启动客户端或进程。"""
     snapshot = _READER.as_string_mapping(
         os.environ if environ is None else environ, "MCP environment"
     )
