@@ -97,7 +97,7 @@ try {
         'validation-extra-success-probe' 'spawn-join-common'
     Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common/validation/__init__.py" -Destination $commonValidation
 
-    # Use real package sources/locks so --extra and wheel probes cannot be mocked green.
+    # 使用真实源码和锁文件，防止 extra 与 wheel 检查被桩替换后误报成功。
     foreach ($relative in @('core/llm-provider', 'infra/llm-provider-langchain',
             'infra/agent-deepagents')) {
         $original = Join-Path $root "packages/$relative"
@@ -120,11 +120,22 @@ def test_official_mcp_dependencies_are_installed() -> None:
 '@
     Set-Content -LiteralPath $agentProbe -Value $mcpProbe
     Assert-GateResult 'Agent test gate installs the MCP extra' test $true '' 'spawn-join-agent-deepagents'
+    Set-Content -LiteralPath $agentProbe -Value ($mcpProbe.Replace(
+            'assert callable(Client) and callable(MCPAdapter)', "assert False, 'mcp-protocol-test-probe'"))
+    Assert-GateResult 'MCP protocol test failures cannot be skipped' test $false `
+        'mcp-protocol-test-probe' 'spawn-join-agent-deepagents'
+    Set-Content -LiteralPath $agentProbe -Value $mcpProbe
     $brokenProbe = $qualityText.Replace('from langchain.mcp import MCPAdapter',
         "raise RuntimeError('mcp-extra-wheel-probe')")
     Set-Content -LiteralPath $runner -Value $brokenProbe
     Assert-GateResult 'isolated MCP wheel probe failure propagates' build $false `
         'mcp-extra-wheel-probe' 'spawn-join-agent-deepagents'
+    Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+
+    $brokenCall = $qualityText.Replace('assert "wheel:call" in str(response)', 'assert False')
+    Set-Content -LiteralPath $runner -Value $brokenCall
+    Assert-GateResult 'installed MCP tool call failure propagates' build $false `
+        'mcp-wheel-call-probe' 'spawn-join-agent-deepagents'
     Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
 
     $mcpTypes = Join-Path $fixture 'packages/infra/agent-deepagents/src/spawn_join_agent_deepagents/mcp/_types.py'

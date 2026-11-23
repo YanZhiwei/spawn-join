@@ -34,6 +34,7 @@ class WorkRunner:
 
     Durable retries stop at ``min(WorkSpec.max_attempts, RetryPolicy.max_attempts)``:
     the spec bounds the item's lifetime, the policy bounds this runner's retries.
+    ``serve`` is a one-shot lifecycle: after ``astop`` create a new runner.
     """
 
     def __init__(
@@ -79,27 +80,33 @@ class WorkRunner:
     async def run_once(self, *, limit: int | None = None) -> int:
         """Claim and process one batch; returns the number of processed items."""
 
-        now = self._now()
         batch = limit if limit is not None else self._concurrency.claim_batch
-        claimed = await self._store.claim(
-            owner=self._owner,
-            queues=self._queues,
-            namespace=self._namespace,
-            limit=batch,
-            lease_seconds=self._lease.seconds,
-            now=now,
-        )
-        for item in claimed:
-            await self._execute(item)
-        return len(claimed)
+        if batch < 1:
+            raise WorkConfigurationError("limit: must be >= 1")
+        processed = 0
+        while processed < batch:
+            # 逐项领取，避免等待执行的任务在未续租时过期。
+            claimed = await self._store.claim(
+                owner=self._owner,
+                queues=self._queues,
+                namespace=self._namespace,
+                limit=1,
+                lease_seconds=self._lease.seconds,
+                now=self._now(),
+            )
+            if not claimed:
+                break
+            await self._execute(claimed[0])
+            processed += 1
+        return processed
 
     async def serve(self, stop: asyncio.Event | None = None) -> None:
         """Run the claim/execute loop until stopped; cleans up on exit."""
 
+        if self._stopped:
+            return
         if stop is not None:
             self._stop = stop
-        elif self._stopped:
-            return
         else:
             self._stop = asyncio.Event()
         self._wake = asyncio.Event()

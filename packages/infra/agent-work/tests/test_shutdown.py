@@ -148,6 +148,33 @@ def test_astop_is_idempotent_and_stalled_serve_returns() -> None:
     asyncio.run(scenario())
 
 
+def test_stopped_runner_ignores_fresh_external_stop_event() -> None:
+    async def scenario() -> None:
+        store = InMemoryWorkStore()
+        stop = asyncio.Event()
+        calls: list[str] = []
+
+        async def execute(item: WorkItem) -> WorkResult:
+            calls.append(item.id)
+            stop.set()
+            return WorkResult(outcome=WorkOutcome.SUCCESS)
+
+        runner = WorkRunner(
+            store, execute, concurrency=ConcurrencyPolicy(poll_interval_seconds=0.01)
+        )
+        await runner.astop()
+        item = await store.enqueue(
+            WorkSpec(kind="report", payload=b"{}", idempotency_key="after-stop")
+        )
+        await asyncio.wait_for(runner.serve(stop), timeout=1)
+        assert calls == []
+        queued = await store.get(item.id)
+        assert queued is not None and queued.state is WorkState.QUEUED
+        assert not stop.is_set()
+
+    asyncio.run(scenario())
+
+
 class BrokenNotifier(IdleNotifier):
     async def subscribe(self, queues: Sequence[str]) -> AsyncIterator[WorkEvent]:
         raise RuntimeError("notifier unavailable")
