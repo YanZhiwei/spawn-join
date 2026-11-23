@@ -78,8 +78,8 @@ uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 ```
 
 The extra includes LangChain MCP, FastMCP, and Common; the default install excludes MCP SDKs.
-Result types and internal static configuration validation are available; no public loading entry exists.
-The package quality entry checks the extra and both wheel installation variants.
+`open_mcp_tools(path, *, environ=None)` loads native tools from an explicit file; the host holds
+resources with `async with`.
 The file profile is strict JSON with `mcpServers` and optional `spawnJoin`, for stdio and Streamable HTTP.
 Services are required by default, with a 30-second per-service startup budget; optional/disabled lists
 and named toolsets are validated globally. Request timeouts use finite nonnegative milliseconds,
@@ -88,7 +88,46 @@ keys/unknown fields/invalid references/unsupported transports, and reads local U
 Only env/header values expand `${ENV_VAR}` once; missing/malformed references fail the whole file,
 including optional/disabled entries. Process environment is snapshotted once; explicit `environ`
 replaces that interpolation snapshot, and `.env` is never read. Relative cwd uses the config parent;
-command/args/URL/cwd are not interpolated. This stage still does not connect to services.
+command/args/URL/cwd are not interpolated.
+
+Save the following as `demo_mcp.py` in the package directory, then run from the repository root:
+`uv run --locked --extra mcp --directory packages/infra/agent-deepagents python demo_mcp.py`.
+It uses the repository's local test service without model keys; configuration and PID records use a
+temporary directory. Production hosts configure their own services.
+
+```python
+import asyncio
+import json
+import sys
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from spawn_join_agent_deepagents.mcp import open_mcp_tools
+
+
+async def main() -> None:
+    server = Path("tests/fixtures/mcp_server.py").resolve()
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        path = root / "mcp.json"
+        path.write_text(json.dumps({"mcpServers": {"local": {
+            "command": sys.executable,
+            "args": [str(server), str(root / "local.pids"), "local"],
+        }}}), encoding="utf-8")
+        async with open_mcp_tools(path) as mcp:
+            tool = mcp.tools_for("supervisor")[0]
+            print(await tool.ainvoke({"value": "hello"}))
+
+
+asyncio.run(main())
+```
+
+Inside the same context, explicitly pass toolsets to `SupervisorSpec.tools` or `SubAgentDefinition.tools`.
+Declare subagent labels in JSON `spawnJoin.toolsets`; visibility does not replace host authorization.
+Omitted toolsets produce the full `supervisor` set; explicit `{}` produces no named sets, while a named
+`{}` selection is an empty tuple. Existing `None`/empty inheritance semantics remain.
+Exit releases this context's connections and stdio processes; the remote service belongs to its host.
+Complete tools and graph calls inside the context; extracted tools are not automatically revoked on exit.
 
 Runtime dependencies:
 
@@ -644,7 +683,8 @@ config = RecoveryContext(thread_id="conversation-1").to_graph_config()
 ```
 
 - Store, Checkpointer, MCP Session, sandbox, business tools, and a host-provided Backend are created,
-  kept alive, and closed by the host.
+  kept alive, and closed by the host. The host can explicitly delegate this MCP context to
+  `open_mcp_tools` while retaining all other resources.
 - `ResourceReport.backend_kind` and `permissions` expose only stable labels and
   allow/deny/interrupt/other counts, never paths or rules; `backend_kind()` and
   `permission_report()` are internal helpers, not public exports.
@@ -708,14 +748,20 @@ Public exports are defined by `spawn_join_agent_deepagents.__all__`, mainly:
   `ContextConfigurationError`, `ProfileConfigurationError`, and `RubricConfigurationError`).
 
 The optional `spawn_join_agent_deepagents.mcp` namespace separately exports `McpTools`,
-`McpLoadReport`, `McpServerReport`, `McpConfigurationError`, `McpLoadError`, and `McpCleanupError`.
+`McpLoadReport`, `McpServerReport`, `McpConfigurationError`, `McpLoadError`, `McpCleanupError`, and `open_mcp_tools`.
 `McpTools.tools_for(name)` returns an existing selection and raises `McpConfigurationError` for an
 unknown name. Outer collections are read-only; native tools are not deeply frozen. Reports are safe
-startup snapshots; original causes are for controlled diagnostics. No public connection entry exists yet.
+startup snapshots; original causes are for controlled diagnostics.
 Internal modules do not become public contracts merely because they are importable.
 
 ## Errors and failure behavior
 
+- MCP static errors raise `McpConfigurationError` globally; required loading failures raise `McpLoadError`.
+  Optional failures clean up before returning `degraded`, with `failures` and per-service reports.
+  Parent cancellation propagates directly.
+- MCP cleanup failures raise `McpCleanupError`; an existing primary error remains primary, with cleanup
+  in its cause and the earlier load cause in the cleanup error's context. Raw SDK causes are for
+  controlled diagnostics; tool execution keeps official error semantics.
 - `AgentConfigurationError` is the assembly-time configuration error base; models, subagents,
   middleware, recovery, memory/skills, profiles, and delegation have stable subclasses.
 - Configuration errors are raised before `create_deep_agent`, never returning a half-configured
@@ -746,7 +792,7 @@ Internal modules do not become public contracts merely because they are importab
 
 ```powershell
 uv lock --check --directory packages/infra/agent-deepagents
-uv sync --locked --directory packages/infra/agent-deepagents
+uv sync --locked --extra mcp --directory packages/infra/agent-deepagents
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ```
 

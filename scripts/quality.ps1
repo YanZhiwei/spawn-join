@@ -196,10 +196,11 @@ else:
 function Test-AgentInstallVariants {
     param([string]$Directory, [string]$Python, [string]$BasePython, [string[]]$Wheels)
     $baseProbe = @'
+import asyncio
 import importlib.util
 import sys
 import spawn_join_agent_deepagents
-from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+from spawn_join_agent_deepagents.mcp import McpConfigurationError, McpLoadReport, McpTools, open_mcp_tools
 assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert importlib.util.find_spec("fastmcp") is None, "base wheel installed FastMCP"
 assert importlib.util.find_spec("mcp") is None, "base wheel installed MCP"
@@ -208,6 +209,16 @@ assert not any(
     or name == "mcp" or name.startswith("mcp.")
     for name in sys.modules
 ), "root import loaded optional MCP SDKs"
+async def missing_extra():
+    async with open_mcp_tools("not-read-without-extra.json"):
+        raise AssertionError("base wheel opened MCP without its extra")
+try:
+    asyncio.run(missing_extra())
+except McpConfigurationError as exc:
+    assert "install spawn-join-agent-deepagents[mcp]" in str(exc)
+    assert isinstance(exc.__cause__, ModuleNotFoundError)
+else:
+    raise AssertionError("base wheel did not report the missing extra")
 '@
     Invoke-Checked $BasePython @('-I', '-c', $baseProbe)
 
@@ -226,16 +237,44 @@ assert not any(
             '--no-deps', '-r', $requirements) + $Wheels)
     Invoke-Checked 'uv' @('pip', 'check', '--python', $extraPython)
     $extraProbe = @'
+import asyncio
+import json
+import sys
+import tempfile
+from pathlib import Path
 from fastmcp import Client
 from fastmcp.client.group import ClientGroup
 from fastmcp.mcp_config import MCPConfig
 from langchain.mcp import MCPAdapter
 from spawn_join_common import FieldReader
-from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools, open_mcp_tools
 assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert MCPConfig.from_dict({"mcpServers": {}}).mcpServers == {}
 assert FieldReader().as_int(3, "count") == 3
 assert all(callable(item) for item in (Client, ClientGroup, MCPAdapter))
+
+async def call_installed_tools():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        server = root / "server.py"
+        server.write_text(
+            "from fastmcp import FastMCP\n"
+            "server = FastMCP('wheel')\n"
+            "@server.tool()\n"
+            "def echo(value: str) -> str: return 'wheel:' + value\n"
+            "server.run(transport='stdio', show_banner=False)\n",
+            encoding="utf-8",
+        )
+        path = root / "mcp.json"
+        path.write_text(json.dumps({"mcpServers": {
+            "wheel": {"command": sys.executable, "args": [str(server)]}
+        }}), encoding="utf-8")
+        async with open_mcp_tools(path) as tools:
+            assert tools.report.status == "ready" and tools.report.tool_count == 1
+            response = await tools.tools_for("supervisor")[0].ainvoke({"value": "call"})
+            assert "wheel:call" in str(response), "mcp-wheel-call-probe"
+
+asyncio.run(call_installed_tools())
 '@
     Invoke-Checked $extraPython @('-I', '-c', $extraProbe)
 }
