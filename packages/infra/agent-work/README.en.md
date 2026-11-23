@@ -3,7 +3,7 @@
 [简体中文](README.md) | [English](README.en.md)
 
 Reusable work lifecycle contracts and desktop adapters for SpawnJoin hosts.
-Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing.
+Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing. In-memory storage provides a second implementation of the same contract.
 
 ## Status, scope and compatibility
 
@@ -54,7 +54,7 @@ Only the names in this table are exported by this version:
 | models | `WorkSpec`, `WorkItem`, `WorkState`, `WorkOutcome`, `WorkLease`, `WorkResult`, `WorkEvent` |
 | policies | `RetryPolicy`, `LeasePolicy`, `ConcurrencyPolicy` |
 | ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
-| storage | `SqliteWorkStore` |
+| storage | `SqliteWorkStore`, `InMemoryWorkStore` |
 | errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
 
 WorkSpec accepts kind, a bytes payload and an idempotency_key. WorkState models

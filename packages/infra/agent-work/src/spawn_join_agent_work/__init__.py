@@ -22,11 +22,12 @@ from .models import (
 )
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
 from .protocols import Clock, Notifier, WorkExecutor, WorkStore
-from .stores import SqliteWorkStore
+from .stores import InMemoryWorkStore, SqliteWorkStore
 
 __all__ = [
     "Clock",
     "ConcurrencyPolicy",
+    "InMemoryWorkStore",
     "LeaseLostError",
     "LeasePolicy",
     "Notifier",

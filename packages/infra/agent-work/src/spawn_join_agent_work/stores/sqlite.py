@@ -19,6 +19,7 @@ from uuid import uuid4
 from ..errors import StoreError, WorkConfigurationError, WorkConflictError
 from ..models import WorkItem, WorkLease, WorkSpec, WorkState
 from ..protocols import Clock
+from ._support import SystemClock, require_aware, require_positive_seconds
 
 SCHEMA_VERSION = 1
 
@@ -74,21 +75,6 @@ def _to_datetime(value: str | None) -> datetime | None:
     return parsed
 
 
-def _require_aware(label: str, value: datetime) -> None:
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise WorkConfigurationError(f"{label}: must be timezone-aware")
-
-
-def _require_positive_seconds(label: str, value: float) -> None:
-    if value <= 0:
-        raise WorkConfigurationError(f"{label}: must be > 0")
-
-
-class _SystemClock:
-    def now(self) -> datetime:
-        return datetime.now(UTC)
-
-
 class SqliteWorkStore:
     """Durable work storage backed by a local SQLite database."""
 
@@ -103,7 +89,7 @@ class SqliteWorkStore:
             raise WorkConfigurationError("busy_timeout_ms: must be > 0")
         self._database = str(database)
         self._busy_timeout_ms = busy_timeout_ms
-        self._clock: Clock = clock or _SystemClock()
+        self._clock: Clock = clock or SystemClock()
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
@@ -139,7 +125,7 @@ class SqliteWorkStore:
 
     def _now(self) -> datetime:
         now = self._clock.now()
-        _require_aware("clock.now()", now)
+        require_aware("clock.now()", now)
         return now
 
     async def enqueue(self, spec: WorkSpec) -> WorkItem:
@@ -207,8 +193,8 @@ class SqliteWorkStore:
             raise WorkConfigurationError("namespace: must be non-empty")
         if limit < 1:
             raise WorkConfigurationError("limit: must be >= 1")
-        _require_positive_seconds("lease_seconds", lease_seconds)
-        _require_aware("now", now)
+        require_positive_seconds("lease_seconds", lease_seconds)
+        require_aware("now", now)
         selected_queues = tuple(queue for queue in queues if queue)
         if not selected_queues:
             return []
@@ -257,6 +243,7 @@ class SqliteWorkStore:
                 ).fetchall()
                 ids = [row["id"] for row in rows]
                 if not ids:
+                    connection.commit()
                     return []
                 token = secrets.token_hex(16)
                 for work_id in ids:
@@ -330,7 +317,7 @@ class SqliteWorkStore:
     async def heartbeat(
         self, *, work_id: str, token: str, lease_until: datetime
     ) -> bool:
-        _require_aware("lease_until", lease_until)
+        require_aware("lease_until", lease_until)
         if lease_until <= self._now():
             raise WorkConfigurationError("lease_until: must be in the future")
         return await asyncio.to_thread(
@@ -392,7 +379,7 @@ class SqliteWorkStore:
         if not terminal and retry_at is None:
             raise WorkConfigurationError("retry_at: required for a retryable failure")
         if retry_at is not None:
-            _require_aware("retry_at", retry_at)
+            require_aware("retry_at", retry_at)
         return await asyncio.to_thread(
             self._fail, work_id, token, error, retry_at, terminal
         )
@@ -453,7 +440,7 @@ class SqliteWorkStore:
         return self._update(statement, params, "failed to record the failure")
 
     async def defer(self, *, work_id: str, token: str, until: datetime) -> bool:
-        _require_aware("until", until)
+        require_aware("until", until)
         if until <= self._now():
             raise WorkConfigurationError("until: must be in the future")
         return await asyncio.to_thread(
@@ -517,7 +504,7 @@ class SqliteWorkStore:
         )
 
     async def prune(self, *, before: datetime) -> int:
-        _require_aware("before", before)
+        require_aware("before", before)
         if before >= self._now():
             raise WorkConfigurationError("before: must be in the past")
         return await asyncio.to_thread(self._prune, before)

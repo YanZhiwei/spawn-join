@@ -3,7 +3,7 @@
 [简体中文](README.md) | [English](README.en.md)
 
 供 SpawnJoin 宿主复用的长任务契约与桌面适配器。
-当前能力：模型、策略与适配器端口。提供 SQLite 持久化、原子 claim 与租约 fencing。
+当前能力：模型、策略与适配器端口。提供 SQLite 持久化、原子 claim 与租约 fencing。内存存储作为同一契约的第二实现。
 
 ## 状态、适用范围与兼容性
 
@@ -54,7 +54,7 @@ Distribution 声明 pyzmq>=27.3.0,<28；SQLite 使用标准库。
 | models | `WorkSpec`, `WorkItem`, `WorkState`, `WorkOutcome`, `WorkLease`, `WorkResult`, `WorkEvent` |
 | policies | `RetryPolicy`, `LeasePolicy`, `ConcurrencyPolicy` |
 | ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
-| storage | `SqliteWorkStore` |
+| storage | `SqliteWorkStore`, `InMemoryWorkStore` |
 | errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
 
 WorkSpec 接收 kind、bytes payload 和 idempotency_key。WorkState 表达
