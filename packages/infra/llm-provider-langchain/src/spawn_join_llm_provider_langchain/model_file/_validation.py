@@ -52,15 +52,7 @@ def _boolean(value: object, info: ValidationInfo) -> bool:
 
 
 def _string_tuple(value: object, info: ValidationInfo) -> tuple[str, ...]:
-    path = _field_path(info)
-    if not isinstance(value, list):
-        raise ConfigurationError(f"{path}: must be a list of strings")
-    items: list[str] = []
-    for index, item in enumerate(cast("list[object]", value)):
-        if not isinstance(item, str) or item == "":
-            raise ConfigurationError(f"{path}[{index}]: must be a non-empty string")
-        items.append(item)
-    return tuple(items)
+    return reader.as_string_tuple(value, _field_path(info), allow_empty=False)
 
 
 # Validators surround the nullable annotation: omitted defaults are allowed, but
@@ -82,17 +74,15 @@ class FileInput(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _mapping(cls, value: object, info: ValidationInfo) -> dict[str, object]:
-        fields = reader.as_mapping(value, input_path(info))
         required = frozenset(
             name for name, field in cls.model_fields.items() if field.is_required()
         )
-        reader.require_keys(
-            fields,
+        return reader.as_fields(
+            value,
+            input_path(info),
             required=required,
             optional=frozenset(cls.model_fields).difference(required),
-            path=input_path(info),
         )
-        return fields
 
 
 InputT = TypeVar("InputT", bound=FileInput)

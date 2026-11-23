@@ -201,10 +201,11 @@ else:
 function Test-AgentInstallVariants {
     param([string]$Directory, [string]$Python, [string]$BasePython, [string[]]$Wheels)
     $baseProbe = @'
+import asyncio
 import importlib.util
 import sys
 import spawn_join_agent_deepagents
-from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+from spawn_join_agent_deepagents.mcp import McpConfigurationError, McpLoadReport, McpTools, open_mcp_tools
 assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert importlib.util.find_spec("fastmcp") is None, "base wheel installed FastMCP"
 assert importlib.util.find_spec("mcp") is None, "base wheel installed MCP"
@@ -213,6 +214,16 @@ assert not any(
     or name == "mcp" or name.startswith("mcp.")
     for name in sys.modules
 ), "root import loaded optional MCP SDKs"
+async def missing_extra():
+    async with open_mcp_tools("not-read-without-extra.json"):
+        raise AssertionError("base wheel opened MCP without its extra")
+try:
+    asyncio.run(missing_extra())
+except McpConfigurationError as exc:
+    assert "install spawn-join-agent-deepagents[mcp]" in str(exc)
+    assert isinstance(exc.__cause__, ModuleNotFoundError)
+else:
+    raise AssertionError("base wheel did not report the missing extra")
 '@
     Invoke-Checked $BasePython @('-I', '-c', $baseProbe)
 
@@ -231,16 +242,99 @@ assert not any(
             '--no-deps', '-r', $requirements) + $Wheels)
     Invoke-Checked 'uv' @('pip', 'check', '--python', $extraPython)
     $extraProbe = @'
+import asyncio
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 from fastmcp import Client
 from fastmcp.client.group import ClientGroup
 from fastmcp.mcp_config import MCPConfig
 from langchain.mcp import MCPAdapter
 from spawn_join_common import FieldReader
-from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools
+from spawn_join_agent_deepagents.mcp import McpLoadReport, McpTools, open_mcp_tools
 assert McpTools((), {"empty": ()}, McpLoadReport("ready", (), 0)).tools_for("empty") == ()
 assert MCPConfig.from_dict({"mcpServers": {}}).mcpServers == {}
 assert FieldReader().as_int(3, "count") == 3
 assert all(callable(item) for item in (Client, ClientGroup, MCPAdapter))
+
+def process_alive(pid):
+    if sys.platform == "win32":
+        output = subprocess.check_output(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"])
+        return f'"{pid}"'.encode() in output
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+async def read_port(path):
+    async with asyncio.timeout(30):
+        while True:
+            try:
+                value = await asyncio.to_thread(path.read_text, encoding="utf-8")
+            except FileNotFoundError:
+                value = ""
+            if value.endswith("\n"):
+                return int(value)
+            await asyncio.sleep(0.02)
+
+async def call_installed_tools():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        server = root / "server.py"
+        server.write_text(
+            "import asyncio, os, socket, sys\n"
+            "from pathlib import Path\n"
+            "from fastmcp import FastMCP\n"
+            "name, root = sys.argv[1], Path(sys.argv[2])\n"
+            "(root / (name + '.pid')).write_text(str(os.getpid()), encoding='utf-8')\n"
+            "server = FastMCP(name)\n"
+            "@server.tool()\n"
+            "def echo(value: str) -> str: return name + ':' + value\n"
+            "if name == 'remote':\n"
+            "    with socket.socket() as listener:\n"
+            "        listener.bind(('127.0.0.1', 0))\n"
+            "        listener.listen()\n"
+            "        port = listener.getsockname()[1]\n"
+            "        (root / 'port').write_text(str(port) + '\\n', encoding='utf-8')\n"
+            "        asyncio.run(server.run_http_async(host='127.0.0.1', port=port, sockets=[listener], show_banner=False))\n"
+            "else:\n"
+            "    server.run(transport='stdio', show_banner=False)\n",
+            encoding="utf-8",
+        )
+        remote = await asyncio.create_subprocess_exec(sys.executable, str(server), "remote", str(root))
+        try:
+            url = f"http://127.0.0.1:{await read_port(root / 'port')}/mcp"
+            path = root / "mcp.json"
+            path.write_text(json.dumps({"mcpServers": {
+                "wheel": {"command": sys.executable, "args": [str(server), "wheel", str(root)]},
+                "remote": {"url": url},
+                "unavailable": {"command": sys.executable, "args": ["-c", "raise SystemExit(1)"]}
+            }, "spawnJoin": {"optionalServers": ["unavailable"]}}), encoding="utf-8")
+            async with Client(url) as host:
+                async with open_mcp_tools(path) as tools:
+                    assert tools.report.status == "degraded" and tools.report.tool_count == 2
+                    assert [row.status for row in tools.report.servers] == ["loaded", "loaded", "failed"]
+                    assert tuple(tools.failures) == ("unavailable",)
+                    response = await tools.tools_for("supervisor")[0].ainvoke({"value": "call"})
+                    assert "wheel:call" in str(response), "mcp-wheel-call-probe"
+                    response = await tools.tools_for("supervisor")[1].ainvoke({"value": "http"})
+                    assert "remote:http" in str(response), "mcp-wheel-http-probe"
+                    pid = int(await asyncio.to_thread((root / "wheel.pid").read_text))
+                async with asyncio.timeout(30):
+                    while await asyncio.to_thread(process_alive, pid):
+                        await asyncio.sleep(0.05)
+                assert remote.returncode is None, "helper stopped the host HTTP process"
+                assert "remote:after" in str(await host.call_tool("echo", {"value": "after"}))
+        finally:
+            if remote.returncode is None:
+                remote.terminate()
+            await remote.wait()
+
+asyncio.run(call_installed_tools())
 '@
     Invoke-Checked $extraPython @('-I', '-c', $extraProbe)
 }
