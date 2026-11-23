@@ -12,12 +12,33 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from .errors import HostConfigError
 
 _MIN_CONCURRENCY = 1
+
+
+def default_data_dir() -> Path:
+    """Return the platform-appropriate host data root.
+
+    Windows uses ``%LOCALAPPDATA%``, macOS ``Application Support``, and Linux
+    ``$XDG_DATA_HOME`` (falling back to ``~/.local/share``). Callers may still
+    pass an explicit ``--root``; this function only supplies the default.
+    """
+
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA")
+        root = Path(base) if base else Path.home() / "AppData" / "Local"
+    elif sys.platform == "darwin":
+        root = Path.home() / "Library" / "Application Support"
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME")
+        root = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return root / "spawn-join" / "personal-assistant"
 
 
 def _require_path(label: str, value: object) -> None:

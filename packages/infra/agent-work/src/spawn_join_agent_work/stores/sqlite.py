@@ -87,6 +87,10 @@ class SqliteWorkStore:
     ) -> None:
         if busy_timeout_ms <= 0:
             raise WorkConfigurationError("busy_timeout_ms: must be > 0")
+        if str(database) == ":memory:":
+            raise WorkConfigurationError(
+                "database: in-memory SQLite is unsupported; use InMemoryWorkStore"
+            )
         self._database = str(database)
         self._busy_timeout_ms = busy_timeout_ms
         self._clock: Clock = clock or SystemClock()

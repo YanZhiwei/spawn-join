@@ -96,9 +96,9 @@ msgpack checkpointer（跨重启 thread 恢复）。
   启用（等价于 `LANGGRAPH_STRICT_MSGPACK` 开关，但不修改进程环境）；
 - HITL 审批持久化：动作列表/决定/时间戳落独立 SQLite 表，已决不可变，
   恢复命令与动作数结构性对齐；
-- 五子命令 CLI（`accept/due/run/report/approve`）：稳定退出码 0/1，
-  凭据仅走 `LLM_API_KEY` 环境变量；
-- 60 个离线测试（含 e2e）+ 可运行示例 + 独立 wheel/sdist、`py.typed`、质量 profile。
+- 六子命令 CLI（`accept/due/run/serve/report/approve`）：稳定退出码 0/1；
+  `serve` 常驻执行并由 SIGINT/SIGTERM 优雅停止；凭据仅走 `LLM_API_KEY` 环境变量；
+- 75 个离线测试（含 e2e）+ 可运行示例 + 独立 wheel/sdist、`py.typed`、质量 profile。
 
 ## 安装
 
@@ -112,6 +112,7 @@ uv sync --locked --directory packages/apps/personal-assistant
 运行时依赖：
 
 - `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
+- `spawn-join-agent-work>=0.1.0,<0.2.0`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
@@ -165,16 +166,23 @@ models:
     api_key_env: LLM_API_KEY
 ```
 
-模型需要支持工具调用。然后在进程环境中设置 `LLM_API_KEY`，用 CLI 驱动完整闭环：
+模型需要支持工具调用。然后在进程环境中设置 `LLM_API_KEY`，用 CLI 驱动完整闭环。省略
+`--root` 时默认使用平台数据目录（Windows `%LOCALAPPDATA%`、macOS Application Support、
+Linux `$XDG_DATA_HOME` 或 `~/.local/share`）下的 `spawn-join/personal-assistant`：
 
 ```powershell
 $env:LLM_API_KEY = "<your-key>"
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> accept "帮我整理这周的发票" --key invoices-week-47
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> run --supervisor-model supervisor --worker-model worker
+spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> serve --poll-interval 1
 spawn-join-personal-assistant --root <data-dir> report
 spawn-join-personal-assistant --root <data-dir> approve --list
 spawn-join-personal-assistant --root <data-dir> approve --record <record-id>
 ```
+
+`serve` 默认常驻，`Ctrl+C`/SIGTERM 停止；`--max-cycles N` 用于冒烟与测试。`run` 仍是单周期命令，
+行为不变。旧版本默认根 `~/.spawn-join-personal-assistant` 不再自动读取；需要旧数据时请显式
+`--root` 指向该目录。
 
 ## 工作项
 
@@ -839,6 +847,9 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
     due
     run [--max-concurrency N] [--deadline SECONDS]
         [--supervisor-model NAME] [--worker-model NAME]
+    serve [--max-concurrency N] [--deadline SECONDS]
+        [--supervisor-model NAME] [--worker-model NAME]
+        [--poll-interval SECONDS] [--max-cycles N]
     report [--status STATUS]
     approve --list | approve --record ID [--reject] [--message MSG]
 ```
@@ -848,6 +859,7 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
 | `accept` | 录入 + 幂等键唯一 | 0 成功 / 1 键重复或空 goal |
 | `due` | 列出未完成项（含 due 状态） | 0 |
 | `run` | 先恢复中断项，再执行一个 due 周期 | 0 / 1 目录缺 catalog |
+| `serve` | 常驻执行；SIGINT/SIGTERM 停止；`--max-cycles` 有界冒烟 | 0 / 1（含 130 中断） |
 | `report` | 列出全部历史（可按状态过滤） | 0 |
 | `approve --list` | 列出待审批记录 | 0 |
 | `approve --record ID` | 批准并恢复执行 | 0 / 1 未知或已决记录 |
@@ -899,7 +911,8 @@ personal-assistant: idempotency_key: already exists: inv-1
 
 公共导出由 `spawn_join_personal_assistant.__all__` 定义，主要包括：
 
-- `main`、`AppConfig`；
+- `main`、`AppConfig`、`default_data_dir`；
+- `GoalRuntime`、`goal_text`（Agent Work 迁移接缝）；
 - `ApprovalBook`、`ApprovalRecord`、`apply_decision`、`interrupt_actions`、
   `pause_for_approval`、`resume_approved`、`resume_rejected`；
 - `HostSession`、`open_host_session`；
@@ -911,9 +924,18 @@ personal-assistant: idempotency_key: already exists: inv-1
 内部模块（`work/`、`scheduler`、`approvals`、`host`、`cli`）不会因为可导入
 就自动成为公共契约。
 
+`GoalRuntime(database: Path, *, clock=None)` 通过 `enqueue()`、`run_once()`、
+`serve(stop=...)` 提供独立的 Agent Work 队列，不切换既有 CLI/HITL 兼容层。
+其返回值属于 `spawn_join_agent_work.WorkItem`，与宿主兼容层的 `WorkItem` 不同；
+`goal_text(item)` 解码该工作项的 UTF-8 目标。`default_data_dir()` 返回
+[CLI](#cli) 中的平台默认路径，不创建目录；显式 `--root` 仍覆盖 CLI 默认值。
+
 ## 错误与失败行为
 
-- 所有宿主侧失败以 `HostError` 子类表达；CLI 转稳定退出码 1。
+- CLI 和既有调度/审批兼容层的宿主错误以 `HostError` 子类表达；CLI 转稳定退出码 1。
+- `GoalRuntime` 的路径/goal 校验与父目录创建失败使用 `HostConfigError`，
+  Agent Work 存储/执行错误保留 `WorkError` 分类；`goal_text()` 遇到非 UTF-8
+  payload 时抛出 `UnicodeDecodeError`。
 - 调度执行器异常**不中断兄弟项**：转 `failed`（类别=异常类名），存储即记录。
 - `WorkTransitionError`（`HostStoreError` 子类）：非法状态迁移，零副作用。
 - 已决审批记录不可变：二次决定抛 `HostApprovalError`。
@@ -946,7 +968,7 @@ personal-assistant: idempotency_key: already exists: inv-1
 | `scheduler.py` | asyncio due 调度 | 执行器异常不中断兄弟项；父级取消先重排队再传播 |
 | `approvals.py` | HITL 审批簿与恢复命令 | 已决记录不可变；决定与动作严格按序对齐 |
 | `host.py` | supervisor 装配与宿主资源所有权 | `build_supervisor` 是唯一装配权威；资源由调用方关闭 |
-| `cli.py` | 五子命令入口 | 稳定退出码；`bindings` 是显式模型注入接缝 |
+| `cli.py` | 六子命令入口 | 稳定退出码；`bindings` 是显式模型注入接缝 |
 
 ### 依赖方向
 
@@ -1007,9 +1029,9 @@ approve：
   硬杀恢复）、`test_approvals`(暂停/决定/重启对齐)、`test_config`（边界校验）。
 - 装配：`test_host_assembly`（资源所有权、路径守卫、strict 序列化器、fake 模型
   冒烟执行）。
-- 端到端：`test_cli`（五子命令冒烟 + 稳定退出码）与 `test_e2e_offline`（US1–US4
+- 端到端：`test_cli`（六子命令冒烟 + 稳定退出码）与 `test_e2e_offline`（US1–US4
   全链路；以受控 tmpdir 内文件计数断言副作用）。
-- 全部 60 用例离线运行：不读真实密钥、不连接外部服务；新增行为必须先有失败
+- 全部用例离线运行：不读真实密钥、不连接外部服务；新增行为必须先有失败
   测试再实现（见仓库 `AGENTS.md`）。
 
 ## 开发与验证
@@ -1021,7 +1043,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ```
 
 - 布局：`src/spawn_join_personal_assistant/` 是运行时源码，`tests/` 是离线
-  测试（60 用例），`examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed`
+  离线契约测试，`examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed`
   和 `LICENSE`。
 - 必需工具：uv `>=0.7.13`、PowerShell 7、Git、Node.js 22+（Pyright 包装器）。
 - 包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、

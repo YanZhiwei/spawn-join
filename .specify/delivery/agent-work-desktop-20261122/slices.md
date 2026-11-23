@@ -15,19 +15,19 @@
 - Internal review slicing: **multiple（6 个内部切片）**
 - Execution mode: **single**
 - Merge mode (legacy alias): single
-- Publication mode: **single**
-- Publication grouping: **one PR for all slices**
-- Publication authorization: **pending** — slice approval 不授权远端发布
+- Publication mode: **stacked（6 个 PR，S1–S6）**
+- Publication grouping: **one stacked PR per slice**
+- Publication authorization: **approved**（用户于 2026-11-22 选择 6 个 stacked PR）
 - Target branch: `main`
-- Integration branch: N/A
-- Stack provider: N/A
+- Integration branch: 顺序 stacked branches
+- Stack provider: GitHub stacked PRs
 - Slice merge method: squash
-- Final merge method: N/A（single 发布组；由一次 PR squash 完成）
-- Target sync method: N/A
+- Final merge method: 按 S1→S6 顺序 squash；每层合并后 rebase 下一层
+- Target sync method: rebase 下一层到更新后的 `main`
 - Merge queue: no
 - Delete branch after merge: yes
-- Freeze integration before final review: yes（Ralph 结束前不发布）
-- Why: 全部切片是加法式新包代码/测试，S6 才切换宿主；每个切片可独立回滚，仓库规则要求线性历史且 `auto` 在无 stacked 依赖时选择单一发布组。内部切片只作为评审边界，不产生多个远端 PR。
+- Freeze integration before final review: yes（Ralph 已收口）
+- Why: 全部切片是加法式、包内隔离；用户要求拆分以便逐层 review。每个 slice 对应一个 stacked PR，按顺序合并。
 
 ## Slice table
 
@@ -44,7 +44,7 @@
 
 | Group | Kind | Internal slices | Remote base/head shape | Publication artifact | Issue relation | Authorization |
 |---|---|---|---|---|---|---|
-| P1 | layer | S1–S6 | 普通 feature branch → `main` | 一个 PR | N/A（无关联 Issue） | pending |
+| P1..P6 | stacked | S1..S6 | S1→main；S2→S1；…；S6→S5 | 6 个 stacked PR（#93–#98） | N/A（无关联 Issue） | approved（2026-11-22） |
 
 ## Slice details
 
@@ -155,10 +155,10 @@
 
 - Execution order: S1 → S2 → S3 → S4 → S5 → S6（Ralph 普通 feature 分支）
 - Ralph branch/topology: `ralph/agent-work-desktop-20261122`
-- Per-slice merge: N/A（single 发布组）
-- Publication groups: P1 = S1–S6 → `main`，一个 PR
-- Final rollup: N/A
-- Target sync: N/A
+- Per-slice merge: squash；S1→main，随后 S2→S1 … S6→S5
+- Publication groups: P1..P6 = 每个 slice 一个 stacked PR（#93–#98）
+- Final rollup: N/A（stacked 顺序合并）
+- Target sync: 每层 squash 后 rebase 下一层到 `main`
 - Queue/freeze: no queue；最终 Review 前冻结发布
 - Issue closure: N/A
 - Rollback per slice: revert 对应提交；无生产数据/远端服务
@@ -169,10 +169,10 @@
 - **SLICE_PLAN_FINGERPRINT**: sha256:1791583e7245b2444fc69b8abb49c7bc6cd412d9bec71ed036abf470b258c866
 - **SLICE_APPROVAL**: approved
 - **Approved by**: 仓库维护者（用户，2026-11-22）
-- **Choice / accepted risks**: approve；接受 single 执行/发布、六个内部切片、S1/S2/S4/S5/S6 预算例外、不做旧库迁移
+- **Choice / accepted risks**: approve；接受 6 个 stacked PR、S1/S2/S4/S5/S6 预算例外、不做旧库迁移
 - **Approved execution mode**: single
-- **Approved publication mode**: single
-- **Approved publication groups**: P1（S1–S6）
-- **Publication authorization**: pending（发布仍需单独授权）
-- **Approved mode / snapshot**: execution=single；publication=single；group=P1；plan fingerprint `93e8f462…`；slices fingerprint `sha256:1791583e…`
+- **Approved publication mode**: stacked（2026-11-22 用户选择）
+- **Approved publication groups**: P1..P6（S1..S6）
+- **Publication authorization**: approved（创建 6 个 stacked PR；合并仍由用户 review 后执行）
+- **Approved mode / snapshot**: execution=single；publication=stacked；groups=P1..P6；plan fingerprint `93e8f462…`；slices fingerprint `sha256:1791583e…`
 - **Approved at**: 2026-11-22

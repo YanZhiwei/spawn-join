@@ -14,7 +14,8 @@
 | `spawn-join-llm-provider-langchain` | `spawn_join_llm_provider_langchain` | [`packages/infra/llm-provider-langchain`](../../packages/infra/llm-provider-langchain/) | `infra` | LangChain 模型工厂、协议选项映射和配置校验 |
 | `spawn-join-llm-model-sync` | `spawn_join_llm_model_sync` | [`packages/infra/llm-model-sync`](../../packages/infra/llm-model-sync/) | `infra` | 手动模型元数据同步、源注册和确定性快照生成 |
 | `spawn-join-agent-deepagents` | `spawn_join_agent_deepagents` | [`packages/infra/agent-deepagents`](../../packages/infra/agent-deepagents/) | `infra` | DeepAgents 产品装配、模型用途绑定、Middleware 作用域、受控委派、诊断和恢复边界 |
-| `spawn-join-personal-assistant` | `spawn_join_personal_assistant` | [`packages/apps/personal-assistant`](../../packages/apps/personal-assistant/) | `apps` | 个人助理宿主应用：工作项存储、due 调度、HITL 审批持久化、受限工作区装配与 CLI；组合 agent 与模型适配包 |
+| `spawn-join-agent-work` | `spawn_join_agent_work` | [`packages/infra/agent-work`](../../packages/infra/agent-work/) | `infra` | 可复用长任务运行时：端口化存储/唤醒、SQLite+ZeroMQ 桌面默认、租约/重试/关闭语义 |
+| `spawn-join-personal-assistant` | `spawn_join_personal_assistant` | [`packages/apps/personal-assistant`](../../packages/apps/personal-assistant/) | `apps` | 个人助理宿主应用：目标队列、HITL 审批持久化、受限工作区装配与 CLI；组合 agent、work 与模型适配包 |
 
 当前 LLM 包已实现渠道/选项契约、真实 Provider channel transport、LangChain 模型工厂和
 手动元数据同步；agent 包负责 DeepAgents 产品装配、执行策略和诊断接缝。新增模块前，先确认
@@ -52,8 +53,11 @@
     │       ├── langchain-core
     │       ├── langgraph
     │       └── spawn-join-llm-provider-langchain
+    ├── spawn-join-agent-work
+    │       └── pyzmq
     └── spawn-join-personal-assistant
             ├── spawn-join-agent-deepagents
+            ├── spawn-join-agent-work
             ├── spawn-join-llm-provider-langchain
             └── langgraph-checkpoint-sqlite
 
@@ -88,8 +92,11 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 7. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
    Memory/Skills/Profile 接线、async 子代理、受控委派、诊断和恢复接缝；它依赖
    `deepagents`、LangChain、`langgraph` 和模型适配包，不得被 Core、协议包或模型包反向依赖。
-8. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
-9. `spawn-join-common` 不依赖其他 SpawnJoin 包；默认零第三方运行时依赖，Pydantic 能力
+8. `spawn-join-agent-work` 负责可复用的长任务存储、租约、重试、唤醒与 runner；只依赖 stdlib
+   与 `pyzmq`，不得依赖 LangChain、模型包或 Agent 包，也不得被 Core/协议包反向依赖。宿主通过
+   端口注入存储/通知适配器，服务端档位不得使用 SQLite。
+9. 业务应用可以组合多个领域包，但包之间的相互依赖必须有明确的领域理由。
+10. `spawn-join-common` 不依赖其他 SpawnJoin 包；默认零第三方运行时依赖，Pydantic 能力
    通过 `validation` extra 显式安装。它拥有公共辅助实现，Core 保留稳定契约；领域异常、
    schema、null 策略和错误文案由调用方拥有。
 
@@ -106,13 +113,14 @@ spawn-join-llm-model-sync ──> spawn-join-llm-provider
 | `spawn-join-llm-provider-langchain` | `packages/infra/llm-provider-langchain/.venv/` | `packages/infra/llm-provider-langchain/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common` 的相对路径源 |
 | `spawn-join-llm-model-sync` | `packages/infra/llm-model-sync/.venv/` | `packages/infra/llm-model-sync/uv.lock` | `spawn-join-llm-provider`、`spawn-join-common`、`spawn-join-llm-provider-langchain` 的相对路径源（后者仅 dev） |
 | `spawn-join-agent-deepagents` | `packages/infra/agent-deepagents/.venv/` | `packages/infra/agent-deepagents/uv.lock` | `spawn-join-llm-provider-langchain` 的相对路径源；Common 仅传递解析 |
-| `spawn-join-personal-assistant` | `packages/apps/personal-assistant/.venv/` | `packages/apps/personal-assistant/uv.lock` | `spawn-join-agent-deepagents`、`spawn-join-llm-provider-langchain` 的相对路径源 |
+| `spawn-join-agent-work` | `packages/infra/agent-work/.venv/` | `packages/infra/agent-work/uv.lock` | 无 SpawnJoin 运行时依赖；`pyzmq` 来自 PyPI |
+| `spawn-join-personal-assistant` | `packages/apps/personal-assistant/.venv/` | `packages/apps/personal-assistant/uv.lock` | `spawn-join-agent-deepagents`、`spawn-join-agent-work`、`spawn-join-llm-provider-langchain` 的相对路径源 |
 
 包间的发布依赖仍然写在 `[project].dependencies` 中；仅开发期的本地路径解析写在对应
 `pyproject.toml` 的 `[tool.uv.sources]` 中。这样既保留 Distribution 的发布元数据，
 又允许每个包在自己的环境中以 editable 方式开发。
 
-八个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
+九个保留包的 `uv.lock` 应提交到 Git；各包的 `.venv/`、`build/`、`dist/` 和 `*.egg-info/`
 属于本机或构建产物，不应提交。
 
 共享质量策略放在根 tool-only `pyproject.toml`，不创建根级 Python project 或共享环境。

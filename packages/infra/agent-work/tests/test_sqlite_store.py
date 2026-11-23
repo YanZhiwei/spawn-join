@@ -50,6 +50,11 @@ def _store(tmp_path: Path, now: datetime) -> tuple[SqliteWorkStore, FrozenClock]
     return SqliteWorkStore(tmp_path / "work.db", clock=clock), clock
 
 
+def test_in_memory_database_is_rejected() -> None:
+    with pytest.raises(WorkConfigurationError):
+        SqliteWorkStore(":memory:")
+
+
 def test_schema_is_created_and_wal_enabled(tmp_path: Path) -> None:
     now = datetime(2026, 11, 22, tzinfo=UTC)
     _store(tmp_path, now)

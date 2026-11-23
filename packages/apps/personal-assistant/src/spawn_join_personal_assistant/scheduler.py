@@ -8,6 +8,9 @@
 在恢复时经 ``recover_interrupted`` 恰好重排队一次。
 """
 
+# 兼容层：HITL 审批仍依赖同步状态机；新的目标执行走
+# work.runtime.GoalRuntime（spawn-join-agent-work 的 WorkStore/WorkRunner）。
+
 from __future__ import annotations
 
 import asyncio

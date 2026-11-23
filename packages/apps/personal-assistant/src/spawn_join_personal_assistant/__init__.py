@@ -17,7 +17,7 @@ from .approvals import (
     resume_rejected,
 )
 from .cli import main
-from .config import AppConfig
+from .config import AppConfig, default_data_dir
 from .errors import (
     HostApprovalError,
     HostConfigError,
@@ -29,12 +29,14 @@ from .errors import (
 from .host import HostSession, open_host_session
 from .scheduler import Scheduler, WorkExecutor
 from .work.models import WorkItem, WorkStatus
+from .work.runtime import GoalRuntime, goal_text
 from .work.store import WorkStore
 
 __all__ = [
     "ApprovalBook",
     "ApprovalRecord",
     "AppConfig",
+    "GoalRuntime",
     "HostApprovalError",
     "HostConfigError",
     "HostError",
@@ -48,6 +50,8 @@ __all__ = [
     "WorkStore",
     "WorkTransitionError",
     "apply_decision",
+    "default_data_dir",
+    "goal_text",
     "interrupt_actions",
     "main",
     "open_host_session",

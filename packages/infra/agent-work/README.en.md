@@ -2,127 +2,185 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-Reusable work lifecycle contracts and desktop adapters for SpawnJoin hosts.
-Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing. In-memory storage provides a second implementation of the same contract. WorkRunner.run_once() executes one bounded batch. serve()/astop() and ZeroMQ wake-up are available.
+Reusable desktop durable-work runtime: SQLite persistence, leases/fencing, retry/backoff,
+ZeroMQ wake-ups, and a long-running runner. The desktop default needs no external service;
+storage and notification are ports so a Postgres/MQ service tier can be added later.
 
-## Status, scope and compatibility
+> Status: Phase 1, version `0.1.0`, Python `>=3.11`; not yet published to PyPI. See
+> [ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md) for the boundary decision.
 
-Version 0.1.0, preview, Python >=3.11; not published to PyPI. Install from the repository.
-Suitable for hosts composing the capabilities listed below. Desktop use needs no external service.
+## When to use it
 
-- No host CLI migration, Postgres/MQ, multi-host scheduling or tenant/auth system.
+Use it when:
 
-## Installation and shortest example
+- a desktop app needs durable background work that survives restarts;
+- the host wants SQLite + local wake-ups instead of Temporal/Celery;
+- replaceable storage/notification interfaces are required for a future service tier.
 
-From the repository root:
+Do not use it for:
+
+- exactly-once side effects (this package promises at-least-once only);
+- multi-host scheduling, multi-tenancy, auth, quotas, or billing;
+- a built-in Web UI, MCP server, or remote sandbox.
+
+## Installation
+
+Not published yet. In-repo development:
 
 ```powershell
 uv lock --check --directory packages/infra/agent-work
 uv sync --locked --directory packages/infra/agent-work
 ```
 
+Hosts can use a local path dependency during development:
+
+```toml
+dependencies = ["spawn-join-agent-work>=0.1.0,<0.2.0"]
+[tool.uv.sources]
+spawn-join-agent-work = { path = "../../infra/agent-work", editable = true }
+```
+
+The only runtime dependency is `pyzmq>=27.3.0,<28` (BSD-3-Clause; bundled libzmq is
+MPL-2.0). SQLite is from the standard library.
+
+## Minimal example
+
 ```python
 import asyncio
+from pathlib import Path
 
 from spawn_join_agent_work import (
-    InMemoryWorkStore, WorkItem, WorkOutcome, WorkResult, WorkRunner, WorkSpec,
+    SqliteWorkStore, WorkOutcome, WorkResult, WorkRunner, WorkSpec,
 )
 
 
-async def execute(item: WorkItem) -> WorkResult:
-    return WorkResult(outcome=WorkOutcome.SUCCESS, summary="done")
-
-
 async def main() -> None:
-    store = InMemoryWorkStore()
-    await store.enqueue(WorkSpec(kind="report", payload=b"hello", idempotency_key="demo"))
-    runner = WorkRunner(store, execute, owner="example")
-    assert await runner.run_once() == 1
+    store = SqliteWorkStore(Path("work.db"))
+    await store.enqueue(
+        WorkSpec(kind="report", payload=b"hello", idempotency_key="demo-1")
+    )
+
+    async def executor(item):
+        return WorkResult(outcome=WorkOutcome.SUCCESS, summary="done")
+
+    runner = WorkRunner(store, executor, owner="desktop-1")
+    print(await runner.run_once())  # 1
 
 
 asyncio.run(main())
 ```
 
-The distribution declares pyzmq>=27.3.0,<28; SQLite uses the standard library.
-No LangChain, model-provider or other SpawnJoin runtime dependency is introduced.
+Continuous mode:
 
-## Public API and defaults
+```python
+runner = WorkRunner(store, executor, owner="desktop-1")
+stop = asyncio.Event()
+task = asyncio.create_task(runner.serve(stop))
+# ...
+await runner.astop()   # stop claiming, release in-flight leases, close notifier, <=10s
+```
 
-Only the names in this table are exported by this version:
+`WorkRunner.serve()` is a one-shot lifecycle: after `astop()` the same runner will not start
+another loop; create a new runner for a new continuous session.
 
-| Area | Exports |
-| --- | --- |
-| models | `WorkSpec`, `WorkItem`, `WorkState`, `WorkOutcome`, `WorkLease`, `WorkResult`, `WorkEvent` |
-| policies | `RetryPolicy`, `LeasePolicy`, `ConcurrencyPolicy` |
-| ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
-| storage | `SqliteWorkStore`, `InMemoryWorkStore` |
-| runtime | `WorkRunner` |
-| notifications | `ZmqNotifier` |
-| errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
+`run_once()` claims and executes items serially, processing at most `limit` items,
+or `claim_batch` when omitted. Cancelling it propagates cancellation and leaves
+the current item `running` until lease expiry allows recovery. `serve()/astop()`
+instead cancel in-flight tasks and release recoverable leases.
 
-WorkSpec accepts kind, a bytes payload and an idempotency_key. WorkState models
-queued/running/waiting/completed/failed/dead/cancelled; ports define the adapter boundary.
+## Public API
 
-| WorkSpec field | Type | Default |
-| --- | --- | --- |
-| `kind` | `str` | `required` |
-| `payload` | `bytes` | `required` |
-| `idempotency_key` | `str` | `required` |
-| `queue` | `str` | `'default'` |
-| `namespace` | `str` | `'default'` |
-| `priority` | `int` | `0` |
-| `available_at` | `datetime \| None` | `None` |
-| `deadline_seconds` | `float \| None` | `None` |
-| `max_attempts` | `int` | `3` |
+| Kind | Name | Purpose |
+|---|---|---|
+| Models | `WorkSpec` | Enqueue definition: `kind`, `payload: bytes`, `idempotency_key`, queue/namespace/priority, available_at, deadline, max_attempts |
+| Models | `WorkItem` | Persisted item: state, attempts, lease, last_error, result, timestamps |
+| Models | `WorkState` / `WorkOutcome` | `queued/running/waiting/completed/failed/dead/cancelled`; executor `success/retry/fail/defer` |
+| Models | `WorkLease` / `WorkResult` / `WorkEvent` | Ownership window / result / wake-up event (no business payload) |
+| Policies | `RetryPolicy` / `LeasePolicy` / `ConcurrencyPolicy` | Exponential backoff, lease/heartbeat, concurrency/batch/poll |
+| Ports | `WorkStore` / `Notifier` / `Clock` / `WorkExecutor` | Storage, wake-up, clock, executor |
+| Adapters | `SqliteWorkStore` / `InMemoryWorkStore` / `ZmqNotifier` | Desktop default, contract-test second implementation, PUB/SUB wake-up |
+| Runtime | `WorkRunner` | `run_once()` for one batch; `serve()/astop()` for continuous mode |
+| Errors | `WorkError` and subclasses | Configuration, not found, conflict, lease lost, store, notifier |
 
-WorkItem carries the spec, state, attempts, lease, last_error and result;
-WorkLease carries owner/token/until. WorkResult describes the outcome with
-optional summary/error/wait_until. WorkEvent is event metadata, without the business payload.
-WorkStore defines enqueue/claim/heartbeat/complete/fail/defer/resume/cancel/get/prune;
-Notifier defines publish/subscribe/aclose, Clock supplies now(), and WorkExecutor is async.
+`WorkStore` methods: `enqueue`, `claim`, `heartbeat`, `complete`, `fail`, `defer`, `resume`,
+`cancel`, `get`, `prune`. Public signatures expose no SQL, connection, or path types.
 
-RetryPolicy defaults to max_attempts=3, base_seconds=1, multiplier=2, jitter=0;
-LeasePolicy to seconds=60 and heartbeat_seconds=20; ConcurrencyPolicy to
-max_concurrency=2, claim_batch=1 and poll_interval_seconds=1.
+## Semantics and invariants
 
-SQLite defaults: WAL, busy_timeout=5000ms and schema_version=1. The store owns truth; heartbeat/complete/fail/defer require the lease token. waiting is not claimed until resumed. Host control-plane resume/cancel do not require that token. No old work.db migration is provided.
+- The store is the source of truth; wake-ups are best-effort and polling is the fallback.
+- SQLite `claim` is atomic via `BEGIN IMMEDIATE`; one valid lease per item at a time.
+- Every execution write-back (heartbeat/complete/fail/defer) must carry the matching lease token;
+  stale writers are rejected (fencing). `resume`/`cancel` are host control-plane operations and
+  take no token.
+- Retries follow `RetryPolicy`; the effective stop is
+  `min(WorkSpec.max_attempts, RetryPolicy.max_attempts)`: spec exhaustion becomes `dead`,
+  an earlier policy stop becomes `failed`, and non-retryable failures become `failed`.
+- `waiting` is never claimed automatically; the host must call `resume`.
+- Exactly-once is not promised; executors should use the idempotency key or their own key.
+- Shutdown stops claiming, cancels and awaits in-flight work, requeues released items, and is idempotent.
 
-Execution is at-least-once: use idempotent external effects. Retry stops at min(WorkSpec.max_attempts, RetryPolicy.max_attempts); spec exhaustion becomes dead, a policy stop becomes failed. `run_once()` claims and executes serially, processing at most `limit` items or `claim_batch` when omitted. Cancellation propagates and leaves the current item `running` until lease expiry allows recovery. `serve()/astop()` separately cancel in-flight tasks and release recoverable leases; an executor ignoring cancellation must wait for lease expiry.
+## Configuration and defaults
 
-ZmqNotifier defaults to tcp://127.0.0.1:5559 and LINGER=0; notifications carry work_id/queue, never the business payload. Lost notifications are covered by polling. Windows hosts use a selector event loop for zmq.asyncio. serve() is one lifecycle; construct a new runner after astop().
+- `SqliteWorkStore(path)`: WAL, `busy_timeout=5000ms`, `schema_version=1`, creates the current
+  schema on first start. **No legacy `work.db` migration** (the product has not shipped).
+- `LeasePolicy(seconds=60, heartbeat_seconds=20)`; heartbeats only extend.
+- `RetryPolicy(max_attempts=3, base_seconds=1, multiplier=2, jitter=0)`.
+- `ConcurrencyPolicy(max_concurrency=2, claim_batch=1, poll_interval_seconds=1)`.
+- `ZmqNotifier(endpoint="tcp://127.0.0.1:5559")`, payload only `work_id`/`queue`, `LINGER=0`.
+  On Windows, `zmq.asyncio` needs a selector event loop; Proactor hosts should set
+  `WindowsSelectorEventLoopPolicy` or use `asyncio.Runner(loop_factory=asyncio.SelectorEventLoop)`.
+  With `tcp://…:0`, publish once to bind, then give peers `notifier.endpoint`.
 
 ## Errors and limitations
 
-WorkConfigurationError rejects invalid contract inputs. WorkConflictError,
-WorkNotFoundError and LeaseLostError identify conflict, absence and lease loss;
-StoreError/NotifierError distinguish adapter failures. These all derive from WorkError.
-The public ports expose no SQL, connection or filesystem path. SQLite is a
-desktop adapter, unsuitable for the server tier or multi-host use.
+- `WorkConflictError`: duplicate idempotency key; `LeaseLostError`: write-back no longer owns the lease.
+- `StoreError`/`NotifierError` preserve the underlying cause.
+- SQLite is single-writer; multi-host sharing is unsupported; the service tier must not use SQLite.
+- Phase 1 does not implement Postgres/MQ, Temporal, multi-tenancy, auth, or quotas.
+- If an executor swallows cancellation, the runner logs it and stops claiming new work; the lease
+  is resolved by process exit or expiry.
 
-## Ownership and architecture
+## Relationship to adjacent packages
 
-Hosts depend on agent-work; agent-work owns its models, policies, ports and the
-implemented adapters. Hosts own business execution and process orchestration.
-Store owns truth and notifications are best effort. Boundaries are defined by
-[ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md).
-[agent-deepagents](../agent-deepagents/README.en.md) owns agent assembly;
-[personal-assistant](../../apps/personal-assistant/README.en.md) owns its CLI and approvals.
+- `spawn-join-agent-deepagents` assembles agents and deliberately owns no database or scheduler.
+- `spawn-join-personal-assistant` composes this package with agent packages; HITL approvals stay
+  in the host compatibility layer.
+- Dependency direction: host → `agent-work`; this package depends on no LangChain, model, or agent package.
 
 ## Development and verification
 
-Sources: src/spawn_join_agent_work/ (models.py / policies.py / protocols.py / errors.py / stores/ / runner.py / notify/); tests are in tests/.
-Each distribution owns its uv.lock and .venv; the repository root is tool-only.
-Use Python >=3.11, uv, PowerShell 7 and Node 22+ for the configured quality gate.
-
 ```powershell
-uv run --locked --directory packages/infra/agent-work pytest -q
+uv lock --check --directory packages/infra/agent-work
+uv sync --locked --directory packages/infra/agent-work
+uv run --directory packages/infra/agent-work pytest -q
 pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-work
 ```
 
-## Versioning, maintenance and license
+Contract tests are parameterized over SQLite and InMemory; ZMQ tests use temporary/`inproc` endpoints.
 
-SpawnJoin maintainers own this package. Contributions follow [AGENTS.md](../../../AGENTS.md).
-Public contracts remain preview in 0.x; publication requires package checks and
-separate release authorization. Version 0.1.0 is the source version, not a release claim.
-No changelog/tag is published for this unpublished package; release history belongs to repository releases.
-LicenseRef-Proprietary; see [LICENSE](LICENSE).
+## Layout
+
+```text
+src/spawn_join_agent_work/
+  models.py policies.py protocols.py runner.py errors.py
+  stores/   sqlite.py memory.py
+  notify/   zmq.py
+tests/      test_contract_store.py test_runner.py test_lease_and_fencing.py
+            test_retry.py test_shutdown.py test_zmq_integration.py ...
+```
+
+Storage, notification, and executor concerns are separated from the public models/ports;
+`stores/` and `notify/` are adapters, not additional public contracts.
+
+## Versioning and releases
+
+The current version is `0.1.0` and is not published to PyPI. A release is gated by the package
+`uv.lock`, quality gate, and the PR CI 9×3 matrix; change notes live in the repository release
+record rather than being copied here. Phase 1 public APIs may change with feedback.
+
+## Ownership, versioning, and license
+
+Maintainer: the SpawnJoin repository maintainers. The package is not published yet; version and
+compatibility follow the repository release record, and Phase 1 APIs may change with feedback.
+License: see [LICENSE](LICENSE) (LicenseRef-Proprietary). Contributions follow the repository
+root `AGENTS.md`.

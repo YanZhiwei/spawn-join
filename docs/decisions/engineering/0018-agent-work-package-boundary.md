@@ -1,11 +1,11 @@
 # ADR-0018: 桌面长任务运行时的包边界与生命周期语义
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-22
 - Domain: engineering / runtime
 - Classification: 约束新 `spawn-join-agent-work` Distribution 的归属、公共契约、状态机、存储/唤醒适配器与迁移路径，属于跨包运行时边界决策。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者（用户批准完成本 Feature）/ 2026-11-22
 - Depends on: [ADR-0010](../agent/0010-deepagents-product-boundary.md)、[ADR-0015](../agent/0015-personal-assistant-host-boundary.md)、[ADR-0016](0016-desktop-first-service-ready-packages.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、[ADR-0016](0016-desktop-first-service-ready-packages.md)
 - Supersedes: 无
@@ -55,7 +55,9 @@ ADR-0016 已记录“桌面优先、服务端可替换”的跨包策略与单�
 6. **服务端档位**：Postgres + `LISTEN/NOTIFY` 或 MQ 作为后续适配器；服务端禁用 SQLite；本 ADR
    不实现这些适配器，也不把 MQ 作为真相层。
 7. **迁移**：`personal-assistant` 迁移到 `agent-work`，行为保持等价；迁移切片同时修订
-   ADR-0015 §Decision 第 1 条的 work 所有权。产品尚未上线，**不提供旧数据库迁移**；首次启动
+   ADR-0015 §Decision 第 1 条的 work 所有权。Phase 1 先落地 `GoalRuntime` 迁移接缝与依赖，
+   CLI `accept/approve` 仍使用宿主兼容层（HITL 审批与旧 store 耦合）；完整 CLI 切换作为后续
+   迭代项记录，不在本 Feature 内伪造完成。产品尚未上线，**不提供旧数据库迁移**；首次启动
    直接创建当前 schema。
 8. **依赖分层**：Phase 1 基础依赖 `pyzmq`（桌面默认）；SQLite 为 stdlib；`[postgres]`/`[mq]`
    extras 留到后续，不创建空模块。
@@ -110,13 +112,19 @@ flowchart LR
 
 ## Verification and implementation status
 
-- 本 ADR 为 **Proposed**；实现尚未开始。
-- 计划验证：新包与宿主的质量门、SQLite/InMemory 契约测试、ZMQ 丢消息/重复消息、崩溃/租约/
-  fencing/退避/关闭、CI 9×3、docs/governance。
-- 实际命令与结果将记录在 Delivery evidence；本 ADR 不把计划写成已验证。
-- `Accepted` 需维护者在 reviewed HEAD 上批准；实现与证据另附。
+- 本 ADR 为 **Accepted**；Phase 1 实现已落地。
+- 已执行：`pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-work`（锁、sync、
+  format、lint、Pyright strict、96 tests、build、隔离安装）；个人助理包同一门禁 75 tests，
+  含 60 项既有回归。
+- 契约测试对 SQLite/InMemory 参数化；ZMQ 覆盖唤醒、过滤、双 worker 竞争、重复唤醒、关闭；
+  Proactor 清理有 Windows-only 测试。
+- Delivery evidence 与任务收据记录在 Feature 运行时；远端 CI 9×3 组合需在 PR 上实际运行，
+  ADR 不把本地结果写成 CI 已通过。
+- 后续迁移项：全部 CLI 子命令（`accept/due/run/serve/report/approve`）完整切换到
+  `GoalRuntime`（当前为兼容层）。
 
 ## Revision history
 
 - 2026-11-22：提出 `spawn-join-agent-work` 包边界、端口、桌面默认适配器、状态机与迁移路径；
   状态为 Proposed。
+- 2026-11-22：Phase 1 实现完成，状态更新为 Accepted；记录 CLI 完整切换为后续项。

@@ -37,8 +37,8 @@ published to PyPI. Core is currently a scaffold.
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.en.md) | Supervisor assembly, model bindings, middleware, delegation, and recovery seams | `build_supervisor` |
-| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Durable stores, serial and continuous execution, ZeroMQ wake-ups | `WorkRunner`, `ZmqNotifier` |
-| [spawn-join-personal-assistant](packages/apps/personal-assistant/README.en.md) | Personal assistant host application: work items, scheduling, approvals, and confined-workspace execution (delivered in slices) | `AppConfig` |
+| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Reusable durable work runtime: SQLite storage, leases/fencing, retries, ZeroMQ wake-ups, and a long-running runner; replaceable ports | `WorkRunner`, `SqliteWorkStore` |
+| [spawn-join-personal-assistant](packages/apps/personal-assistant/README.en.md) | Personal assistant host: work items, scheduling, approvals, confined execution, and a `serve` loop | `AppConfig`, `GoalRuntime` |
 | [spawn-join-core](packages/core/spawn-join-core/README.en.md) | Shared foundations; currently a scaffold with no callable public API | `__version__` |
 
 Applications compose the channel, adapter, and agent packages. Framework types stay in the adapters;

@@ -115,9 +115,10 @@ consult the per-domain examples as needed.
 - HITL approval persistence: action lists, decisions, and timestamps in an
   own SQLite table; decided records are immutable; resume commands are
   structurally aligned with the action count;
-- Five CLI subcommands (`accept/due/run/report/approve`): stable exit
-  codes 0/1; credentials only via the `LLM_API_KEY` environment variable;
-- 60 offline tests (including e2e) plus a runnable example, independent
+- Six CLI subcommands (`accept/due/run/serve/report/approve`): stable exit
+  codes 0/1; `serve` runs continuously and stops on SIGINT/SIGTERM;
+  credentials only via the `LLM_API_KEY` environment variable;
+- 75 offline tests (including e2e) plus a runnable example, independent
   wheel/sdist, `py.typed`, and a quality profile.
 
 ## Installation
@@ -132,6 +133,7 @@ uv sync --locked --directory packages/apps/personal-assistant
 Runtime dependencies:
 
 - `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
+- `spawn-join-agent-work>=0.1.0,<0.2.0`
 - `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
@@ -188,16 +190,24 @@ models:
 ```
 
 Models must support tool calling. Then set `LLM_API_KEY` in the process
-environment and drive the full loop with the CLI:
+environment and drive the full loop with the CLI. Without `--root`, the
+platform data root is used (Windows `%LOCALAPPDATA%`, macOS Application
+Support, Linux `$XDG_DATA_HOME` or `~/.local/share`):
 
 ```powershell
 $env:LLM_API_KEY = "<your-key>"
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> accept "organize this week's invoices" --key invoices-week-47
 spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> run --supervisor-model supervisor --worker-model worker
+spawn-join-personal-assistant --root <data-dir> --model-catalog <path-to-model.yaml> serve --poll-interval 1
 spawn-join-personal-assistant --root <data-dir> report
 spawn-join-personal-assistant --root <data-dir> approve --list
 spawn-join-personal-assistant --root <data-dir> approve --record <record-id>
 ```
+
+`serve` is continuous by default and stops on `Ctrl+C`/SIGTERM; `--max-cycles N`
+bounds it for smoke tests. `run` remains the single-cycle command. The old
+default root `~/.spawn-join-personal-assistant` is no longer read implicitly;
+point `--root` there if you need its data.
 
 ## Work items
 
@@ -867,6 +877,9 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
     due
     run [--max-concurrency N] [--deadline SECONDS]
         [--supervisor-model NAME] [--worker-model NAME]
+    serve [--max-concurrency N] [--deadline SECONDS]
+        [--supervisor-model NAME] [--worker-model NAME]
+        [--poll-interval SECONDS] [--max-cycles N]
     report [--status STATUS]
     approve --list | approve --record ID [--reject] [--message MSG]
 ```
@@ -876,6 +889,7 @@ spawn-join-personal-assistant [--root DIR] [--model-catalog PATH]
 | `accept` | Insert with unique idempotency key | 0 / 1 on duplicate key or blank goal |
 | `due` | List unfinished items with due status | 0 |
 | `run` | Recover interrupted items, then one due cycle | 0 / 1 on missing catalog |
+| `serve` | Continuous loop; stops on SIGINT/SIGTERM; `--max-cycles` for smoke | 0 / 1 (130 on interrupt) |
 | `report` | List all history (filterable by status) | 0 |
 | `approve --list` | List pending approval records | 0 |
 | `approve --record ID` | Approve and resume execution | 0 / 1 on unknown or decided record |
@@ -928,7 +942,8 @@ personal-assistant: idempotency_key: already exists: inv-1
 Public exports are defined by `spawn_join_personal_assistant.__all__`,
 mainly:
 
-- `main`, `AppConfig`;
+- `main`, `AppConfig`, `default_data_dir`;
+- `GoalRuntime`, `goal_text` (the Agent Work integration seam);
 - `ApprovalBook`, `ApprovalRecord`, `apply_decision`, `interrupt_actions`,
   `pause_for_approval`, `resume_approved`, `resume_rejected`;
 - `HostSession`, `open_host_session`;
@@ -941,10 +956,21 @@ mainly:
 Internal modules (`work/`, `scheduler`, `approvals`, `host`, `cli`) do not
 become public contracts just because they are importable.
 
+`GoalRuntime(database: Path, *, clock=None)` exposes an independent Agent Work
+queue through `enqueue()`, `run_once()` and `serve(stop=...)`. It does not switch
+the existing CLI/HITL compatibility layer. Its returned work items are
+`spawn_join_agent_work.WorkItem`, distinct from the host compatibility `WorkItem`.
+`goal_text(item)` decodes that item's UTF-8 goal. `default_data_dir()` returns the
+platform path described under [CLI](#cli), without creating directories;
+an explicit `--root` still overrides the CLI default.
+
 ## Errors and failure behavior
 
-- All host-side failures surface as `HostError` subclasses; the CLI maps
-  them to stable exit code 1.
+- CLI and the existing scheduling/approval compatibility layer use `HostError`
+  subclasses; the CLI maps them to stable exit code 1.
+- `GoalRuntime` validates paths/goals and parent creation with `HostConfigError`;
+  Agent Work store/execution failures retain their `WorkError` taxonomy.
+  `goal_text()` raises `UnicodeDecodeError` for a payload that is not UTF-8.
 - Executor exceptions never abort sibling items: they land as `failed`
   with the exception class name; the store is the record.
 - `WorkTransitionError` (a `HostStoreError` subclass): illegal state
@@ -986,7 +1012,7 @@ become public contracts just because they are importable.
 | `scheduler.py` | asyncio due scheduler | Executor exceptions never abort siblings; parent cancellation requeues, then propagates |
 | `approvals.py` | HITL approval book and resume commands | Decided records are immutable; decisions align with actions in order |
 | `host.py` | Supervisor assembly and host resource ownership | `build_supervisor` is the only assembly authority; the caller closes resources |
-| `cli.py` | Five-subcommand entry point | Stable exit codes; `bindings` is the explicit model injection seam |
+| `cli.py` | Six-subcommand entry point | Stable exit codes; `bindings` is the explicit model injection seam |
 
 ### Dependency direction
 
@@ -1056,10 +1082,10 @@ approve:
   (boundary validation).
 - Assembly: `test_host_assembly` (resource ownership, path guardrails, the
   strict serializer, fake-model smoke execution).
-- End to end: `test_cli` (five-subcommand smoke + stable exit codes) and
+- End to end: `test_cli` (six-subcommand smoke + stable exit codes) and
   `test_e2e_offline` (US1–US4 through the real loop; side effects asserted by
   counting files inside a controlled tmpdir).
-- All 60 cases run offline: no real secrets, no external services; new
+- All cases run offline: no real secrets, no external services; new
   behavior needs a failing test first (see the repository `AGENTS.md`).
 
 ## Development and verification
@@ -1071,7 +1097,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ```
 
 - Layout: `src/spawn_join_personal_assistant/` holds runtime sources;
-  `tests/` holds offline tests (60 cases); `examples/` holds runnable
+  `tests/` holds offline contract tests; `examples/` holds runnable
   examples; the package carries its own `uv.lock`, `py.typed`, and
   `LICENSE`.
 - Required tools: uv `>=0.7.13`, PowerShell 7, Git, Node.js 22+ (Pyright
