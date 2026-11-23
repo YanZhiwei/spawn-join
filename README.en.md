@@ -37,6 +37,7 @@ published to PyPI. Core is currently a scaffold.
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.en.md) | Supervisor assembly, model bindings, middleware, delegation, and recovery seams | `build_supervisor` |
+| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Durable work models, policies and adapter ports | `WorkSpec`, `WorkStore` |
 | [spawn-join-personal-assistant](packages/apps/personal-assistant/README.en.md) | Personal assistant host application: work items, scheduling, approvals, and confined-workspace execution (delivered in slices) | `AppConfig` |
 | [spawn-join-core](packages/core/spawn-join-core/README.en.md) | Shared foundations; currently a scaffold with no callable public API | `__version__` |
 
@@ -114,6 +115,7 @@ host-owned tools, persistence, and recovery.
 | Synchronize pricing and capability metadata | [Model metadata synchronization](packages/infra/llm-model-sync/README.en.md) |
 | Compose supervisors and workers | [DeepAgents product assembly](packages/infra/agent-deepagents/README.en.md) |
 | Understand the architecture | [Package boundaries](docs/architecture/package-boundaries.md) · [ADR index](docs/decisions/README.en.md#decision-index) |
+| Reuse durable work lifecycle | [Agent Work package-boundary ADR](docs/decisions/engineering/0018-agent-work-package-boundary.md) |
 | Configure multiple MCP peers and toolsets | [Agent MCP usage](packages/infra/agent-deepagents/README.en.md#installation) · [MCP resource ADR](docs/decisions/agent/0017-mcp-product-integration.md) |
 | Run local or CI checks | [Quality gates](docs/development/quality-gates.md) |
 | Understand the delivery process | [Contributor rules](AGENTS.md) · [Delivery setup](docs/development/spec-kit-delivery.md) · [Harness](harness/README.en.md) |
@@ -144,8 +146,8 @@ and Windows checks. Current results belong to the actual CI run and
 
 ## Limitations and release status
 
-- The channel package defines contracts; it does not implement HTTP channels, pooling,
-  routing, or health-based selection.
+- The channel package provides connection checks, authentication and model discovery;
+  request pooling, automatic routing and health-based selection remain outside its scope.
 - The model factory does not infer provider capabilities or automatically switch protocols.
 - Governed delegation supports asynchronous execution; the host owns persistence, business
   permissions, and external resource lifetimes.
@@ -168,7 +170,7 @@ in [ADRs](docs/decisions/README.en.md); delivery records belong in [Harness](har
 
 ## License
 
-SpawnJoin and its eight Distributions are **proprietary software**, with all rights reserved.
+SpawnJoin and its nine Distributions are **proprietary software**, with all rights reserved.
 Use, copying, modification, publication, distribution, sublicensing, and sale require written
 permission from the copyright holder. See [LICENSE](LICENSE). Vendored tools retain their
 own licenses and provenance.
