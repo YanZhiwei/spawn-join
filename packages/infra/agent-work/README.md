@@ -81,6 +81,10 @@ await runner.astop()   # 停止领取、释放在飞租约、关闭 notifier，�
 
 `WorkRunner.serve()` 是单次生命周期：`astop()` 后该 runner 不再启动新循环；再次常驻请新建 runner。
 
+`run_once()` 串行逐项领取，单次最多执行 `limit` 项，省略时使用 `claim_batch`。
+取消 `run_once()` 会继续传播取消，当前任务保留为 `running`，等待租约过期后恢复。
+`serve()/astop()` 则负责取消在途任务并释放可回收的租约。
+
 ## 公开 API
 
 | 类别 | 名称 | 说明 |

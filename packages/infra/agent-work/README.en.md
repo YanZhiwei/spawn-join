@@ -83,6 +83,11 @@ await runner.astop()   # stop claiming, release in-flight leases, close notifier
 `WorkRunner.serve()` is a one-shot lifecycle: after `astop()` the same runner will not start
 another loop; create a new runner for a new continuous session.
 
+`run_once()` claims and executes items serially, processing at most `limit` items,
+or `claim_batch` when omitted. Cancelling it propagates cancellation and leaves
+the current item `running` until lease expiry allows recovery. `serve()/astop()`
+instead cancel in-flight tasks and release recoverable leases.
+
 ## Public API
 
 | Kind | Name | Purpose |
