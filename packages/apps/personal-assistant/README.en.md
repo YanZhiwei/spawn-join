@@ -942,7 +942,8 @@ personal-assistant: idempotency_key: already exists: inv-1
 Public exports are defined by `spawn_join_personal_assistant.__all__`,
 mainly:
 
-- `main`, `AppConfig`;
+- `main`, `AppConfig`, `default_data_dir`;
+- `GoalRuntime`, `goal_text` (the Agent Work integration seam);
 - `ApprovalBook`, `ApprovalRecord`, `apply_decision`, `interrupt_actions`,
   `pause_for_approval`, `resume_approved`, `resume_rejected`;
 - `HostSession`, `open_host_session`;
@@ -955,10 +956,21 @@ mainly:
 Internal modules (`work/`, `scheduler`, `approvals`, `host`, `cli`) do not
 become public contracts just because they are importable.
 
+`GoalRuntime(database: Path, *, clock=None)` exposes an independent Agent Work
+queue through `enqueue()`, `run_once()` and `serve(stop=...)`. It does not switch
+the existing CLI/HITL compatibility layer. Its returned work items are
+`spawn_join_agent_work.WorkItem`, distinct from the host compatibility `WorkItem`.
+`goal_text(item)` decodes that item's UTF-8 goal. `default_data_dir()` returns the
+platform path described under [CLI](#cli), without creating directories;
+an explicit `--root` still overrides the CLI default.
+
 ## Errors and failure behavior
 
-- All host-side failures surface as `HostError` subclasses; the CLI maps
-  them to stable exit code 1.
+- CLI and the existing scheduling/approval compatibility layer use `HostError`
+  subclasses; the CLI maps them to stable exit code 1.
+- `GoalRuntime` validates paths/goals and parent creation with `HostConfigError`;
+  Agent Work store/execution failures retain their `WorkError` taxonomy.
+  `goal_text()` raises `UnicodeDecodeError` for a payload that is not UTF-8.
 - Executor exceptions never abort sibling items: they land as `failed`
   with the exception class name; the store is the record.
 - `WorkTransitionError` (a `HostStoreError` subclass): illegal state
@@ -1000,7 +1012,7 @@ become public contracts just because they are importable.
 | `scheduler.py` | asyncio due scheduler | Executor exceptions never abort siblings; parent cancellation requeues, then propagates |
 | `approvals.py` | HITL approval book and resume commands | Decided records are immutable; decisions align with actions in order |
 | `host.py` | Supervisor assembly and host resource ownership | `build_supervisor` is the only assembly authority; the caller closes resources |
-| `cli.py` | Five-subcommand entry point | Stable exit codes; `bindings` is the explicit model injection seam |
+| `cli.py` | Six-subcommand entry point | Stable exit codes; `bindings` is the explicit model injection seam |
 
 ### Dependency direction
 
@@ -1070,10 +1082,10 @@ approve:
   (boundary validation).
 - Assembly: `test_host_assembly` (resource ownership, path guardrails, the
   strict serializer, fake-model smoke execution).
-- End to end: `test_cli` (five-subcommand smoke + stable exit codes) and
+- End to end: `test_cli` (six-subcommand smoke + stable exit codes) and
   `test_e2e_offline` (US1–US4 through the real loop; side effects asserted by
   counting files inside a controlled tmpdir).
-- All 60 cases run offline: no real secrets, no external services; new
+- All cases run offline: no real secrets, no external services; new
   behavior needs a failing test first (see the repository `AGENTS.md`).
 
 ## Development and verification
@@ -1085,7 +1097,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ```
 
 - Layout: `src/spawn_join_personal_assistant/` holds runtime sources;
-  `tests/` holds offline tests (60 cases); `examples/` holds runnable
+  `tests/` holds offline contract tests; `examples/` holds runnable
   examples; the package carries its own `uv.lock`, `py.typed`, and
   `LICENSE`.
 - Required tools: uv `>=0.7.13`, PowerShell 7, Git, Node.js 22+ (Pyright

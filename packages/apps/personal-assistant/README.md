@@ -911,7 +911,8 @@ personal-assistant: idempotency_key: already exists: inv-1
 
 公共导出由 `spawn_join_personal_assistant.__all__` 定义，主要包括：
 
-- `main`、`AppConfig`；
+- `main`、`AppConfig`、`default_data_dir`；
+- `GoalRuntime`、`goal_text`（Agent Work 迁移接缝）；
 - `ApprovalBook`、`ApprovalRecord`、`apply_decision`、`interrupt_actions`、
   `pause_for_approval`、`resume_approved`、`resume_rejected`；
 - `HostSession`、`open_host_session`；
@@ -923,9 +924,18 @@ personal-assistant: idempotency_key: already exists: inv-1
 内部模块（`work/`、`scheduler`、`approvals`、`host`、`cli`）不会因为可导入
 就自动成为公共契约。
 
+`GoalRuntime(database: Path, *, clock=None)` 通过 `enqueue()`、`run_once()`、
+`serve(stop=...)` 提供独立的 Agent Work 队列，不切换既有 CLI/HITL 兼容层。
+其返回值属于 `spawn_join_agent_work.WorkItem`，与宿主兼容层的 `WorkItem` 不同；
+`goal_text(item)` 解码该工作项的 UTF-8 目标。`default_data_dir()` 返回
+[CLI](#cli) 中的平台默认路径，不创建目录；显式 `--root` 仍覆盖 CLI 默认值。
+
 ## 错误与失败行为
 
-- 所有宿主侧失败以 `HostError` 子类表达；CLI 转稳定退出码 1。
+- CLI 和既有调度/审批兼容层的宿主错误以 `HostError` 子类表达；CLI 转稳定退出码 1。
+- `GoalRuntime` 的路径/goal 校验与父目录创建失败使用 `HostConfigError`，
+  Agent Work 存储/执行错误保留 `WorkError` 分类；`goal_text()` 遇到非 UTF-8
+  payload 时抛出 `UnicodeDecodeError`。
 - 调度执行器异常**不中断兄弟项**：转 `failed`（类别=异常类名），存储即记录。
 - `WorkTransitionError`（`HostStoreError` 子类）：非法状态迁移，零副作用。
 - 已决审批记录不可变：二次决定抛 `HostApprovalError`。
@@ -958,7 +968,7 @@ personal-assistant: idempotency_key: already exists: inv-1
 | `scheduler.py` | asyncio due 调度 | 执行器异常不中断兄弟项；父级取消先重排队再传播 |
 | `approvals.py` | HITL 审批簿与恢复命令 | 已决记录不可变；决定与动作严格按序对齐 |
 | `host.py` | supervisor 装配与宿主资源所有权 | `build_supervisor` 是唯一装配权威；资源由调用方关闭 |
-| `cli.py` | 五子命令入口 | 稳定退出码；`bindings` 是显式模型注入接缝 |
+| `cli.py` | 六子命令入口 | 稳定退出码；`bindings` 是显式模型注入接缝 |
 
 ### 依赖方向
 
@@ -1019,9 +1029,9 @@ approve：
   硬杀恢复）、`test_approvals`(暂停/决定/重启对齐)、`test_config`（边界校验）。
 - 装配：`test_host_assembly`（资源所有权、路径守卫、strict 序列化器、fake 模型
   冒烟执行）。
-- 端到端：`test_cli`（五子命令冒烟 + 稳定退出码）与 `test_e2e_offline`（US1–US4
+- 端到端：`test_cli`（六子命令冒烟 + 稳定退出码）与 `test_e2e_offline`（US1–US4
   全链路；以受控 tmpdir 内文件计数断言副作用）。
-- 全部 60 用例离线运行：不读真实密钥、不连接外部服务；新增行为必须先有失败
+- 全部用例离线运行：不读真实密钥、不连接外部服务；新增行为必须先有失败
   测试再实现（见仓库 `AGENTS.md`）。
 
 ## 开发与验证
@@ -1033,7 +1043,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ```
 
 - 布局：`src/spawn_join_personal_assistant/` 是运行时源码，`tests/` 是离线
-  测试（60 用例），`examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed`
+  离线契约测试，`examples/` 是可执行示例；包内自带 `uv.lock`、`py.typed`
   和 `LICENSE`。
 - 必需工具：uv `>=0.7.13`、PowerShell 7、Git、Node.js 22+（Pyright 包装器）。
 - 包级质量门执行 Black/isort、Ruff、Pyright strict、pytest、wheel/sdist、

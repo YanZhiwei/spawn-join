@@ -1,8 +1,6 @@
-"""Agent-work backed goal runtime for the personal assistant host.
+"""个人助理的 Agent Work 迁移接缝。
 
-This is the migration seam to ``spawn-join-agent-work``; CLI wiring lands in
-T015. The legacy ``work.store.WorkStore`` and ``scheduler.Scheduler`` remain as
-a compatibility layer for HITL approvals.
+独立队列由 agent-work 拥有；CLI 与 HITL 审批继续使用宿主兼容层。
 """
 
 from __future__ import annotations
