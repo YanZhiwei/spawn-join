@@ -115,6 +115,29 @@ async def _close_failed(member: AsyncExitStack, cause: BaseException) -> None:
 
 
 @asynccontextmanager
+async def _owned_stack() -> AsyncGenerator[AsyncExitStack, None]:
+    """释放所有自有资源，保留主异常身份与原因链。"""
+    resources = AsyncExitStack()
+    primary: BaseException | None = None
+    try:
+        yield resources
+    except BaseException as exc:
+        primary = exc
+    try:
+        await resources.aclose()
+    except Exception as cause:
+        cleanup = McpCleanupError("MCP resource cleanup failed")
+        cleanup.__cause__ = cause
+        if primary is None:
+            raise cleanup from cause
+        # 保留加载与清理异常，避免覆盖 SDK 的多重清理异常链。
+        cleanup.__context__ = primary.__cause__
+        primary.__cause__ = cleanup
+    if primary is not None:
+        raise primary
+
+
+@asynccontextmanager
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
     """持有适配器上下文，提供保留原始身份的原生工具。"""
     tools: dict[tuple[str, str], BaseTool] = {}
@@ -125,7 +148,7 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
         )
         for name in configuration.official.mcpServers
     ]
-    async with AsyncExitStack() as resources:
+    async with _owned_stack() as resources:
         for index, (name, server) in enumerate(
             configuration.official.mcpServers.items()
         ):
@@ -134,27 +157,25 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
                 reports[index] = McpServerReport(name, required, "disabled", 0)
                 continue
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
-            member = AsyncExitStack()
-            try:
+            async with _owned_stack() as member:
                 initialized = await _initialize(
                     name, required, adapter, member, configuration.startup_timeout
                 )
-            except BaseException as exc:
-                await _close_failed(member, exc)
-                raise
-            if isinstance(initialized, _Failure):
-                reports[index] = initialized.report
-                await _close_failed(member, initialized.cause)
-                if required:
-                    raise _load_error(initialized, _load_report(reports))
-                failures[name] = initialized
-                continue
-            # 仅移交初始化完成的资源；适配器负责其内部克隆。
-            resources.push_async_exit(member.pop_all())
-            tools.update(
-                ((name, original), tool) for original, tool in initialized.items()
-            )
-            reports[index] = McpServerReport(name, required, "loaded", len(initialized))
+                if isinstance(initialized, _Failure):
+                    reports[index] = initialized.report
+                    if required:
+                        raise _load_error(initialized, _load_report(reports))
+                    await _close_failed(member, initialized.cause)
+                    failures[name] = initialized
+                    continue
+                # 仅移交初始化完成的资源；适配器负责其内部克隆。
+                resources.push_async_exit(member.pop_all())
+                tools.update(
+                    ((name, original), tool) for original, tool in initialized.items()
+                )
+                reports[index] = McpServerReport(
+                    name, required, "loaded", len(initialized)
+                )
         report = _load_report(reports)
         yield _Catalog(
             MappingProxyType(tools),

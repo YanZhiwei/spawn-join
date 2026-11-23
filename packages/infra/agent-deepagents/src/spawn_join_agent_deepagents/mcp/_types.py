@@ -19,7 +19,10 @@ class McpConfigurationError(AgentConfigurationError):
 
 
 class McpCleanupError(AgentConfigurationError):
-    """当前 MCP 上下文持有的资源释放失败。"""
+    """自有资源清理失败，原始异常保留在原因链中。
+
+    存在主异常时，将本异常接入其原因链，并用 context 保留原原因。
+    """
 
 
 @dataclass(frozen=True, slots=True)
