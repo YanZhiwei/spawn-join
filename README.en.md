@@ -115,6 +115,7 @@ host-owned tools, persistence, and recovery.
 | Synchronize pricing and capability metadata | [Model metadata synchronization](packages/infra/llm-model-sync/README.en.md) |
 | Compose supervisors and workers | [DeepAgents product assembly](packages/infra/agent-deepagents/README.en.md) |
 | Understand the architecture | [Package boundaries](docs/architecture/package-boundaries.md) · [ADR index](docs/decisions/README.en.md#decision-index) |
+| Reuse durable work lifecycle | [Agent Work package-boundary ADR](docs/decisions/engineering/0018-agent-work-package-boundary.md) |
 | Configure multiple MCP peers and toolsets | [Agent MCP usage](packages/infra/agent-deepagents/README.en.md#installation) · [MCP resource ADR](docs/decisions/agent/0017-mcp-product-integration.md) |
 | Run local or CI checks | [Quality gates](docs/development/quality-gates.md) |
 | Understand the delivery process | [Contributor rules](AGENTS.md) · [Delivery setup](docs/development/spec-kit-delivery.md) · [Harness](harness/README.en.md) |
@@ -145,8 +146,8 @@ and Windows checks. Current results belong to the actual CI run and
 
 ## Limitations and release status
 
-- The channel package defines contracts; it does not implement HTTP channels, pooling,
-  routing, or health-based selection.
+- The channel package provides connection checks, authentication and model discovery;
+  request pooling, automatic routing and health-based selection remain outside its scope.
 - The model factory does not infer provider capabilities or automatically switch protocols.
 - Governed delegation supports asynchronous execution; the host owns persistence, business
   permissions, and external resource lifetimes.

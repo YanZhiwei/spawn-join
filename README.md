@@ -110,6 +110,7 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/basi
 | 组合 supervisor 与 worker | [DeepAgents 产品装配](packages/infra/agent-deepagents/README.md) |
 | 配置多个 MCP 与工具集 | [Agent MCP 用法](packages/infra/agent-deepagents/README.md#安装) · [MCP 资源边界 ADR](docs/decisions/agent/0017-mcp-product-integration.md) |
 | 理解架构 | [包边界](docs/architecture/package-boundaries.md) · [ADR 入口](docs/decisions/README.md#决策索引) |
+| 复用长任务生命周期 | [Agent Work 包边界 ADR](docs/decisions/engineering/0018-agent-work-package-boundary.md) |
 | 执行本地与 CI 检查 | [质量门](docs/development/quality-gates.md) |
 | 理解交付流程 | [协作规则](AGENTS.md) · [Delivery 安装](docs/development/spec-kit-delivery.md) · [Harness](harness/README.md) |
 | 导航源码或绘制技术图 | [仓库地图](docs/architecture/repository-map.md) · [技术图说明](docs/development/technical-diagrams.md) |
@@ -137,7 +138,7 @@ Black/isort 负责格式，Ruff 负责 lint，Pyright 使用 strict 模式，pyt
 
 ## 限制与发布状态
 
-- Channel 包只定义契约，不实现 HTTP channel、池化、路由或健康选路。
+- Channel 提供连接检查、认证与模型发现，不实现请求池化、自动路由或健康选路。
 - 模型工厂不推断 Provider 能力，也不自动切换协议。
 - 受控委派仅支持异步执行；持久化、业务权限和外部资源生命周期由宿主管理。
 - Core 为骨架，当前没有 database Distribution。
