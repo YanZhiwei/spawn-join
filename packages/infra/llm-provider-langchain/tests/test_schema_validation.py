@@ -198,3 +198,43 @@ def test_validation_helper_does_not_render_foreign_error_input() -> None:
     assert str(error.value) == "models.demo: invalid configuration"
     assert isinstance(error.value.__cause__, ValidationError)
     assert "secret-sentinel" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("stop", "message"),
+    [
+        (None, "models.demo.options.stop: must be a list of strings"),
+        ("secret-sentinel", "models.demo.options.stop: must be a list of strings"),
+        (["ok", ""], "models.demo.options.stop[1]: must be a non-empty string"),
+        (["ok", 3], "models.demo.options.stop[1]: must be a non-empty string"),
+    ],
+)
+def test_string_tuple_adapter_preserves_its_original_errors(
+    tmp_path: Path,
+    loader: Literal["function", "classmethod"],
+    stop: object,
+    message: str,
+) -> None:
+    with pytest.raises(ConfigurationError) as caught:
+        _load(tmp_path, "chat_completions", {"stop": stop}, loader)
+    assert str(caught.value) == message
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (None, "config: must be a mapping"),
+        ({}, "config: missing required field(s): count"),
+        ({"count": 3, "extra": "private-value"}, "config: unknown field(s): extra"),
+        (
+            {"extra": "private-value"},
+            "config: missing required field(s): count; unknown field(s): extra",
+        ),
+    ],
+)
+def test_closed_field_adapter_preserves_original_errors(
+    payload: object, message: str
+) -> None:
+    with pytest.raises(ConfigurationError) as caught:
+        validate_input(_StrictInput, payload, "config")
+    assert str(caught.value) == message

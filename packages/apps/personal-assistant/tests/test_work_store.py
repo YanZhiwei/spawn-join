@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from spawn_join_personal_assistant import (
@@ -107,7 +108,19 @@ def test_terminal_states_reject_every_transition(tmp_path: Path) -> None:
         assert store.get(failed.id) == failed
 
 
-def test_pending_recovery_returns_only_unfinished(tmp_path: Path) -> None:
+def test_pending_recovery_returns_only_unfinished(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 固定时间戳和反向 ID，覆盖恢复扫描的排序并列边界。
+    monkeypatch.setattr(
+        "spawn_join_personal_assistant.work.store._utc_now_iso",
+        lambda: "2026-11-24T00:00:00+00:00",
+    )
+    identifiers = iter((UUID(int=2), UUID(int=1), UUID(int=3)))
+    monkeypatch.setattr(
+        "spawn_join_personal_assistant.work.store.uuid.uuid4",
+        lambda: next(identifiers),
+    )
     with WorkStore(tmp_path / "work.db") as store:
         queued = store.accept("排队任务", idempotency_key="key-q")
         running = store.accept("运行任务", idempotency_key="key-r")
@@ -118,7 +131,8 @@ def test_pending_recovery_returns_only_unfinished(tmp_path: Path) -> None:
 
         recovered = store.pending_recovery()
 
-        assert [item.id for item in recovered] == [queued.id, running.id]
+        assert queued.created_at == running.created_at
+        assert [item.id for item in recovered] == [running.id, queued.id]
 
 
 def test_store_survives_restart_with_schema_idempotent(tmp_path: Path) -> None:
