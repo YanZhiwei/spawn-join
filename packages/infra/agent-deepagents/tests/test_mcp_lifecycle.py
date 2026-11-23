@@ -7,6 +7,8 @@ import os
 import signal
 import subprocess
 import sys
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from types import TracebackType
 
@@ -15,7 +17,9 @@ from fastmcp import Client
 from fastmcp.client.group import ClientGroup
 from fastmcp.client.transports import StdioTransport
 from fastmcp.mcp_config import StdioMCPServer
+from httpx2 import ConnectError, ReadError
 from langchain.mcp import MCPAdapter
+from langchain_core.messages import ToolMessage
 from spawn_join_agent_deepagents.mcp._config import read_configuration
 from spawn_join_agent_deepagents.mcp._session import create_adapter, open_catalog
 
@@ -28,9 +32,10 @@ def _configuration(
     *,
     arguments: dict[str, list[str]] | None = None,
     disabled: tuple[str, ...] = (),
+    remote_port: int | None = None,
 ) -> Path:
     arguments = arguments or {}
-    servers = {
+    servers: dict[str, dict[str, object]] = {
         name: {
             "command": sys.executable,
             "args": [
@@ -42,6 +47,11 @@ def _configuration(
         }
         for name in names
     }
+    if remote_port is not None:
+        servers["remote"] = {
+            "url": f"http://127.0.0.1:{remote_port}/mcp",
+            "headers": {"X-Fixture": "synthetic"},
+        }
     path = directory / "mcp.json"
     path.write_text(
         json.dumps({"mcpServers": servers, "spawnJoin": {"disabledServers": disabled}}),
@@ -240,3 +250,129 @@ def test_explicit_client_timeout_units_and_stdio_process_ownership(
     assert isinstance(adapter.client, ClientGroup)
     transport = adapter.client.clients["local"].transport
     assert isinstance(transport, StdioTransport) and not transport.keep_alive
+
+
+async def _wait_text(path: Path) -> str:
+    async with asyncio.timeout(20):
+        while True:
+            try:
+                content = await asyncio.to_thread(path.read_text)
+            except FileNotFoundError:
+                content = ""
+            if content.endswith("\n"):
+                return content
+            await asyncio.sleep(0.02)
+
+
+@asynccontextmanager
+async def _http_service(
+    directory: Path,
+) -> AsyncGenerator[tuple[asyncio.subprocess.Process, int], None]:
+    record = directory / "remote.pids"
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(_SERVER),
+        str(record),
+        "remote",
+        "--http",
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    try:
+        port = int(await _wait_text(record.with_suffix(".port")))
+        yield process, port
+    finally:
+        if process.returncode is None:
+            process.terminate()
+        await process.wait()
+
+
+def test_mixed_three_service_routing_headers_and_http_ownership(tmp_path: Path) -> None:
+    async def run() -> None:
+        async with _http_service(tmp_path) as (remote, port):
+            path = await asyncio.to_thread(
+                _configuration, tmp_path, ("first", "second"), remote_port=port
+            )
+            async with open_catalog(await read_configuration(path)) as catalog:
+                assert len(catalog.tools) == catalog.report.tool_count == 3
+                for source in ("first", "second", "remote"):
+                    tool = catalog.tools[(source, "echo_value")]
+                    assert tool.name == f"{source}_echo_value"
+                    assert f"{source}:hello" in str(
+                        await tool.ainvoke({"value": "hello"})
+                    )
+                assert "remote:header:synthetic" in str(
+                    await catalog.tools[("remote", "echo_value")].ainvoke(
+                        {"value": "header"}
+                    )
+                )
+                assert len(await _pids(tmp_path, "remote")) == 1
+            await _assert_stopped(
+                await _pids(tmp_path, "first") + await _pids(tmp_path, "second")
+            )
+            assert remote.returncode is None
+            async with Client(f"http://127.0.0.1:{port}/mcp") as probe:
+                assert "remote:after" in str(
+                    await probe.call_tool("echo_value", {"value": "after"})
+                )
+
+    asyncio.run(run())
+
+
+def test_http_business_error_and_lost_transport_remain_distinct(tmp_path: Path) -> None:
+    async def run() -> None:
+        async with _http_service(tmp_path) as (remote, port):
+            path = await asyncio.to_thread(
+                _configuration, tmp_path, ("local",), remote_port=port
+            )
+            observed_call_failure = False
+            try:
+                async with open_catalog(await read_configuration(path)) as catalog:
+                    tool = catalog.tools[("remote", "echo_value")]
+                    failed = await tool.ainvoke(
+                        {
+                            "type": "tool_call",
+                            "name": tool.name,
+                            "id": "failed",
+                            "args": {"value": "fail"},
+                        }
+                    )
+                    assert isinstance(failed, ToolMessage) and failed.status == "error"
+                    remote.terminate()
+                    await remote.wait()
+                    with pytest.raises(Exception, match="(?i)connect|closed|transport"):
+                        await tool.ainvoke({"value": "transport-lost"})
+                    observed_call_failure = True
+            except* (ConnectError, ReadError):
+                # SDK 也可能在退出时暴露 HTTP 会话异常。
+                pass
+            assert observed_call_failure
+            await _assert_stopped(await _pids(tmp_path, "local"))
+
+    asyncio.run(run())
+
+
+def test_http_request_cancellation_keeps_remote_server_alive(tmp_path: Path) -> None:
+    async def run() -> None:
+        async with _http_service(tmp_path) as (remote, port):
+            path = await asyncio.to_thread(
+                _configuration, tmp_path, ("local",), remote_port=port
+            )
+
+            async def call() -> None:
+                async with open_catalog(await read_configuration(path)) as catalog:
+                    await catalog.tools[("remote", "echo_value")].ainvoke(
+                        {"value": "wait"}
+                    )
+
+            parent = asyncio.create_task(call())
+            try:
+                assert await _wait_text(tmp_path / "remote.calls") == "wait\n"
+            finally:
+                parent.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await parent
+                await _assert_stopped(await _pids(tmp_path, "local"))
+            assert remote.returncode is None
+
+    asyncio.run(run())

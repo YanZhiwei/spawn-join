@@ -10,13 +10,12 @@ from typing import TYPE_CHECKING
 
 from langchain_core.tools import BaseTool
 from spawn_join_agent_deepagents.mcp._types import (
-    McpConfigurationError,
     McpLoadReport,
     McpServerReport,
 )
 
 if TYPE_CHECKING:
-    from fastmcp.mcp_config import StdioMCPServer
+    from fastmcp.mcp_config import RemoteMCPServer, StdioMCPServer
     from langchain.mcp import MCPAdapter
 
     # 内部模块共享配置记录，避免新增公共类型。
@@ -32,7 +31,7 @@ class _Catalog:
 
 
 def create_adapter(
-    name: str, server: StdioMCPServer, timeout_ms: float | None
+    name: str, server: StdioMCPServer | RemoteMCPServer, timeout_ms: float | None
 ) -> MCPAdapter:
     from fastmcp import Client
     from fastmcp.client.group import ClientGroup
@@ -49,13 +48,6 @@ def create_adapter(
 async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog, None]:
     """持有适配器上下文，提供保留原始身份的原生工具。"""
     from fastmcp.client.group import ClientGroup
-    from fastmcp.mcp_config import StdioMCPServer
-
-    for name, server in configuration.official.mcpServers.items():
-        if name not in configuration.disabled_servers and not isinstance(
-            server, StdioMCPServer
-        ):
-            raise McpConfigurationError("MCP transport: stdio required by this prefix")
 
     tools: dict[tuple[str, str], BaseTool] = {}
     reports: list[McpServerReport] = []
@@ -65,7 +57,6 @@ async def open_catalog(configuration: _Configuration) -> AsyncGenerator[_Catalog
             if name in configuration.disabled_servers:
                 reports.append(McpServerReport(name, required, "disabled", 0))
                 continue
-            assert isinstance(server, StdioMCPServer)
             adapter = create_adapter(name, server, configuration.request_timeouts[name])
             # 适配器可能克隆 Client；持有其自身上下文，让工具复用同一活动连接。
             await resources.enter_async_context(adapter)
