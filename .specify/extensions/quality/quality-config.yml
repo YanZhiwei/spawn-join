@@ -81,7 +81,7 @@ profiles:
     match: ["packages/infra/agent-deepagents/**"]
     discovery_files: [pyproject.toml, packages/infra/agent-deepagents/pyproject.toml, packages/infra/agent-deepagents/uv.lock]
     commands:
-      # The package gate syncs --extra mcp and checks base/extra wheel consumers.
+      # The gate checks base isolation plus mixed/optional-failed MCP wheel calls and cleanup.
       quality: "pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents"
     rules:
       complexity_max: 10

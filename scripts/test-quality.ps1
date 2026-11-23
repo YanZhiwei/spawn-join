@@ -120,6 +120,11 @@ def test_official_mcp_dependencies_are_installed() -> None:
 '@
     Set-Content -LiteralPath $agentProbe -Value $mcpProbe
     Assert-GateResult 'Agent test gate installs the MCP extra' test $true '' 'spawn-join-agent-deepagents'
+    Set-Content -LiteralPath $agentProbe -Value ($mcpProbe.Replace(
+            'assert callable(Client) and callable(MCPAdapter)', "assert False, 'mcp-protocol-test-probe'"))
+    Assert-GateResult 'MCP protocol test failures cannot be skipped' test $false `
+        'mcp-protocol-test-probe' 'spawn-join-agent-deepagents'
+    Set-Content -LiteralPath $agentProbe -Value $mcpProbe
     $brokenProbe = $qualityText.Replace('from langchain.mcp import MCPAdapter',
         "raise RuntimeError('mcp-extra-wheel-probe')")
     Set-Content -LiteralPath $runner -Value $brokenProbe
