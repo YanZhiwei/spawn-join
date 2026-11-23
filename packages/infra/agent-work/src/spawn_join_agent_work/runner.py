@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Sequence
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -11,10 +12,21 @@ from uuid import uuid4
 from .errors import LeaseLostError, WorkConfigurationError
 from .models import WorkItem, WorkOutcome, WorkResult
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
-from .protocols import Clock, WorkExecutor, WorkStore
+from .protocols import Clock, Notifier, WorkExecutor, WorkStore
 from .stores._support import SystemClock, require_aware
 
+_LOGGER = logging.getLogger(__name__)
 _MAX_ERROR_CHARS = 500
+_SHUTDOWN_TIMEOUT_SECONDS = 5.0
+_DEFAULT_RETENTION_SECONDS = 30 * 24 * 60 * 60
+_DEFAULT_PRUNE_INTERVAL_SECONDS = 60 * 60
+
+
+def _require_positive_number(label: str, value: object) -> None:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise WorkConfigurationError(f"{label}: must be a number")
+    if value <= 0:
+        raise WorkConfigurationError(f"{label}: must be > 0")
 
 
 class WorkRunner:
@@ -22,6 +34,7 @@ class WorkRunner:
 
     Durable retries stop at ``min(WorkSpec.max_attempts, RetryPolicy.max_attempts)``:
     the spec bounds the item's lifetime, the policy bounds this runner's retries.
+    ``serve`` is a one-shot lifecycle: after ``astop`` create a new runner.
     """
 
     def __init__(
@@ -36,7 +49,12 @@ class WorkRunner:
         retry_policy: RetryPolicy | None = None,
         concurrency: ConcurrencyPolicy | None = None,
         owner: str | None = None,
+        notifier: Notifier | None = None,
+        retention_seconds: float = _DEFAULT_RETENTION_SECONDS,
+        prune_interval_seconds: float = _DEFAULT_PRUNE_INTERVAL_SECONDS,
     ) -> None:
+        _require_positive_number("retention_seconds", retention_seconds)
+        _require_positive_number("prune_interval_seconds", prune_interval_seconds)
         self._store = store
         self._executor = executor
         self._clock: Clock = clock or SystemClock()
@@ -46,6 +64,14 @@ class WorkRunner:
         self._retry = retry_policy or RetryPolicy()
         self._concurrency = concurrency or ConcurrencyPolicy()
         self._owner = owner or f"runner-{uuid4().hex}"
+        self._notifier = notifier
+        self._retention_seconds = retention_seconds
+        self._prune_interval_seconds = prune_interval_seconds
+        self._stop = asyncio.Event()
+        self._wake = asyncio.Event()
+        self._stopped = False
+        self._inflight: dict[asyncio.Task[None], WorkItem] = {}
+        self._serve_task: asyncio.Task[None] | None = None
 
     @property
     def owner(self) -> str:
@@ -73,6 +99,135 @@ class WorkRunner:
             await self._execute(claimed[0])
             processed += 1
         return processed
+
+    async def serve(self, stop: asyncio.Event | None = None) -> None:
+        """Run the claim/execute loop until stopped; cleans up on exit."""
+
+        if self._stopped:
+            return
+        if stop is not None:
+            self._stop = stop
+        else:
+            self._stop = asyncio.Event()
+        self._wake = asyncio.Event()
+        self._serve_task = asyncio.current_task()
+        wakeups: asyncio.Task[None] | None = None
+        if self._notifier is not None:
+            wakeups = asyncio.create_task(self._consume_wakeups())
+        last_prune = self._now()
+        try:
+            while not self._stop.is_set():
+                await self._fill_slots()
+                last_prune = await self._prune_if_due(last_prune)
+                if self._stop.is_set():
+                    break
+                await self._wait_for_wake()
+        finally:
+            if wakeups is not None:
+                wakeups.cancel()
+                with suppress(asyncio.CancelledError):
+                    await wakeups
+            await self._cancel_inflight()
+            if self._notifier is not None:
+                await self._notifier.aclose()
+            self._serve_task = None
+
+    async def astop(self) -> None:
+        """Stop serving and release in-flight leases; safe to call twice."""
+
+        self._stopped = True
+        self._stop.set()
+        self._wake.set()
+        task = self._serve_task
+        if task is None or task is asyncio.current_task():
+            return
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=10)
+        except TimeoutError:
+            _LOGGER.warning("work runner shutdown exceeded 10s")
+
+    async def _fill_slots(self) -> None:
+        remaining = self._concurrency.max_concurrency - len(self._inflight)
+        while remaining > 0:
+            batch = min(self._concurrency.claim_batch, remaining)
+            claimed = await self._store.claim(
+                owner=self._owner,
+                queues=self._queues,
+                namespace=self._namespace,
+                limit=batch,
+                lease_seconds=self._lease.seconds,
+                now=self._now(),
+            )
+            if not claimed:
+                return
+            for item in claimed:
+                task = asyncio.create_task(self._execute(item))
+                self._inflight[task] = item
+                task.add_done_callback(self._task_done)
+            remaining -= len(claimed)
+            if len(claimed) < batch:
+                return
+
+    def _task_done(self, task: asyncio.Task[None]) -> None:
+        self._inflight.pop(task, None)
+        if task.cancelled():
+            return
+        error = task.exception()
+        if error is not None and not isinstance(error, LeaseLostError):
+            _LOGGER.error("work execution task failed", exc_info=error)
+
+    async def _cancel_inflight(self) -> None:
+        pending = list(self._inflight.items())
+        if not pending:
+            return
+        for task, _ in pending:
+            task.cancel()
+        tasks = [task for task, _ in pending]
+        _, still_running = await asyncio.wait(tasks, timeout=_SHUTDOWN_TIMEOUT_SECONDS)
+        if still_running:
+            _LOGGER.warning(
+                "%d work task(s) ignored cancellation; their leases will expire",
+                len(still_running),
+            )
+        now = self._now()
+        for task, item in pending:
+            if task in still_running or item.lease is None:
+                continue
+            with suppress(Exception):
+                await self._store.fail(
+                    work_id=item.id,
+                    token=item.lease.token,
+                    error="runner stopped",
+                    retry_at=now,
+                    terminal=False,
+                )
+        self._inflight.clear()
+
+    async def _wait_for_wake(self) -> None:
+        try:
+            await asyncio.wait_for(
+                self._wake.wait(),
+                timeout=self._concurrency.poll_interval_seconds,
+            )
+        except TimeoutError:
+            return
+        self._wake.clear()
+
+    async def _prune_if_due(self, last_prune: datetime) -> datetime:
+        now = self._now()
+        if (now - last_prune).total_seconds() < self._prune_interval_seconds:
+            return last_prune
+        await self._store.prune(before=now - timedelta(seconds=self._retention_seconds))
+        return now
+
+    async def _consume_wakeups(self) -> None:
+        if self._notifier is None:
+            return
+        try:
+            async for _event in self._notifier.subscribe(self._queues):
+                self._wake.set()
+        except Exception:  # notification is best-effort; polling still drains
+            return
 
     async def _execute(self, item: WorkItem) -> None:
         lease = item.lease

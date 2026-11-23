@@ -3,14 +3,13 @@
 [简体中文](README.md) | [English](README.en.md)
 
 供 SpawnJoin 宿主复用的长任务契约与桌面适配器。
-当前能力：模型、策略与适配器端口。提供 SQLite 持久化、原子 claim 与租约 fencing。内存存储作为同一契约的第二实现。WorkRunner.run_once() 执行一个有界批次。
+当前能力：模型、策略与适配器端口。提供 SQLite 持久化、原子 claim 与租约 fencing。内存存储作为同一契约的第二实现。WorkRunner.run_once() 执行一个有界批次。提供 serve()/astop() 与 ZeroMQ 唤醒。
 
 ## 状态、适用范围与兼容性
 
 版本 0.1.0，preview，Python >=3.11；尚未发布到 PyPI，使用仓库本地安装。
 适合需要组合下列契约和已实现适配器的宿主，桌面默认不要求外部服务。
 
-- 当前只提供有界 run_once()，不提供 serve()、astop() 或唤醒适配器。
 - 本层不切换宿主 CLI，不提供 Postgres/MQ、多机调度或租户/认证系统。
 
 ## 安装与最短示例
@@ -58,6 +57,7 @@ Distribution 声明 pyzmq>=27.3.0,<28；SQLite 使用标准库。
 | ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
 | storage | `SqliteWorkStore`, `InMemoryWorkStore` |
 | runtime | `WorkRunner` |
+| notifications | `ZmqNotifier` |
 | errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
 
 WorkSpec 接收 kind、bytes payload 和 idempotency_key。WorkState 表达
@@ -87,7 +87,9 @@ max_concurrency=2、claim_batch=1、poll_interval_seconds=1。
 
 SQLite 默认 WAL、busy_timeout=5000ms、schema_version=1。Store 是真相；heartbeat/complete/fail/defer 校验租约 token，waiting 需由宿主 resume 后才可领取；控制面 resume/cancel 不需要 token。不提供旧 work.db 迁移。
 
-执行语义是 at-least-once，外部副作用应幂等。重试在 min(WorkSpec.max_attempts, RetryPolicy.max_attempts) 停止；spec 耗尽进入 dead，策略提前停止进入 failed。`run_once()` 串行逐项领取，单次最多执行 `limit` 项，省略时使用 `claim_batch`。取消会继续传播，当前任务保留为 `running`，等待租约过期后恢复。
+执行语义是 at-least-once，外部副作用应幂等。重试在 min(WorkSpec.max_attempts, RetryPolicy.max_attempts) 停止；spec 耗尽进入 dead，策略提前停止进入 failed。`run_once()` 串行逐项领取，单次最多执行 `limit` 项，省略时使用 `claim_batch`。取消会继续传播，当前任务保留为 `running`，等待租约过期后恢复。 `serve()/astop()` 单独负责取消在途任务并释放可回收的租约；忽略取消的执行器须等待租约过期。
+
+ZmqNotifier 默认 tcp://127.0.0.1:5559、LINGER=0；通知只带 work_id/queue，不携带业务 payload，丢失时由轮询兜底。Windows 宿主为 zmq.asyncio 使用 selector 事件循环。serve() 为单次生命周期，astop() 后再次常驻应新建 runner。
 
 ## 错误与限制
 
@@ -106,7 +108,7 @@ SQLite 属于桌面适配器，不适用于服务端档位或多机部署。
 
 ## 开发与验证
 
-源码位于 src/spawn_join_agent_work/（models.py / policies.py / protocols.py / errors.py / stores/ / runner.py），测试位于 tests/。
+源码位于 src/spawn_join_agent_work/（models.py / policies.py / protocols.py / errors.py / stores/ / runner.py / notify/），测试位于 tests/。
 每包拥有独立 uv.lock 与 .venv，仓库根目录仅有工具配置。
 配置质量门需要 Python >=3.11、uv、PowerShell 7 和 Node 22+。
 

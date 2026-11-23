@@ -3,14 +3,13 @@
 [简体中文](README.md) | [English](README.en.md)
 
 Reusable work lifecycle contracts and desktop adapters for SpawnJoin hosts.
-Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing. In-memory storage provides a second implementation of the same contract. WorkRunner.run_once() executes one bounded batch.
+Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing. In-memory storage provides a second implementation of the same contract. WorkRunner.run_once() executes one bounded batch. serve()/astop() and ZeroMQ wake-up are available.
 
 ## Status, scope and compatibility
 
 Version 0.1.0, preview, Python >=3.11; not published to PyPI. Install from the repository.
 Suitable for hosts composing the capabilities listed below. Desktop use needs no external service.
 
-- Only bounded run_once() is available; no serve(), astop() or wake-up adapter.
 - No host CLI migration, Postgres/MQ, multi-host scheduling or tenant/auth system.
 
 ## Installation and shortest example
@@ -58,6 +57,7 @@ Only the names in this table are exported by this version:
 | ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
 | storage | `SqliteWorkStore`, `InMemoryWorkStore` |
 | runtime | `WorkRunner` |
+| notifications | `ZmqNotifier` |
 | errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
 
 WorkSpec accepts kind, a bytes payload and an idempotency_key. WorkState models
@@ -87,7 +87,9 @@ max_concurrency=2, claim_batch=1 and poll_interval_seconds=1.
 
 SQLite defaults: WAL, busy_timeout=5000ms and schema_version=1. The store owns truth; heartbeat/complete/fail/defer require the lease token. waiting is not claimed until resumed. Host control-plane resume/cancel do not require that token. No old work.db migration is provided.
 
-Execution is at-least-once: use idempotent external effects. Retry stops at min(WorkSpec.max_attempts, RetryPolicy.max_attempts); spec exhaustion becomes dead, a policy stop becomes failed. `run_once()` claims and executes serially, processing at most `limit` items or `claim_batch` when omitted. Cancellation propagates and leaves the current item `running` until lease expiry allows recovery.
+Execution is at-least-once: use idempotent external effects. Retry stops at min(WorkSpec.max_attempts, RetryPolicy.max_attempts); spec exhaustion becomes dead, a policy stop becomes failed. `run_once()` claims and executes serially, processing at most `limit` items or `claim_batch` when omitted. Cancellation propagates and leaves the current item `running` until lease expiry allows recovery. `serve()/astop()` separately cancel in-flight tasks and release recoverable leases; an executor ignoring cancellation must wait for lease expiry.
+
+ZmqNotifier defaults to tcp://127.0.0.1:5559 and LINGER=0; notifications carry work_id/queue, never the business payload. Lost notifications are covered by polling. Windows hosts use a selector event loop for zmq.asyncio. serve() is one lifecycle; construct a new runner after astop().
 
 ## Errors and limitations
 
@@ -108,7 +110,7 @@ Store owns truth and notifications are best effort. Boundaries are defined by
 
 ## Development and verification
 
-Sources: src/spawn_join_agent_work/ (models.py / policies.py / protocols.py / errors.py / stores/ / runner.py); tests are in tests/.
+Sources: src/spawn_join_agent_work/ (models.py / policies.py / protocols.py / errors.py / stores/ / runner.py / notify/); tests are in tests/.
 Each distribution owns its uv.lock and .venv; the repository root is tool-only.
 Use Python >=3.11, uv, PowerShell 7 and Node 22+ for the configured quality gate.
 

@@ -37,7 +37,7 @@ published to PyPI. Core is currently a scaffold.
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.en.md) | Validated LangChain model construction and named model catalogs | `create_chat_model`, `ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.en.md) | Manual metadata synchronization from sources such as models.dev | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.en.md) | Supervisor assembly, model bindings, middleware, delegation, and recovery seams | `build_supervisor` |
-| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Durable stores and bounded serial execution with leases and retries | `WorkRunner`, `SqliteWorkStore` |
+| [spawn-join-agent-work](packages/infra/agent-work/README.en.md) | Durable stores, serial and continuous execution, ZeroMQ wake-ups | `WorkRunner`, `ZmqNotifier` |
 | [spawn-join-personal-assistant](packages/apps/personal-assistant/README.en.md) | Personal assistant host application: work items, scheduling, approvals, and confined-workspace execution (delivered in slices) | `AppConfig` |
 | [spawn-join-core](packages/core/spawn-join-core/README.en.md) | Shared foundations; currently a scaffold with no callable public API | `__version__` |
 
