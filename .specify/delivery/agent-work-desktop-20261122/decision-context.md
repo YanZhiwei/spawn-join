@@ -75,4 +75,3 @@
   Spec/Plan/Data Model/ADR-0018 已改为“首次启动直接创建当前 schema”；已批准的 exploration
   packet 保持原字节（历史快照），差异由本记录与重新呈现的 Plan gate 承载。
 - **仍缺证据**：SQLite 轻量基准、pyzmq 桌面打包体积、Postgres 可行性；由 Tasks/后续切片验证。
-
