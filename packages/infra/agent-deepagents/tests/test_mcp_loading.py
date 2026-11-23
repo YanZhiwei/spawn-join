@@ -1,4 +1,4 @@
-"""Safe public MCP snapshots, independent of live services."""
+"""无需真实服务的 MCP 公开快照契约测试。"""
 
 from collections.abc import MutableMapping
 from dataclasses import FrozenInstanceError, fields
@@ -19,7 +19,7 @@ from spawn_join_agent_deepagents.mcp import (
 
 @tool
 def hidden_tool(value: str) -> str:
-    """secret-tool-description with a private endpoint."""
+    """secret-tool-description：用于检查私有工具描述的脱敏。"""
     return value
 
 
@@ -35,7 +35,7 @@ def test_reports_and_outer_collections_are_immutable_snapshots() -> None:
         with pytest.raises(FrozenInstanceError):
             setattr(snapshot.report, attribute.name, None)
     with pytest.raises(TypeError):
-        # Deliberately attempt the write forbidden by the public Mapping contract.
+        # 故意写入只读映射，验证公开契约。
         cast(MutableMapping[str, tuple[BaseTool, ...]], snapshot.toolsets)["other"] = ()
 
 

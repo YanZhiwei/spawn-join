@@ -12,6 +12,7 @@ from spawn_join_agent_work import (
     InMemoryWorkStore,
     LeaseLostError,
     RetryPolicy,
+    WorkConfigurationError,
     WorkItem,
     WorkOutcome,
     WorkResult,
@@ -158,7 +159,8 @@ def test_run_once_returns_zero_when_no_work() -> None:
     assert asyncio.run(runner.run_once()) == 0
 
 
-def test_run_once_respects_claim_batch() -> None:
+@pytest.mark.parametrize("limit, expected", [(None, 2), (1, 1), (3, 3)])
+def test_run_once_respects_claim_batch(limit: int | None, expected: int) -> None:
     clock = FrozenClock(NOW)
     store = InMemoryWorkStore(clock=clock)
     items = [
@@ -176,14 +178,71 @@ def test_run_once_respects_claim_batch() -> None:
         concurrency=ConcurrencyPolicy(claim_batch=2),
     )
 
-    assert asyncio.run(runner.run_once()) == 2
+    assert asyncio.run(runner.run_once(limit=limit)) == expected
     states = [
         entry.state
         for entry in (asyncio.run(store.get(item.id)) for item in items)
         if entry is not None
     ]
-    assert states.count(WorkState.COMPLETED) == 2
-    assert states.count(WorkState.QUEUED) == 1
+    assert states.count(WorkState.COMPLETED) == expected
+    assert states.count(WorkState.QUEUED) == 3 - expected
+
+
+@pytest.mark.parametrize("limit", [0, -1])
+def test_run_once_rejects_nonpositive_limit(limit: int) -> None:
+    clock = FrozenClock(NOW)
+    runner = _make_runner(
+        InMemoryWorkStore(clock=clock), clock, WorkResult(outcome=WorkOutcome.SUCCESS)
+    )
+    with pytest.raises(WorkConfigurationError, match="limit: must be >= 1"):
+        asyncio.run(runner.run_once(limit=limit))
+
+
+def test_run_once_does_not_reserve_idle_items_before_execution() -> None:
+    async def scenario() -> None:
+        clock = FrozenClock(NOW)
+        store = InMemoryWorkStore(clock=clock)
+        first = await store.enqueue(
+            WorkSpec(kind="first", payload=b"{}", idempotency_key="first", priority=10)
+        )
+        second = await store.enqueue(
+            WorkSpec(kind="second", payload=b"{}", idempotency_key="second")
+        )
+        calls: list[tuple[str, str]] = []
+
+        async def takeover(item: WorkItem) -> WorkResult:
+            calls.append(("takeover", item.id))
+            return WorkResult(outcome=WorkOutcome.SUCCESS)
+
+        async def execute(item: WorkItem) -> WorkResult:
+            calls.append(("original", item.id))
+            if item.id == first.id:
+                clock.value += timedelta(seconds=61)
+                assert item.lease is not None
+                # 模拟执行项已续租，验证尚未执行的后续项不会持有闲置租约。
+                assert await store.heartbeat(
+                    work_id=item.id,
+                    token=item.lease.token,
+                    lease_until=clock.now() + timedelta(seconds=60),
+                )
+                other = WorkRunner(store, takeover, clock=clock, owner="takeover")
+                assert await other.run_once() == 1
+            return WorkResult(outcome=WorkOutcome.SUCCESS)
+
+        runner = WorkRunner(
+            store,
+            execute,
+            clock=clock,
+            owner="original",
+            concurrency=ConcurrencyPolicy(claim_batch=2),
+        )
+        assert await runner.run_once() == 1
+        assert calls == [("original", first.id), ("takeover", second.id)]
+        for work_id in (first.id, second.id):
+            finished = await store.get(work_id)
+            assert finished is not None and finished.state is WorkState.COMPLETED
+
+    asyncio.run(scenario())
 
 
 def test_retry_policy_limit_stops_retries() -> None:
