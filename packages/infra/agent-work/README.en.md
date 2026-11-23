@@ -3,14 +3,14 @@
 [简体中文](README.md) | [English](README.en.md)
 
 Reusable work lifecycle contracts and desktop adapters for SpawnJoin hosts.
-Current capabilities: Models, policies and adapter ports.
+Current capabilities: Models, policies and adapter ports. SQLite persistence with atomic claim and lease fencing.
 
 ## Status, scope and compatibility
 
 Version 0.1.0, preview, Python >=3.11; not published to PyPI. Install from the repository.
 Suitable for hosts composing the capabilities listed below. Desktop use needs no external service.
 
-- No storage adapter or task execution is provided by this version.
+- Storage is available; hosts supply execution and scheduling.
 - No host CLI migration, Postgres/MQ, multi-host scheduling or tenant/auth system.
 
 ## Installation and shortest example
@@ -23,11 +23,23 @@ uv sync --locked --directory packages/infra/agent-work
 ```
 
 ```python
-from spawn_join_agent_work import RetryPolicy, WorkSpec
+import asyncio
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-spec = WorkSpec(kind="report", payload=b"hello", idempotency_key="demo")
-assert spec.kind == "report"
-assert RetryPolicy().delay_seconds(1) == 1.0
+from spawn_join_agent_work import SqliteWorkStore, WorkSpec
+
+
+async def main() -> None:
+    with TemporaryDirectory() as directory:
+        store = SqliteWorkStore(Path(directory) / "work.db")
+        item = await store.enqueue(
+            WorkSpec(kind="report", payload=b"hello", idempotency_key="demo")
+        )
+        assert item.spec.kind == "report"
+
+
+asyncio.run(main())
 ```
 
 The distribution declares pyzmq>=27.3.0,<28; SQLite uses the standard library.
@@ -42,6 +54,7 @@ Only the names in this table are exported by this version:
 | models | `WorkSpec`, `WorkItem`, `WorkState`, `WorkOutcome`, `WorkLease`, `WorkResult`, `WorkEvent` |
 | policies | `RetryPolicy`, `LeasePolicy`, `ConcurrencyPolicy` |
 | ports | `Clock`, `Notifier`, `WorkExecutor`, `WorkStore` |
+| storage | `SqliteWorkStore` |
 | errors | `WorkError`, `WorkConfigurationError`, `WorkConflictError`, `WorkNotFoundError`, `LeaseLostError`, `StoreError`, `NotifierError` |
 
 WorkSpec accepts kind, a bytes payload and an idempotency_key. WorkState models
@@ -69,6 +82,8 @@ RetryPolicy defaults to max_attempts=3, base_seconds=1, multiplier=2, jitter=0;
 LeasePolicy to seconds=60 and heartbeat_seconds=20; ConcurrencyPolicy to
 max_concurrency=2, claim_batch=1 and poll_interval_seconds=1.
 
+SQLite defaults: WAL, busy_timeout=5000ms and schema_version=1. The store owns truth; heartbeat/complete/fail/defer require the lease token. waiting is not claimed until resumed. Host control-plane resume/cancel do not require that token. No old work.db migration is provided.
+
 ## Errors and limitations
 
 WorkConfigurationError rejects invalid contract inputs. WorkConflictError,
@@ -88,7 +103,7 @@ Store owns truth and notifications are best effort. Boundaries are defined by
 
 ## Development and verification
 
-Sources: src/spawn_join_agent_work/ (models.py / policies.py / protocols.py / errors.py); tests are in tests/.
+Sources: src/spawn_join_agent_work/ (models.py / policies.py / protocols.py / errors.py / stores/); tests are in tests/.
 Each distribution owns its uv.lock and .venv; the repository root is tool-only.
 Use Python >=3.11, uv, PowerShell 7 and Node 22+ for the configured quality gate.
 

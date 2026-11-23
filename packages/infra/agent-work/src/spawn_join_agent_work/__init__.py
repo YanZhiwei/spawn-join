@@ -22,6 +22,7 @@ from .models import (
 )
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
 from .protocols import Clock, Notifier, WorkExecutor, WorkStore
+from .stores import SqliteWorkStore
 
 __all__ = [
     "Clock",
@@ -31,6 +32,7 @@ __all__ = [
     "Notifier",
     "NotifierError",
     "RetryPolicy",
+    "SqliteWorkStore",
     "StoreError",
     "WorkConfigurationError",
     "WorkConflictError",

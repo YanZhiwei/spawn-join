@@ -34,7 +34,7 @@ SpawnJoin 将公共输入读取与校验、类型化模型配置、LangChain 模
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.md) | 经校验的 LangChain 模型构造与命名模型目录 | `create_chat_model`、`ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.md) | 从 models.dev 等数据源手动同步元数据 | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.md) | Supervisor 装配、模型绑定、Middleware、委派与恢复接缝 | `build_supervisor` |
-| [spawn-join-agent-work](packages/infra/agent-work/README.md) | 长任务模型、策略与适配器端口 | `WorkSpec`、`WorkStore` |
+| [spawn-join-agent-work](packages/infra/agent-work/README.md) | SQLite 持久化、原子领取与租约 fencing | `SqliteWorkStore` |
 | [spawn-join-personal-assistant](packages/apps/personal-assistant/README.md) | 个人助理宿主应用：工作项、调度、审批与受限工作区执行（按切片交付中） | `AppConfig` |
 | [spawn-join-core](packages/core/spawn-join-core/README.md) | 共享基础；当前为骨架，无可调用的公共 API | `__version__` |
 
