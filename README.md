@@ -34,7 +34,7 @@ SpawnJoin 将公共输入读取与校验、类型化模型配置、LangChain 模
 | [spawn-join-llm-provider-langchain](packages/infra/llm-provider-langchain/README.md) | 经校验的 LangChain 模型构造与命名模型目录 | `create_chat_model`、`ModelCatalog` |
 | [spawn-join-llm-model-sync](packages/infra/llm-model-sync/README.md) | 从 models.dev 等数据源手动同步元数据 | `spawn-join-model-sync` |
 | [spawn-join-agent-deepagents](packages/infra/agent-deepagents/README.md) | Supervisor 装配、模型绑定、Middleware、委派与恢复接缝 | `build_supervisor` |
-| [spawn-join-agent-work](packages/infra/agent-work/README.md) | 可复用长任务运行时：桌面 SQLite + ZeroMQ，端口可替换存储/队列（Phase 1 骨架，计划能力） | 无公共 API（Phase 1 骨架） |
+| [spawn-join-agent-work](packages/infra/agent-work/README.md) | 长任务模型、策略与适配器端口 | `WorkSpec`、`WorkStore` |
 | [spawn-join-personal-assistant](packages/apps/personal-assistant/README.md) | 个人助理宿主应用：工作项、调度、审批与受限工作区执行（按切片交付中） | `AppConfig` |
 | [spawn-join-core](packages/core/spawn-join-core/README.md) | 共享基础；当前为骨架，无可调用的公共 API | `__version__` |
 
@@ -108,7 +108,9 @@ uv run --locked --directory packages/infra/agent-deepagents python examples/basi
 | 配置模型思考参数 | [思考与思考强度](packages/infra/llm-provider-langchain/README.md#思考与思考强度) |
 | 同步价格与能力元数据 | [模型元数据同步](packages/infra/llm-model-sync/README.md) |
 | 组合 supervisor 与 worker | [DeepAgents 产品装配](packages/infra/agent-deepagents/README.md) |
+| 配置多个 MCP 与工具集 | [Agent MCP 用法](packages/infra/agent-deepagents/README.md#安装) · [MCP 资源边界 ADR](docs/decisions/agent/0017-mcp-product-integration.md) |
 | 理解架构 | [包边界](docs/architecture/package-boundaries.md) · [ADR 入口](docs/decisions/README.md#决策索引) |
+| 复用长任务生命周期 | [Agent Work 包边界 ADR](docs/decisions/engineering/0018-agent-work-package-boundary.md) |
 | 执行本地与 CI 检查 | [质量门](docs/development/quality-gates.md) |
 | 理解交付流程 | [协作规则](AGENTS.md) · [Delivery 安装](docs/development/spec-kit-delivery.md) · [Harness](harness/README.md) |
 | 导航源码或绘制技术图 | [仓库地图](docs/architecture/repository-map.md) · [技术图说明](docs/development/technical-diagrams.md) |
@@ -136,7 +138,7 @@ Black/isort 负责格式，Ruff 负责 lint，Pyright 使用 strict 模式，pyt
 
 ## 限制与发布状态
 
-- Channel 包只定义契约，不实现 HTTP channel、池化、路由或健康选路。
+- Channel 提供连接检查、认证与模型发现，不实现请求池化、自动路由或健康选路。
 - 模型工厂不推断 Provider 能力，也不自动切换协议。
 - 受控委派仅支持异步执行；持久化、业务权限和外部资源生命周期由宿主管理。
 - Core 为骨架，当前没有 database Distribution。

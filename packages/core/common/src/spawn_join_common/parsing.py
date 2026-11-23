@@ -47,10 +47,50 @@ class FieldReader:
         if problems:
             self.fail(f"{path}: {'; '.join(problems)}")
 
+    def as_fields(
+        self,
+        value: object,
+        path: str,
+        *,
+        required: frozenset[str] = frozenset(),
+        optional: frozenset[str] = frozenset(),
+    ) -> dict[str, object]:
+        """复制严格映射，并校验必需字段和允许字段。"""
+        fields = self.as_mapping(value, path)
+        self.require_keys(fields, required=required, optional=optional, path=path)
+        return fields
+
     def as_str(self, value: object, path: str) -> str:
         if not isinstance(value, str):
             self.fail(f"{path}: must be a string")
         return value
+
+    def as_string_mapping(self, value: object, path: str) -> dict[str, str]:
+        """复制字符串映射，错误信息不包含实际键值。"""
+        return {
+            key: self.as_str(item, path)
+            for key, item in self.as_mapping(value, path).items()
+        }
+
+    def as_string_tuple(
+        self,
+        value: object,
+        path: str,
+        *,
+        allow_empty: bool = True,
+        indexed_errors: bool = True,
+    ) -> tuple[str, ...]:
+        """严格读取字符串列表，由调用方指定空串和错误路径策略。"""
+        if not isinstance(value, list):
+            self.fail(f"{path}: must be a list of strings")
+        items: list[str] = []
+        for index, item in enumerate(cast("list[object]", value)):
+            item_path = f"{path}[{index}]" if indexed_errors else path
+            if not isinstance(item, str) or (not allow_empty and item == ""):
+                expected = "a string" if allow_empty else "a non-empty string"
+                self.fail(f"{item_path}: must be {expected}")
+            items.append(item)
+        return tuple(items)
 
     def as_int(self, value: object, path: str) -> int:
         if isinstance(value, bool) or not isinstance(value, int):

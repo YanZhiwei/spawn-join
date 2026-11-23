@@ -179,7 +179,7 @@ def test_mcp_dependencies_are_optional_and_bounded() -> None:
     )
 
 
-def test_mcp_namespace_exports_only_implemented_types() -> None:
+def test_mcp_namespace_exports_the_complete_optional_surface() -> None:
     import spawn_join_agent_deepagents.mcp as mcp
 
     assert set(mcp.__all__) == {
@@ -189,6 +189,7 @@ def test_mcp_namespace_exports_only_implemented_types() -> None:
         "McpLoadReport",
         "McpServerReport",
         "McpTools",
+        "open_mcp_tools",
     }
-    assert not hasattr(mcp, "open_mcp_tools")
+    assert callable(mcp.open_mcp_tools)
     assert not set(mcp.__all__).intersection(package.__all__)

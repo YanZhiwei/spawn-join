@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "local": {"command": "python", "args": ["examples/mcp_tools.py", "--stdio"]},
+    "remote": {
+      "url": "http://127.0.0.1:8000/mcp",
+      "headers": {"X-Demo": "${MCP_DEMO_LABEL}"},
+      "timeout": 5000
+    },
+    "unavailable": {"command": "python", "args": ["-c", "raise SystemExit(1)"]},
+    "disabled": {"command": "python", "args": ["-c", "raise SystemExit(1)"]}
+  },
+  "spawnJoin": {
+    "optionalServers": ["unavailable"],
+    "disabledServers": ["disabled"],
+    "startupTimeoutSeconds": 30,
+    "toolsets": {
+      "supervisor": {"servers": ["local"]},
+      "researcher": {"tools": [{"server": "remote", "name": "echo"}]},
+      "empty": {}
+    }
+  }
+}
