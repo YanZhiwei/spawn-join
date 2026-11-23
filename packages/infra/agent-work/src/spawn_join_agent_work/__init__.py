@@ -22,6 +22,7 @@ from .models import (
 )
 from .policies import ConcurrencyPolicy, LeasePolicy, RetryPolicy
 from .protocols import Clock, Notifier, WorkExecutor, WorkStore
+from .runner import WorkRunner
 from .stores import InMemoryWorkStore, SqliteWorkStore
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "WorkNotFoundError",
     "WorkOutcome",
     "WorkResult",
+    "WorkRunner",
     "WorkSpec",
     "WorkState",
     "WorkStore",
