@@ -60,6 +60,18 @@ jobs:
           UV_PYTHON: ${{ matrix.platform.python }}
           SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}
         run: ./scripts/quality.ps1 -Package $env:PACKAGE_DIST
+      - name: Check minimum MCP clients
+        if: matrix.package == 'spawn-join-agent-deepagents' && matrix.platform.os == 'ubuntu-latest' && matrix.platform.python == '3.11'
+        env:
+          UV_PYTHON: '3.11'
+        run: |
+          $probe = @'
+          import fastmcp, langchain, pytest
+          assert fastmcp.__version__ == "4.0.11"
+          assert langchain.__version__ == "1.4.8"
+          raise SystemExit(pytest.main(["tests/test_mcp_loading.py", "tests/test_mcp_lifecycle.py", "tests/test_mcp_selection.py", "tests/test_mcp_graph.py", "-q"]))
+          '@
+          uv run --isolated --python 3.11 --locked --extra mcp --with fastmcp==4.0.11 --with langchain==1.4.8 --directory packages/infra/agent-deepagents python -c $probe
 
   governance:
     name: Governance and gate regression
