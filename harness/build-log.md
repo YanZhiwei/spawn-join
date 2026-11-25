@@ -1273,3 +1273,7 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 ## 2026-11-25 — 协作指南、文档范围与包覆盖治理
 
 `AGENTS.md` 精简后通过共享文档与显式本地 Feature 的两组检查。发布前逐包核对 9 个 Distribution 的 CI、Spec Kit 与本地注册，并复核 #82 已合并、ADR-0016 仍为 `Proposed`。详见[本次整合的验证记录](evidence/engineering-governance-integration.md)。
+
+## 2026-11-25 — Spec Kit Delivery v0.4.10
+
+通过固定 Release 将 Bundle 从 v0.4.9 升至 v0.4.10。两个宿主均已登记，项目配置与既有运行记录通过哈希复核。安装过程、下载重试及回归结果见[本次安装记录](evidence/delivery-v0410-upgrade.md)。

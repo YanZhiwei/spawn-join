@@ -29,9 +29,9 @@
 
 ## Decision
 
-- 使用满足 Bundle 最低要求的 Specify CLI（本次现场为 1.2.3），使用 v0.4.9 发布 Catalog；
+- 使用满足 Bundle 最低要求的 Specify CLI（本次现场为 1.2.3），使用 v0.4.10 发布 Catalog；
   Bug 按 Bundle pin 安装为 1.0.1。历史 1.4.0 / Bug 1.0.2 观察不作为当前版本依据。
-- 当前交付组件由 v0.4.9 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
+- 当前交付组件由 v0.4.10 Bundle 管理；逐组件 v0.1.0 仅保留为历史 bootstrap 记录。
 - OpenCode 作为当前默认集成，Codex Delivery Skills 与 OpenCode 命令均由安装器注册；
   保留项目任务模板/核心技能定制，不另建路由门面。
 - 删除本项目手工拷贝的 sd、speckit-delivery 门面；不删除用户级共享文件或 Fireworks。
@@ -166,3 +166,4 @@ v0.4.9 通过正式 Release 的 Bundle 更新路径安装，修复领域子目�
   项目。来源固定、配置与运行记录保留、OpenCode 默认集成和原有授权边界保持；
   分层 ADR 与配套文档准入修复的安装验证记录在 v0.4.9 evidence。
 - 2026-11-25：Handoff 与 GitHub 改用同一份项目 PR 模板，供最终发布层声明共享证据。配置归属和升级核对方式见[安装说明](../../development/spec-kit-delivery.md#项目配置)。
+- 2026-11-25 通过固定 Release 将 Bundle 升至 v0.4.10。发布证据校验、Close 回归及双宿主安装结果见 [v0.4.10 安装记录](../../../harness/evidence/delivery-v0410-upgrade.md)。
