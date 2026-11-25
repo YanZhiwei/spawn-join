@@ -1265,3 +1265,7 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 - 验证：`-Check docs`、`-Check governance` 与 `git diff --check` 的实际结果见
   [evidence](../.specify/delivery/desktop-first-package-policy-20261121/evidence.md)。
 - 未创建 `spawn-join-agent-work`，未改产品源码；实现与 ADR `Accepted` 状态留给后续 Feature。
+
+## 2026-11-25 — 恢复 #98 最终集成验收并校验 PR 共享证据
+
+恢复 #98 合并前留在原工作树中的验收文件，并给最终 PR 增加证据检查。用 #98 的真实提交复现了漏交文件的情况。发布分支的门禁、回归结果和历史记录的核对依据见[本次治理验证](evidence/pr-delivery-evidence-publication.md)。

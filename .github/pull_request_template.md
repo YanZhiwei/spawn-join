@@ -1,7 +1,11 @@
+Delivery-Evidence: .specify/delivery/<run-id>/evidence.md
+
+Delivery-Stack: single
+
 <!--
-Delivery 扩展的中文兜底 PR 模板。目标项目可通过 delivery-config.yml 的
-pull_request_template 或自己的 .github/pull_request_template.md 覆盖本模板。
-正文只保留评审所需的核心事实；条件章节只在适用时填写。
+填入本次运行的规范证据路径。独立的 Harness 治理工作可填 harness/evidence/ 下的实际记录。
+单个发布 PR 保留 single。多层发布填 stacked，首层随 PR 带上本次运行的 publication-branches.txt，
+按批准的发布顺序每行一个 PR 源分支。CI 按这个文件和 GitHub 的实际源分支识别最终层。
 保持 `Part of #` / `Closes #` 为英文，GitHub 依赖这些关键字关联和关闭 Issue。
 -->
 

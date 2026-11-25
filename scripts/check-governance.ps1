@@ -20,6 +20,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
+. (Join-Path $PSScriptRoot 'evidence-records.ps1')
 
 $rootPath = [IO.Path]::GetFullPath($Root)
 if (-not (Test-Path -LiteralPath $rootPath -PathType Container)) {
@@ -30,7 +31,6 @@ $script:errorCount = 0
 $script:warningCount = 0
 $script:isShallow = $false
 $script:headCommit = ''
-$resultWords = @('pass', 'fail', 'blocked', 'skipped', 'not-run')
 $adrStatusWords = @('Proposed', 'Accepted', 'Rejected', 'Deprecated', 'Superseded')
 
 function Add-CheckError {
@@ -55,28 +55,6 @@ function Read-Text {
     $text = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
     if ($null -eq $text) { return '' }
     return $text
-}
-
-function Get-EvidenceFields {
-    param([string]$Text)
-    $fields = @{}
-    $patterns = @(
-        '^\s*(?:-\s*)?\*\*([A-Za-z_]+)\*\*\s*:\s*(.*?)\s*$',
-        '^\s*(?:-\s*)?([A-Za-z_]+)\s*:\s*(.*?)\s*$'
-    )
-    foreach ($line in ($Text -split "\r?\n")) {
-        foreach ($pattern in $patterns) {
-            if ($line -match $pattern) {
-                $key = $Matches[1].ToLowerInvariant()
-                $value = $Matches[2].Trim().Trim('`').Trim()
-                if (-not $fields.ContainsKey($key) -and $value) {
-                    $fields[$key] = $value
-                }
-                break
-            }
-        }
-    }
-    return $fields
 }
 
 function Test-Revision {
@@ -116,8 +94,6 @@ function Test-Evidence {
         Add-CheckError 'harness/build-log.md' 'missing or empty evidence build log'
     }
 
-    $required = @('feature_id', 'phase_id', 'base_revision', 'head_revision',
-        'working_directory', 'recorded_at', 'result')
     $files = @(Get-ChildItem -LiteralPath $evidenceDir -File -Filter '*.md' |
             Where-Object { $_.Name -notin @('README.md', 'README.en.md') })
 
@@ -136,27 +112,8 @@ function Test-Evidence {
             }
         }
 
-        foreach ($field in $required) {
-            if (-not $fields.ContainsKey($field) -or -not $fields[$field]) {
-                Add-CheckError $relative "missing field: $field"
-            }
-        }
-
-        if ($fields.ContainsKey('result')) {
-            $word = ($fields['result'] -split '\s+', 2)[0].ToLowerInvariant()
-            if ($word -notin $resultWords) {
-                Add-CheckError $relative "invalid result: $($fields['result'])"
-            }
-        }
-
-        if ($fields.ContainsKey('recorded_at') -and
-            $fields['recorded_at'] -notmatch '^\d{4}-\d{2}-\d{2}') {
-            Add-CheckError $relative "recorded_at must start with YYYY-MM-DD"
-        }
-
-        if ($text -notmatch '(?im)^#{2,4}\s+.*limitation' -and
-            -not $fields.ContainsKey('limitations')) {
-            Add-CheckError $relative 'missing limitations field or section'
+        foreach ($issue in @(Get-EvidenceRecordIssues $relative $text $fields)) {
+            Add-CheckError $relative $issue
         }
 
         if ($buildLog -and $buildLog -notmatch [regex]::Escape($file.Name)) {
@@ -202,38 +159,17 @@ function Test-DeliveryEvidence {
     $deliveryDir = Join-Path $rootPath '.specify/delivery'
     if (-not (Test-Path -LiteralPath $deliveryDir -PathType Container)) { return }
 
-    $required = @('feature_id', 'phase_id', 'base_revision', 'head_revision',
-        'working_directory', 'recorded_at', 'result')
     $files = @(Get-ChildItem -LiteralPath $deliveryDir -Recurse -File -Filter 'evidence.md')
 
     foreach ($file in $files) {
         $relative = Get-RelativePath $rootPath $file.FullName
-        $text = Read-Text $file.FullName
+        $text = (Split-DeliveryEvidence (Read-Text $file.FullName)).History
         $fields = Get-EvidenceFields $text
-
-        foreach ($field in $required) {
-            if (-not $fields.ContainsKey($field) -or -not $fields[$field]) {
-                Add-CheckError $relative "missing field: $field"
-            }
+        $native = Test-NativeEvidenceFormat $fields
+        foreach ($issue in @(Get-EvidenceRecordIssues $relative $text $fields -Native:$native)) {
+            Add-CheckError $relative $issue
         }
-
-        if ($fields.ContainsKey('result')) {
-            $word = ($fields['result'] -split '\s+', 2)[0].ToLowerInvariant()
-            if ($word -notin $resultWords) {
-                Add-CheckError $relative "invalid result: $($fields['result'])"
-            }
-        }
-
-        if ($fields.ContainsKey('recorded_at') -and
-            $fields['recorded_at'] -notmatch '^\d{4}-\d{2}-\d{2}') {
-            Add-CheckError $relative 'recorded_at must start with YYYY-MM-DD'
-        }
-
-        if ($text -notmatch '(?im)^#{2,4}\s+.*limitation' -and
-            -not $fields.ContainsKey('limitations')) {
-            Add-CheckError $relative 'missing limitations field or section'
-        }
-
+        if ($native) { continue }
         foreach ($field in @('base_revision', 'head_revision')) {
             if ($fields.ContainsKey($field)) {
                 Test-Revision $relative $field $fields[$field]

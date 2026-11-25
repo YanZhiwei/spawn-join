@@ -16,6 +16,27 @@
 组件与原生命令由安装器管理；`*-config.yml` 由项目管理。核心任务技能和模板有测试要求
 定制，升级不得强制覆盖。原生通用 Prompt 中的可选测试表述不削弱 Constitution 的风险相关测试要求。
 
+## PR 结果与交付收尾
+
+1. **合并前交证据。** Handoff 在[项目 PR 模板](../../.github/pull_request_template.md)写入本次 `Delivery-Evidence` 和 `Delivery-Stack`。单 PR 或最后一个发布分组将原生 Evidence 生成的 `.specify/delivery/<run>/evidence.md` 随 PR 发布。合并前可保留 `pending`。分层发布在审查前将批准的分支顺序写入同目录的 `publication-branches.txt`，从首层共享。见[门禁与本地复核方法](quality-gates.md#pr-共享证据)。
+2. **查 PR。** 在 GitHub 核对目标分支和最终状态。已合并的 PR 有合并提交和时间，仍开放的 PR 保留交接记录，等结果确定后收尾。
+3. **收 Delivery。** 用原 `lane` 和 `delivery_run` 执行 `/speckit.delivery.close`。通过 PR 合并时传 `outcome=merged` 和 `pr`，已获授权的直接合并可传 `merged_revision`。PR 未合并就关闭时传 `outcome=closed`、`pr` 和 `reason`。
+   核对 `evidence.md` 的 `Current delivery outcome` 中的 PR 链接和合并提交 `merged_revision`（如有）。原始审查版本和验证结果保留为历史快照。
+   如果工作被取代，用 `outcome=superseded` 写明 `reason` 和可查的 `superseded_by`。Close 将实际结果写回本地文件。后续用单独的证据更新 PR 发布这个文件，引用同一份记录即可。若同时发布其他工作，填写该工作的验收记录。
+
+[#98 的交付记录](../../.specify/delivery/agent-work-main-integration-20261123/evidence.md)来自原集成工作树，记录了 #93–#98 的最终集成验收。原 Feature 的部分任务回执仍缺失。补录保留当时的审查和验证正文，并用合并后的 GitHub 观测刷新 Close 结果。
+
+**审查提交和发布提交不同怎么办？** 获得提交授权后，先在包含全部实质改动的提交上完成 Quality、Standards 和 Review，再运行 Evidence 和 Handoff。在 Handoff 完成后将该 run 的 `evidence.md` 随最终 PR 发布。这样 CI 可以逐文件核对审查范围。如果审查时改动还在工作区，先在实际提交上刷新审查。
+
+仅追加证据也会产生新的发布 SHA。核对 GitHub 的实际 base 和 head，确认从 `reviewed_head` 到发布头只有该证据文件变化。按[原生 Evidence 契约](../../.specify/extensions/evidence/commands/speckit.evidence.collect.md)在本机追加 `published_head` 和归档绑定。以下命令从仓库根目录运行，`$archive` 为本次 run 的 `runtime/published.diff` 完整路径。
+
+```powershell
+git diff --no-ext-diff --no-renames --binary --full-index "--output=$archive" $prBase $prHead --
+Get-FileHash -Algorithm SHA256 -LiteralPath $archive
+```
+
+记录归档的 run 相对路径 `reviewed_diff_archive`、`reviewed_diff_archive_sha256`、`reviewed_diff_archive_base`、`reviewed_diff_archive_head` 和 `reviewed_diff_archive_reviewed_head`。保留真实 GitHub 观测，按原生 Close 核对归档和 squash 内容。合并后的单独收尾 PR 带上这些绑定和结果。若发布头又变化，重新核对最终版本。
+
 ## 固定版本与实际安装方式
 
 | 组件 | 来源/版本 |
@@ -183,8 +204,7 @@ group 规划；v0.4.3 新增 `delivery_runtime.py owner-result`，集中生成 n
 设置 `pr_slicing: "auto"`：
 所有切片为 standalone 或 flagged 时按 stacked 顺序 squash 到 `main`；`stack_provider: manual`、
 `use_queue: false`，并因仓库 Ruleset 要求线性历史而把 `final` 设为 `squash`；integration
-交付仍需单独策略评审。PR 模板使用随包中文安装文件，并把同一字节写入 `.github`
-静态副本。这些是对现有策略的显式记录，不是安装器覆盖项目配置。决策见
+交付仍需单独策略评审。Handoff 和 GitHub 使用同一份项目 PR 模板。切片决策见
 [ADR-0007](../decisions/engineering/0007-default-slice-delivery.md)。
 
 直接 Workflow 现要求唯一、安全的单段 `delivery_run`；Bugfix 另需规范化的 `bug_slug`。
@@ -201,10 +221,8 @@ specify workflow run lightweight-delivery --input runtime_python="py -3" --input
 Feature 在 `tasks.md` 之后增加 Slice 计划与 Slice Gate；`tasks.md` 仍是唯一执行队列，
 `slices.md` 只记录可独立评审/合并的边界，不得增删或重排任务。
 
-v0.3.0 起，交付在 PR 结果确定后执行 `/speckit.delivery.close`：合并记为 `delivered`，
-未合并关闭记为 `abandoned`，被替代记为 `superseded`。该命令只更新 `evidence.md` 的
-`status`/`pull_request`/`merge_revision` 等字段并按需退役运行工作区，不 push、不创建或
-合并 PR。`artifact_policy: ephemeral` 只约束运行工作区；`evidence.md` 始终持久。
+v0.3.0 起，合并、未合并关闭、被替代的运行分别记为 `delivered`、`abandoned`、`superseded`。
+按[收尾步骤](#pr-结果与交付收尾)核对实际结果。`artifact_policy: ephemeral` 只约束运行工作区，`evidence.md` 始终持久。
 已合并的 008 运行已按该契约补记 `delivered` 与 `merged_revision`。
 
 v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之前运行
@@ -220,15 +238,11 @@ v0.3.1 起，三条 Lane workflow 在最后一步代码变更之后、Review 之
   stacked 顺序 squash 到 `main`。`slice_requires_approval: true` 保留 Slice Gate 的快速确认；
   `stack_provider: manual`、`use_queue: false` 不声称本仓库具备原生 Stacked PR
   或 Merge Queue。stacked 使用逐片 squash；`merge_policy.final: squash` 仅用于
-  integration rollup，当前未启用。启用 integration 交付前必须重新评审该策略。PR 模板默认使用随包中文
-  `templates/pull-request.md`：`pull_request_template` 指向
-  `.specify/extensions/delivery/templates/pull-request.md`，
-  `install_pull_request_template: true` 记录已显式批准；`.github/pull_request_template.md`
-  是同一字节的静态副本，供 GitHub UI 使用。该副本不会随 Bundle 自动刷新，升级后若模板
-  变化需显式同步。Handoff 仍通过 `PR_BODY_PATH` 和 `--body-file` 提交每次变更的正文。
-  Git 检出可能转换 LF/CRLF；v0.4.5 核对时归一化换行后内容一致，并显式同步了变化后的静态副本。
-  v0.4.6 升级时随包 PR 模板未变化，静态副本保持同一字节。
-  v0.4.7、v0.4.8、v0.4.9 升级时随包模板同样未变化，静态副本仍为同一字节。
+  integration rollup，当前未启用。启用 integration 交付前必须重新评审该策略。
+  `pull_request_template` 指向项目拥有的 `.github/pull_request_template.md`，
+  `install_pull_request_template: false`。Handoff 通过 `PR_BODY_PATH` 和 `--body-file`
+  交接；GitHub UI 读取同一文件。v0.4.5–v0.4.9 期间使用随包中文模板的静态副本；
+  以后升级时对照上游模板，保留项目的发布声明。
   未显式写入 `code_context` 时按 `auto` 处理；本项目显式设为 `auto`，Feature 在 `plan`
   前、Bugfix 在 `assess` 前可使用本地 `.codegraph/` 生成上下文；没有索引时降级为部分
   结果，不阻塞交付。
