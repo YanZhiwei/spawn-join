@@ -32,13 +32,15 @@ function Write-FixtureFile {
 }
 
 function Test-GovernanceResult {
-    param([string]$Label, [bool]$Success, [string]$Diagnostic,
-        [string]$AbsentDiagnostic)
-    $output = & pwsh -NoProfile -File $check -Root $fixture 2>&1
+    param([string]$Label, [bool]$Success, [string[]]$Diagnostic,
+        [string]$AbsentDiagnostic, [string]$FeatureDir)
+    $selection = if ($FeatureDir) { @('-FeatureDir', $FeatureDir) } else { @() }
+    $output = & pwsh -NoProfile -File $check -Root $fixture @selection 2>&1
     $code = $LASTEXITCODE
     $text = $output -join [Environment]::NewLine
+    $missingDiagnostics = @($Diagnostic | Where-Object { $_ -and -not $text.Contains($_) })
     if (($Success -and $code -ne 0) -or (-not $Success -and $code -ne 1) -or
-        ($Diagnostic -and $text -notmatch [regex]::Escape($Diagnostic)) -or
+        $missingDiagnostics.Count -gt 0 -or
         ($AbsentDiagnostic -and $text -match [regex]::Escape($AbsentDiagnostic))) {
         Write-Host $text
         throw "Unexpected governance result for ${Label}: exit=$code"
@@ -49,7 +51,8 @@ function Test-GovernanceResult {
 
 New-Item -ItemType Directory -Path $fixture | Out-Null
 try {
-    Write-FixtureFile (Join-Path $fixture '.gitignore') "/specs/`n"
+    Write-FixtureFile (Join-Path $fixture '.gitignore') "/specs/`n/local-evidence/*`n!/local-evidence/evidence.md`n/packages/local-only/`n"
+    Write-FixtureFile (Join-Path $fixture 'local-evidence/evidence.md') '# Durable evidence'
     Write-FixtureFile $readme "# Fixture`n"
     Write-FixtureFile (Join-Path $fixture 'harness/build-log.md') @"
 # Build Log
@@ -102,6 +105,50 @@ None.
     Write-FixtureFile $spec "**Status**: In Progress`n"
     Write-FixtureFile $tasks "- [ ] T001 First task.`n- [ ] T002 Second task.`n"
 
+    $assistantManifest = Join-Path $fixture 'packages/apps/personal-assistant/pyproject.toml'
+    $manifestText = "[project]`nname = 'spawn-join-personal-assistant'"
+    Write-FixtureFile $assistantManifest $manifestText
+    Write-FixtureFile (Join-Path $fixture 'packages/core/core/pyproject.toml') "[project]`nname = 'spawn-join-core'"
+    Write-FixtureFile (Join-Path $fixture 'packages/local-only/example/pyproject.toml') "[project]`nname = 'local-only'"
+    $workflow = Join-Path $fixture '.github/workflows/quality.yml'
+    $matrixText = @'
+jobs:
+  packages:
+    strategy:
+      matrix:
+        package: [spawn-join-core, 'spawn-join-personal-assistant']
+  unrelated:
+    strategy:
+      matrix:
+        package: [spawn-join-personal-assistant]
+'@
+    Write-FixtureFile $workflow $matrixText
+    $profilePath = Join-Path $fixture '.specify/extensions/quality/quality-config.yml'
+    $profileText = @'
+standards:
+  - id: spawn-join-personal-assistant
+profiles:
+  - id: shared-tool-policy
+    match: ["packages/infra/retired/**"]
+  - id: spawn-join-core
+    commands: {quality: "pwsh -File scripts/quality.ps1 -Package spawn-join-core"}
+  - id: "spawn-join-personal-assistant"
+    commands: {quality: "pwsh -File scripts/quality.ps1 -Package spawn-join-personal-assistant"}
+'@
+    Write-FixtureFile $profilePath $profileText
+    $runner = Join-Path $fixture 'scripts/quality.ps1'
+    $runnerText = @'
+param(
+    [ValidateSet('spawn-join-core', 'spawn-join-personal-assistant')]
+    [string]$Package
+)
+$packages = [ordered]@{
+    'spawn-join-core' = @{ Build = @('spawn-join-core') }
+    'spawn-join-personal-assistant' = @{ Build = @('spawn-join-core', 'spawn-join-personal-assistant') }
+}
+'@
+    Write-FixtureFile $runner $runnerText
+
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize fixture Git repository.' }
     & git -C $fixture config core.autocrlf false
@@ -111,7 +158,80 @@ None.
         commit -m 'fixture baseline' --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not commit fixture baseline.' }
 
-    Test-GovernanceResult 'valid structure' $true ''
+    Test-GovernanceResult 'valid structure with two shareable distributions' $true 'Package coverage: 2 distributions'
+
+    Write-FixtureFile $workflow ($matrixText.Replace("'spawn-join-personal-assistant'", 'spawn-join-retired'))
+    Test-GovernanceResult 'same-sized CI matrix reports the missing and extra packages' $false @(
+        'matrix.package: missing package: spawn-join-personal-assistant', 'matrix.package: extra package: spawn-join-retired')
+    Write-FixtureFile $workflow ($matrixText.Replace("[spawn-join-core, 'spawn-join-personal-assistant']", 'spawn-join-core'))
+    Test-GovernanceResult 'an unreadable CI package list fails the gate' $false 'matrix.package must list distribution names'
+    Write-FixtureFile $workflow $matrixText
+
+    Write-FixtureFile $profilePath ($profileText.Replace('"spawn-join-personal-assistant"', '"spawn-join-retired"'))
+    Test-GovernanceResult 'only package profile IDs count towards coverage' $false @(
+        'profiles: missing package: spawn-join-personal-assistant', 'profiles: extra package: spawn-join-retired')
+    Write-FixtureFile $profilePath $profileText
+
+    Write-FixtureFile $runner ($runnerText.Replace("personal-assistant')]", "retired')]"))
+    Test-GovernanceResult 'the accepted -Package values are checked independently' $false @(
+        'ValidateSet: missing package: spawn-join-personal-assistant', 'ValidateSet: extra package: spawn-join-retired')
+    Write-FixtureFile $runner ($runnerText.Replace("'spawn-join-personal-assistant' = @{", "'spawn-join-retired' = @{"))
+    Test-GovernanceResult 'build dependencies cannot stand in for package table keys' $false @(
+        '$packages: missing package: spawn-join-personal-assistant', '$packages: extra package: spawn-join-retired')
+    Write-FixtureFile $runner $runnerText
+
+    $newManifest = Join-Path $fixture 'packages/new-group/new-folder/pyproject.toml'
+    Write-FixtureFile $newManifest "[tool.example]`nname = 'decoy'`n[project]`nname = 'spawn-join-new'"
+    Test-GovernanceResult 'an unstaged distribution is discovered from project.name' $false @(
+        'matrix.package: missing package: spawn-join-new', 'profiles: missing package: spawn-join-new',
+        'ValidateSet: missing package: spawn-join-new', '$packages: missing package: spawn-join-new')
+    Write-FixtureFile $newManifest $manifestText
+    Test-GovernanceResult 'two manifests cannot claim the same distribution name' $false 'duplicate package: spawn-join-personal-assistant'
+    Remove-Item -LiteralPath $newManifest
+
+    Remove-Item -LiteralPath $assistantManifest
+    Test-GovernanceResult 'a removed manifest exposes stale registrations' $false @(
+        'matrix.package: extra package: spawn-join-personal-assistant', 'profiles: extra package: spawn-join-personal-assistant',
+        'ValidateSet: extra package: spawn-join-personal-assistant', '$packages: extra package: spawn-join-personal-assistant')
+    Write-FixtureFile $assistantManifest $manifestText
+
+    $archived = 'specs/001-archived'
+    $selected = 'specs/003-fixture'
+    Write-FixtureFile (Join-Path $fixture '.specify/feature.json') '{"feature_directory":"specs/001-archived"}'
+    Write-FixtureFile (Join-Path $fixture "$archived/spec.md") '**Status**: Implemented'
+    Write-FixtureFile (Join-Path $fixture "$archived/tasks.md") '- [ ] T001 Archived task.'
+    Test-GovernanceResult 'default governance ignores the local Feature marker and archive' $true ''
+    Test-GovernanceResult 'explicit Feature skips unrelated local tasks' $true '' -FeatureDir $selected
+    Test-GovernanceResult 'selected archived tasks are validated' $false 'unchecked items' -FeatureDir $archived
+    Test-GovernanceResult 'missing explicit Feature fails' $false 'Feature directory' -FeatureDir 'specs/missing'
+    Test-GovernanceResult 'shared directory cannot be selected as a Feature' $false 'Feature directory' -FeatureDir 'docs'
+
+    $guide = Join-Path $fixture 'docs/入门 guide.md'
+    Write-FixtureFile $guide @'
+# 使用 `API`
+## Setup!
+## Setup!
+
+<a name="stable-target"></a>
+
+[本页](#使用-api) [重复标题](#setup-1) [自定义](#stable-target)
+[共享目录](../docs/) [保留的证据](../local-evidence/evidence.md)
+`[literal](missing-inline.md)`
+
+```markdown
+## Example only
+[example](missing-example.md)
+```
+'@
+    $plan = Join-Path $fixture "$selected/plan.md"
+    Write-FixtureFile $plan '[Spec](spec.md) [指南](../../docs/%E5%85%A5%E9%97%A8%20guide.md#%E4%BD%BF%E7%94%A8-api)'
+    Test-GovernanceResult 'Feature links resolve local files and encoded shared headings' $true '' -FeatureDir $selected
+    Add-Content -LiteralPath $guide -Value '[missing](#example-only)'
+    Test-GovernanceResult 'a heading in a code block is not a document anchor' $false 'missing Markdown anchor: #example-only'
+    Remove-Item -LiteralPath $guide
+    Write-FixtureFile $plan '[missing](spec.md#gone)'
+    Test-GovernanceResult 'selected plan reports a missing cross-file heading' $false 'missing Markdown anchor: spec.md#gone' -FeatureDir $selected
+    Remove-Item -LiteralPath $plan
 
     $translatedReadme = Join-Path $fixture 'harness/evidence/README.en.md'
     Write-FixtureFile $translatedReadme "# Evidence guide`n"
@@ -184,6 +304,8 @@ None.
     Write-FixtureFile (Join-Path $fixture 'specs/hidden.md') "# Hidden`n"
     Set-Content -LiteralPath $readme -Value ($originalReadme + "`n[hidden](specs/hidden.md)`n")
     Test-GovernanceResult 'link to local-only spec' $false 'links to local-only path: specs/hidden.md'
+    Set-Content -LiteralPath $readme -Value "[local Feature]($selected/)"
+    Test-GovernanceResult 'selecting a Feature does not make its directory shareable' $false "links to local-only path: $selected" -FeatureDir $selected
     Set-Content -LiteralPath $readme -Value $originalReadme
     Remove-Item -LiteralPath (Join-Path $fixture 'specs/hidden.md')
 
@@ -232,7 +354,7 @@ None.
 
     $deliveryConfig = Join-Path $fixture '.specify/extensions/delivery/delivery-config.yml'
     foreach ($path in @('.specify/memory/constitution.md', 'AGENTS.md',
-            'scripts/quality.ps1', 'scripts/test-quality.ps1',
+            'scripts/test-quality.ps1',
             'scripts/test-governance.ps1', 'scripts/test-static.ps1')) {
         Write-FixtureFile (Join-Path $fixture $path) '# Fixture dependency'
     }
@@ -282,11 +404,11 @@ hooks: {}
 
     $originalSpec = Get-Content -LiteralPath $spec -Raw
     Set-Content -LiteralPath $spec -Value '**Status**: Implemented'
-    Test-GovernanceResult 'implemented spec with unchecked tasks' $false 'Status is Implemented but tasks.md has unchecked items'
+    Test-GovernanceResult 'implemented spec with unchecked tasks' $false 'Status is Implemented but tasks.md has unchecked items' -FeatureDir $selected
     Set-Content -LiteralPath $spec -Value $originalSpec
 
     Set-Content -LiteralPath $tasks -Value "- [ ] T001 First task.`n- [ ] T001 Duplicate.`n"
-    Test-GovernanceResult 'duplicate task IDs' $false 'duplicate task IDs'
+    Test-GovernanceResult 'duplicate task IDs' $false 'duplicate task IDs' -FeatureDir $selected
     Set-Content -LiteralPath $tasks -Value "- [ ] T001 First task.`n- [ ] T002 Second task.`n"
 
     Write-Host "Governance regression checks passed: $assertions scenarios."

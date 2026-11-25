@@ -4,22 +4,28 @@
 Validate tracked governance records without modifying the repository.
 
 .DESCRIPTION
-Checks evidence metadata, build-log linkage, ADR index consistency, local Spec/Tasks
-state, and repository Markdown links (tracked and untracked) that point at missing or
-Git-ignored paths. Freshness issues
+Checks package coverage, evidence metadata, build-log linkage, ADR index consistency, and shared
+Markdown links and anchors. When selected, also checks one local Feature and its tasks. Freshness issues
 are warnings because whether an old record still applies needs human judgement.
 
 .PARAMETER Root
 Repository root. Defaults to the parent directory of this script.
+
+.PARAMETER FeatureDir
+One local specs/<feature-id> directory to check alongside the shared repository.
 ##>
 [CmdletBinding()]
 param(
-    [string]$Root = (Split-Path -Parent $PSScriptRoot)
+    [string]$Root = (Split-Path -Parent $PSScriptRoot),
+    [ValidateNotNullOrEmpty()]
+    [string]$FeatureDir
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
+. (Join-Path $PSScriptRoot 'markdown-checks.ps1')
+. (Join-Path $PSScriptRoot 'package-coverage.ps1')
 . (Join-Path $PSScriptRoot 'evidence-records.ps1')
 
 $rootPath = [IO.Path]::GetFullPath($Root)
@@ -309,87 +315,34 @@ function Test-Decisions {
     }
 }
 
-function Test-Specs {
-    $specsDir = Join-Path $rootPath 'specs'
-    if (-not (Test-Path -LiteralPath $specsDir -PathType Container)) { return }
-
-    foreach ($directory in @(Get-ChildItem -LiteralPath $specsDir -Directory)) {
-        $specPath = Join-Path $directory.FullName 'spec.md'
-        if (-not (Test-Path -LiteralPath $specPath)) { continue }
-        $relativeSpec = Get-RelativePath $rootPath $specPath
-        $specText = Read-Text $specPath
-        if ($specText -notmatch '(?m)^\*\*Status\*\*:\s*(.+)$') {
-            Add-CheckWarning $relativeSpec 'missing Status field'
-            continue
-        }
-        $status = $Matches[1].Trim()
-
-        $tasksPath = Join-Path $directory.FullName 'tasks.md'
-        if (-not (Test-Path -LiteralPath $tasksPath)) { continue }
-        $relativeTasks = Get-RelativePath $rootPath $tasksPath
-        $tasksText = Read-Text $tasksPath
-
-        if ($status -match '^Implemented' -and $tasksText -match '(?m)^-\s*\[\s\]\s') {
-            Add-CheckError $relativeSpec 'Status is Implemented but tasks.md has unchecked items'
-        }
-
-        $ids = @([regex]::Matches($tasksText, '(?m)^-\s*\[[ xX]\]\s*T(\d{3})\b') |
-                ForEach-Object { [int]$_.Groups[1].Value })
-        if ($ids.Count -eq 0) { continue }
-        if (@($ids | Sort-Object -Unique).Count -ne $ids.Count) {
-            Add-CheckError $relativeTasks 'duplicate task IDs'
-        }
-        $expected = 1..$ids.Count
-        if (@(Compare-Object $expected $ids).Count -gt 0) {
-            Add-CheckError $relativeTasks 'task IDs must start at T001 and be sequential'
-        }
-    }
-}
-
-function Test-RepositoryLinks {
-    $tracked = @(& git -C $rootPath ls-files)
-    if ($LASTEXITCODE -ne 0) {
-        Add-CheckError 'git' 'unable to list tracked files'
+function Test-FeatureTasks {
+    param([string]$Directory)
+    $specPath = Join-Path $Directory 'spec.md'
+    if (-not (Test-Path -LiteralPath $specPath)) { return }
+    $relativeSpec = Get-RelativePath $rootPath $specPath
+    $specText = Read-Text $specPath
+    if ($specText -notmatch '(?m)^\*\*Status\*\*:\s*(.+)$') {
+        Add-CheckWarning $relativeSpec 'missing Status field'
         return
     }
-    # New documents must be validated before staging; otherwise a link error in an
-    # untracked README only appears after commit, in CI.
-    $untracked = @(& git -C $rootPath ls-files --others --exclude-standard)
-    if ($LASTEXITCODE -ne 0) {
-        Add-CheckError 'git' 'unable to list untracked files'
-        return
+    $status = $Matches[1].Trim()
+
+    $tasksPath = Join-Path $Directory 'tasks.md'
+    if (-not (Test-Path -LiteralPath $tasksPath)) { return }
+    $relativeTasks = Get-RelativePath $rootPath $tasksPath
+    $tasksText = Read-Text $tasksPath
+    if ($status -match '^Implemented' -and $tasksText -match '(?m)^-\s*\[\s\]\s') {
+        Add-CheckError $relativeSpec 'Status is Implemented but tasks.md has unchecked items'
     }
 
-    foreach ($relativeFile in @($tracked + $untracked | Sort-Object -Unique)) {
-        if ($relativeFile -notmatch '\.md$') { continue }
-        # Vendor prompts/docs retain upstream links; project policy/evidence stays checked.
-        if ($relativeFile -like '.agents/skills/*' -or
-            $relativeFile -like '.opencode/commands/*' -or
-            $relativeFile -like '.specify/extensions/*') { continue }
-        $fullPath = Join-Path $rootPath $relativeFile
-        if (-not (Test-Path -LiteralPath $fullPath)) { continue }
-        $text = Read-Text $fullPath
-
-        foreach ($match in [regex]::Matches($text, '\[[^\]]+\]\(([^)]+)\)')) {
-            $target = ($match.Groups[1].Value -split '#', 2)[0].Trim()
-            if (-not $target -or $target -match '^(https?://|mailto:)') { continue }
-
-            $resolved = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $fullPath) $target))
-            if (-not (Test-Path -LiteralPath $resolved)) {
-                Add-CheckError $relativeFile "missing link target: $target"
-                continue
-            }
-            # Directory links are validated for existence above; Git tracks files, not directories.
-            if (Test-Path -LiteralPath $resolved -PathType Container) { continue }
-
-            $resolvedRelative = Get-RelativePath $rootPath $resolved
-            if ($resolvedRelative.StartsWith('..')) { continue }
-
-            & git -C $rootPath check-ignore -q --no-index -- $resolvedRelative 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                Add-CheckError $relativeFile "links to local-only path: $resolvedRelative"
-            }
-        }
+    $ids = @([regex]::Matches($tasksText, '(?m)^-\s*\[[ xX]\]\s*T(\d{3})\b') |
+            ForEach-Object { [int]$_.Groups[1].Value })
+    if ($ids.Count -eq 0) { return }
+    if (@($ids | Sort-Object -Unique).Count -ne $ids.Count) {
+        Add-CheckError $relativeTasks 'duplicate task IDs'
+    }
+    if (@(Compare-Object (1..$ids.Count) $ids).Count -gt 0) {
+        Add-CheckError $relativeTasks 'task IDs must start at T001 and be sequential'
     }
 }
 
@@ -410,8 +363,14 @@ try {
     Test-Delivery
     Test-ExtensionSettings
     Test-Decisions
-    Test-Specs
-    Test-RepositoryLinks
+    $featurePath = Resolve-LocalFeatureDirectory $rootPath $FeatureDir
+    if ($featurePath) { Test-FeatureTasks $featurePath }
+    foreach ($issue in @(Get-MarkdownIssues -Root $rootPath -FeaturePath $featurePath)) {
+        Add-CheckError 'Markdown' $issue
+    }
+    foreach ($issue in @(Get-PackageCoverageIssues -Root $rootPath)) {
+        Add-CheckError 'package coverage' $issue
+    }
 } catch {
     Add-CheckError 'governance' $_.Exception.Message
 } finally {

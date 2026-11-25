@@ -23,9 +23,10 @@ $assertions = 0
 
 function Assert-GateResult {
     param([string]$Label, [string]$Check, [bool]$Success, [string]$Diagnostic,
-        [string]$Distribution = 'spawn-join-core')
+        [string]$Distribution = 'spawn-join-core', [string]$FeatureDir)
     $before = if (Test-Path -LiteralPath $probe) { (Get-FileHash -LiteralPath $probe).Hash }
-    $output = & pwsh -NoProfile -File $runner -Package $Distribution -Check $Check 2>&1
+    $selection = if ($FeatureDir) { @('-FeatureDir', $FeatureDir) } else { @() }
+    $output = & pwsh -NoProfile -File $runner -Package $Distribution -Check $Check @selection 2>&1
     $code = $LASTEXITCODE
     $text = $output -join [Environment]::NewLine
     if (($Success -and $code -ne 0) -or (-not $Success -and $code -ne 1) -or
@@ -43,19 +44,32 @@ function Assert-GateResult {
 New-Item -ItemType Directory -Path $fixture | Out-Null
 try {
     New-Item -ItemType Directory -Path "$fixture/scripts", "$core/src", "$core/tests",
-        "$fixture/.specify/memory" | Out-Null
+        "$fixture/.specify/memory", "$fixture/docs/development" | Out-Null
     Copy-Item -LiteralPath "$root/pyproject.toml" -Destination "$fixture/pyproject.toml"
     Copy-Item -LiteralPath "$root/scripts/quality.ps1" -Destination $runner
+    Copy-Item -LiteralPath "$root/scripts/markdown-checks.ps1", "$root/scripts/package-coverage.ps1",
+        "$root/scripts/check-governance.ps1", "$root/scripts/evidence-records.ps1" -Destination "$fixture/scripts"
+    Copy-Item -LiteralPath "$root/.gitignore" -Destination $fixture
+    Set-Content -LiteralPath "$fixture/docs/development/quality-gates.md" -Value '# Prerequisites'
 
-    $originalCore = Join-Path $root 'packages/core/spawn-join-core'
-    foreach ($name in @('pyproject.toml', 'uv.lock')) {
-        Copy-Item -LiteralPath (Join-Path $originalCore $name) -Destination $core
+    # The governance entry point checks every registered name; only the packages
+    # exercised below need sources, environments and lock files in this fixture.
+    $coverageFiles = @(& git -C $root -c core.quotepath=false ls-files --cached --others --exclude-standard -- ':(glob)packages/*/*/pyproject.toml')
+    if ($LASTEXITCODE -ne 0) { throw 'Could not discover fixture package manifests.' }
+    foreach ($relative in ($coverageFiles + @('.github/workflows/quality.yml', '.specify/extensions/quality/quality-config.yml'))) {
+        $source = Join-Path $root $relative
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+        $target = Join-Path $fixture $relative
+        [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
+        Copy-Item -LiteralPath $source -Destination $target
     }
+    $originalCore = Join-Path $root 'packages/core/spawn-join-core'
+    Copy-Item -LiteralPath "$originalCore/uv.lock" -Destination $core
     Copy-Item -LiteralPath "$originalCore/src/spawn_join_core" -Destination "$core/src" -Recurse
     Copy-Item -LiteralPath "$originalCore/tests/test_package.py" -Destination "$core/tests"
     $originalCommon = Join-Path $root 'packages/core/common'
     New-Item -ItemType Directory -Path "$commonFixture/src", "$commonFixture/tests" -Force | Out-Null
-    foreach ($name in @('pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
+    foreach ($name in @('uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
         Copy-Item -LiteralPath (Join-Path $originalCommon $name) -Destination $commonFixture
     }
     Copy-Item -LiteralPath "$originalCommon/src/spawn_join_common" -Destination "$commonFixture/src" -Recurse
@@ -79,6 +93,22 @@ try {
 
     & git -C $fixture init --quiet
     if ($LASTEXITCODE -ne 0) { throw 'Could not initialize fixture Git repository.' }
+    $selected = 'specs/selected'
+    New-Item -ItemType Directory -Path "$fixture/$selected", "$fixture/specs/archived" -Force | Out-Null
+    Set-Content -LiteralPath "$fixture/specs/archived/plan.md" -Value '[missing](absent.md)'
+    Set-Content -LiteralPath "$fixture/$selected/spec.md" -Value "**Status**: Implemented`n`n## API"
+    Set-Content -LiteralPath "$fixture/$selected/plan.md" -Value '[Spec](spec.md#api)'
+    Set-Content -LiteralPath "$fixture/$selected/tasks.md" -Value '- [ ] T001 Pending'
+    Assert-GateResult 'shared docs skip the ignored archive' docs $true ''
+    Assert-GateResult 'selected Feature docs skip the ignored archive' docs $true '' -FeatureDir $selected
+    Assert-GateResult 'package coverage runs through the public governance entry point' governance $true 'Package coverage:'
+    Assert-GateResult 'selected Feature scope reaches governance through quality.ps1' governance $false 'unchecked items' -FeatureDir $selected
+    Assert-GateResult 'selected archive reports its own broken link' docs $false 'missing link target: absent.md' -FeatureDir 'specs/archived'
+    Set-Content -LiteralPath "$fixture/README.md" -Value '[missing](docs/development/quality-gates.md#gone)'
+    Assert-GateResult 'shared docs reject a missing cross-file anchor' docs $false 'missing Markdown anchor: docs/development/quality-gates.md#gone'
+    Set-Content -LiteralPath "$fixture/README.md" -Value '[missing](missing-target.md)'
+    Assert-GateResult 'missing Markdown target propagates' docs $false 'missing link target: missing-target.md'
+    Set-Content -LiteralPath "$fixture/README.md" -Value '# Fixture'
     Assert-GateResult 'clean full pipeline, including isolated wheel install' all $true ''
     Assert-GateResult 'common base and optional validation install pipelines' all $true '' 'spawn-join-common'
 
@@ -103,7 +133,7 @@ try {
         $original = Join-Path $root "packages/$relative"
         $destination = Join-Path $fixture "packages/$relative"
         New-Item -ItemType Directory -Path "$destination/src", "$destination/tests" -Force | Out-Null
-        foreach ($file in @('pyproject.toml', 'uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
+        foreach ($file in @('uv.lock', 'LICENSE', 'README.md', 'README.en.md')) {
             Copy-Item -LiteralPath (Join-Path $original $file) -Destination $destination
         }
         Get-ChildItem -LiteralPath "$original/src" -Directory |
@@ -169,8 +199,6 @@ def test_official_mcp_dependencies_are_installed() -> None:
     Remove-Item -LiteralPath "$core/tests/test_package.py"
     Assert-GateResult 'zero tests are not success' test $false 'exit_code=5'
 
-    Set-Content -LiteralPath "$fixture/README.md" -Value '[missing](missing-target.md)'
-    Assert-GateResult 'missing Markdown target propagates' docs $false 'Missing Markdown target'
     foreach ($forbidden in @('.venv', 'uv.lock', 'build', 'dist')) {
         if (Test-Path -LiteralPath (Join-Path $fixture $forbidden)) {
             throw "Forbidden root artifact: $forbidden"

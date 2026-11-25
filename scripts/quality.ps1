@@ -2,6 +2,9 @@
 <##
 .SYNOPSIS
 Run read-only quality checks using each Distribution's locked environment.
+
+.PARAMETER FeatureDir
+Include one local specs/<feature-id> directory in docs or governance checks.
 ##>
 [CmdletBinding()]
 param(
@@ -12,13 +15,17 @@ param(
     [string]$Package,
 
     [ValidateSet('all', 'format', 'lint', 'type', 'test', 'build', 'docs', 'governance', 'static')]
-    [string]$Check = 'all'
+    [string]$Check = 'all',
+
+    [ValidateNotNullOrEmpty()]
+    [string]$FeatureDir
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'markdown-checks.ps1')
 $config = Join-Path $root 'pyproject.toml'
 $packages = [ordered]@{
     'spawn-join-core' = @{
@@ -92,33 +99,16 @@ function Get-VenvPython {
 }
 
 function Test-Documentation {
-    $files = @('README.md', 'AGENTS.md', '.specify/memory/constitution.md')
-    foreach ($directory in @('docs', 'harness', 'specs')) {
-        if (Test-Path -LiteralPath $directory -PathType Container) {
-            $files += @(Get-ChildItem -LiteralPath $directory -Recurse -File -Filter '*.md' |
-                ForEach-Object { $_.FullName })
+    foreach ($required in @('README.md', 'AGENTS.md', '.specify/memory/constitution.md')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $root $required) -PathType Leaf)) {
+            throw "Missing required document: $required"
         }
     }
-    $linkCount = 0
-    foreach ($file in $files) {
-        $resolved = (Resolve-Path -LiteralPath $file).Path
-        $text = Get-Content -LiteralPath $resolved -Raw
-        if ($text -match '(?m)[\t ]+\r?$') {
-            throw "Trailing whitespace: $file"
-        }
-        foreach ($match in [regex]::Matches($text, '\[[^\]]+\]\(([^)]+)\)')) {
-            $target = ($match.Groups[1].Value -split '#', 2)[0]
-            if ([string]::IsNullOrWhiteSpace($target) -or
-                $target -match '^(https?://|mailto:)') { continue }
-            $linkCount++
-            $destination = Join-Path (Split-Path -Parent $resolved) $target
-            if (-not (Test-Path -LiteralPath $destination)) {
-                throw "Missing Markdown target: $file -> $target"
-            }
-        }
-    }
+    $featurePath = Resolve-LocalFeatureDirectory $root $FeatureDir
+    $issues = @(Get-MarkdownIssues -Root $root -FeaturePath $featurePath -CheckWhitespace)
+    foreach ($issue in $issues) { Write-Host "ERROR: $issue" }
+    if ($issues.Count) { throw "Documentation checks found $($issues.Count) issue(s)." }
     Invoke-Checked 'git' @('diff', '--check')
-    Write-Host "Documentation: $($files.Count) files, $linkCount local targets checked."
 }
 
 function Copy-BuildSource {
@@ -395,12 +385,17 @@ function Test-DistributionBuild {
 
 Push-Location $root
 try {
+    if ($FeatureDir -and $Check -notin @('all', 'docs', 'governance')) {
+        throw '-FeatureDir applies to docs, governance or all.'
+    }
     # Governance and static analysis are repository-level; package-scoped runs skip them.
     $runGovernance = $Check -eq 'governance' -or ($Check -eq 'all' -and -not $Package)
     $runStatic = $Check -eq 'static' -or ($Check -eq 'all' -and -not $Package)
     if ($runGovernance) {
-        Invoke-Checked 'pwsh' @('-NoProfile', '-File',
+        $arguments = @('-NoProfile', '-File',
             (Join-Path $root 'scripts/check-governance.ps1'), '-Root', $root)
+        if ($FeatureDir) { $arguments += @('-FeatureDir', $FeatureDir) }
+        Invoke-Checked 'pwsh' $arguments
     }
     if ($runStatic) {
         Invoke-Checked 'pwsh' @('-NoProfile', '-File',
