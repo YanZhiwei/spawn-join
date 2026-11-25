@@ -1269,3 +1269,7 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 ## 2026-11-25 — 恢复 #98 最终集成验收并校验 PR 共享证据
 
 恢复 #98 合并前留在原工作树中的验收文件，并给最终 PR 增加证据检查。用 #98 的真实提交复现了漏交文件的情况。发布分支的门禁、回归结果和历史记录的核对依据见[本次治理验证](evidence/pr-delivery-evidence-publication.md)。
+
+## 2026-11-25 — 协作指南、文档范围与包覆盖治理
+
+`AGENTS.md` 精简后通过共享文档与显式本地 Feature 的两组检查。发布前逐包核对 9 个 Distribution 的 CI、Spec Kit 与本地注册，并复核 #82 已合并、ADR-0016 仍为 `Proposed`。详见[本次整合的验证记录](evidence/engineering-governance-integration.md)。
