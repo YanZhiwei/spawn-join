@@ -5,7 +5,7 @@
 - 当前 CLI：Specify 1.2.3（本次现场核对）；默认集成 OpenCode，Codex 核心与 Delivery Skills 均已安装。
 - OpenCode 使用 `/sd` 快捷入口，完整原生命令 `/speckit.delivery.route`、`/speckit.delivery.doctor` 继续可用。
 - 原生命令由 CLI 安装到 `.opencode/commands/`；不要使用本机旧的连字符包装命令或 `$sd` 判断项目状态。
-- 当前 Bundle v0.4.9 已通过 Delivery manifest 注册 `sd` 别名；`.opencode/commands/sd.md`
+- 当前 Bundle v0.4.10 已通过 Delivery manifest 注册 `sd` 别名；`.opencode/commands/sd.md`
   由安装器从 `speckit.delivery.route` 生成，与 `/speckit.delivery.route` 使用同一套路由契约。
   `/sd` 现在由 Bundle 管理，并包含 v0.4.x 的 runtime/status/resume/checkpoint 控制面、逐任务
   关闭 transport 与 outcome 校验；不再维护项目级薄门面或手工复制生命周期 Prompt。
@@ -40,15 +40,23 @@ Get-FileHash -Algorithm SHA256 -LiteralPath $archive
 
 记录归档的 run 相对路径 `reviewed_diff_archive`、`reviewed_diff_archive_sha256`、`reviewed_diff_archive_base`、`reviewed_diff_archive_head` 和 `reviewed_diff_archive_reviewed_head`。保留真实 GitHub 观测，按原生 Close 核对归档和 squash 内容。合并后的单独收尾 PR 带上这些绑定和结果。若发布头又变化，重新核对最终版本。
 
+v0.4.10 提供原生 `verify-publication` 命令。核验单个 PR 或最后一个发布分组时，传入实际 PR 的基线提交、源分支提交及已批准的审查提交。命令直接读取 Git 对象，可在没有本地运行记录的干净检出中执行。
+
+```powershell
+python .specify/extensions/delivery/scripts/delivery_runtime.py verify-publication --run $runId --lane $lane --base $prBase --head $prHead --reviewed-head $reviewedHead
+```
+
+手工堆叠的 PR 如启用了父分支自动删除，先将依赖它的开放 PR 改到批准的目标分支，确认这些 PR 仍开放，再合并父层。Close 按实际时刻比较观测时间与合并时间。结案后，`status` 在后续提交中保留已验证的结果，证据缺失或被改写时返回 `verification-required`。
+
 ## 固定版本与实际安装方式
 
 | 组件 | 来源/版本 |
 |---|---|
-| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.4.9 |
+| Delivery、Decision、Ralph、Review、Simplify、Evidence、Quality、Docs Sync、Diagram | `speckit-delivery` Bundle v0.4.10 |
 | Bug | Specify CLI 1.2.3 随附的 1.0.1，与 Bundle pin 一致 |
-| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.4.9 |
+| Feature / Bugfix / Lightweight Workflow | `speckit-delivery` Bundle v0.4.10 |
 
-当前项目使用 **Bundle v0.4.9**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
+当前项目使用 **Bundle v0.4.10**，Bundle 记录拥有 10 个扩展和 3 个 Workflow，共 13 个组件。
 v0.1.0 的逐组件安装只作为历史 bootstrap；v0.1.1 修复了 Workflow Catalog 的 requirements
 不一致；v0.1.2 增加 Diagram 扩展与 `speckit.delivery.context`；v0.1.3 增加范围取证与有界
 修复复审；v0.1.4 修正 Doctor 对共享 Reviewer 模板的路径引用。v0.2.0 增加
@@ -83,10 +91,10 @@ README 结构守卫、索引式 README 模板和 `project_readme` 等配置，�
 语义状态引擎。v0.4.9 修复领域子目录 ADR 与已批准配套文档的规划检查点准入，
 保留准确路径、Proposed 状态、审批内容哈希与检查点新鲜度约束；不新增配置键或状态 schema。
 
-发布入口：[v0.4.9](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.4.9)。
+发布说明见 [v0.4.10 Release](https://github.com/YanZhiwei/speckit-delivery/releases/tag/v0.4.10)。
 安装取舍见 [ADR-0004](../decisions/engineering/0004-release-managed-delivery-installation.md)。
-本次升级命令与限制见 [v0.4.9 evidence](../../harness/evidence/delivery-v049-upgrade.md)；
-上一版见 [v0.4.8 evidence](../../harness/evidence/delivery-v048-upgrade.md)；
+本次升级命令与验证范围见 [v0.4.10 安装记录](../../harness/evidence/delivery-v0410-upgrade.md)。
+上一版见 [v0.4.9 evidence](../../harness/evidence/delivery-v049-upgrade.md)，双宿主首次登记见 [v0.4.8 evidence](../../harness/evidence/delivery-v048-upgrade.md)；
 更早见 [v0.4.7 evidence](../../harness/evidence/delivery-v047-upgrade.md)；
 前一版升级见 [v0.4.6 evidence](../../harness/evidence/delivery-v046-upgrade.md)，早期安装见
 [历史 evidence](../../harness/evidence/delivery-release-installation.md)。
@@ -112,12 +120,11 @@ specify integration use opencode
 `specify integration use codex`，并同步项目拥有的 `delivery-config.yml` 中的
 `integration` 字段。Codex CLI 及其认证须在本机可用；本次安装没有执行真实模型 Workflow。
 
-`integration use` 对已有共享脚本/模板的定制保留提示不表示入口缺失；安装器执行前后，
-1,461 个配置、核心定制与既有工件的 SHA-256 全部不变。随后项目版本文档的同步单独记录，
-不由安装器覆盖。不要用 `--force` 消除定制保留提示。
+`specify integration status` 在本次升级前后均报告 18 个已有定制，缺失文件和无效清单路径均为 0。
+复核时可对照[受保护文件的哈希核验记录](../../harness/evidence/delivery-v0410-upgrade.md)。
 
 v0.4.8 的发布变化主要补齐六宿主的 Windows/Linux 安装生命周期矩阵和 Cursor Workflow
-兼容性，并在 SpawnJoin 中补齐 Codex Delivery 注册。本次 v0.4.9 沿用这两套入口，
+兼容性，并在 SpawnJoin 中补齐 Codex Delivery 注册。后续升级沿用这两套入口，
 通过原生 `integration use codex` / `use opencode` 刷新并恢复 OpenCode 默认集成。
 安装探针通过不等于真实宿主模型交付或 Ralph 全流程通过。
 
@@ -132,11 +139,11 @@ specify version
 specify integration install opencode --script ps
 specify integration use opencode
 
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.9/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.10/catalogs'
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog add "$base/workflows.json" --name speckit-delivery
 specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy install-allowed
-specify bundle install speckit-delivery --version 0.4.9
+specify bundle install speckit-delivery --version 0.4.10
 ```
 
 Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Workflow。Catalog 的安装信任
@@ -145,7 +152,7 @@ Bundle 会安装 `bug`、九个 Delivery 扩展（含 Diagram）以及三条 Wor
 
 ### 从 v0.1.0 逐组件安装迁移
 
-先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.4.9 Bundle：
+先备份配置与核心定制，然后使用 `--keep-config` 移除旧组件，再安装 v0.4.10 Bundle：
 
 ```powershell
 foreach ($extension in @('bug','decision','delivery','docs-sync','evidence','quality','ralph','review','simplify')) {
@@ -158,8 +165,8 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 }
 ```
 
-随后删除旧 Catalog、加入 v0.4.9 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
-`bundle list --json` 为 0.4.9、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
+随后删除旧 Catalog、加入 v0.4.10 Catalog，并执行上面的 `bundle install`。迁移后必须检查：
+`bundle list --json` 为 0.4.10、13 个组件；项目 `*-config.yml` 哈希不变；核心任务技能和
 `tasks-template.md` 不被覆盖；`auto_execute_hooks: false` 保持。
 
 ### 从已有 Bundle 升级
@@ -168,7 +175,7 @@ foreach ($workflow in @('feature-delivery','bugfix-delivery','lightweight-delive
 `specify workflow catalog list` 确认旧来源的索引，再更新三类 Catalog：
 
 ```powershell
-$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.9/catalogs'
+$base = 'https://raw.githubusercontent.com/YanZhiwei/speckit-delivery/v0.4.10/catalogs'
 specify extension catalog remove speckit-delivery
 specify extension catalog add "$base/extensions.json" --name speckit-delivery --install-allowed
 specify workflow catalog remove 0
@@ -178,7 +185,7 @@ specify bundle catalog add "$base/bundles.json" --id speckit-delivery --policy i
 specify bundle update speckit-delivery
 ```
 
-升级后检查：`bundle list --json` 为 0.4.9、13 个组件；`*-config.yml` 哈希不变；
+升级后检查：`bundle list --json` 为 0.4.10、13 个组件；`*-config.yml` 哈希不变；
 `auto_execute_hooks: false`；OpenCode 原生命令为 39 个，另有由 manifest 生成的 `sd` alias。
 `bundle update` 会重新安装三条 Workflow，因此 v0.4.x runtime、逐任务关闭 transport、
 Close outcome 校验和 alias 随 Bundle 生效。不能只更新薄门面或单条命令。
@@ -271,12 +278,9 @@ Specs 仍只在本地。安装不授权执行 Ralph、创建任务提交、push�
 ## 验证与升级
 
 运行环境要求见 [质量门前置条件](quality-gates.md#prerequisites)。各版本的环境、命令和
-退出码以对应 evidence 为准，不继承旧会话的通过结论。v0.4.9 先在临时副本执行升级，
-再更新目标仓库；核对 13 个组件及 1,461 个受保护文件的哈希，并验证两个宿主入口及
-原 MCP 运行的三个规划路径准入。上游 Release 的六宿主 Windows/Linux 安装矩阵已通过。
-包未变，本机不重跑七包矩阵。项目文档、治理检查的实际结果见
-[本次 evidence](../../harness/evidence/delivery-v049-upgrade.md)。Doctor 仍是 Agent Prompt，
-安装验证不等于 Doctor、模型行为评估、Ralph 或完整交付循环通过。
+退出码以对应 evidence 为准。v0.4.10 在临时副本和目标仓库均核对了组件版本、双宿主入口、
+76 个安装文件及 1,908 个受保护文件。发布证据与 Close 的回归、项目文档及治理检查见
+[本次安装记录](../../harness/evidence/delivery-v0410-upgrade.md)。
 
 ```powershell
 specify integration status
@@ -325,6 +329,6 @@ v0.3.1、v0.3.2、v0.4.1、v0.4.2、v0.4.3、v0.4.4、v0.4.5、v0.4.6 与 v0.4.7
 安装 registry、manifest、配置和生成命令保留以便项目级追溯。Vendor Prompt/README 的上游
 相对链接不属于项目文档链接门，保留原样，不伪称其经过本项目文档验证。
 
-本次实际验证及限制见 [v0.4.9 evidence](../../harness/evidence/delivery-v049-upgrade.md)。
+本次实际验证及限制见 [v0.4.10 安装记录](../../harness/evidence/delivery-v0410-upgrade.md)。
 参考外部治理的分析与采用状态见 [Delivery/Harness 对照评估](delivery-harness-reference-review.md)。
 角色导航、调查交接和经验回流已接入现有文档；不表示真实 SD/Ralph 或行为评估已完成。
