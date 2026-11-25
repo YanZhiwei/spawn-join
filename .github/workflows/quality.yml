@@ -2,6 +2,7 @@ name: Quality
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, edited]
   push:
     branches: [main]
   workflow_dispatch:
@@ -95,6 +96,9 @@ jobs:
           cache-dependency-glob: 'packages/**/uv.lock'
       - name: Check documents
         run: ./scripts/quality.ps1 -Check docs
+      - name: Check shared evidence in the PR head
+        if: github.event_name == 'pull_request'
+        run: ./scripts/check-pr-evidence.ps1 -EventPath $env:GITHUB_EVENT_PATH
       - name: Check governance records
         run: ./scripts/quality.ps1 -Check governance
       - name: Install PSScriptAnalyzer
@@ -111,6 +115,8 @@ jobs:
         env:
           SPAWN_JOIN_TEMP_DIR: ${{ runner.temp }}
         run: ./scripts/test-governance.ps1
+      - name: Test PR evidence publication
+        run: ./scripts/test-pr-evidence.ps1
       - name: Test gate failure paths
         env:
           UV_PYTHON: '3.11'

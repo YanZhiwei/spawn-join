@@ -17,8 +17,8 @@
 - 项目配置由项目拥有，组件/命令由安装器管理；`.specify/extensions.yml` 保持
   `auto_execute_hooks: false`、`hooks: {}`。有质量脚本和 CI 不表示有自动 Spec Kit Hook。
 - `package_readme: required`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
-  手动 squash 到 `main`。PR 模板使用随包中文模板与 `.github/pull_request_template.md`
-  静态副本；Slice、任务门禁和 Handoff 规则见下文。
+  手动 squash 到 `main`。Handoff 和 GitHub 使用同一份[项目 PR 模板](.github/pull_request_template.md)。
+  单 PR 和最终发布层需在 PR 的 Git 树中带上本次验收记录，见[PR 共享证据](docs/development/quality-gates.md#pr-共享证据)。
 - `delivery_run` 的恢复、检查点、owner transport 和 Close 由已安装契约负责；Close 区分
   `delivered`/`abandoned`/`superseded`，持久 evidence 与本地运行工作区分离。
 - 安装不表示 Spec/Plan/Tasks/ADR/Evidence、Doctor 或 Ralph 已执行，不授权自动提交、

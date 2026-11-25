@@ -120,6 +120,35 @@ Client、ClientGroup、MCPConfig、MCPAdapter，并通过公开入口执行混�
 合并前分支必须与 main 同步。配置已由 API 核对；临时失败 PR #3 的 `mergeStateStatus`
 为 `BLOCKED`，验证后已关闭。
 
+### PR 共享证据
+
+在[PR 模板](../../.github/pull_request_template.md)填写两行。第一行填 `Delivery-Evidence`，值为
+`.specify/delivery/<run-id>/evidence.md`。第二行填 `Delivery-Stack`，按实际发布方式取值。
+
+| 发布方式 | `Delivery-Stack` 示例 | 合并前的检查 |
+| --- | --- | --- |
+| 单 PR，含多个内部切片合发 | `single` | PR head 必须新增或更新本次验收文件。 |
+| 分层发布 | `stacked` | 从 PR head 读取同一 run 的 `publication-branches.txt`。实际源分支为最后一行时必须交证据，中间层可待最终记录生成。 |
+| 单独回写 Close | `single` | 可沿用已结束的 run。这个 PR 的差异只包含该证据文件。 |
+
+独立的 Harness 治理工作可在单 PR 引用 `harness/evidence/<记录名>.md`，其结果应为 `pass`，
+并在同一 Git 树的 `harness/build-log.md` 中可查。SD 运行以及触及 `packages/` 的变更使用对应运行的规范路径。
+对多层发布，将批准分组中的 PR 源分支按合并顺序抄到 `.specify/delivery/<run-id>/publication-branches.txt`，
+每行一个分支。首层带上这个文件，后续层沿用已进入 base 的版本。遇到重新分组，先按 Slice 流程确认并单独发布新的分组依据。
+人工评审核对这几行和已批准的分组。完整 Spec 和运行日志继续在本地使用。
+
+CI 用事件中的两个提交和实际源分支读取 Git 对象，用 merge base 排除未更新的旧证据。
+SD 最终层还比较原生 Evidence 发布摘要的 `reviewed_head` 与 PR head 的完整文件树，只排除这个 run 的 `evidence.md`。
+请在发布分支保留 CI 能读取的审查提交。产品文件、配置或分组表有变化时，重新 Review，刷新发布摘要中的审查身份和指纹，将旧快照完整保留在历史区。CI 与原生 Close 都读取摘要中的首个审查身份。
+本地治理检查仍能读取 squash 后旧审查提交已不可达的历史档案。正文编辑和推送新提交都会重跑 PR 检查。
+
+本机保留 GitHub 的 `pull_request` 事件 JSON 并取齐其中两端提交后，可从仓库根目录复跑同一检查。
+
+```powershell
+pwsh -NoProfile -File scripts/check-pr-evidence.ps1 -EventPath ./pr-event.json
+pwsh -NoProfile -File scripts/test-pr-evidence.ps1
+```
+
 ## Regression and limitations
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：Core 与 Common
