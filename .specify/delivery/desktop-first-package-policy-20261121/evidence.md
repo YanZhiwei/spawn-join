@@ -1,3 +1,41 @@
+<!-- DELIVERY_CURRENT_OUTCOME_BEGIN -->
+## Current delivery outcome
+
+- **delivery_run**: desktop-first-package-policy-20261121
+- **lane**: lightweight
+- **status**: delivered
+- **outcome**: merged
+- **provider**: github
+- **repository**: yanzhiwei/spawn-join
+- **number**: 82
+- **pull_request**: https://github.com/yanzhiwei/spawn-join/pull/82
+- **reviewed_head**: b3f60525ef4b869b7b8b4a2d0a4db8be614ee0a9
+- **original_pr_head**: b3f60525ef4b869b7b8b4a2d0a4db8be614ee0a9
+- **published_head_proof**: tracker-head-mapped
+- **base_revision**: e7dde80c2a9389ab588016059d1385e1bd74c754
+- **merged_revision**: 5739be137b3a95caa7507f2db6f48e32fc6d5d57
+- **effective_head**: 5739be137b3a95caa7507f2db6f48e32fc6d5d57
+- **merged_at**: 2026-11-21T15:58:57Z
+- **observed_at**: 2026-11-25T07:32:19Z
+- **outcome_recorded_at**: 2026-11-25T07:32:19Z
+- **verification_file**: .specify/delivery/desktop-first-package-policy-20261121/runtime/observed-pr.json
+- **merge_proof**: tracker-head-mapped
+<!-- DELIVERY_CURRENT_OUTCOME_END -->
+
+## Historical validation snapshots
+
+<!-- Existing validation, review, CI, and limitation content below is retained verbatim as historical evidence. -->
+
+## 2026-11-25 补录的审查依据
+
+- **delivery_run**: desktop-first-package-policy-20261121
+- **lane**: lightweight
+- **reviewed_head**: b3f60525ef4b869b7b8b4a2d0a4db8be614ee0a9
+
+运行标识和路线取自下方原始交接记录。审查提交取自 PR 正文的“审查身份”，与 GitHub 保存的 PR head 一致。[PR #82](https://github.com/YanZhiwei/spawn-join/pull/82)
+
+PR 提交与 squash 合并提交具有相同的父提交和完整文件树 `550438defed56dd0545e870ab470704dafde3907`。从该父提交到合并提交重新计算的 diff 指纹为 `447b480acfa06cf10dd1b92582fcffd210d15204`，与 PR 正文记录的指纹一致。该 PR 交付时的设计状态为 `Proposed`，后续采纳决定见 [ADR-0016](../../../docs/decisions/engineering/0016-desktop-first-service-ready-packages.md)。
+
 # Delivery Evidence — 桌面优先、服务端可替换策略（ADR-0016）
 
 ## Lane and scope

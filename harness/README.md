@@ -83,8 +83,10 @@ approved phase plan
   自动 Hook 关闭且无已注册 Hook；
   [Delivery 安装](../docs/development/spec-kit-delivery.md)不代表 Ralph 或完整交付循环已执行。
 - `scripts/check-governance.ps1` 校验 Harness/Delivery evidence 元数据、截断 revision、
-  build-log 引用、ADR 索引、Spec/Tasks 一致性、Delivery 安全设置和自动 hook 开关；freshness
-  在非文档路径变化时告警，语义判断仍需人工评审。
+  build-log 引用、ADR 索引、共享文档链接、Delivery 安全设置和自动 hook 开关。
+  它还逐包核对 manifest、CI、Spec Kit 质量配置和本地质量脚本中的名称。
+  传入 `-FeatureDir specs/<feature-id>` 时，还校验此 Feature 的文档和 Spec/Tasks 一致性。
+  非文档路径变化会触发证据时效告警，证据是否仍然适用由评审者判断。
 - 如果 `HEAD` 或 outgoing paths 变化，旧 evidence 必须重新确认，不能直接沿用。
 
 许可证见 [LICENSE](../LICENSE)。

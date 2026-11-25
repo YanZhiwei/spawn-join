@@ -1,457 +1,133 @@
 # SpawnJoin 项目协作与工程规则
 
-本文件是 SpawnJoin 仓库的项目级执行契约，适用于根目录下所有包。它约束的是工作方式、架构边界和验证证据，不替代具体包的 `pyproject.toml`、README 或未来更深层目录中的 `AGENTS.md`。
-
-如果规则之间发生冲突，遵循以下优先级：系统/平台安全规则 > 用户当前明确要求 > `.specify/memory/constitution.md` > 更深层目录的项目规则 > 本文件 > `README.md` 和代码中的既有约定。涉及 Constitution MUST 规则的用户例外，按 Constitution 的 Governance 记录原因、影响、临时措施和失效条件。发现冲突时，先记录冲突及影响，再选择最小、可验证的改动。
+本文件是 Agent 在 SpawnJoin 仓库的工作入口。[Constitution](.specify/memory/constitution.md) 定义所有贡献者和交付路线共同遵守的工程原则。
+Spec Kit 的 Plan 和 Analyze 按宪法检查设计与任务。Agent 按本文件选择入口、查找约束、执行检查并交付结果。
 
 ## 0. Spec Kit 与 Speckit Delivery 治理分层
 
-当前使用固定 Release Delivery Bundle v0.4.9（13 个组件），Constitution 为 `v1.0.0`。
-安装方式、版本能力与升级历史只维护在 [Delivery 安装说明](docs/development/spec-kit-delivery.md)
-和 [ADR-0004](docs/decisions/engineering/0004-release-managed-delivery-installation.md)，不在本文件复制。
+**先确认范围和授权。** 规则冲突时，按系统/平台安全规则、用户当前明确要求、Constitution、适用的更深层项目规则、本文件、README 和代码既有约定的顺序处理。记录冲突和影响，选择可验证的最小改动。
+宪法 MUST 的例外须经用户明确批准，并按 [Governance](.specify/memory/constitution.md#governance) 记录原因、影响、临时措施和失效条件。
 
-- 默认宿主 OpenCode，使用 `/sd` 或 `/speckit.delivery.route`；`sd.md` 由 Bundle manifest
-  从同一路由源生成。Codex 使用安装器生成的 `$speckit-sd` 或 `$speckit-delivery-route`，
-  与 OpenCode 共用项目配置。保留核心技能及项目模板定制；不复制门面、不转发用户级旧技能，
-  不手工修改安装器管理的命令或 runtime 协议来掩盖漂移。
-- 项目配置由项目拥有，组件/命令由安装器管理；`.specify/extensions.yml` 保持
-  `auto_execute_hooks: false`、`hooks: {}`。有质量脚本和 CI 不表示有自动 Spec Kit Hook。
-- `package_readme: required`、`pr_slicing: "auto"`；standalone/flagged 切片按 stacked 顺序
-  手动 squash 到 `main`。Handoff 和 GitHub 使用同一份[项目 PR 模板](.github/pull_request_template.md)。
-  单 PR 和最终发布层需在 PR 的 Git 树中带上本次验收记录，见[PR 共享证据](docs/development/quality-gates.md#pr-共享证据)。
-- `delivery_run` 的恢复、检查点、owner transport 和 Close 由已安装契约负责；Close 区分
-  `delivered`/`abandoned`/`superseded`，持久 evidence 与本地运行工作区分离。
-- 安装不表示 Spec/Plan/Tasks/ADR/Evidence、Doctor 或 Ralph 已执行，不授权自动提交、
-  push、merge 或发布。本机成功不等于远端强制门禁通过；缺失时报告缺口，不伪造完整交付。
+涉及云服务、模型 Provider、私有 Registry 或外部写入时，先说明所需权限、读写的数据和失败后的状态，按最小权限执行。所有外部写入，以及提交、推送、创建或合并 PR、发布、删除和不可逆迁移，均须用户明确授权。
+安装 Delivery、生成 Handoff 和 CI 通过均不会授予这些权限。密钥、令牌、私有 URL 和未脱敏用户数据不得进入源码、夹具、日志、证据或提交历史。
 
-开始工作时按 [角色阅读导航](docs/architecture/repository-map.md#role-based-reading) 选择相关材料，
-并遵守全部适用规则。阶段交接和调查延续见 [Context 约定](harness/context/README.md)，
-收口经验回流见 [Review 约定](harness/code_review/README.md)；不另建知识库、回执或执行队列。
+### 0.1 选择交付路线
 
-### 0.1 变更路由
+按宪法的[开发流程与质量门](.specify/memory/constitution.md#development-workflow-and-quality-gates)选择一条与风险匹配的路线。
+范围不明时先调查，有证据再降级。公共 API、持久化、安全和架构变化应显式识别。
 
-每项工作先选择且只选择一条交付路由：
+| 路线 | Agent 的起步动作 | 交付时核对 |
+|---|---|---|
+| Lightweight | 对文档、规则或行为保持的窄改动，锁定路径和可观察结果。 | 记录实际差异和针对性检查。 |
+| Bugfix | 对有界缺陷，先复现并取得能区分修复前后的失败证据，再修复。 | 附 red evidence、回归结果和未覆盖环境。 |
+| Feature | 对新增行为、跨模块/跨包变更、公共 API、数据、安全或长期架构决策，按 Spec、Plan、Tasks 和审批推进。 | 核对任务、Slice、审查、ADR 和真实交付证据。 |
 
-- **Lightweight**：文档、规则、机械性或行为保持不变的窄范围改动；不默认创建 Feature Spec。
-- **Bugfix**：有可复现缺陷、边界明确，并且可以先用失败证据表达期望行为；先建立 red evidence，再修复和回归。
-- **Feature**：新增行为、跨模块或跨包改动、公共 API、持久化数据、安全/权限、架构或长期依赖决策；必须走完整的 Spec/Plan/Tasks 和相应审查。
+OpenCode 使用 `/sd` 或 `/speckit.delivery.route`，Codex 使用 `$speckit-sd` 或 `$speckit-delivery-route`。
+两者共用[项目配置](.specify/extensions/delivery/delivery-config.yml)。
+先从[角色阅读导航](docs/architecture/repository-map.md#role-based-reading)定位本次工作所需材料。
+版本、安装、升级和宿主入口由 [Delivery 安装说明](docs/development/spec-kit-delivery.md) 与 [ADR-0004](docs/decisions/engineering/0004-release-managed-delivery-installation.md) 维护。
+保留项目配置与模板定制，安装器管理的组件、命令和协议由安装器更新。项目的[自动 Hook 配置](.specify/extensions.yml)保持关闭。
 
-路由原则见 Constitution 的“Development Workflow and Quality Gates”；本节只把它映射为仓库内的执行入口，冲突时以 Constitution 为准。
+### 0.2 规划、执行与证据
 
-如果路由不明确，先选择更明确的路线，直到范围证据支持降级；不要因为改动看起来很小，就绕过公共契约、安全或架构决策。
+- Feature 以本机 `.specify/feature.json` 指向的实际目录为准。`spec.md` 记录用户场景和验收，`plan.md` 记录设计及验证，`tasks.md` 是唯一执行队列。
+  每项任务写明 ID、依赖、目标文件和验收。研究、模型、契约等附属工件按需由 Plan 引用。Lightweight 使用本路线的范围和证据即可。
+- 生成 Tasks 后规划 Slice 并通过 Slice Gate，按批准的映射执行。任务重叠、共享契约、迁移和未决设计形成依赖。Ralph 每次只执行一个依赖已满足的任务。边界校验失败时回到 Slice 规划。
+  Worker 返回变更、命令、结果和阻塞，由协调者核对允许路径、当前内容及需求快照、Quality、Standards 和独立 Review 回执。
+  只有 `RALPH_TASK_GATE: PASS` 才可勾选任务并在已获授权时提交。全量完成还要求任务回执有效、工作区干净、收口证据齐全。
+- Spec Kit 的规划工件按[既定策略](docs/decisions/engineering/0002-untrack-historical-feature-artifacts.md)留在 Git 忽略的 `specs/`，保留历史文件。
+  长期决策归入 [ADR 索引](docs/decisions/README.md)对应领域，说明归属理由，归属不明时询问维护者。
+  绘制 ADR 技术图时按[技术图说明](docs/development/technical-diagrams.md)读取[项目固定的 Fireworks 技能](.agents/skills/fireworks-tech-graph/SKILL.md)。
+  持续有效的要求、决策和证据应能从可共享材料查到。
+- [Harness](harness/README.md#source-of-truth-boundaries) 保存阶段计划、材料性上下文、审查、证据和实际进度。
+  调查交接复用 [Context](harness/context/README.md#investigation-continuity)，可复用经验写回[对应知识的维护位置](harness/code_review/README.md#closure-and-reusable-learning)。
+  本次 Delivery 的持久证据写入 `.specify/delivery/<delivery_run>/evidence.md`，运行与恢复沿用同一 run 的 runtime。
+- Handoff 产出实际 `PR_BODY_PATH` 和 `gh pr create --body-file` 提示。按批准的发布分组填写[项目 PR 模板](.github/pull_request_template.md)，单 PR 或最后一层必须在 PR 的 Git 树中带上本次共享证据。
+  standalone/flagged 切片采用 stacked 方式时按顺序手工 squash 到 `main`，integration 方式另核对线性历史约束和获批策略。
+  按[交付收尾步骤](docs/development/spec-kit-delivery.md#pr-结果与交付收尾)用原运行执行 Close。PR 合并或关闭时核对 GitHub 结果，运行被替代时核对替代记录。相关 ADR 的采纳以维护者记录的明确决定为准。
 
-### 0.2 工件职责
+## 1. 确认包与架构归属
 
-当项目完成 Spec Kit 初始化后，遵循以下职责分离：
+先从[仓库地图](docs/architecture/repository-map.md)找目标 Distribution，再按[包职责与依赖方向](docs/architecture/package-boundaries.md#dependency-direction)、适用 ADR、该包的 `pyproject.toml` 和公共导出核实边界。
+新增、移动或退役包时同步维护这些拥有清单的文件及消费它们的质量配置。
 
-- `.specify/memory/constitution.md`：项目原则、治理和合规约束。
-- `specs/<feature-id>/spec.md`：用户价值、场景、范围、需求和验收标准。
-- `specs/<feature-id>/plan.md`：技术上下文、设计、依赖、目录布局和验证方案。
-- `specs/<feature-id>/tasks.md`：唯一执行队列；任务必须有 ID、依赖、目标文件和可验证的完成条件。
-- `research.md`、`data-model.md`、`contracts/`、`quickstart.md`：仅在当前 Feature 确实需要时创建，并由 Plan 引用。
-- ADR：只记录会约束多个实现点或未来演进的长期决策；本项目唯一根目录为 `docs/decisions/`，分类、编号、状态和模板以该目录的 README 为准，不自行创建第二套 ADR 目录。Delivery 的 ADR/context 配置已指向同一路径，但自动 hook 未启用，不宣称 ADR 自动化已闭环。
-- `.specify/delivery/<feature-id>/evidence.md`：Delivery evidence 配置已启用，记录实际
-  outgoing diff 的命令、工作目录、环境、退出码、结果、base/head 和残余风险。
+- 品牌名为 SpawnJoin。Distribution 名用连字符，import package 用下划线。每个包独立使用 uv、`pyproject.toml`、`uv.lock` 和 `.venv`。
+  源码放在该包的 `src/`，测试放在 `tests/`，公共接口由 `__init__.py` 显式导出。跨包测试说明依赖和安装方式。
+  根 `pyproject.toml` 只承载共享工具配置，根目录不建 uv workspace。
+- 按[宪法 III](.specify/memory/constitution.md#iii-dry-with-clear-ownership)审查抽取。拟提升到 Core 或 Common 时，列出真实消费者并核对依赖方向。
+  区分领域协议、框架适配、网络 transport、离线同步和宿主装配的拥有者。新包或公共抽象须有已证实的需要及边界设计。
+- 涉及持久化、队列、后台执行或常驻循环的可复用运行时/基础设施包，默认实现须能在无外部服务的桌面运行，公共契约须能经端口切换服务端存储和消息队列。服务端档位禁用 SQLite，多租户由宿主或可选适配器提供。
+  产品宿主选择部署档位并依赖相应包。
+  先核对 [ADR-0016 的适用范围](docs/decisions/engineering/0016-desktop-first-service-ready-packages.md)和具体包已经接受的 ADR。
+  纯协议、类型、辅助包及调用方拥有的资源装配沿用各自边界。
+- `scripts/` 放开发检查，`.agents/skills/` 放 Agent 技能。固定的 Fireworks 副本保留来源与许可证，隔离其工具依赖，并排除项目级格式重写。
+  本机 CodeGraph 数据库、日志和 daemon 状态、Python 缓存及构建产物不入库。`harness/build/` 保存应跟踪的阶段文档。
 
-Lightweight 改动不应为了形式创建空的 Spec/Plan/Tasks；但必须保留范围、变更路径和针对性验证证据。Feature 的实现不能绕过 `tasks.md` 直接凭自然语言清单执行；`slices.md` 只提供可独立评审/合并的边界，不得增删或重排任务。
+## 2. 修改前锁定基准
 
-收口前将稳定的设计理由和必要图表提炼到 ADR 或当前架构说明，不将 ADR 变成第二套
-任务队列或运行日志。Agent 按主要职责复用领域/子领域分类，并说明理由；归属不明确时
-询问维护者。`/specs/` 按用户要求加入 Git 忽略，仍保留本地 Feature 执行职责；
-历史 Specs 已按 ADR-0002 取消跟踪但保留本地文件，不得擅自删除；长期契约与证据不得只留在忽略目录。
-绘制 ADR 技术图时读取项目内 `.agents/skills/fireworks-tech-graph/SKILL.md`，用法见
-[`技术图说明`](docs/development/technical-diagrams.md)；不以全局同名版本替代项目固定副本。
+1. 记录 `git status --short --branch` 和 `git rev-parse HEAD`，识别已有改动。按任务记录受影响的包、导出、调用入口、依赖方向以及所需权限。
+2. 对重构、模块或类型变更，固定可观察行为，例如返回值、异常及原因链、序列化、导入路径、事件、CLI 输出或产物。记录相关检查的原始结果。基线跑不通时写出具体命令、阻塞和替代证据。
+3. 仓库有 `.codegraph/` 时，理解源码先运行 `codegraph status`，过期则 `codegraph sync`。
+   优先用 `codegraph explore`、`node`、`callers` 或 `impact` 查关系，再按需做文本检索。源码修改后同步，用 `codegraph affected <file>` 辅助选测试。
+   文档使用文本和链接检查。索引缺失时直接使用源码检索，有解析缺口时记录限制。
 
-### 0.3 Ralph 与收口规则
+## 3. 设计、实施与回归
 
-在项目启用 Ralph/完整 Delivery 流程后：
+- 重构前写出本次蓝图，说明职责与范围、所属包、输入输出、异常、副作用、关键类型、公共接口或扩展点，以及需要验证的边界。涉及 I/O 时，沿输入校验、协议、适配器、观测与清理追踪拥有者。
+  引入依赖前核对许可证、维护状态、版本范围、传递依赖和实际消费方。
+- 遇到陌生能力时，按[宪法 V](.specify/memory/constitution.md#v-simplicity-incremental-delivery-and-evidence)核对同类开源项目。
+  记录来源与版本、许可证、边界、错误处理、测试、已知限制及采纳取舍。使用上游代码前复核其来源、许可与本项目适配性。
+- 每步处理一个可验证目标，先复用已有实现，保留旧调用方依赖的行为、公开导入和异常语义。改变既有公共契约或导入路径前，须有明确的迁移方案。必须连带改调用方时说明原因，并同步运行回归。
+  删除错误处理、资源释放、取消/超时、锁等并发保护、上下文传播或异常原因链之前，须有证据证明相应保护已无必要。
+- 拟为纯推测的低概率竞态或安全场景增加锁、重试、隔离等机制前，向用户说明触发条件、发生概率及依据、影响和维护成本，取得明确同意。有已知契约、可复现案例或事故证据时，按正常缺陷处理并保留证据。
 
-- 每次只执行一个依赖已满足的任务；任务重叠、共享公共契约、迁移或未决设计会形成阻塞边。
-- Feature 在 `tasks.md` 之后执行 Slice 计划与 Slice Gate；Ralph 在每个 Slice 边界验证声明的 trunk-safe、flag 或 integration checkpoint，失败则回到 Slice 规划，不以继续执行掩盖失败。
-- Worker 返回变更路径、命令、结果、残余风险和阻塞，不自行勾选任务或创建收口提交。
-- Orchestrator 在任务关闭前验证验收证据、允许路径、当前内容/需求快照、声明的检查、
-  `QUALITY_VERDICT`、`STANDARDS_VERDICT` 和独立 `REVIEW_VERDICT`；仅 `HEAD`/路径相同不足以复用旧证据。
-- 只有 `RALPH_TASK_GATE: PASS` 才能更新任务状态并创建该任务的提交；所有任务都有当前有效 receipt、工作区干净且收口证据完整后，才能声明全量完成。
-- Handoff 必须写出真实 `PR_BODY_PATH` 并给出 `gh pr create --body-file` 提示；仅聊天正文不算可持久化交付。项目默认启用 Slice 计划；stacked 使用手动顺序 PR，integration 仍需单独策略评审并受仓库线性历史约束。
-
-没有对应的 `.specify` 配置、质量命令或运行时证据时，只报告缺口；不要用技能文件存在、命令文本存在或一次静态阅读替代实际执行证据。
-
-### 0.4 质量门与标准审查
-
-- **Quality Gate** 只判断实际配置并实际执行的机械检查：格式、lint、类型、测试、复杂度、构建、包产物、证据结构、ADR 索引和 Spec/Tasks 一致性；缺少工具、配置或环境时结果是 `blocked`/未执行，不是 `pass`。
-- **Standards Review** 判断 DRY、模块拥有者、目录归属、公共 API、依赖方向、架构边界和可维护性；它不能用一次测试通过替代，也不能把个人偏好伪装成项目标准。
-- **Evidence** 将检查绑定到真实 outgoing diff、工作目录、命令、退出码、base/head 和时间；`HEAD` 或范围变化后，旧证据必须重新确认。
-- 质量简报、静态阅读和文档中“应该通过”的描述只能作为准备信息，不能替代 `QUALITY_VERDICT: pass`、`STANDARDS_VERDICT: pass` 所需的实际证据。
-
-## 1. 项目定位与当前基线
-
-SpawnJoin 是一个 Python monorepo。每个包目录都是可以独立构建、测试、版本化和发布的 Python Distribution；每个 Distribution 也是独立的 uv project，拥有自己的 `.venv` 和 `uv.lock`。`packages/core` 与 `packages/infra` 只是架构分组，不是 Distribution；仓库根目录不创建共享 uv 环境或根级 uv workspace。
-
-当前必须保持的命名约定：
-
-- 品牌名：`SpawnJoin`。
-- Python Distribution：使用连字符，例如 `spawn-join-core`。
-- Python import package：使用下划线，例如 `spawn_join_core`。
-- 包使用 `src/` layout；公共 API 通过包的 `__init__.py` 明确导出。
-
-### 1.1 目录结构与文件归属
-
-完整且易变的仓库地图维护在 [`docs/architecture/repository-map.md`](docs/architecture/repository-map.md)，
-包职责和依赖方向维护在 [`docs/architecture/package-boundaries.md`](docs/architecture/package-boundaries.md)。
-Harness 的阶段计划、上下文、评审和证据入口是 [`harness/README.md`](harness/README.md)。
-本文件只保留不会因普通模块增删而频繁变化的边界规则，不复制完整目录树或包职责表。
-
-稳定目录规则：
-
-- `packages/core` 和 `packages/infra` 是架构分组；每个下层 Distribution 必须拥有自己的 `pyproject.toml`、`src/<import_package>/`、独立 uv `.venv`、`uv.lock` 和独立构建边界。
-- Python 源码只能放在对应 Distribution 的 `src/` 下；不要在仓库根目录创建共享 `src/`，也不要把源码直接堆在 Distribution 根目录。
-- 根 `pyproject.toml` 只允许共享 tool 配置，不定义 project/build-system/dependency-groups
-  或 uv workspace；`scripts/` 的 PowerShell 文件只承担开发检查，不是领域运行时代码。
-- 测试以 Distribution 为边界放在对应包的 `tests/`；跨包契约测试必须明确依赖的包和安装方式。
-- `.agents/skills/` 是项目级 Agent 能力，不是 Python 包；`.codegraph/` 是本机索引，不得提交数据库、日志、daemon 状态或 socket。
-- `.agents/skills/fireworks-tech-graph/` 是固定上游提交的第三方工具副本；其自带脚本是开发工具例外，不是领域源码或新增 Distribution。保留原始许可证及来源，不引入包级/根级运行时依赖，也不对其执行本项目的全量格式重写。
-- `.specify/` 已作为项目级 Spec Kit 基础设施保留；`specs/` 仅在 Feature 路由实际需要时创建，不要为 Lightweight 文档改动手工制造半套 Feature 工件。
-- `harness/` 只维护阶段计划、材料性上下文、评审、验证证据和实际执行日志，不替代 Spec、Plan 或 Tasks，也不是业务源码。
-- Python 构建产物不得进入版本控制，包括根目录或包目录下的 `build/`、`dist/`、`*.egg-info/`、缓存和临时报告；`harness/build/` 是应提交的治理文档目录，不属于 Python 构建产物。
-
-### 1.2 包拥有者与依赖方向
-
-详细映射以 `package-boundaries.md` 和各包的 `pyproject.toml` 为准。以下约束属于稳定
-架构规则：
-
-1. `spawn-join-core` 不得依赖其他 SpawnJoin 领域包，也不应因一个小工具引入第三方依赖。
-2. `spawn-join-llm-provider` 可以依赖 Core、Common 和通用校验库 Pydantic，但不得依赖
-   LangChain 或具体 Provider SDK。
-3. `spawn-join-llm-provider-langchain` 负责 LangChain 模型工厂、协议选项映射和配置校验，
-   不能把框架类型泄漏回协议包；应用层直接使用 LangChain 消息和 `BaseChatModel`。
-4. `spawn-join-llm-provider-langchain` 可以依赖协议包和 LangChain；不得依赖
-   `spawn-join-llm-channel` 作为运行时依赖，渠道桥接只使用协议包类型。
-5. `spawn-join-llm-channel` 负责真实 Provider channel transport（连接检查、认证和模型
-   发现），只依赖 `spawn-join-llm-provider`、`openai` 和 `anthropic`；不得依赖 LangChain、
-   模型适配包或 Agent 包，也不得把网络行为放进协议包。
-6. `spawn-join-llm-model-sync` 负责手动元数据同步、源注册和快照生成；运行时包不得反向
-   依赖它，同步工具只以显式路径读取 `model.yaml` 和快照，且运行时不得依赖 LangChain
-   适配包。
-7. `spawn-join-agent-deepagents` 负责 DeepAgents 产品装配、模型用途绑定、Middleware 作用域、
-   受控委派、诊断和恢复接缝；它依赖 `deepagents`、LangChain、`langchain-core`、`langgraph`
-   和模型适配包，不得被 Core、协议包或模型包反向依赖。
-8. LLM 等领域的抽象留在领域包中，不把所有接口集中到 Core。
-9. 新增包、跨领域模块或公共抽象必须有真实复用需求和清晰的依赖理由；不要预先创建 `utils.py`、`helpers.py`、`constants.py` 等收纳模块。
-10. 当前没有 `spawn-join-database`；`spawn-join-agent-deepagents` 是唯一 agent Distribution。除非出现明确需求并完成边界设计，不要提前创建其他 database/agent 包。
-11. `spawn-join-common` 承载按职责组织的跨领域公共辅助实现，不依赖其他 SpawnJoin 包；
-    默认零第三方运行时依赖，Pydantic 能力通过 `validation` extra 声明。领域规则和错误
-    策略留在调用方，后续能力需有真实复用契约，不预建空模块。
-12. 可复用的运行时/基础设施包在拥有持久化状态、队列/后台执行或自身常驻进程/守护循环时，
-    默认实现必须能在无外部服务的桌面环境运行；纯协议、类型或辅助包不适用，调用方拥有的
-    资源装配（如 ADR-0010 的 backend/checkpointer）也不属于本条的进程生命周期。此类包的
-    公共契约不得固化桌面专属语义（单机路径、单进程、单租户假设），必须可通过端口/适配器
-    切换为服务端存储与消息队列。SaaS/多租户能力由宿主与可选适配器提供，不进入默认实现；
-    服务端档位不得部署 SQLite。产品宿主（`apps`）自行选择档位并依赖这些包。决策与触发条件见
-    [ADR-0016](docs/decisions/engineering/0016-desktop-first-service-ready-packages.md)。
-
-当前配置基线（2026-11-22）：九个保留包（`core` 3、`infra` 5、`apps` 1）各自拥有独立
-uv 锁文件、dev group 和 `tests/`，消费者通过本地开发源解析仓库依赖；
-共享 Black/isort/Ruff/Pyright/pytest 配置与 `scripts/quality.ps1`、actionlint/PSScriptAnalyzer
-静态分析和 GitHub Actions 已加入；Delivery 默认启用 `pr_slicing: "auto"`，standalone 或
-flagged 切片按 stacked 顺序 squash 到 `main`。
-活动 Feature 以本机 `.specify/feature.json` 为准，不把历史质量门 Feature 当作当前任务。
-所有保留包（含 `apps` 分组）已具备包级 README、LICENSE、锁文件、质量 Profile 和 CI 矩阵；Release Delivery 组件与质量 Profile 已接入，
-不代表 Ralph 已运行，提交/推送/合并仍需授权；Spec Kit hook 和
-发布流水线仍未启用；Ruleset 已启用 PR、线性历史和 required `Quality Gate`。实际验证结果
-以当前 Feature 的 Harness evidence 为准，不用配置存在替代运行证据。因此：
-
-- 不得把“构建成功”表述为“测试、类型检查和发布流程全部通过”。
-- 后续若修复包级 README 警告，应单独记录为构建元数据改动。
-- 新增行为时，应同步补充测试；不要以当前尚未有测试为理由跳过边界覆盖。
-- 这是一份会过期的观察快照；当包目录、`pyproject.toml`、测试、CI、类型检查、Spec Kit 或 Delivery 配置发生变化时，必须重新检查并更新，不得用旧快照替代现场证据。
-
-## 2. 变更前先锁定基准
-
-任何重构、模块化或类型改动开始前，先记录：
-
-1. `git status --short --branch` 和当前 `HEAD`。
-2. 受影响包的目录、`pyproject.toml`、公共导出和调用入口。
-3. 当前可观察行为：返回值、异常类型、日志/事件、序列化格式、导入路径、构建产物或命令行输出。
-4. 当前依赖、权限和数据流：输入来自哪里、经过哪些边界、谁拥有副作用、错误如何传播。
-5. 与本次范围相关的验证命令及其原始结果。
-
-“不改变行为”必须具体到可观察输出，而不是只描述意图。若基线无法运行，要写明阻塞原因、已尝试的命令和替代证据；不能把未执行的检查标记为通过。
-
-## 3. 小步重构工作流
-
-每次只处理一个独立模块、一个清晰的职责边界或一个可验证的重构目标。不要借重构之名顺便改写无关包、格式化整个仓库或引入未来功能。
-
-按以下顺序执行：
-
-### 3.1 识别边界
-
-- 找出重复模式、过长函数、混合职责、跨层依赖和不清晰的公共 API。
-- 先判断候选边界属于 Core、领域协议、基础设施适配还是业务组合层。
-- 优先复用已有抽象；只有现有抽象无法表达真实需求时才新增抽象。
-- 明确本次不处理的相邻问题，防止范围扩张。
-- 对仅凭推测、且现实发生概率极低的竞态条件或安全边界情况，不得悄然引入锁、重试、状态机、隔离、冗余校验等复杂机制。需要处理时，先向用户说明：具体可能出什么问题、触发条件是什么、发生概率及判断依据、影响范围是什么，以及额外复杂度的实现和维护成本；只有得到用户明确同意后，才能扩大本次范围。
-- 如果风险已有现实证据、现有契约要求、线上事故记录或可复现案例，就不再把它归类为纯推测风险；应按正常缺陷或安全问题处理，并在变更说明中保留证据和验证结果。
-
-### 3.2 先写蓝图，再写代码
-
-实现前先用简短文字描述目标模块或函数的布局，至少包括：
-
-- 单一职责和不负责的事情；
-- 输入、输出、异常和副作用；
-- 所属包及依赖方向；
-- 公共 API、内部实现和可替换扩展点；
-- 关键类型及其边界；
-- 需要覆盖的正常、空值、错误、取消、超时或外部依赖场景。
-
-蓝图阶段只规划架构，不提前堆叠具体代码、抽象层或未来 Provider。设计无法用现有需求解释时，优先删除它。
-
-### 3.3 增量实现与回归
-
-- 先做最小代码变更，再补齐必要的类型和测试。
-- 一次只移动或重构一个独立模块；若必须同时更新调用方，说明这是保持接口一致性所需的配套改动。
-- 先保持旧行为和公共导入路径，再在有明确迁移方案时调整契约。
-- 使用 AI 生成、优化或重构代码时，先固定可观察行为和测试基线；不得在未证明不再需要的情况下删除错误处理、资源释放、取消/超时、锁、上下文传播或异常原因链，也不得顺手改写无关模块。
-- 每一小步都运行与范围匹配的验证；不要积累多个无法定位的变化后才统一测试。
-
-### 3.4 收尾复核
-
-完成前检查：
-
-- 依赖方向是否仍然单向；
-- 公共 API 是否意外扩大；
-- 类型、异常和副作用是否与蓝图一致；
-- 测试是否覆盖边界而不是只覆盖 happy path；
-- 可读性是否真的提高，而不是只减少行数或增加抽象；错误处理、资源释放、取消/超时、上下文传播和并发保护是否仍然完整；
-- 权限、密钥、网络和数据流是否被改变；
-- diff 是否包含无关文件或构建产物；
-- README、包元数据和运行说明是否仍然准确。
-
-## 4. 可读性、模块化与可复用性
-
-本节展开 Constitution I–III 的可读性、对象设计和 DRY 原则；原则冲突时以 Constitution 为准，本节只补充可执行细节。
+## 4. 代码与文档审查
 
 ### 4.1 模块职责
 
-- 一个模块围绕一个稳定职责组织；配置、协议、异常、Provider 适配和观测不要无理由混在一起。
-- 领域抽象与具体实现分离：`abstractions/` 或协议模块描述契约，`providers/`、`implementations/` 承载实现。
-- 适配层负责转换外部 SDK 的请求、响应和错误；Core 与协议包只看稳定的内部契约。
-- 只有至少两个组件存在稳定、真实的复用需求时，才把契约提升到 Core，或把领域无关的
-  辅助实现提升到 Common。
-- 不用“大而全”的 `utils` 模块隐藏所有依赖；共享代码应有明确的拥有者和命名。
-- 公共导出要显式、少而稳定；内部模块不要因为位于可导入路径就自动成为公共契约。
+用[宪法 I–III](.specify/memory/constitution.md#core-principles)核对命名、内聚和复用。把配置、协议、异常、适配与观测放在各自的拥有者处。
+提取函数或类型应能解释它命名的概念、隔离的边界或稳定复用点。按真实消费者审查公共导出，避免无职责的 `utils.py`、`helpers.py` 或 `constants.py`。
 
 ### 4.2 类型提示
 
-优先在以下位置补充精准类型：
+按[宪法 IV](.specify/memory/constitution.md#iv-testable-contracts-and-precise-types)检查公共 API、非平凡函数、协议成员、构造器、回调与异步返回类型，包括 `-> None`。
+在 SDK、JSON 与环境变量边界解析校验并收窄类型。有业务语义的结构选用合适的 dataclass、TypedDict、Protocol 或枚举。使用 `Any`、裸容器、类型忽略或强制转换时说明理由。
 
-- 公共函数、方法、类构造函数和协议成员的参数与返回值；
-- 配置对象、跨包 DTO、事件、错误载荷和序列化边界；
-- Provider/适配器的输入、输出和可选能力；
-- 复杂容器、回调、生成器、异步结果和可空值；
-- 具有业务含义的字典结构，优先考虑 `dataclass`、`TypedDict`、`Protocol`、类型别名或枚举。
+### 4.3 Python 实现
 
-要求：
+遵循项目最低 Python 3.11、PEP 8 与 PEP 257。使用四空格、一行一个主要语句和 88 列格式目标。
+import 按标准库、第三方、本地包分组，优先绝对导入，纯类型依赖用 `TYPE_CHECKING`，避免通配导入及循环依赖。命名使用 Python 约定，表达式、控制流或泛型难读时优先写清中间步骤。
 
-- 使用 Python `>=3.11` 支持的清晰写法，例如 `X | None` 和 `collections.abc`。
-- 非平凡函数写出返回类型；即使返回 `None` 也写 `-> None`。
-- 避免无理由的 `Any`、裸 `dict`/`list`、类型忽略和不加说明的强制转换。
-- 外部 SDK、JSON 或环境变量在边界处解析、校验和收窄；不要让不可信的宽类型进入核心逻辑。
-- 类型应表达真实约束，不为了“看起来有类型”制造过度泛型或重复包装。
-- 类型复杂度超过实现复杂度时，优先简化接口或提取有名字的领域类型。
-
-### 4.3 Python 语法与实现规范
-
-- 运行时最低版本为 Python `>=3.11`；不得使用低于该版本的兼容写法，也不得无理由使用高于最低版本的专属语法。
-- 遵循 PEP 8 和 PEP 257：4 个空格缩进、禁止 Tab、每行一个主要语句、禁止用分号拼接语句；默认将 88 列作为格式目标，超出时优先重排表达式或提取有意义的局部变量。
-- import 按标准库、第三方依赖、本地包分组；优先绝对导入，禁止通配符导入；只为类型检查使用的依赖放入 `TYPE_CHECKING` 并避免运行时循环依赖。
-- 模块、函数和变量使用 `snake_case`，类和异常使用 `PascalCase`，常量使用 `UPPER_SNAKE_CASE`，类型别名使用有语义的名称；不要用单字母或 `data`、`obj`、`result` 等无上下文名称隐藏领域含义。
-- 函数保持单一职责和较小的控制流；优先使用提前返回和扁平分支，避免可变默认参数、隐式全局状态、深层嵌套和无理由的魔法数字；复杂分支应提取有名字的谓词或领域函数。
-- 提取函数或类首先服务于命名复杂概念、隔离边界、可测试性或稳定复用；不要仅因代码文本相似而拆分，也不要把仅一处使用的逻辑提升为公共抽象。
-- 当推导式、三元表达式或链式调用需要反复停顿才能读懂时，改用显式循环、`if/else` 或有名字的中间变量；不要为了减少行数隐藏执行步骤。
-- 文件和路径使用 `pathlib.Path`；资源使用上下文管理器或明确的生命周期函数；异步函数中不得执行未隔离的阻塞 I/O，也不得遗忘 `await`。
-- 只捕获能够处理的具体异常；禁止裸 `except` 和静默吞错；重新抛出时使用 `raise NewError(...) from exc` 保留原因链，并在跨包边界定义稳定的异常语义。
-- Python 库代码不得用 `print` 作为运行时日志；使用模块级 `logging`，日志中不得出现密钥、令牌、完整私有 URL 或未经脱敏的用户数据。
-- 公共 API 通过 `__init__.py` 显式导出；内部模块、临时兼容层和测试辅助函数不得因为可导入就自动成为公共契约。
-- 格式门使用 Black/isort，lint 使用 Ruff（不启用 I 或 formatter），类型使用 Pyright strict。
-  配置、版本归属、命令及失败终态以 `docs/development/quality-gates.md` 为准；不把检查成功
-  当成所有架构/风格原则均被机器验证。
+用 `pathlib.Path` 管理路径，显式管理资源生命周期，异步路径隔离阻塞 I/O 并正确 await。仅捕获能处理的具体异常，转换异常时用 `raise ... from ...`。
+库日志用模块级 `logging` 并脱敏。复核可变默认值、隐式全局状态及隐藏关键条件的推导式。
+格式、lint、严格类型和复杂度使用[仓库实际配置](docs/development/quality-gates.md#tools-and-ownership)。
 
 ### 4.4 注释与文档
 
-- 命名和结构先承担可读性；注释解释“为什么”、约束、取舍和兼容性，不重复“代码正在做什么”。
-- 公共模块、协议和复杂边界使用短 docstring，说明职责、输入输出和重要不变量。
-- 复杂设计理由写在 README、设计说明或 ADR 中，不把长篇架构讨论塞进函数体注释。
-- 任何会影响使用者的导入路径、依赖、配置、错误语义或运行命令变化，都要更新对应文档。
-- 仓库自有 README 必须使用 UTF-8 Markdown，并在同一目录维护两份独立文件：`README.md` 为完整简体中文版（GitHub 与包元数据默认入口），`README.en.md` 为完整英文版；不在同一文件串接两种语言正文。两份文件标题下均提供 `[简体中文](README.md) | [English](README.en.md)` 导航，正文优先链接同语言 README。
-- README 必须同时服务两类读者，并按“使用者 → 维护者”顺序组织：使用者关心用途、适用与不适用、
-  状态与兼容性、安装、最短可运行示例、公开 API/CLI/配置（真实名称与默认值）、错误与限制、
-  与相邻包的关系；维护者关心职责与不负责的事、依赖方向、目录布局、开发/测试/质量命令、
-  版本与发布、所有权与贡献、许可证。缺失的小节必须写明“不适用”及理由；不得留下空模板、
-  占位符或只写“见源码”。
-- 包 README 以 `.specify/extensions/docs-sync/templates/package-readme.md` 为结构基线，由
-  `speckit.docs-sync.package-readme` 在 Review 前逐包判定。新建包或公共面变化的包必须与实现
-  在同一次变更中更新 README，不得留到“后续补文档”。本项目配置为 `package_readme: required`：
-  受影响包的 README 缺口是交付阻塞，不是警告。
-- README 应达到可直接使用的 GitHub 项目文档水平：开头用短段落说明用途、适用人群与价值，
-  优先展示能力、安装和最短可运行示例。长文提供目录；首页用包选择表和权威文档链接分流细节，
-  避免把执行日志、安装历史或内部治理全文堆在首页。不得虚构功能、发布状态、徽章、性能数据或许可证。
-- README 中的命令、示例、默认值、依赖、错误和兼容性声明必须对照实际 manifest、源码导出、
-  CLI、配置和测试；两种语言在同一次变更中同步更新，语义与示例保持一致。迁移时更新仓库内的
-  标题锚点和本地链接；机器消费的权威索引只保留一份，另一语言链接该索引，避免双重维护。
-  禁止写入密钥、私有 URL 或未执行检查的“通过”结论。
-- 安装器管理的 `.specify/extensions/**` 与固定上游 `.agents/skills/**` 文档归各自来源所有，不套用本规则，除非项目明确接管其维护责任。
+- 注释解释原因、约束和兼容性。公共模块、协议及复杂边界用短 docstring 说明职责和不变量。长期设计理由写入拥有它的文档或 ADR。
+- 自有 README 同目录维护 UTF-8 的完整简体中文 `README.md` 和英文 `README.en.md`。
+  两份标题下均放 `[简体中文](README.md) | [English](README.en.md)`，互相对齐示例、语义与同语言导航。机器索引只维护一份，由译文链接。安装器管理的扩展和固定上游技能适用其来源约定。
+- 包 README 按“使用者 → 维护者”组织。前半说明用途、适用范围、状态与兼容性、安装、最短可运行示例、真实 API/CLI/配置及默认值、错误、限制和相邻包。
+  后半说明职责与边界、目录、开发/测试/质量命令、版本和发布、所有权、贡献及许可证。不适用的小节注明理由。长文提供目录，仓库首页用包选择表和链接分流。
+- 新增包或改变导入、依赖、配置、错误或命令时，同步更新双语 README，对照 manifest、实际导出、CLI 和测试复核。迁移时检查标题锚点及本地链接。
+  Review 前运行 `speckit.docs-sync.package-readme`，以[包 README 模板](.specify/extensions/docs-sync/templates/package-readme.md)为结构基线。
+  项目要求受影响包的文档齐全，缺口阻塞交付。以已核实材料说明能力、版本与发布状态。避免空模板、占位符及无依据的徽章、性能或验证结论。
 
-## 5. 测试与验证
+## 5. 验证与交付
 
-测试原则见 Constitution IV；本节只定义仓库内的测试边界、命令和证据要求，冲突时以 Constitution 为准。
+从仓库根执行[质量入口](docs/development/quality-gates.md#local-entry-point)。
+全量检查用 `pwsh -NoProfile -File scripts/quality.ps1`。单包传 `-Package` 和该包 manifest 的 Distribution 名，单项传 `-Check`。
+门禁自身的故障回归入口为 `pwsh -NoProfile -File scripts/test-quality.ps1`。
 
-测试首先验证行为契约和边界条件，而不是只验证代码行数：
+| 改动 | 选择证据 |
+|---|---|
+| 文档或规则 | 核对实际 diff、Markdown 结构、链接和 `git diff --check`。治理文件运行 `-Check docs` 及 `-Check governance`。 |
+| Python 行为或公共契约 | 在同一步补充针对性测试并独立构建受影响包。按实际风险覆盖正常、空值、异常、重复调用、取消/超时和清理。跨包核对依赖方向、公开导入和真实消费者。pytest 零测试属于失败。 |
+| 格式、类型或质量配置 | 执行已配置的相关检查。涉及产物时用临时输出目录，核实 wheel 安装、导入和构建副作用。各包独立执行 `uv lock --check` 与 `uv sync --locked`。 |
+| 外部服务、权限、持久化、并发或安全边界 | 使用独立的集成、迁移、清理或安全证据。单元测试使用离线输入和测试凭据。需要真实服务时写明权限、环境和未覆盖内容。 |
 
-- 正常路径、空输入、缺失配置、非法输入、重复调用和幂等性；
-- 异常类型、错误信息中稳定的部分、取消、超时和资源清理；
-- 协议与适配器之间的转换、Provider 差异和不支持能力；
-- 包的独立安装/导入、公共导出、依赖隔离和构建产物；
-- 观测事件、日志字段或错误可见性（如果它们属于可观察契约）。
+Quality 记录机械检查的结果。Standards 核对职责、依赖、可读性和公共 API，独立 Review 检查当前完整变更。以实际 base/HEAD、工作区内容、需求和检查配置核对证据身份，变化后重新确认。
+区分本机、远端 CI 和未执行的检查。
 
-测试规则：
-
-1. 行为改动与测试在同一小步中完成，或先有能描述目标行为的失败测试。
-2. 单元测试不依赖真实密钥、真实私有服务或不稳定网络；需要外部服务时，单独标记为集成验证并记录权限和环境。
-3. 不要只运行“最方便”的测试。验证范围必须覆盖实际 outgoing diff；未运行的测试明确标为未运行。
-4. 测试框架为各 Distribution dev group 中的 pytest；统一入口为
-   `pwsh -NoProfile -File scripts/quality.ps1 -Check test`，零测试必须失败。
-   行为变更必须安排针对性测试，不因用户未特别请求而省略。
-
-完整机械门禁入口是 `pwsh -NoProfile -File scripts/quality.ps1`；门禁回归入口是
-`pwsh -NoProfile -File scripts/test-quality.ps1`。具体参数、修复命令与 CI 边界见
-[`质量门说明`](docs/development/quality-gates.md)。Standards Review 仍单独执行。
-
-### 5.1 CodeGraph 与源码定位
-
-当仓库存在 `.codegraph/` 时，CodeGraph 是理解 Python 源码的首选导航工具：
-
-1. 先运行 `codegraph status`，确认索引是否为最新；索引过期时先运行 `codegraph sync`。
-2. 在使用 `rg`、`grep` 或 `find` 定位代码前，优先使用 `codegraph explore`、`codegraph node`、`codegraph callers`、`codegraph callees` 或 `codegraph impact` 理解符号和调用关系。
-3. 修改源码后运行 `codegraph sync`；使用 `codegraph affected <file>` 辅助选择受影响的测试。
-4. CodeGraph 只提供导航和关系证据，不等于类型检查、测试、构建或安全验证通过；索引缺失或解析不完整时必须如实报告。
-5. README、Spec、ADR 和其他普通文档不属于 CodeGraph 的代码关系证据；检索文档时仍应使用精确的文本搜索和链接检查。
-
-### 5.2 按风险选择质量证据
-
-- 文档或 Lightweight 改动：检查实际 diff、Markdown 结构/链接和 `git diff --check`；只有涉及源码关系时才要求 CodeGraph 同步。
-- Python 行为改动：至少执行受影响 Distribution 的构建和针对性测试；跨包公共契约还要验证依赖方向、导入路径和适配器边界。
-- 类型或格式规范改动：如果 Ruff、Pyright、mypy 或其他工具已经配置，必须执行项目实际配置的命令；工具未配置时只能报告“规范已写入、自动门禁未启用”。
-- 外部服务、权限、持久化、并发或安全边界改动：补充对应的集成、迁移、资源清理或安全证据；没有环境或权限时标记为 blocked/未执行，不得标记为通过。
-
-当前可复现的构建验证目标（要求使用临时输出目录）：
-
-```bash
-uv build packages/core/spawn-join-core --out-dir <temporary-output-dir>
-uv build packages/core/common --out-dir <temporary-output-dir>
-uv build packages/core/llm-provider --out-dir <temporary-output-dir>
-uv build packages/infra/llm-provider-langchain --out-dir <temporary-output-dir>
-uv build packages/infra/llm-channel --out-dir <temporary-output-dir>
-uv build packages/infra/llm-model-sync --out-dir <temporary-output-dir>
-uv build packages/infra/agent-deepagents --out-dir <temporary-output-dir>
-```
-
-每个 Distribution 的 uv 环境和锁文件也必须独立验证：
-
-```bash
-uv lock --check --directory packages/core/spawn-join-core
-uv lock --check --directory packages/core/common
-uv lock --check --directory packages/core/llm-provider
-uv lock --check --directory packages/infra/llm-provider-langchain
-uv lock --check --directory packages/infra/llm-channel
-uv lock --check --directory packages/infra/llm-model-sync
-uv lock --check --directory packages/infra/agent-deepagents
-
-uv sync --locked --directory packages/core/spawn-join-core
-uv sync --locked --directory packages/core/common
-uv sync --locked --directory packages/core/llm-provider
-uv sync --locked --directory packages/infra/llm-provider-langchain
-uv sync --locked --directory packages/infra/llm-channel
-uv sync --locked --directory packages/infra/llm-model-sync
-uv sync --locked --directory packages/infra/agent-deepagents
-```
-
-这些命令应从仓库根目录执行；它们分别使用各包目录下的 `pyproject.toml`、`uv.lock`
-和 `.venv`，不得改写或创建根级 uv project。
-
-不要把 `<temporary-output-dir>` 当作真实目录提交；验证结束后检查并清理 `dist/`、`build/`、`*.egg-info/` 和其他构建副作用。完成后至少运行：
-
-```bash
-git diff --check
-git status --short --branch
-```
-
-只有实际执行并得到成功结果的命令才能写成“通过”。对于警告、环境缺失、未配置工具或跳过的检查，保留原始现象并说明影响。
-
-## 6. 依赖、权限与数据流
-
-### 6.1 依赖
-
-- 新依赖放在实际拥有该能力的包中，并在对应 `pyproject.toml` 写明合理版本范围。
-- 不为了测试一个领域功能把 SDK 带入 Core 或框架无关协议包。
-- 引入依赖前检查许可证、维护状态、版本兼容性、传递依赖和已知问题；记录选择理由。
-- 如果一个 Provider 需要独立版本、依赖、测试或维护周期，再考虑拆成独立 Distribution。
-
-### 6.2 权限与敏感信息
-
-- 密钥、令牌、私有 URL 和个人凭据不得进入源码、测试 fixture、日志或提交历史。
-- 涉及云服务、模型 Provider、私有 Registry 或外部写入时，先说明所需权限、数据范围、读写动作和失败后的状态。
-- 默认使用最小权限；没有明确授权时，不执行外部写入、发布、删除或不可逆迁移。
-
-### 6.3 数据流与副作用
-
-实现或重构涉及外部边界时，画出或文字记录：
-
-```text
-输入/配置 -> 校验与类型收窄 -> 领域协议 -> 适配器/外部服务
-       -> 响应转换 -> 可观察输出/错误 -> 日志、追踪或指标
-```
-
-需要明确谁拥有网络、文件、数据库、缓存、线程或任务等副作用；Core 和协议层尽量保持纯粹、可测试和可替换。异常不能被静默吞掉；如果需要转换异常，保留足够的上下文和原始原因。
-
-## 7. 遇到陌生功能时借鉴开源实现
-
-当要实现仓库尚未覆盖、且团队不熟悉的功能时，不要立即从零编码。先检索 GitHub 上维护活跃、许可证明确、与当前 Python 版本和依赖边界相容的同类项目，再做小范围比较：
-
-- 最近提交、发布节奏、Issue/PR 活跃度和维护者响应；
-- LICENSE、版权要求和是否允许当前分发方式；
-- 模块边界、扩展点、错误处理、测试策略和数据流；
-- 运行时依赖、传递依赖、版本约束、性能与资源生命周期；
-- 已知限制、安全问题、兼容性风险和迁移成本。
-
-借鉴结果应在设计说明或变更说明中记录来源、版本/提交、许可证、采用的思路和未采用的部分。优先学习经过验证的设计，不直接复制来源不明、许可证不兼容或无法解释的代码；即使许可证允许复制，也必须重新审查其边界、依赖和与本仓库的兼容性。
-
-## 8. 变更说明与可复现交付
-
-每次完成后，交付说明至少包含：
-
-1. 改了什么，以及涉及哪些文件/包。
-2. 关键设计：为什么选择这个模块边界、类型和依赖方向；哪些方案被明确排除。
-3. 不变量和可观察输出是否保持；若改变，列出迁移影响。
-4. 测试、构建、静态检查的精确命令、结果和未执行项。
-5. 新增依赖、权限、配置、密钥和数据流变化。
-6. 用户或其他开发者可以复现结果的安装、运行和验证步骤。
-7. 已知警告、剩余风险和后续建议；不要把计划工作描述成已完成。
-
-交付报告还必须标明当前路由和治理证据：
-
-- Lightweight：说明为什么不需要 Spec/Plan/Tasks，以及针对性验证为什么足够。
-- Bugfix：附上缺陷复现、修复前 red evidence、修复后回归结果和未覆盖的环境。
-- Feature：列出 `spec.md`、`plan.md`、`tasks.md`、相关 ADR、review 和 evidence 的路径与状态；`tasks.md` 未收口或 evidence 不匹配当前 `HEAD` 时，不得声明完成。
-- 所有路由：记录 base `HEAD`、当前 head、实际 changed paths、执行命令、工作目录、退出码和结果；新提交产生后，旧 review/evidence 必须重新确认范围。
-
-提交前检查清单：
-
-- [ ] 工作区基线和最终状态已记录。
-- [ ] 本次只处理一个独立模块或明确的配套接口变更。
-- [ ] 目标蓝图先于实现确定，且没有引入 YAGNI 抽象。
-- [ ] 公共 API、依赖方向、命名和包边界符合本文件与 `docs/architecture/package-boundaries.md`。
-- [ ] 关键类型和外部边界已精确标注。
-- [ ] 边界条件、异常和资源清理有测试或已记录验证限制。
-- [ ] 依赖、权限、敏感信息和数据流已检查。
-- [ ] 构建产物未留在工作树，`git diff --check` 已执行。
-- [ ] 运行说明足够让他人复现，未将警告或未执行检查写成通过。
+交付时列出路径、设计取舍、行为或迁移影响、命令与工作目录、退出码、结果、权限或数据流变化、复现步骤及剩余风险。报告中保留警告与阻塞。
+最后运行 `git diff --check` 和 `git status --short --branch` 核对实际范围。

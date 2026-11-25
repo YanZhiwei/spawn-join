@@ -13,8 +13,8 @@ Spec、Plan、Tasks 和人工 Standards Review 负责；机械检查不能代替
 | 类型 | Pyright strict，Python 3.11 / All | 类型诊断导致非零退出 |
 | 契约测试 | pytest，各包 `tests/` | 失败、收集错误或零测试（pytest exit 5） |
 | 包产物 | uv build、隔离 wheel 安装、pip check、isolated import | 任一步失败或缺少 wheel/sdist |
-| 文档 | PowerShell 本地目标/尾随空白检查、Git diff 检查 | 文件缺失、本地链接缺失或空白错误 |
-| 治理记录 | `check-governance.ps1`：evidence 元数据、build-log 引用、ADR 索引、Spec/Tasks、本地-only 链接 | 结构不一致、未索引 ADR、状态矛盾或链接到被忽略路径 |
+| 文档 | 本地 Markdown 链接和标题锚点、尾随空白、Git diff | 必备文档、链接目标或锚点缺失，共享文档依赖 Git 忽略路径，或空白错误 |
+| 治理记录 | `check-governance.ps1` 核对包名单、evidence、build-log、ADR 索引、共享链接及显式选中的 Feature | 包名缺失、多余或重复，或记录、引用、任务状态不一致 |
 | 静态分析 | actionlint 1.7.12（`uvx actionlint-py==1.7.12.25`）、PSScriptAnalyzer 1.25.0 | workflow 语法/表达式错误，或 PowerShell 高信号规则违反 |
 
 根 [`pyproject.toml`](../../pyproject.toml) **只包含 tool 表**，不是 Python project 或 uv
@@ -28,6 +28,8 @@ uv.lock 所有。这些开发工具不会进入 wheel 的 Requires-Dist。
 
 - PowerShell 7（`pwsh`）、Git、uv >=0.7.13；CI 固定 uv 0.13.5。
 - 可用的 Python >=3.11；CI 显式覆盖 3.11 和 3.14。本机无需全局 `python` 命令。
+- 治理检查通过 uv 在隔离环境中使用 Python 标准库 `tomllib` 和 `PyYAML==6.0.3` 解析包配置。
+  首次使用需要可用的解释器和解析器缓存，缓存缺失时 uv 会下载。[uv 脚本依赖说明](https://docs.astral.sh/uv/guides/scripts/#declaring-script-dependencies)
 - Node 22+：Pyright wrapper 使用已有 Node；入口拒绝缺失或旧版本，不隐式安装 Node。
 - 静态分析：`uvx` 自动使用固定 `actionlint-py==1.7.12.25`；PSScriptAnalyzer 需预先安装：
   `Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force`。
@@ -58,6 +60,21 @@ pwsh -NoProfile -File scripts/test-static.ps1
 Package 是九个保留 Distribution 名称之一，省略则检查全部。`all` 包含文档、治理、静态分析和包检查；
 指定 Package 的包级任务不重复执行仓库级检查。只指定其他 Check 时不宣称其他门禁通过。
 工具缺失、锁不一致、安装失败都不会被跳过。
+
+日常开发和 CI 直接运行 `-Check docs`、`-Check governance`。两个入口都检查 Git 已跟踪和
+尚未暂存、可提交的项目 Markdown，包括包 README 和持久化 Evidence。默认跳过 Git 忽略的
+`specs/`，即使本机 `.specify/feature.json` 仍指向某次历史 Feature。
+
+做 Feature 时，给同一个命令加上本次的目录。例如，在有 `016-deepagents-mcp-config` 的工作区运行
+
+```powershell
+pwsh -NoProfile -File scripts/quality.ps1 -Check docs -FeatureDir specs/016-deepagents-mcp-config
+pwsh -NoProfile -File scripts/quality.ps1 -Check governance -FeatureDir specs/016-deepagents-mcp-config
+```
+
+两条命令在共享文档之外检查该目录下的 Markdown。治理门还核对已有的 Spec 状态、任务编号和
+完成标记。选中的目录必须位于 `specs/` 的直接下一级，且包含 Markdown 文件。Spec 可以引用本地
+Plan、研究或其他材料。要让别人从共享文档里读到结论，请链接已入库的 ADR、架构说明或 Evidence。
 
 每个包先执行 `uv lock --check` 和 `uv sync --locked`，随后使用该包环境中的工具。
 Agent 包同步时显式添加 `--extra mcp`，使格式、类型和测试使用实际 MCP 依赖；
@@ -149,6 +166,12 @@ pwsh -NoProfile -File scripts/check-pr-evidence.ps1 -EventPath ./pr-event.json
 pwsh -NoProfile -File scripts/test-pr-evidence.ps1
 ```
 
+新增、改名或退役包后，运行 `pwsh -NoProfile -File scripts/quality.ps1 -Check governance`。
+它从 Git 已跟踪和未被忽略的新 `packages/*/*/pyproject.toml` 读取实际文件中的 `[project].name`，
+逐个核对 GitHub Actions 的 `jobs.packages.strategy.matrix.package`、Spec Kit 包级 Quality Profile 的
+`id`、本地 `quality.ps1` 的 `-Package` 可选值和 `$packages` 描述表的键。缺项、多项和重复项
+都会报出具体来源和包名。即使两边包的数量相同，填错名称也会使治理门失败，并传递给 `Quality Gate`。
+
 ## Regression and limitations
 
 `scripts/test-quality.ps1` 在路径含空格的临时 Git fixture 中运行真实工具：Core 与 Common
@@ -156,22 +179,25 @@ pwsh -NoProfile -File scripts/test-pr-evidence.ps1
 坏链接的拒绝场景。Common 还验证基础包意外导入 Pydantic、可选校验导入失败和已安装
 helper 未执行操作时，构建门禁都必须失败。
 Agent 回归还验证测试入口实际安装 MCP extra、协议失败不能跳过，以及隔离 extra wheel 的官方导入、实际工具调用探针失败会传递为门禁失败。CI 保留既有 OS/Python 矩阵，并在 Linux/Python 3.11 显式断言和验证最低 FastMCP 4.0.11 / LangChain 1.4.8 客户端。
-`scripts/test-governance.ps1` 用独立 fixture 覆盖 26 个治理场景（合法结构、缺字段、非法
+`scripts/test-governance.ps1` 用独立 fixture 覆盖治理场景（合法结构、缺字段、非法
 状态词、未索引 ADR、本地-only 链接、未跟踪 Markdown 的坏链接、evidence 未进 build-log、
 缺失 build-log、状态矛盾、重复任务 ID、纯文档跟进不告警、非文档变更告警、superseded
 evidence 抑制 freshness warning、缺失 superseded_by 目标、不安全 Delivery 配置、单双引号
 gate、拒绝无引号 gate、安装器拥有的 Markdown 链接边界、Delivery evidence 字段/截断 SHA、
 不安全 artifact policy 和自动 hook，以及英文 README 的证据豁免、链接检查和其他 README
 前缀文件仍需证据字段）。仅 `README.md` 与 `README.en.md` 作为 evidence 目录说明页豁免
-证据元数据检查；两者仍参与文档链接检查。
+证据元数据检查；两者仍参与文档链接检查。回归也覆盖本地历史 Spec 隔离、显式选中的
+Feature、同页和跨文件锚点、中文标题、重名标题和代码示例。
 `scripts/test-static.ps1` 覆盖 3 个静态分析场景（合法结构、坏 workflow、`Invoke-Expression`）。
 检查探针内容没有被格式检查重写，也不产生根级环境/锁/构建目录。
 
 - pytest 用例覆盖九个保留包的导入、身份、运行时依赖边界，以及 LLM 契约、工厂、同步行为，和
   DeepAgents 装配/委派/诊断契约；具体数量随包演进，不把用例数量当作业务覆盖率。
-- 文档检查验证简单 Markdown 本地目标存在，不验证网页内容、所有 Markdown 语法或锚点。
-- 治理检查的链接扫描同时覆盖已跟踪与未跟踪（未被 Git 忽略）的 Markdown；新建 README
-  在提交前就能发现坏链接，不必等 CI。
+- 两个门都解析 Markdown 链接，检查本地目标是否存在。目标为 Markdown 文件时还检查同页与跨文件
+  的 `#标题` 和显式 HTML 锚点，按 PowerShell 7 自带 Markdig 的 GitHub 模式生成标题 ID。
+  外部网址、非 Markdown 文件内的片段、代码围栏和行内代码中的示例不做锚点检查。
+- `docs` 对根 `README.md`、`AGENTS.md`、Constitution、`docs/`、`harness/` 及显式选中的
+  Feature 检查尾随空白，并执行 `git diff --check`。
 - 治理检查验证结构和索引一致性；evidence 的语义是否覆盖改动、freshness 是否仍有效
   仍需人工评审（落后且期间有非文档路径变更时产生 warning；纯文档追加不告警）。
 - 历史 evidence 可用 `- superseded_by: <仓库内证据路径>` 指向更新、覆盖同一关注点的记录；

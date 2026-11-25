@@ -87,9 +87,11 @@ copying a task list.
   no hook is registered; [Delivery installation](../docs/development/spec-kit-delivery.md) does not
   mean Ralph or the full delivery loop has executed.
 - `scripts/check-governance.ps1` validates Harness/Delivery evidence metadata, truncated revisions,
-  build-log references, the ADR index, Spec/Tasks consistency, Delivery safety settings, and the
-  automatic-hook switch; freshness warns when non-documentation paths change, and semantic judgment
-  still requires human review.
+  build-log references, the ADR index, shared document links, Delivery safety settings, and the
+  automatic-hook switch. It also checks every distribution name against CI, the Spec Kit quality
+  profiles, and the local quality runner. Pass `-FeatureDir specs/<feature-id>` to also check that Feature's documents
+  and Spec/Tasks consistency. Changes to non-documentation paths trigger a freshness warning.
+  Reviewers decide whether the evidence still applies.
 - If `HEAD` or outgoing paths change, old evidence must be reconfirmed and must not be reused directly.
 
 See the repository [LICENSE](../LICENSE).
