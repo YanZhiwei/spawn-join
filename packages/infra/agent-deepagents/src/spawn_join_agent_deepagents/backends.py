@@ -9,11 +9,11 @@ from deepagents.backends import (
     CompositeBackend,
     ContextHubBackend,
     FilesystemBackend,
-    LangSmithSandbox,
     LocalShellBackend,
     StateBackend,
     StoreBackend,
 )
+from deepagents.backends.sandbox import BaseSandbox
 from deepagents.middleware.filesystem import FilesystemPermission
 
 from .diagnostics import PermissionReport
@@ -26,7 +26,7 @@ def backend_kind(backend: BackendProtocol | None) -> str:
         return "default_state"
     if isinstance(backend, LocalShellBackend):
         return "local_shell"
-    if isinstance(backend, LangSmithSandbox):
+    if isinstance(backend, BaseSandbox):
         return "sandbox"
     if isinstance(backend, StateBackend):
         return "state"

@@ -112,8 +112,6 @@ class SupervisorSpec:
     allow_experimental_async_subagents: bool = False
     allow_experimental_profiles: bool = False
     profiles: ProfilesConfiguration | None = None
-    allow_experimental_rubric: bool = False
-    rubric: RubricConfiguration | None = None
     backend: BackendProtocol | None = None
     store: BaseStore | None = None
     checkpointer: CheckpointerType = None
@@ -128,6 +126,8 @@ class SupervisorSpec:
     name: str | None = None
     debug: bool = False
     normalize_llm_errors: bool = True
+    allow_experimental_rubric: bool = field(default=False, kw_only=True)
+    rubric: RubricConfiguration | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tools", tuple(self.tools))
@@ -279,11 +279,31 @@ def _apply_profiles(
     return spec.profiles
 
 
+def _rubric_middlewares(
+    middleware: Sequence[MiddlewareType],
+) -> tuple[RubricMiddleware, ...]:
+    return tuple(item for item in middleware if isinstance(item, RubricMiddleware))
+
+
+def _native_rubric_middlewares(spec: SupervisorSpec) -> tuple[RubricMiddleware, ...]:
+    scoped = [
+        spec.middleware.supervisor,
+        spec.middleware.workers,
+        *spec.middleware.worker_overrides.values(),
+    ]
+    found = [item for group in scoped for item in _rubric_middlewares(group)]
+    found.extend(
+        item
+        for definition in spec.subagents
+        if isinstance(definition, SubAgentDefinition)
+        for item in _rubric_middlewares(definition.middleware)
+    )
+    return tuple(found)
+
+
 def _native_rubric_middleware(spec: SupervisorSpec) -> RubricMiddleware | None:
-    for middleware in spec.middleware.supervisor:
-        if isinstance(middleware, RubricMiddleware):
-            return middleware
-    return None
+    native = _native_rubric_middlewares(spec)
+    return native[0] if native else None
 
 
 def _validate_rubric(spec: SupervisorSpec) -> None:
@@ -315,12 +335,16 @@ def _rubric_report(spec: SupervisorSpec) -> RubricReport:
     native_rubric = _native_rubric_middleware(spec)
     if native_rubric is None:
         return RubricReport()
-    tools = tuple(getattr(native_rubric, "tools", ()) or ())
+    # deepagents 0.7.x stores native rubric tools on the private ``_tools``
+    # slot; prefer a public ``tools`` attribute if upstream adds one.
+    tools = getattr(native_rubric, "tools", None)
+    if tools is None:
+        tools = getattr(native_rubric, "_tools", ())
     return RubricReport(
         enabled=True,
         max_iterations=int(getattr(native_rubric, "max_iterations", 0) or 0),
         model_source="host_middleware",
-        tool_count=len(tools),
+        tool_count=len(tuple(tools or ())),
     )
 
 
