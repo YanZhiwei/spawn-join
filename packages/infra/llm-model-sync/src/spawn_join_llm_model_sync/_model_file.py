@@ -156,9 +156,7 @@ def _parse_metadata_source(
     result: dict[str, ModelSourceRef] = {}
     for source_id, source_value in source_fields.items():
         if _SOURCE_ID.fullmatch(source_id) is None:
-            raise ConfigurationError(
-                f"{path}.metadata_source: invalid source ID"
-            )
+            raise ConfigurationError(f"{path}.metadata_source: invalid source ID")
         result[source_id] = _parse_source_ref(
             source_value,
             f"{path}.metadata_source.{source_id}",

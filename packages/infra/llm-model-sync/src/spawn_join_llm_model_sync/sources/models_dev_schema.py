@@ -257,9 +257,7 @@ def _optional_date(
     try:
         return date.fromisoformat(normalized)
     except ValueError as exc:
-        raise SourcePayloadError(
-            f"{path}.{name}: invalid ISO date"
-        ) from exc
+        raise SourcePayloadError(f"{path}.{name}: invalid ISO date") from exc
 
 
 def _interleaved(fields: Mapping[str, object], path: str) -> str | None:

@@ -50,8 +50,7 @@ def test_invalid_model_metadata_returns_configuration_exit_code(
 ) -> None:
     invalid = tmp_path / "invalid.yaml"
     invalid.write_text(
-        "schema_version: 2\nmodels:\n  fast:\n"
-        "    metadata_ref: lab /model\n",
+        "schema_version: 2\nmodels:\n  fast:\n" "    metadata_ref: lab /model\n",
         encoding="utf-8",
     )
 
