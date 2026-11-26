@@ -4,9 +4,9 @@ delivery_run: package-publishing-cd-20261127
 lane: feature
 evidence_path: .specify/delivery/package-publishing-cd-20261127/evidence.md
 base_revision: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
-reviewed_head: 3cce8c526e3915c1e72b6cf79554402cee16902e
+reviewed_head: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
 original_pr_head: pending
-content_fingerprint: 3cce8c526e3915c1e72b6cf79554402cee16902e
+content_fingerprint: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
 pull_request: 106
