@@ -13,7 +13,7 @@ from ._source import SyncResult
 
 def default_cache_dir() -> Path:
     """Return the platform user cache directory for SpawnJoin model sync."""
-    return Path(user_cache_dir("SpawnJoin"))
+    return Path(user_cache_dir("SpawnJoin", appauthor=False))
 
 
 def write_raw_payload(cache_dir: Path, source_id: str, payload: bytes) -> Path:

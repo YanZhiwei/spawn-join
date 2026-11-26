@@ -16,6 +16,7 @@ from spawn_join_llm_model_sync import (
     SyncError,
     run_sync,
 )
+from spawn_join_llm_model_sync._cache import default_cache_dir
 
 from spawn_join_llm_provider import ConfigurationError, Modality
 from spawn_join_llm_provider_langchain import ModelCatalog
@@ -59,6 +60,11 @@ def test_dry_run_does_not_write(
     assert result.written is False
     assert result.exit_code == 2
     assert not output.exists()
+    assert not any((tmp_path / "cache").rglob("*"))
+
+
+def test_default_cache_path_has_one_spawn_join_segment() -> None:
+    assert default_cache_dir().parts.count("SpawnJoin") == 1
 
 
 def test_apply_writes_snapshot_and_keeps_model_file(
@@ -136,6 +142,24 @@ def test_empty_source_is_blocked(
             apply=True,
         )
     assert not output.exists()
+
+
+def test_malformed_upstream_validation_is_sync_error(
+    fake_source: Any,
+    model_file: Path,
+    tmp_path: Path,
+) -> None:
+    payload = json.loads(fake_source.fetch(SyncContext(cache_dir=tmp_path)))
+    payload["models"]["openai/gpt-5"]["name"] = " GPT-5"
+    malformed = type(fake_source)(json.dumps(payload).encode("utf-8"))
+
+    with pytest.raises(SyncError, match="source translation failed"):
+        _run(
+            source=malformed,
+            model_file=model_file,
+            output=tmp_path / "model-metadata.json",
+            cache_dir=tmp_path / "cache",
+        )
 
 
 def test_all_requested_models_missing_is_blocked(
