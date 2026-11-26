@@ -17,6 +17,7 @@ from deepagents.backends import (
     StateBackend,
     StoreBackend,
 )
+from deepagents.backends.sandbox import BaseSandbox
 from deepagents.middleware.filesystem import FilesystemPermission
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -29,6 +30,24 @@ from spawn_join_agent_deepagents.models import (
 from spawn_join_agent_deepagents.supervisor import SupervisorSpec, build_supervisor
 
 
+class _GenericSandbox(BaseSandbox):
+    @property
+    def id(self) -> str:
+        return "generic"
+
+    def execute(self, *args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        return None
+
+    def upload_files(self, *args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        return None
+
+    def download_files(self, *args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        return None
+
+
 def test_backend_kind_labels_known_and_custom_backends(
     tmp_path: Path,
 ) -> None:
@@ -37,6 +56,7 @@ def test_backend_kind_labels_known_and_custom_backends(
     assert backend_kind(FilesystemBackend(root_dir=tmp_path)) == "filesystem"
     assert backend_kind(LocalShellBackend()) == "local_shell"
     assert backend_kind(LangSmithSandbox.__new__(LangSmithSandbox)) == "sandbox"
+    assert backend_kind(_GenericSandbox()) == "sandbox"
     assert backend_kind(StoreBackend.__new__(StoreBackend)) == "store"
     assert (
         backend_kind(CompositeBackend(default=StateBackend(), routes={})) == "composite"

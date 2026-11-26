@@ -81,6 +81,29 @@ def test_rubric_requires_the_beta_gate(
         )
 
 
+def test_unconfigured_rubric_is_not_reported(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+        )
+    )
+
+    assert assembly.report.rubric.model_source == "none"
+    assert assembly.report.rubric.enabled is False
+    assert "rubric" not in assembly.report.experimental_features
+    assert not any("rubric" in warning for warning in assembly.report.warnings)
+
+
 def test_rubric_is_assembled_and_reported(
     monkeypatch: pytest.MonkeyPatch,
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
