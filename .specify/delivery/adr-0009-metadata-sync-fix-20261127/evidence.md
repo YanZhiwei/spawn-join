@@ -8,7 +8,7 @@
 - **assessment_path**: `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0009-review.md`
 - **assessment_hash**: `sha256:56c29c684bb8582a38f417101ccbdea7438c0dd6872c4eb8ec483ec985b44251`
 - **base_revision**: `b867b68c8aaa8f93bc02afe838f9ce2a248dd040`
-- **reviewed_head**: `b4c0dbcd2518027201215e93ac48b92e934e9971`
+- **reviewed_head**: `6399c7ffd0916e0c03f01cc57da398f1ea139e83`
 - **original_pr_head**: `pending`
 - **content_fingerprint**: `sha256:04e60e728e594bffab1dc39f9a73b59fa32b0388bebe7f8295a80c01827f5f96`
 - **requirements_fingerprint**: `sha256:fb5c34e25ac18c73ca654c172f249f79dcd63a9e670bf7a073f4fd4384a1fce8`
