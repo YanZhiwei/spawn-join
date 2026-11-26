@@ -21,7 +21,6 @@ from deepagents.backends.sandbox import BaseSandbox
 from deepagents.middleware.filesystem import FilesystemPermission
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
-
 from spawn_join_agent_deepagents.backends import backend_kind, permission_report
 from spawn_join_agent_deepagents.models import ModelBinding, ModelBindings, ModelPurpose
 from spawn_join_agent_deepagents.supervisor import SupervisorSpec, build_supervisor
