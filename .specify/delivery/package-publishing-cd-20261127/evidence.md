@@ -4,12 +4,12 @@ delivery_run: package-publishing-cd-20261127
 lane: feature
 evidence_path: .specify/delivery/package-publishing-cd-20261127/evidence.md
 base_revision: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
-reviewed_head: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
+reviewed_head: 3c3cf04b27051da449494846ecf6630391cb8ac3
 original_pr_head: pending
-content_fingerprint: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
+content_fingerprint: 3c3cf04b27051da449494846ecf6630391cb8ac3
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
-pull_request: 106
+pull_request: 107
 exploration_path: .specify/delivery/package-publishing-cd-20261127/exploration.md
 
 ## Scope
@@ -49,3 +49,7 @@ distributions, then received HTTP 404 responses from `uv publish`. No package
 upload succeeded. The workflow was changed to use Twine's legacy upload
 protocol with the GitHub Actions actor and `GITHUB_TOKEN`; this correction is
 covered by PR `106` and this refreshed evidence snapshot.
+
+The follow-up run `45866262742` reached Twine but no files were uploaded:
+GitHub Packages rejected the unsupported `--skip-existing` option before any
+upload. PR `107` removes that option.
