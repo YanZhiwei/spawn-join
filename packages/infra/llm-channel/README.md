@@ -35,7 +35,7 @@
 
 ## 状态
 
-`0.1.0`，早期开发，要求 Python `>=3.11`。当前只实现渠道连接检查和模型发现：
+`0.0.1.dev0`，早期开发，要求 Python `>=3.11`。当前只实现渠道连接检查和模型发现：
 
 - 不生成 completion；
 - 不做 pool、路由、健康选路或 failover；
@@ -206,7 +206,7 @@ uv run --locked --project packages/infra/llm-channel pytest packages/infra/llm-c
 
 ## 发布、版本与维护
 
-本包版本独立管理，当前为 `0.1.0`，尚未发布，也未配置自动发布或包级 changelog；发布必须
+本包版本独立管理，当前为 `0.0.1.dev0`，尚未发布，也未配置自动发布或包级 changelog；发布必须
 通过包级质量门、独立评审和单独授权。源码位于 `src/spawn_join_llm_channel/`，测试位于
 `tests/`，公共导出由 `tests/test_public_api.py` 固定。本包由 SpawnJoin 仓库维护者拥有，作者为
 Yan Zhiwei；变更遵循[贡献规则](../../../AGENTS.md) 和

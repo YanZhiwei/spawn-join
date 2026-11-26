@@ -49,7 +49,7 @@ valid. This package solves the **configuration boundary**:
 
 ## Status
 
-`0.1.0`, early development; Python `>=3.11`. The factory performs offline construction
+`0.0.1.dev0`, early development; Python `>=3.11`. The factory performs offline construction
 and validation; the returned model can make real requests when invoked:
 
 - no real Provider requests;

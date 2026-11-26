@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-llm-channel"
-version = "0.1.0"
+version = "0.0.1.dev0"
 description = "Provider channel transports for SpawnJoin LLM connection checks and model discovery."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -12,7 +12,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
-    "spawn-join-llm-provider>=0.1.0,<0.2.0",
+    "spawn-join-llm-provider>=0.0.1.dev0,<0.2.0",
     "openai>=3.0,<4",
     "anthropic>=2.0,<3",
 ]

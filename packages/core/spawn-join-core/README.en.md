@@ -16,7 +16,7 @@ Stable contracts and foundational primitives shared across the SpawnJoin ecosyst
 
 ## Status and compatibility
 
-`0.1.0` scaffold, requiring Python `>=3.11`. `config`, `exceptions`, `protocols`, and
+`0.0.1.dev0` scaffold, requiring Python `>=3.11`. `config`, `exceptions`, `protocols`, and
 `types` currently contain module contracts only, with no implementation or public
 exports; the package root exposes only `__version__`. Interfaces may still change in
 documented ways during `0.x`.
@@ -44,7 +44,7 @@ Alternatively, run directly from the repository root without creating a script:
 uv run --locked --directory packages/core/spawn-join-core python -c "import spawn_join_core; print(spawn_join_core.__version__)"
 ```
 
-Expected output: `0.1.0`. No credentials or network requests are needed.
+Expected output: `0.0.1.dev0`. No credentials or network requests are needed.
 
 There is no callable public API, CLI, or configuration surface; do not infer runtime
 capabilities that are not implemented.
@@ -89,7 +89,7 @@ rationale, dependency direction, and verification method; synchronize tests, pac
 boundaries, and repository docs when adding or removing modules. Changes follow the
 [contribution rules](../../../AGENTS.md) and
 [quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). The
-package uses an independent version; `0.1.0` is unpublished. Publication requires separate
+package uses an independent version; `0.0.1.dev0` is unpublished. Publication requires separate
 authorization, and no automated release or package changelog is configured.
 
 ## License

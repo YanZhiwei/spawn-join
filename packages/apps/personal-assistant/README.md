@@ -80,7 +80,7 @@ msgpack checkpointer（跨重启 thread 恢复）。
 
 ## 状态与兼容性
 
-- 版本与稳定性：`0.1.0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
+- 版本与稳定性：`0.0.1.dev0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
 - 运行时：Python `>=3.11`；DeepAgents `0.7.x`；LangChain/LangGraph 1.x。
 - 发布状态：当前仅支持仓库内本地开发，尚未发布到 PyPI 或私有 Registry。
 
@@ -111,9 +111,9 @@ uv sync --locked --directory packages/apps/personal-assistant
 
 运行时依赖：
 
-- `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
-- `spawn-join-agent-work>=0.1.0,<0.2.0`
-- `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
+- `spawn-join-agent-deepagents>=0.0.1.dev0,<0.2.0`
+- `spawn-join-agent-work>=0.0.1.dev0,<0.2.0`
+- `spawn-join-llm-provider-langchain>=0.0.1.dev0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
 本包不重复解析 `model.yaml`、`.env` 或 Provider SDK；配置模型由
@@ -1054,7 +1054,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ## 发布与版本
 
 本包使用独立版本号和独立 wheel/sdist，不随其他 Distribution 隐式发布。当前版本
-`0.1.0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
+`0.0.1.dev0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
 破坏性变更应更新版本、文档和兼容性说明，并重新运行包级与仓库级门禁。
 
 ## 维护与贡献

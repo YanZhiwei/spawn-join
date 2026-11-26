@@ -40,7 +40,7 @@ Applications can validate a channel first (`ChannelConfig -> ping/list_models
 
 ## Status
 
-`0.1.0`, early development, Python `>=3.11`. Only connection checks and model
+`0.0.1.dev0`, early development, Python `>=3.11`. Only connection checks and model
 discovery are implemented:
 
 - no completion generation;
@@ -226,7 +226,7 @@ A skip is not a pass; delivery evidence marks it as unexecuted.
 
 ## Release, versioning, and maintenance
 
-This package is versioned independently; it is currently `0.1.0`, unpublished, with no
+This package is versioned independently; it is currently `0.0.1.dev0`, unpublished, with no
 automated release or package changelog. Publication requires passing the package quality
 gate, independent review, and separate authorization. Source lives in
 `src/spawn_join_llm_channel/`, tests in `tests/`, and `tests/test_public_api.py` fixes the

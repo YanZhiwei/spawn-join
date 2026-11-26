@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-llm-provider-langchain"
-version = "0.1.0"
+version = "0.0.1.dev0"
 description = "LangChain model factory and protocol option adapter for SpawnJoin LLM channels."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -12,8 +12,8 @@ license-files = ["LICENSE"]
 authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
-    "spawn-join-llm-provider>=0.1.0,<0.2.0",
-    "spawn-join-common[validation]>=0.1.0,<0.2.0",
+    "spawn-join-llm-provider>=0.0.1.dev0,<0.2.0",
+    "spawn-join-common[validation]>=0.0.1.dev0,<0.2.0",
     "langchain-core>=1.5.0,<2.0",
     "langchain-openai>=1.0,<2.0",
     "langchain-anthropic>=1.5.0,<2.0",
