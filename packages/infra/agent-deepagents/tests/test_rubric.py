@@ -7,9 +7,12 @@ from typing import Any
 
 import pytest
 from deepagents import RubricMiddleware
+from deepagents.backends import StateBackend
 from langchain_core._api import LangChainBetaWarning
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
+from langchain_core.tools import tool
+from langgraph.store.memory import InMemoryStore
 from spawn_join_agent_deepagents.errors import RubricConfigurationError
 from spawn_join_agent_deepagents.middleware import MiddlewareConfiguration
 from spawn_join_agent_deepagents.models import (
@@ -18,6 +21,7 @@ from spawn_join_agent_deepagents.models import (
     ModelPurpose,
 )
 from spawn_join_agent_deepagents.rubric import RubricConfiguration
+from spawn_join_agent_deepagents.subagents import SubAgentDefinition
 from spawn_join_agent_deepagents.supervisor import SupervisorSpec, build_supervisor
 
 
@@ -77,6 +81,29 @@ def test_rubric_requires_the_beta_gate(
         )
 
 
+def test_unconfigured_rubric_is_not_reported(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+        )
+    )
+
+    assert assembly.report.rubric.model_source == "none"
+    assert assembly.report.rubric.enabled is False
+    assert "rubric" not in assembly.report.experimental_features
+    assert not any("rubric" in warning for warning in assembly.report.warnings)
+
+
 def test_rubric_is_assembled_and_reported(
     monkeypatch: pytest.MonkeyPatch,
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
@@ -115,6 +142,22 @@ def test_rubric_is_assembled_and_reported(
 
 def _discard_assembly(**kwargs: Any) -> object:
     return object()
+
+
+@tool
+def _lookup(query: str) -> str:
+    """Look up one value for the rubric grader."""
+
+    return query
+
+
+def test_rubric_rejects_non_callable_on_evaluation(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    model = make_sequence_model([AIMessage(content="grade")])
+
+    with pytest.raises(RubricConfigurationError, match="on_evaluation"):
+        RubricConfiguration(model=model, on_evaluation="bad")  # type: ignore[arg-type]
 
 
 def test_native_rubric_middleware_requires_the_beta_gate(
@@ -187,3 +230,194 @@ def test_native_and_configured_rubric_cannot_be_combined(
                 allow_experimental_rubric=True,
             )
         )
+
+
+def test_native_rubric_gate_covers_worker_scope(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(model=grader)
+    worker = SubAgentDefinition(name="worker", description="worker", model=grader)
+
+    with pytest.raises(RubricConfigurationError, match="allow_experimental"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                subagents=(worker,),
+                middleware=MiddlewareConfiguration(workers=(native,)),
+            )
+        )
+
+
+def test_native_rubric_gate_covers_worker_override_scope(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(model=grader)
+    worker = SubAgentDefinition(name="worker", description="worker", model=grader)
+
+    with pytest.raises(RubricConfigurationError, match="allow_experimental"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                subagents=(worker,),
+                middleware=MiddlewareConfiguration(
+                    worker_overrides={"worker": (native,)}
+                ),
+            )
+        )
+
+
+def test_native_rubric_gate_covers_subagent_scope(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(model=grader)
+    worker = SubAgentDefinition(
+        name="worker",
+        description="worker",
+        model=grader,
+        middleware=(native,),
+    )
+
+    with pytest.raises(RubricConfigurationError, match="allow_experimental"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                subagents=(worker,),
+            )
+        )
+
+
+def test_native_rubric_in_worker_scope_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(model=grader)
+    worker = SubAgentDefinition(name="worker", description="worker", model=grader)
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            subagents=(worker,),
+            middleware=MiddlewareConfiguration(workers=(native,)),
+            allow_experimental_rubric=True,
+        )
+    )
+
+    assert assembly.report.rubric.enabled is True
+    assert assembly.report.rubric.model_source == "host_middleware"
+    assert "rubric" in assembly.report.experimental_features
+
+
+def test_native_rubric_reports_tool_count(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(
+        model=grader,
+        tools=[_lookup],
+        max_iterations=4,
+    )
+
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            middleware=MiddlewareConfiguration(supervisor=(native,)),
+            allow_experimental_rubric=True,
+        )
+    )
+
+    assert assembly.report.rubric.max_iterations == 4
+    assert assembly.report.rubric.tool_count == 1
+
+
+def test_native_worker_rubric_and_configured_rubric_cannot_be_combined(
+    monkeypatch: pytest.MonkeyPatch,
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    monkeypatch.setattr(
+        "spawn_join_agent_deepagents.supervisor._create_deep_agent",
+        _discard_assembly,
+    )
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    grader = make_sequence_model([AIMessage(content="grade")])
+    native = RubricMiddleware(model=grader)
+    worker = SubAgentDefinition(name="worker", description="worker", model=grader)
+
+    with pytest.raises(RubricConfigurationError, match="not both"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                subagents=(worker,),
+                rubric=RubricConfiguration(model=grader),
+                middleware=MiddlewareConfiguration(workers=(native,)),
+                allow_experimental_rubric=True,
+            )
+        )
+
+
+def test_supervisor_spec_preserves_pre_p1_positional_order(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    backend = StateBackend()
+    store = InMemoryStore()
+
+    spec = SupervisorSpec(
+        _bindings(supervisor),
+        (),
+        None,
+        (),
+        True,
+        MiddlewareConfiguration(),
+        None,
+        None,
+        False,
+        False,
+        False,
+        None,
+        backend,
+        store,
+    )
+
+    assert spec.backend is backend
+    assert spec.store is store
+    assert spec.allow_experimental_rubric is False
+    assert spec.rubric is None

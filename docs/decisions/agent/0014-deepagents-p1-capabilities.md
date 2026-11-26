@@ -49,17 +49,22 @@ ADR-0012 只覆盖官方 P0（该决策已于 2026-11-26 接受），两者都�
 - `max_iterations` 必须是正整数原生 `int`；`bool`、浮点数、字符串和 `None` 抛出
   `RubricConfigurationError`。`model` 必须是 `BaseChatModel`。
 - `rubric=` 只有在 `allow_experimental_rubric=True` 时才允许装配；原生
-  `RubricMiddleware` 放进 `middleware.supervisor` 时同样需要该开关。
+  `RubricMiddleware` 放进 supervisor、workers、worker override 或声明式
+  subagent middleware 任一公开作用域时同样需要该开关。
 - 不能同时传 `rubric=` 和原生 `RubricMiddleware`；两者都表示同一个上游能力 seam。
 - 未配置时行为完全不变：不追加 middleware、不增加 warning 或 `experimental_features`。
-- `RubricReport` 只包含 enabled、迭代上限、grader 来源（`injected:<class>` 或
-  `host_middleware`）和工具数量；不包含 prompt、工具名、模型参数或凭据。
+- `RubricReport` 只包含 enabled、迭代上限、grader 来源（禁用时为 `none`，
+  配置注入时为 `injected:<class>`，宿主 middleware 为 `host_middleware`）和工具数量；
+  不包含 prompt、工具名、模型参数或凭据。原生 upstream rubric 的工具数量按
+  DeepAgents 0.7.x 的 `_tools` 存储读取，并由上游契约测试守卫。
 - 真实 grader 执行依赖 provider structured output，默认测试不覆盖。
 
 ### Backend 与权限报告
 
 - `ResourceReport.backend_kind` 输出稳定标签：`default_state`、`local_shell`、`sandbox`、
   `state`、`store`、`composite`、`filesystem`、`context_hub`、`custom`。
+  `sandbox` 覆盖 DeepAgents 的 `BaseSandbox` 实现（包括 `LangSmithSandbox`），
+  并在 `local_shell` 之前保留更具体的本地 shell 分类。
 - `ResourceReport.permissions` 是 `PermissionReport`，只包含 allow/deny/interrupt/other
   计数；不包含路径、规则文本或工具参数。
 - `backend_kind()` 和 `permission_report()` 是内部 helper，不进入 `__all__`。
@@ -122,14 +127,16 @@ Native interrupt state
 
 - 上游 `RubricMiddleware` 和 HITL payload 仍可能变化，beta seam 需要跟随升级；
 - 真实 rubric grader 执行和跨进程 HITL 不在默认验证范围；
-- `AssemblyReport.rubric` 和 `ResourceReport` 的新字段是增量，但依赖位置参数构造的
-  调用方需要改用关键字参数；
+- `AssemblyReport.rubric` 和 `ResourceReport` 的新字段是增量且追加在报告 dataclass
+  末尾；旧位置参数构造保持兼容。`SupervisorSpec` 的 rubric 配置字段为 keyword-only，
+  因此不会改变既有 `backend`/`store` 位置参数。
 - 不提供审批存储、重试、exactly-once 或 UI。
 
 迁移：
 
 - 既有调用方不需要修改；未配置 rubric 时行为不变；
-- 使用 `ResourceReport` / `AssemblyReport` 位置参数的调用方应改用关键字参数；
+- 使用 `ResourceReport` / `AssemblyReport` 位置参数的调用方无需因本 ADR 迁移；
+  新增 rubric 配置应使用关键字参数；
 - 需要 rubric 的调用方必须显式设置 `allow_experimental_rubric=True`；
 - 需要 HITL 的调用方必须提供 checkpointer 和稳定 `thread_id`。
 
@@ -140,7 +147,8 @@ Native interrupt state
 `evidence.md`。2026-11-26 的独立六维 Review 在 HEAD `7942509` 上执行，结论为 `blocked`：
 原生 `RubricMiddleware` 的 beta gate 只覆盖 supervisor 作用域（F1），原生 `tool_count`
 读取错误（F2），`SupervisorSpec` 位置参数兼容性被破坏（F3），并有迁移说明和测试缺口。
-因此本 ADR 保持 `Proposed`，待修复并复评后再接受。完整报告见
+本次 Bugfix 已修复 F1–F5，并补充对应回归测试；修复后的 ADR 仍保持 `Proposed`，
+待当前 reviewed HEAD 上的完整包质量门和独立六维 Review 通过后再接受。原始报告见
 `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0014-review.md`。
 
 计划验证：
@@ -156,3 +164,5 @@ Native interrupt state
 
 - 2026-11-15：提出 P1 rubric、backend/权限报告和 HITL helpers 的公共边界。
 - 2026-11-26：独立六维 Review 结论为 blocked（F1–F3 等），状态保持 Proposed。
+- 2026-11-26：Bugfix 修复原生 rubric 多作用域 beta gate、工具计数、`SupervisorSpec`
+  位置参数兼容性和 sandbox 分类，并补充回归测试；等待新 HEAD 的独立复评。
