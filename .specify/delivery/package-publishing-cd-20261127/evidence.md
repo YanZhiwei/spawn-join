@@ -9,7 +9,7 @@ original_pr_head: pending
 content_fingerprint: 3cce8c526e3915c1e72b6cf79554402cee16902e
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
-pull_request: 105
+pull_request: 106
 exploration_path: .specify/delivery/package-publishing-cd-20261127/exploration.md
 
 ## Scope
