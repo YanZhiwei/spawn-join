@@ -43,6 +43,33 @@ def test_invalid_url_returns_configuration_exit_code(
     assert "valid port" in capsys.readouterr().err
 
 
+def test_invalid_model_metadata_returns_configuration_exit_code(
+    model_file: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    invalid = tmp_path / "invalid.yaml"
+    invalid.write_text(
+        "schema_version: 2\nmodels:\n  fast:\n" "    metadata_ref: lab /model\n",
+        encoding="utf-8",
+    )
+
+    code = main(
+        [
+            "sync",
+            "--source",
+            "models.dev",
+            "--model-file",
+            str(invalid),
+            "--cache-dir",
+            str(tmp_path / "cache"),
+        ]
+    )
+
+    assert code == 1
+    assert "metadata_ref" in capsys.readouterr().err
+
+
 def test_unknown_source_is_a_configuration_error(
     model_file: Path,
     tmp_path: Path,

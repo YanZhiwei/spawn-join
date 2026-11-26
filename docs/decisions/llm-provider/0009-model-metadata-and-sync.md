@@ -104,7 +104,8 @@ reasoning 控制、工具/结构化输出、embedding 或生命周期状态。�
 
 - 新增 infra Distribution `spawn-join-llm-model-sync`，拥有网络、缓存、报告、原子写和
   CLI 副作用。
-- 它依赖 `spawn-join-llm-provider` 获取元数据类型，并依赖 `PyYAML`/`platformdirs` 完成
+- 它依赖 `spawn-join-llm-provider` 获取元数据类型，依赖 `spawn-join-common` 的字段读取，
+  并依赖 `PyYAML`/`platformdirs` 完成
   文件与缓存边界；运行时**不依赖** `spawn-join-llm-provider-langchain`。
 - 完整 `model.yaml` 解析仍由 `spawn-join-llm-provider-langchain` 维护；同步工具只读取
   元数据投影（`metadata_ref`、`metadata_source`、`metadata`），避免把 LangChain 带入
@@ -122,8 +123,9 @@ reasoning 控制、工具/结构化输出、embedding 或生命周期状态。�
 - `ModelCatalog.from_file` / `load_model_catalog` 增加可选 `metadata_file=None`。
 - 提供快照时，按“共享事实 → 渠道覆盖 → 人工覆盖”合并；不匹配的 `base_model` 报错；
   缺失的共享事实显式返回无元数据，不编造默认值。
-- `ModelSummary` 追加 `metadata_ref` 和 `metadata`，默认 `None`；不传快照时行为与当前
-  版本一致。
+- `ModelSummary` 追加 `metadata_ref`、`metadata_source` 和 `metadata`，并保留
+  ADR-0013 定义的渠道字段（`protocol`、`endpoint`、`timeout_seconds`、`max_retries`、
+  `options`）；这些字段默认保持兼容，不传快照时行为与当前版本一致。
 - 运行时加载不发起网络请求、不自动刷新、不隐式搜索 AppData；所有路径由调用方显式提供。
 
 ### 存储与操作
@@ -132,7 +134,8 @@ reasoning 控制、工具/结构化输出、embedding 或生命周期状态。�
   缓存、状态和报告放 `%LOCALAPPDATA%\SpawnJoin\cache\`。
 - 服务/CLI：使用显式项目配置目录；库不硬编码 AppData。
 - 当前只提供手动 CLI：`sync`、`--apply`、`--check`、`--source`、`--output`、
-  `--cache-dir`。默认只计算 diff，不写文件。
+  `--cache-dir`。默认只计算 diff，不写快照、缓存或报告；`--check` 可写审计缓存和报告，
+  但不写快照。
 - 不实现定时任务、自动 PR、后台刷新或自动模型注册。以后接入调度时复用同一命令。
 
 ### 明确不处理
@@ -167,7 +170,7 @@ ModelCatalog.from_file(metadata_file=...)
 
 同步：
 model-sync sync --source models.dev
-  ├── 读取 model.yaml 引用（复用适配包）
+   ├── 读取 model.yaml 元数据投影（同步包自己的轻量 reader）
   ├── source.fetch → raw bytes
   ├── source.translate → SourceCatalog（只翻译请求的 refs/hosts）
   ├── runner: merge → validate → diff
@@ -182,7 +185,8 @@ spawn-join-core
             ├── pydantic                     # 通用字段校验
             ├── spawn-join-llm-provider-langchain
             │       └── spawn-join-llm-model-sync   # dev/test only
-            └── spawn-join-llm-model-sync           # runtime: provider + PyYAML + platformdirs
+            ├── spawn-join-common                   # runtime: FieldReader
+            └── spawn-join-llm-model-sync           # runtime: provider + common + PyYAML + platformdirs
 ```
 
 实际 CLI 运行时只依赖 `spawn-join-llm-provider` 与通用工具；LangChain 适配包仅用于测试
@@ -213,8 +217,9 @@ spawn-join-core
 
 - 新增一个 Distribution，带来独立 `pyproject.toml`、`uv.lock`、`.venv`、构建、
   README、quality profile 和维护责任；
-- 同步 CLI 不依赖 LangChain 适配包，运行时只需 `spawn-join-llm-provider`、PyYAML 和
-  `platformdirs`；完整模型文件解析与运行时时序仍由适配包负责；
+- 同步 CLI 不依赖 LangChain 适配包，运行时依赖
+  `spawn-join-llm-provider`、`spawn-join-common`、PyYAML 和 `platformdirs`；
+  完整模型文件解析与运行时时序仍由适配包负责；
 - 快照需要手动刷新和评审，存在过期风险；
 - `model.yaml` v2 和快照 v1 都是长期格式，后续字段调整需要版本策略；
 - 当前只有一个源，源注册表的多数扩展路径尚未被第二个真实源验证。
@@ -238,10 +243,9 @@ spawn-join-core
 ## Verification and implementation status
 
 本 ADR 当前为 Proposed。实现已随 `spawn-join-llm-model-sync`、运行时元数据读取和快照
-解析交付（PR #31）。2026-11-26 的独立六维 Review 在 HEAD `7942509` 上执行，结论为
-`blocked`：上游 payload 与 `model.yaml` 校验错误未转换为稳定错误/退出码（F1），dry-run
-副作用、缓存路径、渠道差异和依赖声明也与 ADR 不一致（F2–F5）。因此维护者暂不接受本决策；
-修复并复评后再收口。完整报告见
+解析交付（PR #31）。2026-11-27 的独立六维 Review 在 HEAD `649d2c2` 上确认 F1–F6
+已修复，但发现 F7 的 inline metadata 边界仍需收紧；本次继续修复该边界，并保持
+Proposed，待最终 reviewed HEAD 上的复评和远端质量门完成后再收口。原始报告见
 `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0009-review.md`。相关验证包括：
 
 - `spawn-join-llm-provider`：元数据解析、校验、覆盖合并和确定性测试；
@@ -259,3 +263,4 @@ spawn-join-core
 - 2026-11-03：元数据边界增加 Pydantic dataclass 校验，保持 dataclass 公共语义；拆分
   `metadata/` 包并共享 JSON codec。
 - 2026-11-26：修正实现状态描述；独立六维 Review 结论为 blocked（F1–F5），状态保持 Proposed。
+- 2026-11-27：修复 F1–F8、收紧 inline metadata 与 metadata_ref 边界；等待最终独立复评。

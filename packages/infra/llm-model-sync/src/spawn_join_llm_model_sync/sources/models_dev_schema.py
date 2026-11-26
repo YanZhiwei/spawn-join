@@ -256,8 +256,8 @@ def _optional_date(
     normalized = f"{text}-01" if len(text) == 7 else text
     try:
         return date.fromisoformat(normalized)
-    except ValueError:
-        return None
+    except ValueError as exc:
+        raise SourcePayloadError(f"{path}.{name}: invalid ISO date") from exc
 
 
 def _interleaved(fields: Mapping[str, object], path: str) -> str | None:
@@ -279,8 +279,7 @@ def _modalities(
     input_values = _modality_list(fields.get("input"), f"{path}.input", warnings)
     output_values = _modality_list(fields.get("output"), f"{path}.output", warnings)
     if not input_values:
-        warnings.append(f"{path}.input: no recognized modalities; using text")
-        input_values = (Modality.TEXT,)
+        raise SourcePayloadError(f"{path}.input: no recognized modalities")
     return ModelModalities(input=input_values, output=output_values)
 
 
@@ -309,8 +308,9 @@ def _modality_list(
         try:
             modality = Modality(raw)
         except ValueError:
-            warnings.append(f"{path}[{index}]: unknown modality {raw!r}")
-            continue
+            raise SourcePayloadError(
+                f"{path}[{index}]: unknown modality {raw!r}"
+            ) from None
         if modality not in result:
             result.append(modality)
     return tuple(result)
@@ -539,8 +539,10 @@ def _model_type(raw_type: str | None, modalities: ModelModalities) -> ModelType:
     if raw_type is not None:
         try:
             return ModelType(raw_type)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            raise SourcePayloadError(
+                f"model type {raw_type!r} is not supported"
+            ) from exc
     if not modalities.output:
         return ModelType.EMBEDDING
     return ModelType.CHAT
