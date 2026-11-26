@@ -2,18 +2,22 @@
 
 ## Identity and scope
 
+- **delivery_run**: `adr-lifecycle-closure-20261126`
+- **lane**: lightweight
+- **evidence_path**: `.specify/delivery/adr-lifecycle-closure-20261126/evidence.md`
 - **route**: Lightweight（只更新 ADR 记录、决策索引与文档状态；无产品源码、公共契约或运行时行为变化）
-- **feature_id**: 不适用（独立治理收口，不是新的 Feature/Bugfix run）
-- **phase_id**: `adr-lifecycle-closure`
 - **base_revision**: `79425090f442506663c0024bde02c62f1f5c7ea6`
-- **head_revision**: `working-tree (7942509 plus uncommitted worktree)`
+- **reviewed_head**: `0f4636976f1046419ce256ddb3700a34f7174407`
+- **original_pr_head**: `pending`
+- **content_fingerprint**: `sha256:16e2d1ffd68ab1d89a176586a45348f5037f832a188e5ebb04511df09adbb5a3`
+- **requirements_fingerprint**: `sha256:3f7d9b4b6f57d07623fd9f1ef084deb6a5dea9014dfe73dd4f6bece8f9806662`
+- **method_identity**: `builtin six-dimensional review of ADR-0009/0014 implementations; coordinator-reviewed ADR lifecycle change`
+- **pull_request**: `102`
 - **working_directory**: `D:\Repos\spawn-join`
 - **recorded_at**: 2026-11-26
 - **environment**: Windows；PowerShell 7.6.10；uv 0.13.10（winget 用户级安装）；`UV_PYTHON=3.13`；Git for Windows
 - **result**: pass
-- **lane**: lightweight
 - **decision_record**: 用户于 2026-11-26 明确选择接受 ADR-0011、ADR-0012、ADR-0016；ADR-0009、ADR-0014 经独立六维 Review 后均判定 `blocked`，保持 `Proposed`
-- **delivery_run**: `adr-lifecycle-closure-20261126`
 
 ## Why Lightweight
 
