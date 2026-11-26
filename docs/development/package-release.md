@@ -35,9 +35,10 @@ Actions page after the corresponding PR has merged and choose one package or
 9. `spawn-join-personal-assistant`
 
 Each package is locked, synced, checked by the existing quality entry point,
-built in isolation, and then uploaded to the repository's GitHub Packages
-Python registry. The workflow requires `packages: write` and uses the
-short-lived `GITHUB_TOKEN`; no token is stored in the repository.
+built in isolation, and then uploaded with Twine's legacy Python upload
+protocol to the repository's GitHub Packages Python registry. The workflow
+requires `packages: write` and uses the short-lived `GITHUB_TOKEN`; no token is
+stored in the repository.
 
 Before the first release, the repository owner must verify that GitHub Packages
 is enabled and that the target package visibility and consumer access policy

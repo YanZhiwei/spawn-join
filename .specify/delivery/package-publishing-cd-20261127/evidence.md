@@ -4,12 +4,12 @@ delivery_run: package-publishing-cd-20261127
 lane: feature
 evidence_path: .specify/delivery/package-publishing-cd-20261127/evidence.md
 base_revision: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
-reviewed_head: ce5c02f94169e3957dfe80ac55374880cc357f09
+reviewed_head: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
 original_pr_head: pending
-content_fingerprint: ce5c02f94169e3957dfe80ac55374880cc357f09
+content_fingerprint: 0907306bc40184fd6ea2ed7f2a79435a4415ece2
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
-pull_request: 105
+pull_request: 106
 exploration_path: .specify/delivery/package-publishing-cd-20261127/exploration.md
 
 ## Scope
@@ -41,3 +41,11 @@ The real GitHub Packages upload and registry visibility have not been exercised.
 The first PR CI run failed before the version-assertion correction and before
 this shared evidence file was added; a fresh CI run is required. Historical
 governance warnings are unrelated to this run.
+
+## Follow-up: GitHub Packages uploader
+
+The initial publish run `45861856373` built and verified all nine
+distributions, then received HTTP 404 responses from `uv publish`. No package
+upload succeeded. The workflow was changed to use Twine's legacy upload
+protocol with the GitHub Actions actor and `GITHUB_TOKEN`; this correction is
+covered by PR `106` and this refreshed evidence snapshot.
