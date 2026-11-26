@@ -43,7 +43,7 @@ Part of #<none>；不关闭 Issue。
 
 ## 审查身份
 
-- `base_revision`: `b867b68`
+- `base_revision`: `b867b68c8aaa8f93bc02afe838f9ce2a248dd040`
 - `reviewed_head`: `1e4eea43310a276386fe76038c8aa4b6e5a368a3`
 - `content_fingerprint`: `sha256:04e60e728e594bffab1dc39f9a73b59fa32b0388bebe7f8295a80c01827f5f96`
 - `requirements_fingerprint`: `sha256:fb5c34e25ac18c73ca654c172f249f79dcd63a9e670bf7a073f4fd4384a1fce8`
@@ -58,4 +58,3 @@ Part of #<none>；不关闭 Issue。
 ## 回滚
 
 回滚本 PR 的提交即可；不涉及数据迁移或外部服务。
-
