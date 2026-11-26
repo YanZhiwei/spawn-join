@@ -2,7 +2,11 @@
 
 - **delivery_run**: `adr-0014-p1-fix-20261126`
 - **lane**: `bugfix`
+- **bug_slug**: `adr-0014-p1-review-fixes`
 - **evidence_path**: `.specify/delivery/adr-0014-p1-fix-20261126/evidence.md`
+- **exploration_path**: `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0014-review.md`
+- **assessment_path**: `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0014-review.md`
+- **assessment_hash**: `sha256:4daa49934e51a1b03ca72da13921735340f7723eb2f7596b1b03ea052ca684c6`
 - **base_revision**: `be26baeb4148445f1c486531844aa90eadfd3ed4`
 - **reviewed_head**: `8880a6d9281e8cfde6a5828aff28e78cbdc17ce9`
 - **original_pr_head**: `pending`
@@ -58,4 +62,3 @@
 - 真实 provider structured-output rubric 执行仍不在离线测试范围内。
 - 远端 CI、合并前的最终 GitHub checks 由 PR #（待创建）提供。
 - 本次不接受 ADR-0014；接受动作必须在 PR 合并后的 reviewed HEAD 上另行完成。
-
