@@ -1,11 +1,11 @@
 # ADR-0016: 可复用运行时包采用桌面优先、服务端可替换策略
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-21
 - Domain: engineering / packaging
 - Classification: 约束可复用运行时与基础设施包的默认实现、公共契约和部署档位，属于跨包的工程与交付策略，不归单一业务包。
 - Decision owner: 仓库维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者 / 2026-11-26
 - Depends on: [ADR-0010](../agent/0010-deepagents-product-boundary.md)、[ADR-0015](../agent/0015-personal-assistant-host-boundary.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、[ADR-0011](0011-common-helper-package.md)
 - Supersedes: 无
@@ -80,7 +80,7 @@ stdlib `sqlite3`，`Scheduler.run_due` 只执行一个周期，CLI `run` 结束�
 
 ## Key design and diagrams
 
-目标档位（非当前实现）：
+目标档位（桌面档已实现；服务端档为可替换目标）：
 
 ```mermaid
 flowchart LR
@@ -125,16 +125,13 @@ flowchart LR
 - SQLite 单写者限制仍然存在，SaaS 必须切换存储；
 - 本决策不解决多租户语义，只预留 `namespace`。
 
-迁移路径：
+迁移路径（已完成）：
 
-- `personal-assistant` 的工作项存储与调度迁移到 `spawn-join-agent-work`，行为保持等价，
-  现有测试作为回归基线；
-- 该迁移**以第二个真实复用消费者或明确产品决策为前提**；否则长任务能力继续留在宿主，
-  不提前抽取；
-- 迁移落地时同步修订 [ADR-0015](../agent/0015-personal-assistant-host-boundary.md) §Decision
-  第 1 条（work 存储与调度所有权）；在那之前 ADR-0015 描述的是当前行为，本 ADR 的 Proposed
-  状态不替代它；
-- 桌面数据目录解析新增默认值，但保留显式配置与迁移路径；
+- `personal-assistant` 的工作项存储与调度已迁移到 `spawn-join-agent-work`，行为由现有测试守卫；
+  迁移随 PR #93–#98 交付，证据见 `agent-work-main-integration-20261123`。
+- 迁移落地时已同步修订 [ADR-0015](../agent/0015-personal-assistant-host-boundary.md) §Decision
+  第 1 条（work 存储与调度所有权）；宿主保留 HITL 兼容层，后续是否收敛由宿主包的兼容性决策决定。
+- 桌面数据目录解析新增默认值，但保留显式配置与迁移路径。
 - 服务端适配器在真实 SaaS 需求出现后实现，不在第一批预建空模块。
 
 重新评估触发条件：
@@ -146,13 +143,18 @@ flowchart LR
 
 ## Verification and implementation status
 
-- 本条为 **Proposed** 决策，尚未实现任何包、适配器或迁移；
-- 本次变更只包含 ADR、决策索引与 AGENTS 约束，未改产品代码；
-- 文档与治理检查的实际结果记录在本次交付的 Harness evidence 中；
-- 实现、测试与 `Accepted` 状态需在后续 Feature 的 reviewed HEAD 上完成，不能用本 ADR
-  的 Proposed 状态代替实现证据。
+- 本条为 **Accepted** 决策（2026-11-26）。桌面默认档与契约可移植约束已由
+  `spawn-join-agent-work` 实现：SQLite/内存存储、ZeroMQ 唤醒、runner/租约/恢复；
+  `personal-assistant` 已迁移到该包（PR #93–#98）。
+- 初始变更只包含 ADR、决策索引与 AGENTS 约束；实现与迁移由后续 Feature 完成，证据见
+  `.specify/delivery/agent-work-main-integration-20261123/evidence.md` 与
+  `.specify/delivery/agent-work-desktop-20261122/slices.md`。
+- 服务端存储/MQ 适配器、多租户、Temporal 集成仍未实现，按本 ADR 的重新评估条件另行
+  决策；接受本策略不表示这些能力已完成。
 
 ## Revision history
 
 - 2026-11-21：提出桌面优先、服务端可替换的可复用运行时包策略，记录默认档位、契约可移植性、
   namespace 接缝、依赖分层与 Temporal/Celery 定位；状态为 Proposed。
+- 2026-11-26：维护者接受本策略；更新实现状态（`spawn-join-agent-work` 已交付、
+  `personal-assistant` 已迁移），并明确服务端适配器仍未实现。

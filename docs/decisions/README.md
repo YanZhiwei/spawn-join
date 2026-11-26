@@ -89,12 +89,12 @@ ADR 可以包含接口轮廓、数据结构、不变量、异常、副作用、�
 | ADR-0008 | llm-provider | [模型目录与凭据边界](llm-provider/0008-model-file-and-env-boundary.md) | Accepted |
 | ADR-0009 | llm-provider | [模型元数据与手动同步](llm-provider/0009-model-metadata-and-sync.md) | Proposed |
 | ADR-0010 | agent | [DeepAgents 产品边界与公共契约](agent/0010-deepagents-product-boundary.md) | Accepted |
-| ADR-0011 | engineering | [Common 公共辅助能力包](engineering/0011-common-helper-package.md) | Proposed |
-| ADR-0012 | agent | [DeepAgents 官方 P0 能力的产品化接线](agent/0012-deepagents-official-p0.md) | Proposed |
+| ADR-0011 | engineering | [Common 公共辅助能力包](engineering/0011-common-helper-package.md) | Accepted |
+| ADR-0012 | agent | [DeepAgents 官方 P0 能力的产品化接线](agent/0012-deepagents-official-p0.md) | Accepted |
 | ADR-0013 | llm-provider | [真实 Channel Transport、凭据边界与模型目录桥接](llm-provider/0013-channel-runtime-and-credentials.md) | Accepted |
 | ADR-0014 | agent | [DeepAgents 官方 P1 能力的公共边界](agent/0014-deepagents-p1-capabilities.md) | Proposed |
 | ADR-0015 | agent | [个人助理宿主边界与持久化基线](agent/0015-personal-assistant-host-boundary.md) | Accepted |
-| ADR-0016 | engineering | [桌面优先、服务端可替换的可复用运行时包](engineering/0016-desktop-first-service-ready-packages.md) | Proposed |
+| ADR-0016 | engineering | [桌面优先、服务端可替换的可复用运行时包](engineering/0016-desktop-first-service-ready-packages.md) | Accepted |
 | ADR-0017 | agent | [DeepAgents 可选 MCP 产品接入与显式资源范围](agent/0017-mcp-product-integration.md) | Accepted |
 | ADR-0018 | engineering | [桌面长任务运行时的包边界与生命周期语义](engineering/0018-agent-work-package-boundary.md) | Accepted |
 
