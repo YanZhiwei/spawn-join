@@ -114,5 +114,5 @@ jobs:
               --repository-url $publishUrl `
               --username $env:GITHUB_ACTOR `
               --password $env:GITHUB_TOKEN `
-              --non-interactive --skip-existing ($files.FullName)
+              --non-interactive ($files.FullName)
           }
