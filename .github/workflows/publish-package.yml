@@ -109,7 +109,10 @@ jobs:
             if (-not $files) {
               throw "No build artifacts found for $package"
             }
-            Write-Host "Publishing $package to $publishUrl"
-            uv publish --publish-url $publishUrl --token $env:GITHUB_TOKEN `
-              ($files.FullName)
+            Write-Host "Publishing $package to $publishUrl with Twine"
+            uvx --from twine==6.2.0 twine upload `
+              --repository-url $publishUrl `
+              --username $env:GITHUB_ACTOR `
+              --password $env:GITHUB_TOKEN `
+              --non-interactive --skip-existing ($files.FullName)
           }
