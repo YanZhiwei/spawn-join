@@ -192,6 +192,8 @@ def _parse_entry(
             )
     metadata_ref = _parse_metadata_ref(fields, path)
     metadata_source = _parse_metadata_source(fields, path, metadata_ref)
+    if "metadata" in fields and metadata_ref is None:
+        raise ConfigurationError(f"{path}.metadata: metadata_ref is required")
     metadata = (
         parse_model_metadata_override(fields["metadata"], f"{path}.metadata")
         if "metadata" in fields

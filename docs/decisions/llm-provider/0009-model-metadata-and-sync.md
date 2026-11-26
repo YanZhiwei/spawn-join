@@ -243,10 +243,9 @@ spawn-join-core
 ## Verification and implementation status
 
 本 ADR 当前为 Proposed。实现已随 `spawn-join-llm-model-sync`、运行时元数据读取和快照
-解析交付（PR #31）。2026-11-26 的独立六维 Review 在 HEAD `7942509` 上执行，结论为
-`blocked`：上游 payload 与 `model.yaml` 校验错误未转换为稳定错误/退出码（F1），dry-run
-副作用、缓存路径、渠道差异和依赖声明也与 ADR 不一致（F2–F5）。因此维护者暂不接受本决策；
-修复并复评后再收口。完整报告见
+解析交付（PR #31）。2026-11-27 的独立六维 Review 在 HEAD `649d2c2` 上确认 F1–F6
+已修复，但发现 F7 的 inline metadata 边界仍需收紧；本次继续修复该边界，并保持
+Proposed，待最终 reviewed HEAD 上的复评和远端质量门完成后再收口。原始报告见
 `.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0009-review.md`。相关验证包括：
 
 - `spawn-join-llm-provider`：元数据解析、校验、覆盖合并和确定性测试；
@@ -264,3 +263,4 @@ spawn-join-core
 - 2026-11-03：元数据边界增加 Pydantic dataclass 校验，保持 dataclass 公共语义；拆分
   `metadata/` 包并共享 JSON codec。
 - 2026-11-26：修正实现状态描述；独立六维 Review 结论为 blocked（F1–F5），状态保持 Proposed。
+- 2026-11-27：修复 F1–F8、收紧 inline metadata 与 metadata_ref 边界；等待最终独立复评。
