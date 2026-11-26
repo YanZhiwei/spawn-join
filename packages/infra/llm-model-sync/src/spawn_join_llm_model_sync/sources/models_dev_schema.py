@@ -279,8 +279,7 @@ def _modalities(
     input_values = _modality_list(fields.get("input"), f"{path}.input", warnings)
     output_values = _modality_list(fields.get("output"), f"{path}.output", warnings)
     if not input_values:
-        warnings.append(f"{path}.input: no recognized modalities; using text")
-        input_values = (Modality.TEXT,)
+        raise SourcePayloadError(f"{path}.input: no recognized modalities")
     return ModelModalities(input=input_values, output=output_values)
 
 
@@ -309,8 +308,9 @@ def _modality_list(
         try:
             modality = Modality(raw)
         except ValueError:
-            warnings.append(f"{path}[{index}]: unknown modality {raw!r}")
-            continue
+            raise SourcePayloadError(
+                f"{path}[{index}]: unknown modality {raw!r}"
+            ) from None
         if modality not in result:
             result.append(modality)
     return tuple(result)
