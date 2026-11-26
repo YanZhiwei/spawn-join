@@ -14,6 +14,7 @@ _SENSITIVE_QUERY_NAMES = frozenset(
         "auth",
         "authorization",
         "client_secret",
+        "code",
         "credential",
         "credentials",
         "key",

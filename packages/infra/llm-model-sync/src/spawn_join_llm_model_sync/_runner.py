@@ -6,6 +6,8 @@ import hashlib
 from dataclasses import replace
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from spawn_join_llm_provider import (
     ConfigurationError,
     ModelChannel,
@@ -35,6 +37,7 @@ from ._source import (
     MetadataSource,
     SourceCatalog,
     SourceConfig,
+    SourceRequest,
     SyncContext,
     SyncError,
     SyncResult,
@@ -56,7 +59,7 @@ def run_sync(
     if apply and check:
         raise ConfigurationError("--apply and --check are mutually exclusive")
 
-    summaries = load_model_metadata_entries(model_file)
+    summaries = _load_summaries(model_file)
     request = build_source_request(summaries, source.info.id)
     if not request.refs:
         raise SyncError(
@@ -74,10 +77,7 @@ def run_sync(
         url=config.url or context.url,
     )
     payload = source.fetch(fetch_context)
-    try:
-        source_catalog = source.translate(payload, request)
-    except ConfigurationError as exc:
-        raise SyncError(f"source translation failed: {exc}") from exc
+    source_catalog = _translate_source(source, payload, request)
     _require_source_size(source_catalog, source=source, config=config)
 
     merged = merge_source(
@@ -162,12 +162,13 @@ def run_sync(
         warnings=tuple(warnings),
         exit_code=0 if (written or (apply and not changed)) else (2 if changed else 0),
     )
-    result = _persist_observability(
+    result = _persist_if_requested(
+        apply=apply,
+        check=check,
         context=context,
         payload=payload,
         revision=revision,
         result=result,
-        write_state_file=apply,
     )
     if check:
         result = replace(
@@ -176,6 +177,48 @@ def run_sync(
             exit_code=2 if result.changed else 0,
         )
     return result
+
+
+def _load_summaries(path: Path) -> tuple[ModelMetadataEntry, ...]:
+    try:
+        return load_model_metadata_entries(path)
+    except ValidationError as exc:
+        raise ConfigurationError(
+            f"model.yaml metadata validation failed: {exc}"
+        ) from exc
+
+
+def _translate_source(
+    source: MetadataSource,
+    payload: bytes,
+    request: SourceRequest,
+) -> SourceCatalog:
+    try:
+        return source.translate(payload, request)
+    except ConfigurationError as exc:
+        raise SyncError(f"source translation failed: {exc}") from exc
+    except ValidationError as exc:
+        raise SyncError(f"source translation failed: invalid payload ({exc})") from exc
+
+
+def _persist_if_requested(
+    *,
+    apply: bool,
+    check: bool,
+    context: SyncContext,
+    payload: bytes,
+    revision: str,
+    result: SyncResult,
+) -> SyncResult:
+    if not (apply or check):
+        return result
+    return _persist_observability(
+        context=context,
+        payload=payload,
+        revision=revision,
+        result=result,
+        write_state_file=apply,
+    )
 
 
 def _require_source_size(

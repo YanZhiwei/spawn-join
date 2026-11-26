@@ -1,4 +1,4 @@
-﻿"""Merge source catalogs with model.yaml entries."""
+"""Merge source catalogs with model.yaml entries."""
 
 from __future__ import annotations
 
@@ -6,10 +6,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from spawn_join_llm_provider import (
-    ConfigurationError,
     ModelChannel,
     ModelMetadata,
-    ModelSourceRef,
+    ModelMetadataOverride,
 )
 
 from ._model_file import ModelMetadataEntry
@@ -77,7 +76,62 @@ def merge_source(
         models[ref] = model
         matched.append(ref)
 
-    for summary in summary_list:
+    _merge_channels(
+        source_id=source_id,
+        catalog=catalog,
+        summaries=summary_list,
+        models=models,
+        channels=channels,
+        warnings=warnings,
+    )
+
+    ignored_ids = catalog.unreferenced_models
+    ignored = (
+        len(ignored_ids)
+        if ignored_ids
+        else max(catalog.total_models - len(catalog.models), 0)
+    )
+    return MergedMetadata(
+        models=models,
+        channels=channels,
+        matched=tuple(matched),
+        unmatched=tuple(unmatched),
+        ignored_models=ignored,
+        ignored_model_ids=ignored_ids,
+        warnings=tuple(warnings),
+    )
+
+
+def _only_channel_differences(
+    override: ModelMetadataOverride,
+    shared: ModelMetadata,
+) -> ModelMetadataOverride:
+    """Keep only channel facts that differ from the shared model."""
+    return ModelMetadataOverride(
+        pricing=override.pricing if override.pricing != shared.pricing else None,
+        limits=override.limits if override.limits != shared.limits else None,
+        capabilities=(
+            override.capabilities
+            if override.capabilities != shared.capabilities
+            else None
+        ),
+        modalities=(
+            override.modalities if override.modalities != shared.modalities else None
+        ),
+        status=override.status if override.status != shared.status else None,
+    )
+
+
+def _merge_channels(
+    *,
+    source_id: str,
+    catalog: SourceCatalog,
+    summaries: tuple[ModelMetadataEntry, ...],
+    models: dict[str, ModelMetadata],
+    channels: dict[str, ModelChannel],
+    warnings: list[str],
+) -> None:
+    for summary in summaries:
         ref = summary.metadata_ref
         if ref is None:
             continue
@@ -110,48 +164,11 @@ def merge_source(
                 f"{source_ref.provider}/{source_ref.model} maps to "
                 f"{host.canonical_model!r}, expected {ref!r}"
             )
+        shared = models.get(ref)
+        if shared is None:
+            continue
         channels[summary.name] = ModelChannel(
             base_model=ref,
             source=source_ref,
-            override=host.override,
-        )
-
-    ignored_ids = catalog.unreferenced_models
-    ignored = (
-        len(ignored_ids)
-        if ignored_ids
-        else max(catalog.total_models - len(catalog.models), 0)
-    )
-    return MergedMetadata(
-        models=models,
-        channels=channels,
-        matched=tuple(matched),
-        unmatched=tuple(unmatched),
-        ignored_models=ignored,
-        ignored_model_ids=ignored_ids,
-        warnings=tuple(warnings),
-    )
-
-
-def existing_source_ref(
-    summary: ModelMetadataEntry,
-    source_id: str,
-) -> ModelSourceRef | None:
-    """Return one summary's explicit source reference when present."""
-    return summary.metadata_source.get(source_id)
-
-
-def validate_channel_source(
-    channel: ModelChannel,
-    summary: ModelMetadataEntry,
-) -> None:
-    """Ensure a channel's base model matches the summary reference."""
-    if summary.metadata_ref is None:
-        raise ConfigurationError(
-            f"models.{summary.name}: channel metadata requires metadata_ref"
-        )
-    if channel.base_model != summary.metadata_ref:
-        raise ConfigurationError(
-            f"models.{summary.name}: channel base_model {channel.base_model!r} "
-            f"does not match {summary.metadata_ref!r}"
+            override=_only_channel_differences(host.override, shared),
         )

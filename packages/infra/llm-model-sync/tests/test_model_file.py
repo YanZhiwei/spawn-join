@@ -69,6 +69,27 @@ models:
         load_model_metadata_entries(path)
 
 
+def test_inline_metadata_requires_metadata_ref(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text(
+        """\
+schema_version: 2
+models:
+  fast:
+    protocol: chat_completions
+    endpoint: https://api.example.com/v1
+    model: gpt-5
+    api_key_env: FAST_API_KEY
+    metadata:
+      status: active
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="metadata_ref is required"):
+        load_model_metadata_entries(path)
+
+
 def test_metadata_source_keeps_strict_reader_errors(tmp_path: Path) -> None:
     path = tmp_path / "model.yaml"
     path.write_text(
