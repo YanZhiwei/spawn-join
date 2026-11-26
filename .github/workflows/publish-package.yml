@@ -1,0 +1,115 @@
+name: Publish Python package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to publish
+        required: true
+        type: choice
+        options:
+          - all
+          - spawn-join-core
+          - spawn-join-common
+          - spawn-join-llm-provider
+          - spawn-join-llm-provider-langchain
+          - spawn-join-llm-channel
+          - spawn-join-llm-model-sync
+          - spawn-join-agent-deepagents
+          - spawn-join-agent-work
+          - spawn-join-personal-assistant
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-python-${{ inputs.package }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: '0.13.5'
+          enable-cache: true
+          cache-dependency-glob: 'packages/**/uv.lock'
+
+      - name: Verify, build, and publish in dependency order
+        env:
+          SELECTED_PACKAGE: ${{ inputs.package }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_REGISTRY_OWNER: ${{ github.repository_owner }}
+        run: |
+          $packages = [ordered]@{
+            'spawn-join-core' = 'packages/core/spawn-join-core'
+            'spawn-join-common' = 'packages/core/common'
+            'spawn-join-llm-provider' = 'packages/core/llm-provider'
+            'spawn-join-llm-provider-langchain' = 'packages/infra/llm-provider-langchain'
+            'spawn-join-llm-channel' = 'packages/infra/llm-channel'
+            'spawn-join-llm-model-sync' = 'packages/infra/llm-model-sync'
+            'spawn-join-agent-deepagents' = 'packages/infra/agent-deepagents'
+            'spawn-join-agent-work' = 'packages/infra/agent-work'
+            'spawn-join-personal-assistant' = 'packages/apps/personal-assistant'
+          }
+          if ($env:SELECTED_PACKAGE -eq 'all') {
+            $targets = @($packages.Keys)
+          } elseif ($packages.Contains($env:SELECTED_PACKAGE)) {
+            $targets = @($env:SELECTED_PACKAGE)
+          } else {
+            throw "Unknown package: $env:SELECTED_PACKAGE"
+          }
+
+          $distRoot = Join-Path $env:RUNNER_TEMP 'spawn-join-dist'
+          New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
+          foreach ($package in $targets) {
+            $directory = $packages[$package]
+            Write-Host "Checking $package in $directory"
+            uv lock --check --directory $directory
+            uv sync --locked --directory $directory
+            ./scripts/quality.ps1 -Package $package
+
+            $manifest = Join-Path $directory 'pyproject.toml'
+            $versionLine = Select-String -Path $manifest -Pattern '^version = "([^"]+)"$'
+            if (-not $versionLine) {
+              throw "Missing project version in $manifest"
+            }
+            $version = $versionLine.Matches[0].Groups[1].Value
+            if ($version -notmatch '^\d+\.\d+\.\d+\.dev\d+$') {
+              throw "$package has non-development version $version; expected PEP 440 *.devN"
+            }
+
+            $output = Join-Path $distRoot $package
+            New-Item -ItemType Directory -Path $output -Force | Out-Null
+            uv build --no-sources --out-dir $output --directory $directory
+          }
+
+          $publishUrl = "https://pypi.pkg.github.com/$env:PACKAGE_REGISTRY_OWNER/"
+          foreach ($package in $targets) {
+            $files = Get-ChildItem (Join-Path $distRoot $package) -File
+            if (-not $files) {
+              throw "No build artifacts found for $package"
+            }
+            Write-Host "Publishing $package to $publishUrl"
+            uv publish --publish-url $publishUrl --token $env:GITHUB_TOKEN `
+              ($files.FullName)
+          }

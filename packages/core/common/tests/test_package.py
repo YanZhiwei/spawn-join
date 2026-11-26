@@ -20,14 +20,14 @@ def test_package_is_importable() -> None:
 def test_public_exports_are_explicit_and_identical() -> None:
     assert spawn_join_common.__all__ == ["FieldReader", "__version__"]
     assert FieldReader is ParsingFieldReader
-    assert spawn_join_common.__version__ == "0.1.0"
+    assert spawn_join_common.__version__ == "0.0.1.dev0"
     assert set(spawn_join_common.__dict__) >= {"FieldReader", "__version__"}
 
 
 def test_distribution_identity() -> None:
     package_metadata = metadata.metadata("spawn-join-common")
     assert package_metadata["Name"] == "spawn-join-common"
-    assert package_metadata["Version"] == "0.1.0"
+    assert package_metadata["Version"] == "0.0.1.dev0"
 
 
 def test_py_typed_marker_is_packaged() -> None:

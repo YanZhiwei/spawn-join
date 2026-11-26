@@ -6,7 +6,7 @@ Reusable desktop durable-work runtime: SQLite persistence, leases/fencing, retry
 ZeroMQ wake-ups, and a long-running runner. The desktop default needs no external service;
 storage and notification are ports so a Postgres/MQ service tier can be added later.
 
-> Status: Phase 1, version `0.1.0`, Python `>=3.11`; not yet published to PyPI. See
+> Status: Phase 1, version `0.0.1.dev0`, Python `>=3.11`; not yet published to PyPI. See
 > [ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md) for the boundary decision.
 
 ## When to use it
@@ -35,7 +35,7 @@ uv sync --locked --directory packages/infra/agent-work
 Hosts can use a local path dependency during development:
 
 ```toml
-dependencies = ["spawn-join-agent-work>=0.1.0,<0.2.0"]
+dependencies = ["spawn-join-agent-work>=0.0.1.dev0,<0.2.0"]
 [tool.uv.sources]
 spawn-join-agent-work = { path = "../../infra/agent-work", editable = true }
 ```
@@ -174,7 +174,7 @@ Storage, notification, and executor concerns are separated from the public model
 
 ## Versioning and releases
 
-The current version is `0.1.0` and is not published to PyPI. A release is gated by the package
+The current version is `0.0.1.dev0` and is not published to PyPI. A release is gated by the package
 `uv.lock`, quality gate, and the PR CI 9×3 matrix; change notes live in the repository release
 record rather than being copied here. Phase 1 public APIs may change with feedback.
 

@@ -30,7 +30,7 @@
 
 ## 状态
 
-`0.1.0`，早期开发，要求 Python `>=3.11`。当前只交付契约和离线测试：
+`0.0.1.dev0`，早期开发，要求 Python `>=3.11`。当前只交付契约和离线测试：
 
 - 没有真实 channel HTTP 实现；真实 transport 在独立包
   [`spawn-join-llm-channel`](../../infra/llm-channel/README.md)，本包保持框架无关；

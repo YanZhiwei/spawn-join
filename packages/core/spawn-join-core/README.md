@@ -16,7 +16,7 @@ SpawnJoin 生态共享的稳定契约与基础原语。
 
 ## 当前状态
 
-`0.1.0` 骨架，要求 Python `>=3.11`。`config`、`exceptions`、`protocols` 和 `types`
+`0.0.1.dev0` 骨架，要求 Python `>=3.11`。`config`、`exceptions`、`protocols` 和 `types`
 目前只有模块契约，尚无实现或公开导出；包根只提供 `__version__`。`0.x` 期间接口仍可能
 按文档化变更调整。
 
@@ -42,7 +42,7 @@ print(spawn_join_core.__version__)
 uv run --locked --directory packages/core/spawn-join-core python -c "import spawn_join_core; print(spawn_join_core.__version__)"
 ```
 
-预期输出为 `0.1.0`，无需密钥或网络请求。
+预期输出为 `0.0.1.dev0`，无需密钥或网络请求。
 
 不存在可调用的公共 API、CLI 或配置项；阅读本 README 后不应推断出尚未实现的运行时能力。
 
@@ -80,7 +80,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-core
 说明复用理由、依赖方向和验证方式；新增或删除模块时同步测试、包边界和仓库文档。变更遵循
 [贡献规则](../../../AGENTS.md) 和
 [质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。本包使用独立版本号，
-当前 `0.1.0` 尚未发布；发布需要单独授权，当前没有自动发布或包级 changelog。
+当前 `0.0.1.dev0` 尚未发布；发布需要单独授权，当前没有自动发布或包级 changelog。
 
 ## 许可证
 

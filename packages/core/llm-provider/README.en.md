@@ -31,7 +31,7 @@ use LangChain `BaseChatModel` and message types directly.
 
 ## Status
 
-`0.1.0`, early development; Python `>=3.11`. This release delivers contracts and offline tests only:
+`0.0.1.dev0`, early development; Python `>=3.11`. This release delivers contracts and offline tests only:
 
 - no real channel HTTP implementation; the real transport lives in the separate
   [`spawn-join-llm-channel`](../../infra/llm-channel/README.en.md) package, and this package

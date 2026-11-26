@@ -11,4 +11,111 @@ installed:
 - simplify
 settings:
   auto_execute_hooks: false
-hooks: {}
+hooks:
+  before_specify:
+  - extension: delivery
+    command: speckit.delivery.hook-explore
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-explore?
+    description: Reuse or prepare the active Feature run's exploration packet and
+      record the actual scope choice.
+    condition: null
+  after_specify:
+  - extension: delivery
+    command: speckit.delivery.hook-bind-feature
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-bind-feature?
+    description: Bind the actual Core Feature directory to the active Delivery run.
+    condition: null
+  before_plan:
+  - extension: delivery
+    command: speckit.delivery.hook-plan-context
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-plan-context?
+    description: Reuse or prepare the active Feature run's ADR resolution and code
+      context.
+    condition: null
+  after_plan:
+  - extension: delivery
+    command: speckit.delivery.hook-propose
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-propose?
+    description: Reuse or establish the Proposed ADR baseline and pre-gate design
+      snapshot.
+    condition: null
+  after_tasks:
+  - extension: delivery
+    command: speckit.delivery.hook-slice
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-slice?
+    description: Reuse the current slice plan or map newly generated Task IDs.
+    condition: null
+  after_converge:
+  - extension: delivery
+    command: speckit.delivery.hook-slice
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-slice?
+    description: Reuse the current slice plan or map Converge-appended Task IDs.
+    condition: null
+  before_implement:
+  - extension: delivery
+    command: speckit.delivery.hook-brief
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Render the active Delivery run's quality and architecture brief before
+      implementation?
+    description: Advisory pre-edit brief; Ralph's per-task brief and closure checks
+      are unchanged.
+    condition: null
+  after_implement:
+  - extension: delivery
+    command: speckit.delivery.hook-simplify
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Scan the current diff for simplification candidates (read-only)?
+    description: Read-only candidate scan; approval and application stay with the
+      lane.
+    condition: null
+  after_bug_assess:
+  - extension: delivery
+    command: speckit.delivery.hook-bind-assessment
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-bind-assessment?
+    description: Bind the actual Bug assessment to the active Bugfix Delivery run.
+    condition: null
+  before_bug_fix:
+  - extension: delivery
+    command: speckit.delivery.hook-brief
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.delivery.hook-brief?
+    description: Render the approved assessment's pre-edit quality brief, including
+      continuation rounds.
+    condition: null
+  after_bug_test:
+  - extension: delivery
+    command: speckit.delivery.hook-simplify
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Scan the repaired diff for simplification candidates (read-only)?
+    description: Read-only candidate scan on current repaired contents; originals
+      stay immutable.
+    condition: null

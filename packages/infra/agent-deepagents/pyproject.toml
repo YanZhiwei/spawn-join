@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-agent-deepagents"
-version = "0.1.0"
+version = "0.0.1.dev0"
 description = "DeepAgents product assembly, model binding, governed delegation, and diagnostics for SpawnJoin."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -16,14 +16,14 @@ dependencies = [
     "langchain>=1.4.7,<2.0",
     "langchain-core>=1.7.0,<2.0",
     "langgraph>=1.2,<2",
-    "spawn-join-llm-provider-langchain>=0.1.0,<0.2.0",
+    "spawn-join-llm-provider-langchain>=0.0.1.dev0,<0.2.0",
 ]
 
 [project.optional-dependencies]
 mcp = [
     "langchain[mcp]>=1.4.8,<2.0",
     "fastmcp>=4.0.11,<5.0",
-    "spawn-join-common>=0.1.0,<0.2.0",
+    "spawn-join-common>=0.0.1.dev0,<0.2.0",
 ]
 
 [project.urls]

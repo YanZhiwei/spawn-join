@@ -23,7 +23,7 @@ never modifies `model.yaml`, never registers models automatically, and never run
 
 ## Status
 
-Version `0.1.0`, early development; Python `>=3.11`. Runtime dependencies are
+Version `0.0.1.dev0`, early development; Python `>=3.11`. Runtime dependencies are
 `spawn-join-llm-provider`, `spawn-join-common`, `platformdirs`, and `PyYAML`.
 
 This package belongs to the SpawnJoin monorepo and is not published to PyPI. It is a maintenance

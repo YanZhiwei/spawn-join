@@ -88,7 +88,7 @@ def test_event_is_frozen_and_detail_is_read_only() -> None:
 
 def test_assembly_report_is_safe_and_immutable() -> None:
     report = AssemblyReport(
-        package_version="0.1.0",
+        package_version="0.0.1.dev0",
         deepagents_version="0.7.32",
         supervisor_name="coordinator",
         models={ModelPurpose.SUPERVISOR: "injected:BaseChatModel"},

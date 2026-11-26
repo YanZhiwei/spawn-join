@@ -17,7 +17,7 @@ SpawnJoin 中与领域无关、可独立安装的公共辅助能力包。当前�
 
 ## 状态与边界
 
-版本为 `0.1.0`，要求 Python `>=3.11`。基础安装没有运行时依赖，不依赖任何 SpawnJoin 领域包、模型框架或 Provider SDK。
+版本为 `0.0.1.dev0`，要求 Python `>=3.11`。基础安装没有运行时依赖，不依赖任何 SpawnJoin 领域包、模型框架或 Provider SDK。
 
 首批能力只有两个明确的公共入口：
 
@@ -108,7 +108,7 @@ except ValueError as exc:
 ### `spawn_join_common`
 
 - `FieldReader`
-- `__version__`（当前为 `"0.1.0"`）
+- `__version__`（当前为 `"0.0.1.dev0"`）
 
 `FieldReader` 提供 `fail`、`as_mapping`、`require_keys`、`as_fields`、`as_str`、`as_string_mapping`、`as_string_tuple`、`as_int`、`as_non_negative_int`、`as_number`、`as_non_negative_number`、`as_bool`、`as_list` 和 `optional`。它是 frozen/slotted dataclass，没有 I/O、日志、全局注册或对输入映射的原地修改。
 
@@ -155,7 +155,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-common
 本包由 SpawnJoin 仓库维护者拥有，作者为 Yan Zhiwei；变更遵循
 [贡献规则](../../../AGENTS.md) 和
 [质量前置条件](../../../docs/development/quality-gates.md#prerequisites)。当前包版本独立管理，
-`0.1.0` 尚未发布；发布需要单独授权，并且必须通过包级质量门和两种语言 README 检查。
+`0.0.1.dev0` 尚未发布；发布需要单独授权，并且必须通过包级质量门和两种语言 README 检查。
 
 ## 许可证
 

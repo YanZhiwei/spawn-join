@@ -5,7 +5,7 @@
 可复用的桌面长任务运行时：SQLite 持久化、租约/fencing、重试/退避、ZeroMQ 唤醒与常驻 runner。
 桌面默认不要求任何外部服务；存储与通知通过端口替换，为后续 Postgres/MQ 服务端档位保留接缝。
 
-> 状态：Phase 1，版本 `0.1.0`，要求 Python `>=3.11`；尚未发布到 PyPI。包边界决策见
+> 状态：Phase 1，版本 `0.0.1.dev0`，要求 Python `>=3.11`；尚未发布到 PyPI。包边界决策见
 > [ADR-0018](../../../docs/decisions/engineering/0018-agent-work-package-boundary.md)。
 
 ## 适用与不适用
@@ -34,7 +34,7 @@ uv sync --locked --directory packages/infra/agent-work
 宿主可通过本地路径依赖开发：
 
 ```toml
-dependencies = ["spawn-join-agent-work>=0.1.0,<0.2.0"]
+dependencies = ["spawn-join-agent-work>=0.0.1.dev0,<0.2.0"]
 [tool.uv.sources]
 spawn-join-agent-work = { path = "../../infra/agent-work", editable = true }
 ```
@@ -166,7 +166,7 @@ tests/      test_contract_store.py test_runner.py test_lease_and_fencing.py
 
 ## 版本与发布
 
-当前版本 `0.1.0`，未发布到 PyPI。发布时以包级 `uv.lock`、质量门和 PR CI 9×3 组合为前置证据；
+当前版本 `0.0.1.dev0`，未发布到 PyPI。发布时以包级 `uv.lock`、质量门和 PR CI 9×3 组合为前置证据；
 变更说明记录在仓库发布记录，不在 README 复制历史。Phase 1 的公共 API 可能随反馈调整。
 
 ## 所有权、版本与许可证
