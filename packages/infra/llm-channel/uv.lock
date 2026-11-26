@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'emscripten'",
@@ -674,7 +674,7 @@ wheels = [
 
 [[package]]
 name = "spawn-join-common"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "../../core/common" }
 
 [package.optional-dependencies]
@@ -698,7 +698,7 @@ dev = [
 
 [[package]]
 name = "spawn-join-core"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "../../core/spawn-join-core" }
 
 [package.metadata]
@@ -714,7 +714,7 @@ dev = [
 
 [[package]]
 name = "spawn-join-llm-channel"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
@@ -751,7 +751,7 @@ dev = [
 
 [[package]]
 name = "spawn-join-llm-provider"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "../../core/llm-provider" }
 dependencies = [
     { name = "pydantic" },

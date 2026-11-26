@@ -11,7 +11,7 @@ from langchain_core.messages import HumanMessage
 
 
 def test_package_metadata() -> None:
-    assert version("spawn-join-agent-deepagents") == "0.1.0"
+    assert version("spawn-join-agent-deepagents") == "0.0.1.dev0"
     assert "AgentConfigurationError" in package.__all__
 
 

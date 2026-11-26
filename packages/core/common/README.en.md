@@ -17,7 +17,7 @@ A standalone package for domain-independent helper capabilities in SpawnJoin. Th
 
 ## Status and boundaries
 
-The current version is `0.1.0` and requires Python `>=3.11`. The base installation has no runtime dependencies and does not depend on any SpawnJoin domain package, model framework, or Provider SDK.
+The current version is `0.0.1.dev0` and requires Python `>=3.11`. The base installation has no runtime dependencies and does not depend on any SpawnJoin domain package, model framework, or Provider SDK.
 
 There are only two deliberate public entry points in this release:
 
@@ -108,7 +108,7 @@ The public helper never renders validation input itself; message formatting rema
 ### `spawn_join_common`
 
 - `FieldReader`
-- `__version__` (currently `"0.1.0"`)
+- `__version__` (currently `"0.0.1.dev0"`)
 
 `FieldReader` provides `fail`, `as_mapping`, `require_keys`, `as_fields`, `as_str`, `as_string_mapping`, `as_string_tuple`, `as_int`, `as_non_negative_int`, `as_number`, `as_non_negative_number`, `as_bool`, `as_list`, and `optional`. It is a frozen/slotted dataclass with no I/O, logging, global registration, or in-place mutation of the supplied mapping.
 
@@ -148,7 +148,7 @@ The package uses a `src/` layout, with runtime code under `src/spawn_join_common
 
 ## Maintenance and releases
 
-Public capabilities must remain domain-independent with one-way dependencies. Adding an API requires synchronized tests, bilingual documentation, and independent installation evidence. This package is owned by the SpawnJoin repository maintainers; the author is Yan Zhiwei. Changes follow the [contribution rules](../../../AGENTS.md) and [quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). The package version is managed independently; `0.1.0` is unpublished. Publication requires separate authorization and must pass the package quality gate and bilingual README checks.
+Public capabilities must remain domain-independent with one-way dependencies. Adding an API requires synchronized tests, bilingual documentation, and independent installation evidence. This package is owned by the SpawnJoin repository maintainers; the author is Yan Zhiwei. Changes follow the [contribution rules](../../../AGENTS.md) and [quality prerequisites](../../../docs/development/quality-gates.md#prerequisites). The package version is managed independently; `0.0.1.dev0` is unpublished. Publication requires separate authorization and must pass the package quality gate and bilingual README checks.
 
 ## License
 

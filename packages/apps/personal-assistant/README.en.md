@@ -92,7 +92,7 @@ consult the per-domain examples as needed.
 
 ## Status and compatibility
 
-- Version and stability: `0.1.0`, preview; the public API may still change
+- Version and stability: `0.0.1.dev0`, preview; the public API may still change
   as documented during `0.x`.
 - Runtime: Python `>=3.11`; DeepAgents `0.7.x`; LangChain/LangGraph 1.x.
 - Release status: local repository development only; not published to PyPI
@@ -132,9 +132,9 @@ uv sync --locked --directory packages/apps/personal-assistant
 
 Runtime dependencies:
 
-- `spawn-join-agent-deepagents>=0.1.0,<0.2.0`
-- `spawn-join-agent-work>=0.1.0,<0.2.0`
-- `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
+- `spawn-join-agent-deepagents>=0.0.1.dev0,<0.2.0`
+- `spawn-join-agent-work>=0.0.1.dev0,<0.2.0`
+- `spawn-join-llm-provider-langchain>=0.0.1.dev0,<0.2.0`
 - `langgraph-checkpoint-sqlite>=3.1.3,<4`
 
 This package does not re-parse `model.yaml`, `.env`, or Provider SDKs;
@@ -1112,7 +1112,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-personal-assistant
 ## Release and versioning
 
 This package uses an independent version and independent wheel/sdist; it is
-not implicitly released with other Distributions. Current version `0.1.0`,
+not implicitly released with other Distributions. Current version `0.0.1.dev0`,
 not yet published; release requires the repository quality gate, independent
 review, and separate release authorization. Breaking public-API changes must
 update the version, documentation, and compatibility notes, and re-run the

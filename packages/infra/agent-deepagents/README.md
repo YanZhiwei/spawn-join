@@ -39,7 +39,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 
 ## 状态与兼容性
 
-- 版本与稳定性：`0.1.0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
+- 版本与稳定性：`0.0.1.dev0`，preview；`0.x` 期间公共 API 仍可能按文档化变更调整。
 - 运行时：Python `>=3.11`；DeepAgents `0.7.x`；LangChain/LangGraph 1.x。
 - 发布状态：当前仅支持仓库内本地开发，尚未发布到 PyPI 或私有 Registry。
 
@@ -137,7 +137,7 @@ asyncio.run(main())
 - `langchain>=1.4.7,<2.0`
 - `langchain-core>=1.7.0,<2.0`
 - `langgraph>=1.2,<2`
-- `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
+- `spawn-join-llm-provider-langchain>=0.0.1.dev0,<0.2.0`
 
 本包不重复解析 `model.yaml`、`.env` 或 Provider SDK；配置模型由
 [`spawn-join-llm-provider-langchain`](../llm-provider-langchain/README.md) 创建。
@@ -774,7 +774,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ## 发布与版本
 
 本包使用独立版本号和独立 wheel/sdist，不随其他 Distribution 隐式发布。当前版本为
-`0.1.0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
+`0.0.1.dev0`，尚未发布；发布必须经过仓库质量门、独立评审和单独的发布授权。公共 API 的
 破坏性变更应更新版本、文档和兼容性说明，并重新运行包级与仓库级门禁。
 
 ## 维护与贡献

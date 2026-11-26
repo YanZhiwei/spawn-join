@@ -13,4 +13,4 @@ def test_package_imports() -> None:
     assert "RetryPolicy" in spawn_join_agent_work.__all__
     assert "WorkStore" in spawn_join_agent_work.__all__
     assert "Clock" in spawn_join_agent_work.__all__
-    assert importlib.metadata.version("spawn-join-agent-work") == "0.1.0"
+    assert importlib.metadata.version("spawn-join-agent-work") == "0.0.1.dev0"

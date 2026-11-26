@@ -22,7 +22,7 @@ SpawnJoin 的手动模型元数据同步工具。
 
 ## 状态
 
-版本 `0.1.0`，早期开发，要求 Python `>=3.11`。运行时依赖为
+版本 `0.0.1.dev0`，早期开发，要求 Python `>=3.11`。运行时依赖为
 `spawn-join-llm-provider`、`spawn-join-common`、`platformdirs` 和 `PyYAML`。
 
 本包属于 SpawnJoin monorepo，不发布到 PyPI。它是维护工具，不是 LangChain 适配包的

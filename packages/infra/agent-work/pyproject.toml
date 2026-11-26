@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-agent-work"
-version = "0.1.0"
+version = "0.0.1.dev0"
 description = "Reusable durable work lifecycle runtime for SpawnJoin applications."
 readme = "README.md"
 license = "LicenseRef-Proprietary"

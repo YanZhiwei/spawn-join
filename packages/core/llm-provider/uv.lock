@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 5
 requires-python = ">=3.11"
 
 [[package]]
@@ -423,7 +423,7 @@ wheels = [
 
 [[package]]
 name = "spawn-join-common"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "../common" }
 
 [package.optional-dependencies]
@@ -447,7 +447,7 @@ dev = [
 
 [[package]]
 name = "spawn-join-core"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "../spawn-join-core" }
 
 [package.metadata]
@@ -463,7 +463,7 @@ dev = [
 
 [[package]]
 name = "spawn-join-llm-provider"
-version = "0.1.0"
+version = "0.0.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },

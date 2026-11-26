@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spawn-join-llm-provider"
-version = "0.1.0"
+version = "0.0.1.dev0"
 description = "Framework-independent LLM channel contracts, protocol options and errors for SpawnJoin."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -12,8 +12,8 @@ license-files = ["LICENSE"]
 authors = [{ name = "Yan Zhiwei" }]
 requires-python = ">=3.11"
 dependencies = [
-    "spawn-join-core>=0.1.0,<0.2.0",
-    "spawn-join-common[validation]>=0.1.0,<0.2.0",
+    "spawn-join-core>=0.0.1.dev0,<0.2.0",
+    "spawn-join-common[validation]>=0.0.1.dev0,<0.2.0",
     "pydantic>=2.0,<3.0",
 ]
 

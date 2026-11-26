@@ -40,7 +40,7 @@ streaming capabilities.
 
 ## Status and compatibility
 
-- Version and stability: `0.1.0`, preview; public API may still change in documented ways during
+- Version and stability: `0.0.1.dev0`, preview; public API may still change in documented ways during
   `0.x`.
 - Runtime: Python `>=3.11`; DeepAgents `0.7.x`; LangChain/LangGraph 1.x.
 - Publication: local repository development only; not published to PyPI or a private registry.
@@ -152,7 +152,7 @@ Runtime dependencies:
 - `langchain>=1.4.7,<2.0`
 - `langchain-core>=1.7.0,<2.0`
 - `langgraph>=1.2,<2`
-- `spawn-join-llm-provider-langchain>=0.1.0,<0.2.0`
+- `spawn-join-llm-provider-langchain>=0.0.1.dev0,<0.2.0`
 
 This package does not re-parse `model.yaml`, `.env`, or Provider SDKs; configured models are created
 by [`spawn-join-llm-provider-langchain`](../llm-provider-langchain/README.en.md).
@@ -825,7 +825,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 ## Release and versioning
 
 This package uses an independent version and independent wheel/sdist; it is not implicitly released
-with other Distributions. The current version is `0.1.0` and is unpublished; publication requires the
+with other Distributions. The current version is `0.0.1.dev0` and is unpublished; publication requires the
 repository quality gates, independent review, and separate publication authorization. Breaking
 public API changes should update version, documentation, and compatibility notes and rerun package
 and repository gates.
