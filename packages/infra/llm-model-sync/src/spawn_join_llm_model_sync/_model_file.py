@@ -7,6 +7,7 @@ deliberately avoids importing LangChain.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,9 +25,9 @@ from spawn_join_llm_provider import (
 )
 
 _READER = FieldReader(ConfigurationError)
-_MODEL_KEY = r"^[^/\s]+/[^/\s].*$"
 _METADATA_FIELDS = frozenset({"metadata_ref", "metadata_source", "metadata"})
-_SOURCE_ID = r"^[a-z0-9][a-z0-9._-]*$"
+_MODEL_KEY = re.compile(r"^[^/\s]+/[^/\s]+$")
+_SOURCE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -115,7 +116,9 @@ def _parse_metadata_ref(
         raise ConfigurationError(
             f"{path}.metadata_ref: must be non-empty without surrounding whitespace"
         )
-    if "/" not in value:
+    if _MODEL_KEY.fullmatch(value) is None or any(
+        ord(character) < 32 for character in value
+    ):
         raise ConfigurationError(f"{path}.metadata_ref: must use <lab>/<model>")
     return value
 
@@ -152,9 +155,9 @@ def _parse_metadata_source(
         raise ConfigurationError(f"{path}.metadata_source: must not be empty")
     result: dict[str, ModelSourceRef] = {}
     for source_id, source_value in source_fields.items():
-        if not source_id or not source_id.strip():
+        if _SOURCE_ID.fullmatch(source_id) is None:
             raise ConfigurationError(
-                f"{path}.metadata_source: source ID must not be empty"
+                f"{path}.metadata_source: invalid source ID"
             )
         result[source_id] = _parse_source_ref(
             source_value,

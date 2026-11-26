@@ -256,8 +256,10 @@ def _optional_date(
     normalized = f"{text}-01" if len(text) == 7 else text
     try:
         return date.fromisoformat(normalized)
-    except ValueError:
-        return None
+    except ValueError as exc:
+        raise SourcePayloadError(
+            f"{path}.{name}: invalid ISO date"
+        ) from exc
 
 
 def _interleaved(fields: Mapping[str, object], path: str) -> str | None:
@@ -539,8 +541,10 @@ def _model_type(raw_type: str | None, modalities: ModelModalities) -> ModelType:
     if raw_type is not None:
         try:
             return ModelType(raw_type)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            raise SourcePayloadError(
+                f"model type {raw_type!r} is not supported"
+            ) from exc
     if not modalities.output:
         return ModelType.EMBEDDING
     return ModelType.CHAT
