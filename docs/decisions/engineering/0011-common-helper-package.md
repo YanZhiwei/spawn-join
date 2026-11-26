@@ -1,11 +1,11 @@
 # ADR-0011: 用独立 Common 包承载跨领域公共辅助实现
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-07
 - Domain: engineering
 - Classification: 公共基础实现、Distribution 依赖和消费方式约束多个领域，由跨领域工程边界拥有。
 - Decision owner: SpawnJoin 维护者
-- Accepted by / date: 未批准
+- Accepted by / date: 仓库维护者 / 2026-11-26
 - Depends on: 无
 - Related: [包边界](../../architecture/package-boundaries.md)、[质量门](../../development/quality-gates.md)、[ADR-0008](../llm-provider/0008-model-file-and-env-boundary.md)
 - Supersedes: 无
@@ -61,7 +61,7 @@ common 默认无第三方运行时依赖；root import 不导入 optional valida
 
 ## Verification and implementation status
 
-**实现已完成并通过独立审查；本 ADR 仍为 `Proposed`，等待决策 owner 正式接受。**
+**实现已完成并通过独立审查；维护者于 2026-11-26 明确接受本决策。**
 
 - 2026-11-07 提案时基线：协议 154、适配 240、Sync 55 全部 passed（各 exit 0），仅作为迁移前基线。
 - 2026-11-08 当前实现：`spawn-join-common` 与协议/适配/Sync 迁移已提交（T001 `8b1aaf6`、T002 `19930b2`）；公共包 18 项、协议 161 项、适配 240 项、Sync 58 项测试通过；1,536 项解析差分与 8 项 metadata 精确对照均为 0 差异。
@@ -69,9 +69,10 @@ common 默认无第三方运行时依赖；root import 不导入 optional valida
 - 任务级与最终集成 fresh-context 独立 Review 均通过。远端 CI 覆盖 Linux Python 3.11/3.14 与 Windows 3.11；真实 Provider 调用和发布未执行。
 - `spawn-join-common` 尚未发布到 Registry；消费者通过仓库本地路径源和锁文件解析。
 
-当前 Feature、任务与运行证据各由其工件拥有；本 ADR 不作第二套执行队列。接受状态需决策 owner 批准，不能由实现或 CI 结果自行改变。
+当前 Feature、任务与运行证据各由其工件拥有；本 ADR 不作第二套执行队列。接受状态由决策 owner 于 2026-11-26 明确批准；实现或 CI 结果本身不会改变状态。
 
 ## Revision history
 
 - 2026-11-07：按用户公共辅助包定位提出候选方案；保留域内模型和格式化策略，首批公开 API 限定为真实复用的两项机制。
 - 2026-11-08：补充实现、独立审查与本地/远端 CI 验证状态；状态仍为 Proposed，等待决策 owner 接受。
+- 2026-11-26：维护者接受本决策；接受依据为已合并实现、独立六维 Review 与 PR #47 的远端 CI。

@@ -16,7 +16,7 @@
 PR #57 为 `spawn-join-agent-deepagents` 增加了官方 DeepAgents P1 能力：可选 rubric 评分、
 backend/权限的只读报告，以及围绕原生 LangGraph interrupt/resume 的 HITL helpers。
 ADR-0010 已经确定了产品边界（原生 interrupt/resume、beta 能力显式 opt-in、报告脱敏），
-ADR-0012 只覆盖官方 P0 且仍为 `Proposed`，两者都没有记录 P1 的具体公共 contract。
+ADR-0012 只覆盖官方 P0（该决策已于 2026-11-26 接受），两者都没有记录 P1 的具体公共 contract。
 
 这些新增内容会长期影响调用方：
 
@@ -31,8 +31,8 @@ ADR-0012 只覆盖官方 P0 且仍为 `Proposed`，两者都没有记录 P1 的�
 
 1. **不新增 ADR，只依赖 ADR-0010** — 拒绝。ADR-0010 的原则不足以约束具体字段、
    beta gate 和 HITL payload key 约定，未来维护者无法从权威决策判断哪些属于稳定契约。
-2. **把 P1 并入 ADR-0012** — 拒绝。ADR-0012 是 P0 决策且仍为 `Proposed`，把 P1 塞入会
-   混淆两个能力批次，也不能把未批准的 P0 当作 P1 授权。
+2. **把 P1 并入 ADR-0012** — 拒绝。ADR-0012 是已接受的 P0 决策，把 P1 塞入会
+   混淆两个能力批次，也不能把 P0 的接受当作 P1 的授权。
 3. **新增 ADR-0014（采用）** — 在 ADR-0010 边界内记录 P1 的具体公共 seam、拒绝项和
    验证状态；ADR-0012 的状态另行收口。
 4. **导出 `backend_kind()` / `permission_report()` 作为公共 API** — 拒绝。它们是报告字段的
@@ -137,7 +137,11 @@ Native interrupt state
 
 本 ADR 当前为 `Proposed`。探索、决策上下文和切片记录在
 `.specify/delivery/deepagents-p1-continuation-20261115/`，验证状态、合并结果与限制记录在其
-`evidence.md`。只有在最终 reviewed HEAD 与 evidence 一致后才转为 `Accepted`。
+`evidence.md`。2026-11-26 的独立六维 Review 在 HEAD `7942509` 上执行，结论为 `blocked`：
+原生 `RubricMiddleware` 的 beta gate 只覆盖 supervisor 作用域（F1），原生 `tool_count`
+读取错误（F2），`SupervisorSpec` 位置参数兼容性被破坏（F3），并有迁移说明和测试缺口。
+因此本 ADR 保持 `Proposed`，待修复并复评后再接受。完整报告见
+`.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0014-review.md`。
 
 计划验证：
 
@@ -151,3 +155,4 @@ Native interrupt state
 ## Revision history
 
 - 2026-11-15：提出 P1 rubric、backend/权限报告和 HITL helpers 的公共边界。
+- 2026-11-26：独立六维 Review 结论为 blocked（F1–F3 等），状态保持 Proposed。

@@ -25,7 +25,7 @@
    如果工作被取代，用 `outcome=superseded` 写明 `reason` 和可查的 `superseded_by`。Close 将实际结果写回本地文件。后续用单独的证据更新 PR 发布这个文件，引用同一份记录即可。若同时发布其他工作，填写该工作的验收记录。
 4. **查 ADR。** 按[决策生命周期](../decisions/README.md#生命周期)核对维护者的明确决定和该 ADR 的采纳条件。采纳时在 ADR 记录批准人、日期和对应证据，并同步决策索引。只有合并或引用记录的提案继续标为 `Proposed`。
 
-例如，桌面优先策略的合并结果可在 [#82 的交付记录](../../.specify/delivery/desktop-first-package-policy-20261121/evidence.md)查到。该 PR 合入的是一份提案，设计采纳状态可在 [ADR-0016](../decisions/engineering/0016-desktop-first-service-ready-packages.md)查到。
+例如，桌面优先策略的合并结果可在 [#82 的交付记录](../../.specify/delivery/desktop-first-package-policy-20261121/evidence.md)查到。该 PR 合入的是策略提案；维护者已于 2026-11-26 接受该策略，当前状态见 [ADR-0016](../decisions/engineering/0016-desktop-first-service-ready-packages.md)。
 
 [#98 的交付记录](../../.specify/delivery/agent-work-main-integration-20261123/evidence.md)来自原集成工作树，记录了 #93–#98 的最终集成验收。原 Feature 的部分任务回执仍缺失。补录保留当时的审查和验证正文，并用合并后的 GitHub 观测刷新 Close 结果。
 

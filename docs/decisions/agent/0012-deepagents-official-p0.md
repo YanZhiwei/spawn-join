@@ -1,12 +1,12 @@
 # ADR-0012: DeepAgents 官方 P0 能力的产品化接线
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-08
 - Domain: agent
 - Classification: 约束 `spawn-join-agent-deepagents` 如何接入 DeepAgents 0.7.x 的 async
   子代理、Memory/Skills 和 Harness/Provider profile；属于 agent 领域的公共契约决策。
 - Decision owner: 仓库维护者
-- Accepted by / date: 待评审
+- Accepted by / date: 仓库维护者 / 2026-11-26
 - Depends on: [ADR-0010](0010-deepagents-product-boundary.md)
 - Related: [包边界](../../architecture/package-boundaries.md)、
   [仓库地图](../../architecture/repository-map.md)
@@ -123,8 +123,8 @@ Host
 
 ## Verification and implementation status
 
-实现位置：`packages/infra/agent-deepagents/`。本 ADR 在评审时保持 Proposed；只有当前
-评审通过的 repository HEAD 与本决策一致后才改为 Accepted。
+实现位置：`packages/infra/agent-deepagents/`。本 ADR 于 2026-11-26 由维护者接受；
+接受依据是 P0 的独立六维 Review（覆盖当时的实现内容）；后续兼容改动未在本 ADR 中重新审查。
 
 验证覆盖：
 
@@ -139,3 +139,4 @@ Host
 ## Revision history
 
 - 2026-11-08：创建 Proposed ADR，记录三项 P0 能力的产品化接线、beta 风险和边界。
+- 2026-11-26：维护者接受本决策；独立六维 Review 的阻塞项已在合并前修复。

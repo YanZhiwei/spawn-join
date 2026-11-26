@@ -1277,3 +1277,14 @@ not in a synthetic Delivery run. Local `main` was fast-forwarded; unrelated user
 ## 2026-11-25 — Spec Kit Delivery v0.4.10
 
 通过固定 Release 将 Bundle 从 v0.4.9 升至 v0.4.10。两个宿主均已登记，项目配置与既有运行记录通过哈希复核。安装过程、下载重试及回归结果见[本次安装记录](evidence/delivery-v0410-upgrade.md)。
+
+## 2026-11-26 — ADR 生命周期收口（Lightweight）
+
+- Route: Lightweight（ADR 状态与实现描述、决策索引，无产品源码或运行时行为变化）。
+- Base revision: `79425090f442506663c0024bde02c62f1f5c7ea6`；工作目录 `D:\Repos\spawn-join`。
+- 维护者明确接受 ADR-0011、ADR-0012、ADR-0016；ADR-0009、ADR-0014 经独立六维 Review 后均判定 `blocked`，保持 `Proposed`。
+- ADR-0009 Review：F1 校验错误未转稳定错误/退出码，F2–F5 为 dry-run、缓存路径、渠道差异和依赖声明不一致；报告见 [ADR-0009 review](../.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0009-review.md)。
+- ADR-0014 Review：F1 rubric beta gate 只覆盖 supervisor、F2 `tool_count` 读取错误、F3 `SupervisorSpec` 位置参数破坏；报告见 [ADR-0014 review](../.specify/delivery/adr-lifecycle-closure-20261126/reviews/adr-0014-review.md)。
+- ADR-0016 同时修正“尚未实现”的过时文字：`spawn-join-agent-work` 已交付，`personal-assistant` 已迁移；服务端适配器仍未实现。
+- 验证：`-Check docs` 为 207 files / 1041 links；`-Check governance` 为 0 errors / 3 条既有 warning；`git diff --check` 通过。证据见 [本次收口记录](../.specify/delivery/adr-lifecycle-closure-20261126/evidence.md)。
+- 未提交、未 push、未创建或合并 PR。
