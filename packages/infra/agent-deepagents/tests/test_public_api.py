@@ -173,7 +173,7 @@ def test_mcp_dependencies_are_optional_and_bounded() -> None:
     optional = [item for item in requirements if 'extra == "mcp"' in item]
     assert any(item.startswith("langchain[mcp]") for item in optional)
     assert any(item.startswith("fastmcp<5.0,>=4.0.11") for item in optional)
-    assert any(item.startswith("spawn-join-common<0.2.0,>=0.1.0") for item in optional)
+    assert any(item.startswith("spawn-join-common<0.2.0,>=0.0.1.dev0") for item in optional)
     assert not any(
         item.startswith(("fastmcp", "mcp")) and ";" not in item for item in requirements
     )
