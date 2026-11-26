@@ -90,6 +90,7 @@ def test_apply_writes_snapshot_and_keeps_model_file(
     document = json.loads(output.read_text(encoding="utf-8"))
     assert set(document["models"]) == {"openai/gpt-5", "openai/other"}
     assert "fast-backup" in document["channels"]
+    assert "override" not in document["channels"]["fast"]
 
 
 def test_check_reports_drift_without_writing(
