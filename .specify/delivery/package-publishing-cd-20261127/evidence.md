@@ -4,12 +4,12 @@ delivery_run: package-publishing-cd-20261127
 lane: feature
 evidence_path: .specify/delivery/package-publishing-cd-20261127/evidence.md
 base_revision: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
-reviewed_head: 3ae3a6ba29a5a6aa79c583dd9affde037546ae45
+reviewed_head: 87e809f2b8d405c19d9bced4bfda89d018fa430e
 original_pr_head: pending
-content_fingerprint: 3ae3a6ba29a5a6aa79c583dd9affde037546ae45
+content_fingerprint: 87e809f2b8d405c19d9bced4bfda89d018fa430e
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
-pull_request: 108
+pull_request: 109
 exploration_path: .specify/delivery/package-publishing-cd-20261127/exploration.md
 
 ## Scope
@@ -64,3 +64,23 @@ account's package inheritance toggle was enabled.
 
 PR `108` therefore publishes the distributions as GitHub Release assets and
 exposes them through a static PEP 503 index deployed to the `gh-pages` branch.
+## Publication result
+
+Workflow run `46012637668` completed successfully on `main` (`87e809f`):
+
+- GitHub Release `python-0.0.1.dev0` holds 18 assets: wheel and sdist for all
+  nine distributions, every artifact at version `0.0.1.dev0`.
+- PEP 503 index published to `gh-pages` and served at
+  `https://yanzhiwei.github.io/spawn-join/simple/`.
+- Pages enabled through `gh api` (`build_type` from branch `gh-pages`).
+- Verified installs: `spawn-join-core==0.0.1.dev0` resolves from the index
+  alone; `spawn-join-llm-provider==0.0.1.dev0` resolved the full internal and
+  third-party chain (`spawn-join-core`, `spawn-join-common`, `pydantic`,
+  `pydantic-core`, `annotated-types`, `typing-extensions`,
+  `typing-inspection`) with `--extra-index-url https://pypi.org/simple` and
+  `--index-strategy unsafe-best-match`.
+
+Limitation: only these two distributions were installed end-to-end; the
+remaining seven share the same index and build path but were not installed
+during verification. GitHub Packages remains unusable for Python, so no package
+was published there.
