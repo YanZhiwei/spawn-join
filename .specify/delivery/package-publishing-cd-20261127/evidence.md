@@ -4,12 +4,12 @@ delivery_run: package-publishing-cd-20261127
 lane: feature
 evidence_path: .specify/delivery/package-publishing-cd-20261127/evidence.md
 base_revision: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
-reviewed_head: 3c3cf04b27051da449494846ecf6630391cb8ac3
+reviewed_head: 3ae3a6ba29a5a6aa79c583dd9affde037546ae45
 original_pr_head: pending
-content_fingerprint: 3c3cf04b27051da449494846ecf6630391cb8ac3
+content_fingerprint: 3ae3a6ba29a5a6aa79c583dd9affde037546ae45
 requirements_fingerprint: b867b68c8aaa8f93bc02afe838f9ce2a248dd040
 method_identity: builtin
-pull_request: 107
+pull_request: 108
 exploration_path: .specify/delivery/package-publishing-cd-20261127/exploration.md
 
 ## Scope
@@ -53,3 +53,14 @@ covered by PR `106` and this refreshed evidence snapshot.
 The follow-up run `45866262742` reached Twine but no files were uploaded:
 GitHub Packages rejected the unsupported `--skip-existing` option before any
 upload. PR `107` removes that option.
+## Follow-up: registry pivot
+
+GitHub Packages has no Python registry: the PyPI registry request was closed as
+"no longer planned" (github/roadmap#94) and the supported registries are npm,
+RubyGems, Maven, Gradle, Docker and NuGet only. Every upload to
+`https://pypi.pkg.github.com/YanZhiwei/` returned HTTP 404 with no asset
+created, including after `write:packages` was granted and the personal
+account's package inheritance toggle was enabled.
+
+PR `108` therefore publishes the distributions as GitHub Release assets and
+exposes them through a static PEP 503 index deployed to the `gh-pages` branch.

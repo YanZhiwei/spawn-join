@@ -1,5 +1,8 @@
 name: Publish Python package
 
+# GitHub Packages has no Python registry, so distributions are published as
+# GitHub Release assets and exposed through a static PEP 503 index on GitHub
+# Pages (branch `gh-pages`).
 on:
   workflow_dispatch:
     inputs:
@@ -18,10 +21,13 @@ on:
           - spawn-join-agent-deepagents
           - spawn-join-agent-work
           - spawn-join-personal-assistant
+      release_tag:
+        description: GitHub Release tag that stores the distributions
+        required: true
+        default: python-0.0.1.dev0
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
 
 concurrency:
   group: publish-python-${{ inputs.package }}
@@ -35,7 +41,7 @@ jobs:
   publish:
     name: Publish ${{ inputs.package }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,11 +60,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'packages/**/uv.lock'
 
-      - name: Verify, build, and publish in dependency order
+      - name: Verify and build in dependency order
         env:
           SELECTED_PACKAGE: ${{ inputs.package }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGE_REGISTRY_OWNER: ${{ github.repository_owner }}
         run: |
           $packages = [ordered]@{
             'spawn-join-core' = 'packages/core/spawn-join-core'
@@ -87,32 +91,62 @@ jobs:
             uv lock --check --directory $directory
             uv sync --locked --directory $directory
             ./scripts/quality.ps1 -Package $package
-
-            $manifest = Join-Path $directory 'pyproject.toml'
-            $versionLine = Select-String -Path $manifest -Pattern '^version = "([^"]+)"$'
-            if (-not $versionLine) {
-              throw "Missing project version in $manifest"
-            }
-            $version = $versionLine.Matches[0].Groups[1].Value
-            if ($version -notmatch '^\d+\.\d+\.\d+\.dev\d+$') {
-              throw "$package has non-development version $version; expected PEP 440 *.devN"
-            }
-
             $output = Join-Path $distRoot $package
             New-Item -ItemType Directory -Path $output -Force | Out-Null
             uv build --no-sources --out-dir $output --directory $directory
           }
+          Write-Host "Artifacts:"
+          Get-ChildItem $distRoot -Recurse -File | ForEach-Object { Write-Host $_.FullName }
 
-          $publishUrl = "https://pypi.pkg.github.com/$env:PACKAGE_REGISTRY_OWNER/"
-          foreach ($package in $targets) {
-            $files = Get-ChildItem (Join-Path $distRoot $package) -File
-            if (-not $files) {
-              throw "No build artifacts found for $package"
-            }
-            Write-Host "Publishing $package to $publishUrl with Twine"
-            uvx --from twine==6.2.0 twine upload `
-              --repository-url $publishUrl `
-              --username $env:GITHUB_ACTOR `
-              --password $env:GITHUB_TOKEN `
-              --non-interactive ($files.FullName)
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $distRoot = Join-Path $env:RUNNER_TEMP 'spawn-join-dist'
+          $files = @(Get-ChildItem $distRoot -Recurse -File |
+            Where-Object { $_.Extension -in '.whl', '.gz' } |
+            ForEach-Object { $_.FullName })
+          if (-not $files) { throw 'No distribution artifacts were built.' }
+
+          $tag = $env:RELEASE_TAG
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo $env:GITHUB_REPOSITORY `
+              --title "Python distributions $tag" `
+              --notes "Wheel and sdist assets for the SpawnJoin Python distributions."
+            if ($LASTEXITCODE -ne 0) { throw "Could not create release $tag" }
           }
+          gh release upload $tag --repo $env:GITHUB_REPOSITORY --clobber @files
+          if ($LASTEXITCODE -ne 0) { throw "Could not upload assets to $tag" }
+
+      - name: Generate PEP 503 index
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $releases = Join-Path $env:RUNNER_TEMP 'releases.json'
+          gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" --paginate |
+            Set-Content -Path $releases -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { throw 'Could not read releases.' }
+          python scripts/build_pypi_index.py `
+            --releases-json $releases `
+            --out (Join-Path $env:RUNNER_TEMP 'site')
+
+      - name: Publish index to GitHub Pages branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $site = Join-Path $env:RUNNER_TEMP 'site'
+          $pages = Join-Path $env:RUNNER_TEMP 'pages'
+          New-Item -ItemType Directory -Path $pages -Force | Out-Null
+          Copy-Item -Path (Join-Path $site '*') -Destination $pages -Recurse -Force
+          git -C $pages init --quiet
+          git -C $pages checkout --quiet -b gh-pages
+          git -C $pages config user.name 'github-actions[bot]'
+          git -C $pages config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C $pages add --all
+          git -C $pages commit --quiet -m 'docs: publish Python package index'
+          $remote = "https://x-access-token:$env:GH_TOKEN@github.com/$env:GITHUB_REPOSITORY.git"
+          git -C $pages push --quiet --force $remote gh-pages
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish the Pages branch.' }
+          Write-Host "Index published for $env:GITHUB_REPOSITORY"
