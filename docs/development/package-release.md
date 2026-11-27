@@ -57,17 +57,36 @@ fragment when GitHub reports one.
 
 ## Consuming the packages
 
+Packages without third-party dependencies resolve from this index alone:
+
 ```bash
 pip install --index-url https://yanzhiwei.github.io/spawn-join/simple/ spawn-join-core
 ```
 
+Packages that depend on `pydantic`, LangChain, `openai` and similar also need
+PyPI. `uv` refuses ambiguous matches unless you opt in explicitly:
+
 ```bash
-uv pip install --index-url https://yanzhiwei.github.io/spawn-join/simple/ spawn-join-core
+uv pip install \
+  --index-url https://yanzhiwei.github.io/spawn-join/simple/ \
+  --extra-index-url https://pypi.org/simple \
+  --index-strategy unsafe-best-match \
+  spawn-join-llm-provider
 ```
 
-Use `--index-url` rather than `--extra-index-url`: the extra-index form lets a
-public index shadow these names (dependency confusion). A single wheel can also
-be installed straight from the release:
+```bash
+pip install \
+  --index-url https://yanzhiwei.github.io/spawn-join/simple/ \
+  --extra-index-url https://pypi.org/simple \
+  spawn-join-llm-provider
+```
+
+Prefer `--index-url` alone when the package has no third-party dependencies:
+combining indexes lets a public index shadow a name here (dependency
+confusion), which is why `uv` requires `unsafe-best-match` to accept that risk.
+Pin exact versions (`spawn-join-core==0.0.1.dev0`) when reproducibility matters.
+
+A single wheel can also be installed straight from the release:
 
 ```bash
 pip install https://github.com/YanZhiwei/spawn-join/releases/download/python-0.0.1.dev0/spawn_join_core-0.0.1.dev0-py3-none-any.whl
