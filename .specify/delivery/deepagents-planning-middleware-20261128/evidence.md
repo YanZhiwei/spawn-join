@@ -8,7 +8,7 @@
 - content_fingerprint: sha256:b149cbd597ca9c7f8b75a3da52d75b230b957a612d9ed1731c01feb2f037c03c
 - requirements_fingerprint: sha256:ec1d60e3d3eef0368e4a9d788488f7c7863596d5310b82901264cdc88bdb33d6
 - pr_body_path: .specify/delivery/deepagents-planning-middleware-20261128/pull-request.md
-- pull_request: pending
+- pull_request: https://github.com/YanZhiwei/spawn-join/pull/110
 - base_revision: 87e809f2b8d405c19d9bced4bfda89d018fa430e
 - target_branch: main
 
