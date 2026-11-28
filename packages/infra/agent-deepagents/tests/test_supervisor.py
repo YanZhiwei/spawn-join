@@ -478,6 +478,46 @@ def test_planning_rejects_duplicate_supervisor_middleware(
         )
 
 
+def test_planning_rejects_todo_subclass(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    class HostTodo(TodoListMiddleware):
+        pass
+
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=PlanningConfiguration(),
+                middleware=MiddlewareConfiguration(supervisor=(HostTodo(),)),
+            )
+        )
+
+
+def test_planning_rejects_renamed_todo_middleware(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    class RenamedTodo(TodoListMiddleware):
+        @property
+        def name(self) -> str:
+            return "host_todos"
+
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=PlanningConfiguration(),
+                middleware=MiddlewareConfiguration(supervisor=(RenamedTodo(),)),
+            )
+        )
+
+
 def test_planning_rejects_wrong_configuration_type(
     make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
 ) -> None:

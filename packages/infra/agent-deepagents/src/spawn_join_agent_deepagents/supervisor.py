@@ -519,7 +519,10 @@ def _planning_middleware(spec: SupervisorSpec) -> MiddlewareType | None:
         raise MiddlewareConfigurationError(
             "planning: expected PlanningConfiguration or None"
         )
-    if any(item.name == "TodoListMiddleware" for item in spec.middleware.supervisor):
+    if any(
+        isinstance(item, TodoListMiddleware) or item.name == "TodoListMiddleware"
+        for item in spec.middleware.supervisor
+    ):
         raise MiddlewareConfigurationError(
             "planning: remove the host-supplied TodoListMiddleware from "
             "middleware.supervisor or disable planning"

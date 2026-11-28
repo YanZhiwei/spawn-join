@@ -62,8 +62,8 @@ summarization 和 patch-tool-calls；`TodoListMiddleware` 不是默认能力，�
   自身模型 profile 上配置 `excluded_middleware` 也会移除它，但 fork 与 supervisor
   共用 profile 时会同时移除 supervisor planning。宿主仍可通过现有 worker 作用域自行
   注入 planning。
-- 若 `middleware.supervisor` 已包含 `.name == "TodoListMiddleware"`，同时配置
-  planning 时在 `build_supervisor` 期间、构建图之前抛出
+- 若 `middleware.supervisor` 已包含 `TodoListMiddleware` 实例（含子类和改名实例）
+  或同名 middleware，同时配置 planning 时在 `build_supervisor` 期间、构建图之前抛出
   `MiddlewareConfigurationError`，避免双实例竞争。
 - 不把 `TodoListMiddleware` 加入全局保留名；planning 关闭时原始注入保持可用。
 
