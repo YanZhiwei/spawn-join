@@ -49,13 +49,22 @@ summarization 和 patch-tool-calls；`TodoListMiddleware` 不是默认能力，�
 
 - 配置 planning 时，supervisor 栈恰好加入一个原生
   `TodoListMiddleware`；实例在每次 `build_supervisor` 时新建。
-- 插入顺序：错误归一 → 宿主 supervisor middleware → planning →
+- 包内插入顺序：错误归一 → 宿主 supervisor middleware → planning →
   summarization → memory → rubric → diagnostics → delegation。既有 middleware
-  的相对顺序和上游 `.name` 替换语义不变。
-- planning 仅作用于 supervisor；声明式 worker、compiled/async 子代理和 worker
-  middleware 作用域不变。宿主仍可通过现有 worker 作用域自行注入。
+  的相对顺序和上游 `.name` 替换语义不变；`create_deep_agent` 会将新名称追加到
+  core 名称之后，最终 base-stack 位置由上游决定，不能把包内列表顺序当作运行时栈顺序。
+- planning 仅由 supervisor 装配；isolated 声明式 worker、compiled/async 子代理和
+  worker middleware 作用域不变。`mode="fork"` 的声明式子代理按上游语义镜像
+  supervisor middleware，因此可能获得 `TodoListMiddleware` 与 `write_todos`；
+  这是上游 fork 继承行为，不是本包主动注入。fork 内的 todo 更新不会写回父级。
+  没有 per-fork 的 planning 关闭开关：上游按 `.name` 合并且从不删除继承项；
+  需要排除时优先提供同名替代 middleware，或不要同时启用 planning 与 fork。在 fork
+  自身模型 profile 上配置 `excluded_middleware` 也会移除它，但 fork 与 supervisor
+  共用 profile 时会同时移除 supervisor planning。宿主仍可通过现有 worker 作用域自行
+  注入 planning。
 - 若 `middleware.supervisor` 已包含 `.name == "TodoListMiddleware"`，同时配置
-  planning 时在装配前抛出 `MiddlewareConfigurationError`，避免双实例竞争。
+  planning 时在 `build_supervisor` 期间、构建图之前抛出
+  `MiddlewareConfigurationError`，避免双实例竞争。
 - 不把 `TodoListMiddleware` 加入全局保留名；planning 关闭时原始注入保持可用。
 
 ### 报告与安全
@@ -95,7 +104,7 @@ SupervisorSpec(planning=PlanningConfiguration(...))
 
 1. `planning=None` 时既有工具、提示和 middleware 名称不变。
 2. 同一 supervisor 作用域最多一个 planning middleware。
-3. planning 不触碰 worker/compiled/async 子代理。
+3. 本包不主动向 isolated worker/compiled/async 子代理注入 planning；fork 继承是上游行为。
 4. 报告只记录名称，不记录自定义 prompt/description。
 
 ## Consequences and migration
@@ -104,7 +113,7 @@ SupervisorSpec(planning=PlanningConfiguration(...))
 
 - 产品开发型宿主用一个显式配置即可获得原生 `write_todos`，不再依赖模型 profile；
 - 默认关闭，不影响现有消费者；
-- 冲突在装配前失败，行为可测试、可报告；
+- 冲突在构建图前失败，行为可测试、可报告；
 - 复用 LangChain/DeepAgents 原生实现，不新增依赖或第二套 registry。
 
 成本与限制：
@@ -133,7 +142,7 @@ SupervisorSpec(planning=PlanningConfiguration(...))
 - 未配置 planning 时 middleware 名称与工具不变；
 - 配置后 supervisor 栈包含 `TodoListMiddleware` 且图暴露 `write_todos`；
 - 自定义 prompt/description 不进入报告；
-- 宿主重复 `TodoListMiddleware` 在装配前失败；
+- 宿主重复 `TodoListMiddleware` 在构建图前失败；
 - 包级质量命令、严格类型、构建和隔离安装通过。
 
 实际命令、退出码和残余风险记录在 Delivery evidence 中，不在本 ADR 复制。
@@ -142,3 +151,5 @@ SupervisorSpec(planning=PlanningConfiguration(...))
 
 - 2026-11-28：提出 opt-in、supervisor-only 的 planning middleware public seam；
   状态为 Proposed。
+- 2026-11-28：补充包内插入顺序与上游最终栈位置的区别，以及 fork 子代理继承
+  supervisor middleware 的上游语义；不改变公共 API。

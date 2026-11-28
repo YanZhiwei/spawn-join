@@ -21,6 +21,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
   - [远程执行流程](#远程执行流程)
   - [本地与远程子代理对比](#本地与远程子代理对比)
 - [Middleware 作用域](#middleware-作用域)
+- [Planning（opt-in）](#planningopt-in)
 - [Memory、Skills 与 Profile](#memoryskills-与-profile)
   - [完整可运行示例](#完整可运行示例)
 - [Rubric 评分（beta）](#rubric-评分beta)
@@ -48,6 +49,7 @@ Agent 接线问题收敛成可测试的公共契约，同时保留 DeepAgents、
 - 从显式模型用途构建 supervisor，返回原生 LangGraph 图和不可变装配报告；
 - 声明式、compiled 和远程 async 子代理；compiled/async 子代理保留自己的执行边界；
 - supervisor、workers、per-subagent override 三种 Middleware 作用域；
+- 显式 opt-in 的 supervisor planning 配置，复用原生 `TodoListMiddleware`；
 - Memory/Skills 配置对象，支持 memory 前缀缓存选择；
 - 上游 Harness/Provider profile 的显式注册、保留名校验和报告；
 - 显式 async-first 委派控制器：并发上限、有界 FIFO、deadline、取消和失败语义；
@@ -389,6 +391,42 @@ compiled 子代理不接收任何注入。
 - `"SummarizationMiddleware"` 和包内部 middleware 名称保留；
 - 上游 `.name` 替换语义原样保留，包不实现第二套 registry；
 - assembly report 记录实际生效的名称和作用域。
+
+## Planning（opt-in）
+
+`planning` 是显式 opt-in 的 supervisor 能力，复用 LangChain 原生
+`TodoListMiddleware`，为模型提供 `write_todos` 工具。它默认关闭；省略时不改变现有
+图、工具或中间件名称。
+
+```python
+from spawn_join_agent_deepagents import PlanningConfiguration, SupervisorSpec
+
+spec = SupervisorSpec(
+    models=models,
+    planning=PlanningConfiguration(
+        system_prompt="在行动前先规划多步工作。",
+        tool_description="用 todo 列表跟踪多步产品开发工作。",
+    ),
+)
+```
+
+- `system_prompt` / `tool_description` 省略时使用 LangChain 默认值；空白或非字符串值
+  在构建图前抛出 `MiddlewareConfigurationError`；
+- 启用 planning 时，`middleware.supervisor` 不得再包含宿主提供的
+  `TodoListMiddleware`；同一作用域重复所有权会在 `build_supervisor` 期间以
+  `MiddlewareConfigurationError` 失败；
+- 生效后 `assembly.report.middleware.supervisor_names` 包含
+  `"TodoListMiddleware"`；自定义提示/工具描述不会进入报告或诊断；
+- todo 状态、持久化和真实模型行为由宿主与 LangGraph checkpoint 拥有；本包不承诺
+  exactly-once，也不验证真实模型是否调用 `write_todos`；
+- isolated 声明式 worker、compiled 和 async 子代理不会主动获得 planning。声明式
+  worker 确实需要自己的 todo 时，可使用 `MiddlewareConfiguration(workers=...)` 或
+  自己的 `middleware`；compiled/async 子代理拥有自己的图；
+- `mode="fork"` 会按上游语义镜像 supervisor middleware，因此 fork 内可能获得
+  `write_todos`；fork 内的 todo 更新不会写回父级。没有 per-fork 的 planning 关闭开关：
+  上游按 `.name` 合并，且从不删除继承项。需要排除时，可提供同名替代 middleware，或不要
+  同时启用 planning 与 fork；在 fork 自身模型 profile 上配置 `excluded_middleware`
+  也会移除它，但 fork 与 supervisor 共用 profile 时会同时移除 supervisor planning。
 
 ## Memory、Skills 与 Profile
 
@@ -788,6 +826,7 @@ pwsh -NoProfile -File scripts/quality.ps1 -Package spawn-join-agent-deepagents
 
 - [ADR-0010：DeepAgents 产品边界](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
 - [ADR-0014：DeepAgents 官方 P1 能力的公共边界](../../../docs/decisions/agent/0014-deepagents-p1-capabilities.md)
+- [ADR-0019：DeepAgents planning middleware 公共 seam](../../../docs/decisions/agent/0019-deepagents-planning-middleware.md)
 - [包边界](../../../docs/architecture/package-boundaries.md)
 - [仓库地图](../../../docs/architecture/repository-map.md)
 - [质量门说明](../../../docs/development/quality-gates.md)

@@ -22,6 +22,7 @@ streaming capabilities.
   - [Remote execution flow](#remote-execution-flow)
   - [Local vs remote subagents](#local-vs-remote-subagents)
 - [Middleware scopes](#middleware-scopes)
+- [Planning (opt-in)](#planning-opt-in)
 - [Memory, skills, and profiles](#memory-skills-and-profiles)
   - [Complete runnable example](#complete-runnable-example)
 - [Rubric grading (beta)](#rubric-grading-beta)
@@ -52,6 +53,7 @@ streaming capabilities.
 - declarative, compiled, and remote async subagents; compiled/async subagents keep their own
   execution boundary;
 - three middleware scopes: supervisor, workers, and per-subagent override;
+- explicit opt-in supervisor planning via the native `TodoListMiddleware`;
 - memory/skills configuration objects, including an explicit memory-prefix cache choice;
 - explicit registration, reserved-name validation, and reporting for upstream Harness/Provider
   profiles;
@@ -403,16 +405,57 @@ middleware = MiddlewareConfiguration(
 )
 ```
 
-Requested order: definition-level middleware, global worker middleware, named override, generated
-summarization middleware. DeepAgents replaces the default summarization in place by `.name`, so the
-final base-stack position is upstream-determined; the report records requested names and
-`replaced_defaults` without claiming summarization always executes last. Compiled subagents receive
-no injection.
+Requested worker order: definition-level, global worker, named override, generated summarization.
+The supervisor inserts planning after host middleware and before generated summarization in the
+request list; DeepAgents merges by `.name`, so the final base-stack position is upstream-determined.
+The report records the request list (requested names and `replaced_defaults`), not the final
+upstream stack. Compiled subagents receive no injection.
 
 - Duplicate `.name` values within one scope are rejected;
 - `"SummarizationMiddleware"` and internal package middleware names are reserved;
 - upstream `.name` replacement semantics are preserved; the package implements no second registry;
 - the assembly report records effective names and scopes.
+
+## Planning (opt-in)
+
+`planning` is an explicit opt-in supervisor capability that reuses LangChain's
+native `TodoListMiddleware` and exposes `write_todos`. It is off by default;
+omitting it leaves existing graphs, tools, and middleware names unchanged.
+
+```python
+from spawn_join_agent_deepagents import PlanningConfiguration, SupervisorSpec
+
+spec = SupervisorSpec(
+    models=models,
+    planning=PlanningConfiguration(
+        system_prompt="Plan multi-step work before acting.",
+        tool_description="Track multi-step product work in a todo list.",
+    ),
+)
+```
+
+- `system_prompt` / `tool_description` use LangChain defaults when omitted; blank
+  or non-string values raise `MiddlewareConfigurationError` before graph assembly;
+- `middleware.supervisor` must not also contain a host-supplied
+  `TodoListMiddleware`; duplicate ownership fails with
+  `MiddlewareConfigurationError`;
+- `assembly.report.middleware.supervisor_names` contains `"TodoListMiddleware"`;
+  custom prompt/tool text never enters reports or diagnostics;
+- todo state, persistence, and real-model behavior belong to the host and
+  LangGraph checkpointing; the package neither promises exactly-once behavior nor
+  verifies that a real model calls `write_todos`;
+- isolated declarative workers, compiled subagents, and async subagents do not
+  receive planning automatically. A declarative worker that needs its own todo
+  list can use `MiddlewareConfiguration(workers=...)` or its own `middleware`;
+  compiled/async subagents own their graphs;
+- `mode="fork"` mirrors supervisor middleware under upstream semantics, so a fork
+  can expose `write_todos`; todo updates inside the fork are not written back to
+  the parent. There is no per-fork planning switch: upstream merges by `.name`
+  and never removes inherited entries. To exclude it, provide a same-name
+  replacement middleware, or do not combine planning with fork. An
+  `excluded_middleware` entry on the fork's own model profile also removes it,
+  but when the fork shares the supervisor profile it removes supervisor planning
+  too.
 
 ## Memory, skills, and profiles
 
@@ -843,6 +886,7 @@ bound to the current diff.
 
 - [ADR-0010: DeepAgents product boundary](../../../docs/decisions/agent/0010-deepagents-product-boundary.md)
 - [ADR-0014: DeepAgents P1 capability boundary](../../../docs/decisions/agent/0014-deepagents-p1-capabilities.md)
+- [ADR-0019: DeepAgents planning middleware seam](../../../docs/decisions/agent/0019-deepagents-planning-middleware.md)
 - [Package boundaries](../../../docs/architecture/package-boundaries.md)
 - [Repository map](../../../docs/architecture/repository-map.md)
 - [Quality gates](../../../docs/development/quality-gates.md)
