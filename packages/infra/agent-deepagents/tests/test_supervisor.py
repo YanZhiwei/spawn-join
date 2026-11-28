@@ -7,8 +7,10 @@ from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
+import spawn_join_agent_deepagents.supervisor as supervisor_module
 from deepagents.backends import StateBackend
 from deepagents.middleware.filesystem import FilesystemPermission
+from langchain.agents.middleware import TodoListMiddleware
 from langchain.agents.middleware.types import AgentMiddleware
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
@@ -34,6 +36,7 @@ from spawn_join_agent_deepagents.models import (
     ModelBindings,
     ModelPurpose,
 )
+from spawn_join_agent_deepagents.planning import PlanningConfiguration
 from spawn_join_agent_deepagents.recovery import RecoveryContext
 from spawn_join_agent_deepagents.subagents import (
     CompiledSubAgentDefinition,
@@ -41,6 +44,7 @@ from spawn_join_agent_deepagents.subagents import (
     SubAgentKind,
 )
 from spawn_join_agent_deepagents.supervisor import (
+    SupervisorAssembly,
     SupervisorSpec,
     build_supervisor,
 )
@@ -90,6 +94,11 @@ def _bindings(
         bindings=tuple(bindings),
         require_summarization=require_summarization,
     )
+
+
+def _supervisor_tool_names(assembly: SupervisorAssembly) -> set[str]:
+    node = assembly.graph.nodes["tools"]
+    return set(node.bound.tools_by_name)
 
 
 def _task_call(subagent: str, description: str, call_id: str) -> AIMessage:
@@ -329,6 +338,199 @@ def test_llm_error_normalization_can_be_disabled(
     assert "spawn_join_llm_error_normalization" not in (
         assembly.report.middleware.supervisor_names
     )
+
+
+def test_planning_is_opt_in(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+        )
+    )
+
+    assert "TodoListMiddleware" not in (assembly.report.middleware.supervisor_names)
+    assert "write_todos" not in _supervisor_tool_names(assembly)
+
+
+def test_planning_adds_exactly_one_native_todo_middleware(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            planning=PlanningConfiguration(),
+        )
+    )
+
+    names = assembly.report.middleware.supervisor_names
+    assert names.count("TodoListMiddleware") == 1
+    assert "write_todos" in _supervisor_tool_names(assembly)
+
+
+def test_planning_runs_after_host_middleware_before_summarization(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    events: list[str] = []
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            planning=PlanningConfiguration(),
+            middleware=MiddlewareConfiguration(
+                supervisor=(RecordingMiddleware("audit", events),)
+            ),
+        )
+    )
+
+    names = assembly.report.middleware.supervisor_names
+    assert names.index("audit") < names.index("TodoListMiddleware")
+    assert names.index("TodoListMiddleware") < names.index("SummarizationMiddleware")
+
+
+def test_planning_forwards_custom_text_and_hides_it_from_report(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class RecordingTodo(TodoListMiddleware):
+        def __init__(self, **kwargs: str) -> None:
+            captured.update(kwargs)
+            super().__init__(**kwargs)
+
+    monkeypatch.setattr(supervisor_module, "TodoListMiddleware", RecordingTodo)
+    secret_prompt = "private-planning-prompt-value"
+    secret_description = "private-planning-description-value"
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            planning=PlanningConfiguration(
+                system_prompt=secret_prompt,
+                tool_description=secret_description,
+            ),
+        )
+    )
+
+    assert captured == {
+        "system_prompt": secret_prompt,
+        "tool_description": secret_description,
+    }
+    assert secret_prompt not in repr(assembly.report)
+    assert secret_description not in repr(assembly.report)
+
+
+def test_planning_disabled_allows_raw_todo_middleware(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor),
+            control_default_subagent=False,
+            middleware=MiddlewareConfiguration(supervisor=(TodoListMiddleware(),)),
+        )
+    )
+
+    assert "TodoListMiddleware" in assembly.report.middleware.supervisor_names
+    assert "write_todos" in _supervisor_tool_names(assembly)
+
+
+def test_planning_does_not_apply_to_declarative_workers(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+    worker = make_sequence_model([AIMessage(content="worker")])
+    assembly = build_supervisor(
+        SupervisorSpec(
+            models=_bindings(supervisor, worker),
+            subagents=(_researcher_definition(),),
+            control_default_subagent=False,
+            planning=PlanningConfiguration(),
+        )
+    )
+
+    assert "TodoListMiddleware" not in (
+        assembly.report.middleware.per_subagent["researcher"]
+    )
+
+
+def test_planning_rejects_duplicate_supervisor_middleware(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=PlanningConfiguration(),
+                middleware=MiddlewareConfiguration(supervisor=(TodoListMiddleware(),)),
+            )
+        )
+
+
+def test_planning_rejects_todo_subclass(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    class HostTodo(TodoListMiddleware):
+        pass
+
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=PlanningConfiguration(),
+                middleware=MiddlewareConfiguration(supervisor=(HostTodo(),)),
+            )
+        )
+
+
+def test_planning_rejects_renamed_todo_middleware(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    class RenamedTodo(TodoListMiddleware):
+        @property
+        def name(self) -> str:
+            return "host_todos"
+
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=PlanningConfiguration(),
+                middleware=MiddlewareConfiguration(supervisor=(RenamedTodo(),)),
+            )
+        )
+
+
+def test_planning_rejects_wrong_configuration_type(
+    make_sequence_model: Callable[[list[AIMessage]], BaseChatModel],
+) -> None:
+    supervisor = make_sequence_model([AIMessage(content="unused")])
+
+    with pytest.raises(MiddlewareConfigurationError, match="planning"):
+        build_supervisor(
+            SupervisorSpec(
+                models=_bindings(supervisor),
+                control_default_subagent=False,
+                planning=cast(Any, "not-a-planning-configuration"),
+            )
+        )
 
 
 def test_llm_error_normalization_applies_to_declarative_workers(

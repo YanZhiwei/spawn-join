@@ -19,7 +19,7 @@ from deepagents.middleware.subagents import (
     SubAgent,
 )
 from deepagents.middleware.summarization import create_summarization_middleware
-from langchain.agents.middleware import InterruptOnConfig
+from langchain.agents.middleware import InterruptOnConfig, TodoListMiddleware
 from langchain.agents.middleware.types import AgentMiddleware
 from langchain_core.messages import SystemMessage
 from langgraph.cache.base import BaseCache
@@ -64,6 +64,7 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
+from .planning import PlanningConfiguration
 from .profiles import ProfilesConfiguration
 from .recovery import (
     checkpointer_present,
@@ -128,6 +129,7 @@ class SupervisorSpec:
     normalize_llm_errors: bool = True
     allow_experimental_rubric: bool = field(default=False, kw_only=True)
     rubric: RubricConfiguration | None = field(default=None, kw_only=True)
+    planning: PlanningConfiguration | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tools", tuple(self.tools))
@@ -179,12 +181,14 @@ def build_supervisor(spec: SupervisorSpec) -> SupervisorAssembly:
     profiles = _apply_profiles(spec, extra_reserved)
     controller = _delegation_controller(spec)
     rubric_middleware = _rubric_middleware(spec)
+    planning_middleware = _planning_middleware(spec)
     supervisor_middleware = _supervisor_middleware(
         spec,
         summary,
         controller,
         memory_middleware,
         rubric_middleware,
+        planning_middleware,
     )
     native_subagents, subagent_reports, per_subagent = _native_subagents(
         spec,
@@ -503,17 +507,48 @@ def _delegation_controller(
     return spec.delegation.controller or DelegationController(spec.delegation.policy)
 
 
+def _planning_middleware(spec: SupervisorSpec) -> MiddlewareType | None:
+    """Build the opt-in native planning middleware for the supervisor."""
+
+    # Widen the annotation so runtime callers passing a non-config value are
+    # rejected instead of failing later with an AttributeError.
+    planning = cast(object, spec.planning)
+    if planning is None:
+        return None
+    if not isinstance(planning, PlanningConfiguration):
+        raise MiddlewareConfigurationError(
+            "planning: expected PlanningConfiguration or None"
+        )
+    if any(
+        isinstance(item, TodoListMiddleware) or item.name == "TodoListMiddleware"
+        for item in spec.middleware.supervisor
+    ):
+        raise MiddlewareConfigurationError(
+            "planning: remove the host-supplied TodoListMiddleware from "
+            "middleware.supervisor or disable planning"
+        )
+    kwargs: dict[str, str] = {}
+    if planning.system_prompt is not None:
+        kwargs["system_prompt"] = planning.system_prompt
+    if planning.tool_description is not None:
+        kwargs["tool_description"] = planning.tool_description
+    return TodoListMiddleware(**kwargs)
+
+
 def _supervisor_middleware(
     spec: SupervisorSpec,
     summary: MiddlewareType | None,
     controller: DelegationController | None,
     memory_middleware: MiddlewareType | None = None,
     rubric_middleware: MiddlewareType | None = None,
+    planning_middleware: MiddlewareType | None = None,
 ) -> list[MiddlewareType]:
     middleware: list[MiddlewareType] = []
     if spec.normalize_llm_errors:
         middleware.append(LLMErrorNormalizationMiddleware())
     middleware.extend(spec.middleware.supervisor)
+    if planning_middleware is not None:
+        middleware.append(planning_middleware)
     if summary is not None:
         middleware.append(summary)
     if memory_middleware is not None:

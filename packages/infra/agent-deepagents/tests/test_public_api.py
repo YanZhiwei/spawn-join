@@ -89,6 +89,7 @@ _CURRENT_PUBLIC_NAMES = {
     "ModelPurpose",
     "PendingInterrupt",
     "PermissionReport",
+    "PlanningConfiguration",
     "ProfileConfigurationError",
     "ProfileReport",
     "ProfilesConfiguration",
@@ -139,6 +140,7 @@ def test_internal_modules_are_not_exported() -> None:
         "backends",
         "rubric",
         "interrupts",
+        "planning",
     ):
         assert name not in package.__all__
 
