@@ -60,6 +60,7 @@ from .models import (
     ModelPurpose,
     ResolvedModelBindings,
 )
+from .planning import PlanningConfiguration
 from .profiles import (
     HarnessProfileBinding,
     ProfilesConfiguration,
@@ -109,6 +110,7 @@ __all__ = [
     "ModelPurpose",
     "PendingInterrupt",
     "PermissionReport",
+    "PlanningConfiguration",
     "ProfileConfigurationError",
     "ProfileReport",
     "ProfilesConfiguration",
